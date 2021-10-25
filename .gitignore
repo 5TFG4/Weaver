@@ -166,3 +166,6 @@ cython_debug/
 # Docker swp files
 setup/*.swp
 
+# TestYard
+TestYard/
+
