@@ -1,0 +1,2 @@
+docker build -f dockerfile_dev -t weaver_development --build-arg SSH_KEY="$(cat ~/.ssh/id_rsa)" .
+docker run -d --name weaver_development -v ~/Projects/Weaver:/workspaces/weaver weaver_development tail -f /dev/null
