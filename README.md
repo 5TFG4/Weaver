@@ -1,17 +1,17 @@
 # Weaver
 > An automatic crypto trading system
 
-**------[W]allE---**
+<div align='center' ><strong>------[W]allE--</strong></div>
 
-**-----V[e]da-----**
+<div align='center' ><strong>-----V[e]da----</strong></div>
 
-**---GL[a]DOS--**
+<div align='center' ><strong>----GL[a]DOS--</strong></div>
 
-**--Mar[v]in------**
+<div align='center' ><strong>--Mar[v]in----</strong></div>
 
-**----Gr[e]ta------**
+<div align='center' ><strong>----Gr[e]ta----</strong></div>
 
-**----Ha[r]o-------**
+<div align='center' ><strong>----Ha[r]o-----</strong></div>
 
 ---
 ## Modules
