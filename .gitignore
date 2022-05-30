@@ -169,3 +169,5 @@ setup/*.swp
 # TestYard
 TestYard/
 
+# Docker swp files
+setup/
