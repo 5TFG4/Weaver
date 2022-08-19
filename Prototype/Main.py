@@ -6,6 +6,7 @@ import time
 import urllib.parse
 from os.path import exists
 from shutil import copyfile
+from decimal import Decimal
 
 import requests
 
@@ -87,7 +88,7 @@ def get_nonce():
     return str(int(1000*time.time()))
 
 
-def get_account_balance():
+def get_account_assets():
     """
         Get asset balance of the account.
 
@@ -99,7 +100,7 @@ def get_account_balance():
 
 def get_asset_info(assets=[]):
     """
-        Get the list of information of given pairs. Get all possible pairs if not specified.
+        Get the list of information of given assets. Get all possible assets if not specified.
 
         Parameter assets: List of asset name of the target assets.
         Precondition: assets is a list of string asset names.
@@ -148,12 +149,38 @@ def get_order_book(pair):
     return resp.json()
 
 
+def get_account_balance():
+    """
+        Get the asset information in account.
+        Base on the json from API, calculate the actual value and percent of each assets in USD.
+
+        Returns the account balance in dictionary with the amount, value and percent of each assets in decimal.
+    """
+    balance = get_account_assets()['result']
+    account_balance = 0
+    for asset in balance:
+        if asset != 'ZUSD':
+            order_book = get_order_book(asset + 'ZUSD')['result']
+            asset_price = Decimal(order_book[asset + 'ZUSD']['asks'][0][0])
+            balance[asset] = {'amount': Decimal(
+                balance[asset]), 'value': Decimal(balance[asset]) * asset_price}
+            account_balance += balance[asset]['value']
+        else:
+            balance[asset] = {'amount': Decimal(
+                balance[asset]), 'value': Decimal(balance[asset])}
+            account_balance += balance[asset]['value']
+    for asset in balance:
+        balance[asset]['percent'] = balance[asset]['value'] / account_balance
+    return balance
+
+
 def main():
-    get_user_json()
     get_account_balance()
-    get_asset_info(['XBT', 'ETH'])
-    print(get_pairs()['result']['XXBTZUSD'])
-    print(get_order_book('XBTUSD'))
+
+    # a = get_account_balance()
+    # a = get_asset_info(['XBT', 'ETH'])
+    # print(get_pairs()['result']['XXBTZUSD'])
+    # print(get_order_book('XBTUSD'))
 
 
 if __name__ == "__main__":
