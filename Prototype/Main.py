@@ -162,21 +162,55 @@ def get_account_balance():
         if asset != 'ZUSD':
             order_book = get_order_book(asset + 'ZUSD')['result']
             asset_price = Decimal(order_book[asset + 'ZUSD']['asks'][0][0])
-            balance[asset] = {'amount': Decimal(
-                balance[asset]), 'value': Decimal(balance[asset]) * asset_price}
+            balance[asset] = {'amount': Decimal(balance[asset]),
+                              'value': Decimal(balance[asset]) * asset_price,
+                              'price': asset_price}
             account_balance += balance[asset]['value']
         else:
-            balance[asset] = {'amount': Decimal(
-                balance[asset]), 'value': Decimal(balance[asset])}
+            balance[asset] = {'amount': Decimal(balance[asset]),
+                              'value': Decimal(balance[asset]),
+                              'price': 1}
             account_balance += balance[asset]['value']
     for asset in balance:
         balance[asset]['percent'] = balance[asset]['value'] / account_balance
     return balance
 
 
-def main():
-    get_account_balance()
+def add_order(ordertype, type, volume, pair, price=-1):
+    data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
+            "volume": volume, "pair": pair}
+    if ordertype in ['limit', 'stop-loss', 'stop-loss-limit', 'take-profit', 'take-profit-limit']:
+        data["price"] = price
 
+    resp = kraken_request('/0/private/AddOrder', data)
+    return resp.json()
+
+
+def balance_assets(balance, percent):
+    orders = []
+    for asset in balance:
+        if asset != 'ZUSD':
+            volume = balance[asset]['amount'] * \
+                abs((percent[asset] / balance[asset]['percent']) - 1)
+
+            if (percent[asset] + Decimal(0.03) < balance[asset]['percent']):
+                type = 'sell'
+            elif (percent[asset] > balance[asset]['percent'] + Decimal(0.03)):
+                type = 'buy'
+            else:
+                continue
+
+            orders.append({'ordertype': 'market', 'type': type,
+                          'volume': volume, 'pair': asset + 'ZUSD'})
+
+    for order in orders:
+        add_order(order['ordertype'], order['type'],
+                  order['volume'], order['pair'])
+
+
+def main():
+    balance = get_account_balance()
+    balance_assets(balance, {'XXBT': Decimal(0.7625)})
     # a = get_account_balance()
     # a = get_asset_info(['XBT', 'ETH'])
     # print(get_pairs()['result']['XXBTZUSD'])
