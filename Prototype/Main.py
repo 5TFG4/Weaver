@@ -235,10 +235,6 @@ def main():
     balance = get_account_balance()
     percent_per_asset = get_target_percent(balance)
     balance_assets(balance, percent_per_asset)
-    # a = get_account_balance()
-    # a = get_asset_info(['XBT', 'ETH'])
-    # print(get_pairs()['result']['XXBTZUSD'])
-    # print(get_order_book('XBTUSD'))
 
 
 if __name__ == "__main__":
