@@ -221,8 +221,8 @@ def get_fear_greed_index():
 
 def get_target_percent(balance):
     resp = get_fear_greed_index()
-    percent = Decimal(
-        1) - ((Decimal(resp['data'][0]['value']) - Decimal(10)) / Decimal(80))
+    percent = Decimal(1) - \
+        ((Decimal(resp['data'][0]['value']) - Decimal(10)) / Decimal(80))
     total_assets_count = sum(map(lambda k: k != 'ZUSD', balance.keys()))
     ret = {}
     for asset in balance:
