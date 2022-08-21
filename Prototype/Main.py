@@ -179,23 +179,28 @@ def get_account_balance():
 def add_order(ordertype, type, volume, pair, price=-1):
     data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
             "volume": volume, "pair": pair}
+    log_string = "Placing {} {} {} order for {}".format(
+        volume, ordertype, type, pair)
+
     if ordertype in ['limit', 'stop-loss', 'stop-loss-limit', 'take-profit', 'take-profit-limit']:
         data["price"] = price
+        log_string += " at {}".format(price)
 
+    print(log_string)
     resp = kraken_request('/0/private/AddOrder', data)
     return resp.json()
 
 
-def balance_assets(balance, percent):
+def balance_assets(balance, percent_per_asset):
     orders = []
     for asset in balance:
         if asset != 'ZUSD':
             volume = balance[asset]['amount'] * \
-                abs((percent[asset] / balance[asset]['percent']) - 1)
+                abs((percent_per_asset[asset] / balance[asset]['percent']) - 1)
 
-            if (percent[asset] + Decimal(0.03) < balance[asset]['percent']):
+            if (percent_per_asset[asset] + Decimal(0.03) < balance[asset]['percent']):
                 type = 'sell'
-            elif (percent[asset] > balance[asset]['percent'] + Decimal(0.03)):
+            elif (percent_per_asset[asset] > balance[asset]['percent'] + Decimal(0.03)):
                 type = 'buy'
             else:
                 continue
@@ -208,9 +213,28 @@ def balance_assets(balance, percent):
                   order['volume'], order['pair'])
 
 
+def get_fear_greed_index():
+    req_uri = GLOBAL_FNG_URI
+    resp = requests.get(req_uri)
+    return resp.json()
+
+
+def get_target_percent(balance):
+    resp = get_fear_greed_index()
+    percent = Decimal(
+        1) - ((Decimal(resp['data'][0]['value']) - Decimal(10)) / Decimal(80))
+    total_assets_count = sum(map(lambda k: k != 'ZUSD', balance.keys()))
+    ret = {}
+    for asset in balance:
+        if asset != 'ZUSD':
+            ret[asset] = percent / total_assets_count
+    return ret
+
+
 def main():
     balance = get_account_balance()
-    balance_assets(balance, {'XXBT': Decimal(0.7625)})
+    percent_per_asset = get_target_percent(balance)
+    balance_assets(balance, percent_per_asset)
     # a = get_account_balance()
     # a = get_asset_info(['XBT', 'ETH'])
     # print(get_pairs()['result']['XXBTZUSD'])
@@ -223,6 +247,7 @@ if __name__ == "__main__":
     GLOBAL_BASE_JSON_PATH = 'usr/base.json'
     GLOBAL_USER_JSON_PATH = 'usr/user.json'
     GLOBAL_API_URI = "https://api.kraken.com"
+    GLOBAL_FNG_URI = "https://api.alternative.me/fng/"  # Fear and Greed Index api uri
     GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_user_json()
 
     main()
