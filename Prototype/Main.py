@@ -3,13 +3,12 @@ import hashlib
 import hmac
 import json
 import time
+import requests
 import urllib.parse
 from os.path import exists
 from shutil import copyfile
 from decimal import Decimal
 from datetime import datetime
-
-import requests
 
 
 def create_user_json():
