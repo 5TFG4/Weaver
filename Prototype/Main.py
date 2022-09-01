@@ -183,7 +183,7 @@ def add_order(ordertype, type, volume, pair, price=-1):
 
     dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    log_string = "[] Placing {} {} {} order for {}".format(
+    log_string = "[{}] Placing {} {} {} order for {}".format(
         dt_string, volume, ordertype, type, pair)
 
     if ordertype in ['limit', 'stop-loss', 'stop-loss-limit', 'take-profit', 'take-profit-limit']:
@@ -250,6 +250,9 @@ def main():
         balance_assets(balance, percent_per_asset)
 
         sec_to_sleep = get_fng_sleep_span(fng_json)
+        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        log_string = "[{}] Sleeping for {}s".format(dt_string, sec_to_sleep)
+        print(log_string)
         time.sleep(sec_to_sleep)
 
 
