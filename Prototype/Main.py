@@ -181,7 +181,7 @@ def add_order(ordertype, type, volume, pair, price=-1):
     data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
             "volume": volume, "pair": pair}
 
-    dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    dt_string = datetime.now().strftime("%Y/%M/%d %H:%M:%S")
 
     log_string = "[{}] Placing {} {} {} order for {}".format(
         dt_string, volume, ordertype, type, pair)
@@ -250,7 +250,7 @@ def main():
         balance_assets(balance, percent_per_asset)
 
         sec_to_sleep = get_fng_sleep_span(fng_json)
-        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        dt_string = datetime.now().strftime("%Y/%M/%d %H:%M:%S")
         log_string = "[{}] Sleeping for {}s".format(dt_string, sec_to_sleep)
         print(log_string)
         time.sleep(sec_to_sleep)
