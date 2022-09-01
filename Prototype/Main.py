@@ -7,6 +7,7 @@ import urllib.parse
 from os.path import exists
 from shutil import copyfile
 from decimal import Decimal
+from datetime import datetime
 
 import requests
 
@@ -179,8 +180,11 @@ def get_account_balance():
 def add_order(ordertype, type, volume, pair, price=-1):
     data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
             "volume": volume, "pair": pair}
-    log_string = "Placing {} {} {} order for {}".format(
-        volume, ordertype, type, pair)
+
+    dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    log_string = "[] Placing {} {} {} order for {}".format(
+        dt_string, volume, ordertype, type, pair)
 
     if ordertype in ['limit', 'stop-loss', 'stop-loss-limit', 'take-profit', 'take-profit-limit']:
         data["price"] = price
@@ -213,16 +217,23 @@ def balance_assets(balance, percent_per_asset):
                   order['volume'], order['pair'])
 
 
-def get_fear_greed_index():
+def get_fear_greed_json():
     req_uri = GLOBAL_FNG_URI
     resp = requests.get(req_uri)
     return resp.json()
 
 
-def get_target_percent(balance):
-    resp = get_fear_greed_index()
-    percent = Decimal(1) - \
-        ((Decimal(resp['data'][0]['value']) - Decimal(10)) / Decimal(80))
+def get_fear_greed_index(fng_json):
+    return Decimal(1) - ((Decimal(fng_json['data'][0]['value']) - Decimal(GLOBAL_FNG_DEADZONE)) / Decimal(100 - (2 * GLOBAL_FNG_DEADZONE)))
+
+
+def get_fng_sleep_span(fng_json):
+    until_update = int(fng_json['data'][0]['time_until_update'])
+    return max(min(until_update, GLOBAL_SLEEP_MAX), GLOBAL_SLEEP_MIN)
+
+
+def get_target_percent(balance, fng_json):
+    percent = get_fear_greed_index(fng_json)
     total_assets_count = sum(map(lambda k: k != 'ZUSD', balance.keys()))
     ret = {}
     for asset in balance:
@@ -232,9 +243,14 @@ def get_target_percent(balance):
 
 
 def main():
-    balance = get_account_balance()
-    percent_per_asset = get_target_percent(balance)
-    balance_assets(balance, percent_per_asset)
+    while True:
+        balance = get_account_balance()
+        fng_json = get_fear_greed_json()
+        percent_per_asset = get_target_percent(balance, fng_json)
+        balance_assets(balance, percent_per_asset)
+
+        sec_to_sleep = get_fng_sleep_span(fng_json)
+        time.sleep(sec_to_sleep)
 
 
 if __name__ == "__main__":
@@ -245,5 +261,8 @@ if __name__ == "__main__":
     GLOBAL_API_URI = "https://api.kraken.com"
     GLOBAL_FNG_URI = "https://api.alternative.me/fng/"  # Fear and Greed Index api uri
     GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_user_json()
+    GLOBAL_FNG_DEADZONE = 10
+    GLOBAL_SLEEP_MIN = 1800  # 1800 sec, 30 min
+    GLOBAL_SLEEP_MAX = 43200  # 43200 sec, 12hr
 
     main()
