@@ -180,7 +180,7 @@ def add_order(ordertype, type, volume, pair, price=-1):
     data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
             "volume": volume, "pair": pair}
 
-    dt_string = datetime.now().strftime("%Y/%M/%d %H:%M:%S")
+    dt_string = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
     log_string = "[{}] Placing {} {} {} order for {}".format(
         dt_string, volume, ordertype, type, pair)
@@ -227,7 +227,7 @@ def get_fear_greed_index(fng_json):
 
 
 def get_fng_sleep_span(fng_json):
-    until_update = int(fng_json['data'][0]['time_until_update'])
+    until_update = int(fng_json['data'][0]['time_until_update']) + GLOBAL_SLEEP_MIN
     return max(min(until_update, GLOBAL_SLEEP_MAX), GLOBAL_SLEEP_MIN)
 
 
@@ -249,7 +249,7 @@ def main():
         balance_assets(balance, percent_per_asset)
 
         sec_to_sleep = get_fng_sleep_span(fng_json)
-        dt_string = datetime.now().strftime("%Y/%M/%d %H:%M:%S")
+        dt_string = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
         log_string = "[{}] Sleeping for {}s".format(dt_string, sec_to_sleep)
         print(log_string)
         time.sleep(sec_to_sleep)
@@ -265,6 +265,6 @@ if __name__ == "__main__":
     GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_user_json()
     GLOBAL_FNG_DEADZONE = 10
     GLOBAL_SLEEP_MIN = 1800  # 1800 sec, 30 min
-    GLOBAL_SLEEP_MAX = 43200  # 43200 sec, 12hr
+    GLOBAL_SLEEP_MAX = 47800  # 47800 sec, 13hr
 
     main()
