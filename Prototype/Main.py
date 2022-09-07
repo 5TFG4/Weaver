@@ -228,7 +228,7 @@ def get_fear_greed_index(fng_json):
 
 def get_fng_sleep_span(fng_json):
     until_update = int(fng_json['data'][0]['time_until_update']) + GLOBAL_SLEEP_MIN
-    return max(min(until_update, GLOBAL_SLEEP_MAX), GLOBAL_SLEEP_MIN)
+    return until_update
 
 
 def get_target_percent(balance, fng_json):
