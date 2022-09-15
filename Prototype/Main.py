@@ -5,7 +5,7 @@ import json
 import time
 import requests
 import urllib.parse
-from os.path import exists
+import os
 from shutil import copyfile
 from decimal import Decimal
 from datetime import datetime
@@ -17,7 +17,7 @@ def create_user_json():
 
         No Return
     """
-    if exists(GLOBAL_USER_JSON_PATH) == False:
+    if os.path.exists(GLOBAL_USER_JSON_PATH) == False:
         copyfile(GLOBAL_BASE_JSON_PATH, GLOBAL_USER_JSON_PATH)
 
 
@@ -180,16 +180,14 @@ def add_order(ordertype, type, volume, pair, price=-1):
     data = {"nonce": get_nonce(), "ordertype": ordertype, "type": type,
             "volume": volume, "pair": pair}
 
-    dt_string = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-
-    log_string = "[{}] Placing {} {} {} order for {}".format(
-        dt_string, volume, ordertype, type, pair)
+    log_string = "Placing {} {} {} order for {}".format(
+        volume, ordertype, type, pair)
 
     if ordertype in ['limit', 'stop-loss', 'stop-loss-limit', 'take-profit', 'take-profit-limit']:
         data["price"] = price
         log_string += " at {}".format(price)
 
-    print(log_string)
+    write_log(log_string)
     resp = kraken_request('/0/private/AddOrder', data)
     return resp.json()
 
@@ -227,7 +225,8 @@ def get_fear_greed_index(fng_json):
 
 
 def get_fng_sleep_span(fng_json):
-    until_update = int(fng_json['data'][0]['time_until_update']) + GLOBAL_SLEEP_MIN
+    until_update = int(fng_json['data'][0]
+                       ['time_until_update']) + GLOBAL_SLEEP_MIN
     return until_update
 
 
@@ -241,6 +240,19 @@ def get_target_percent(balance, fng_json):
     return ret
 
 
+def write_log(log_string):
+    split_path = os.path.split(GLOBAL_LOG_FILE_PATH)
+    if os.path.exists(split_path[0]) == False:
+        os.makedirs(split_path[0])
+
+    dt_string = "[{}] ".format(datetime.now().strftime("%Y/%m/%d %H:%M:%S"))
+
+    with open(GLOBAL_LOG_FILE_PATH, 'a') as f:
+        f.write(dt_string + log_string + '\n')
+
+    print(dt_string + log_string)
+
+
 def main():
     while True:
         balance = get_account_balance()
@@ -249,9 +261,7 @@ def main():
         balance_assets(balance, percent_per_asset)
 
         sec_to_sleep = get_fng_sleep_span(fng_json)
-        dt_string = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-        log_string = "[{}] Sleeping for {}s".format(dt_string, sec_to_sleep)
-        print(log_string)
+        write_log("Sleeping for {}s".format(sec_to_sleep))
         time.sleep(sec_to_sleep)
 
 
@@ -260,11 +270,12 @@ if __name__ == "__main__":
 
     GLOBAL_BASE_JSON_PATH = 'usr/base.json'
     GLOBAL_USER_JSON_PATH = 'usr/user.json'
+    GLOBAL_LOG_FILE_PATH = 'log/log.txt'
     GLOBAL_API_URI = "https://api.kraken.com"
     GLOBAL_FNG_URI = "https://api.alternative.me/fng/"  # Fear and Greed Index api uri
     GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_user_json()
     GLOBAL_FNG_DEADZONE = 10
-    GLOBAL_SLEEP_MIN = 1800  # 1800 sec, 30 min
+    GLOBAL_SLEEP_MIN = 300  # 300 sec, 5 min
     GLOBAL_SLEEP_MAX = 47800  # 47800 sec, 13hr
 
     main()
