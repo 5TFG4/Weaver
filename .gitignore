@@ -208,3 +208,6 @@ setup.py
 
 # UserInfo files
 usr/user.json
+
+# log files
+log
