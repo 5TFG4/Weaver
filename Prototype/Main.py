@@ -199,9 +199,9 @@ def balance_assets(balance, percent_per_asset):
             volume = balance[asset]['amount'] * \
                 abs((percent_per_asset[asset] / balance[asset]['percent']) - 1)
 
-            if (percent_per_asset[asset] + Decimal(0.03) < balance[asset]['percent']):
+            if (percent_per_asset[asset] + GLOBAL_BALANCE_DIFF_THRESHOID < balance[asset]['percent']):
                 type = 'sell'
-            elif (percent_per_asset[asset] > balance[asset]['percent'] + Decimal(0.03)):
+            elif (percent_per_asset[asset] > balance[asset]['percent'] + GLOBAL_BALANCE_DIFF_THRESHOID):
                 type = 'buy'
             else:
                 continue
@@ -277,5 +277,6 @@ if __name__ == "__main__":
     GLOBAL_FNG_DEADZONE = 10
     GLOBAL_SLEEP_MIN = 300  # 300 sec, 5 min
     GLOBAL_SLEEP_MAX = 47800  # 47800 sec, 13hr
+    GLOBAL_BALANCE_DIFF_THRESHOID = Decimal(0.03) # 3%
 
     main()
