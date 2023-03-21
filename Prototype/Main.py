@@ -277,6 +277,6 @@ if __name__ == "__main__":
     GLOBAL_FNG_DEADZONE = 10
     GLOBAL_SLEEP_MIN = 300  # 300 sec, 5 min
     GLOBAL_SLEEP_MAX = 47800  # 47800 sec, 13hr
-    GLOBAL_BALANCE_DIFF_THRESHOLD = Decimal(0.1) # 10%
+    GLOBAL_BALANCE_DIFF_THRESHOLD = Decimal(0.1)  # 10%
 
     main()
