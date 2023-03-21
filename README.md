@@ -1,35 +1,36 @@
 # Weaver
 > An automatic crypto trading system
 
-<div align='center' ><strong>------[W]allE--</strong></div>
+<div align='center' ><strong>&ensp;&ensp;&nbsp;&nbsp;&nbsp;[W]allE</strong></div>
 
-<div align='center' ><strong>-----V[e]da----</strong></div>
+<div align='center' ><strong>&ensp;&nbsp;V[E]da</strong></div>
 
-<div align='center' ><strong>----GL[a]DOS--</strong></div>
+<div align='center' ><strong>&nbsp;&nbsp;&nbsp;&nbsp;GL[A]DOS</strong></div>
 
-<div align='center' ><strong>--Mar[v]in----</strong></div>
+<div align='center' ><strong>Mar[V]in&ensp;&nbsp;</strong></div>
 
-<div align='center' ><strong>----Gr[e]ta----</strong></div>
+<div align='center' ><strong>Gr[E]ta</strong></div>
 
-<div align='center' ><strong>----Ha[r]o-----</strong></div>
+<div align='center' ><strong>Ha[R]o&ensp;</strong></div>
 
 ---
+
 ## Modules
 
 ### WallE
-Data storing module.
+Data storage module.
 
 ### Veda
-Main Connection module to exchange.
+API control module.
 
 ### GLaDOS
-Main Control for all models.
+Central control module for all modules.
 
 ### Marvin
 Main Control module for strategies.
 
 ### Greta
-Testing and simulation module.
+Backtesting module.
 
 ### Haro
 Web UI module.
