@@ -1,5 +1,5 @@
 # Weaver
-> An automatic crypto trading system
+> An automatic trading system
 
 <div align='center' ><strong>&ensp;&ensp;&nbsp;&nbsp;&nbsp;[W]allE</strong></div>
 
