@@ -11,26 +11,26 @@ from decimal import Decimal
 from datetime import datetime
 
 
-def create_user_json():
+def create_env_json():
     """
-        Check if the user.json exists. If not, copy the base.json as the initial user.json
+        Check if the .env exists. If not, copy the .env.example as the initial .env
 
         No Return
     """
-    if os.path.exists(GLOBAL_USER_JSON_PATH) == False:
-        copyfile(GLOBAL_BASE_JSON_PATH, GLOBAL_USER_JSON_PATH)
+    if os.path.exists(GLOBAL_ENV_JSON_PATH) == False:
+        copyfile(GLOBAL_ENV_EXAMPLE_JSON_PATH, GLOBAL_ENV_JSON_PATH)
 
 
-def get_user_json():
+def get_env_json():
     """
-        Get the user info from the user.json.
+        Get the user info from the .env.
 
         Returns the user info. (E.g. api key, secret key, etc.)
     """
-    create_user_json()
+    create_env_json()
 
-    user_json = json.load(open(GLOBAL_USER_JSON_PATH))
-    return user_json['api_key'], user_json['secret_key']
+    env_json = json.load(open(GLOBAL_ENV_JSON_PATH))
+    return env_json['api_key'], env_json['secret_key']
 
 
 def get_kraken_signature(urlpath, data):
@@ -268,12 +268,12 @@ def main():
 if __name__ == "__main__":
     # All asset codes https://support.kraken.com/hc/en-us/articles/360001185506-How-to-interpret-asset-codes
 
-    GLOBAL_BASE_JSON_PATH = 'usr/base.json'
-    GLOBAL_USER_JSON_PATH = 'usr/user.json'
+    GLOBAL_ENV_EXAMPLE_JSON_PATH = 'usr/base.json'
+    GLOBAL_ENV_JSON_PATH = '.env'
     GLOBAL_LOG_FILE_PATH = 'log/log.txt'
     GLOBAL_API_URI = "https://api.kraken.com"
     GLOBAL_FNG_URI = "https://api.alternative.me/fng/"  # Fear and Greed Index api uri
-    GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_user_json()
+    GLOBAL_API_KEY, GLOBAL_SECRET_KEY = get_env_json()
     GLOBAL_FNG_DEADZONE = 10
     GLOBAL_SLEEP_MIN = 300  # 300 sec, 5 min
     GLOBAL_SLEEP_MAX = 47800  # 47800 sec, 13hr
