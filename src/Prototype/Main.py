@@ -268,7 +268,7 @@ def main():
 if __name__ == "__main__":
     # All asset codes https://support.kraken.com/hc/en-us/articles/360001185506-How-to-interpret-asset-codes
 
-    GLOBAL_ENV_EXAMPLE_JSON_PATH = 'usr/base.json'
+    GLOBAL_ENV_EXAMPLE_JSON_PATH = '.env.example'
     GLOBAL_ENV_JSON_PATH = '.env'
     GLOBAL_LOG_FILE_PATH = 'log/log.txt'
     GLOBAL_API_URI = "https://api.kraken.com"
