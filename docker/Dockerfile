@@ -24,7 +24,7 @@ RUN apk add --no-cache --virtual .build-deps \
     build-base gcc musl-dev libffi-dev openssl-dev \
     && pip install flask \
     && pip install flask_sqlalchemy \
-    && apk del .build-deps
+    && apk del .build-deps wget
 
 # Set environment variables
 ENV DOCKER_WEB_PORT=$DOCKER_WEB_PORT
