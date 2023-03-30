@@ -1,24 +1,25 @@
-FROM python:3.9-alpine
+FROM python:alpine
+
+# Update and remove dropbear for OpenSSH
+RUN apk update && \
+    apk del dropbear
 
 # Set the timezone
-RUN apk update && \
-    apk add --no-cache tzdata
-
-RUN apk add --no-cache openssh
+RUN apk add --no-cache tzdata
 
 # This is what make vscode remote-ssh work
-RUN apk add --no-cache gcompat libstdc++ curl bash
-
-# As alpine by default use busybox and some common utilities behave differently, like grep
-RUN apk add --no-cache grep
-
+RUN apk add --no-cache wget curl && \
+    apk add --no-cache gcompat libstdc++6 git bash && \
+    apk add --no-cache openssh && \
+    apk add --no-cache grep
+    
 # Define build arguments
 ARG DOCKER_WEB_PORT
 ARG DOCKER_SSH_PORT
 ARG SSH_USERNAME
 ARG SSH_PASSWORD
 
-# Install necessary packages
+# Install necessary python packages
 RUN apk add --no-cache --virtual .build-deps \
     build-base gcc musl-dev libffi-dev openssl-dev \
     && pip install flask \
@@ -42,7 +43,16 @@ RUN adduser -D -g '' $SSH_USERNAME && \
 EXPOSE $DOCKER_WEB_PORT
 EXPOSE $DOCKER_SSH_PORT
 
+# Generate SSH credentials
 RUN ssh-keygen -A
+
+# in /etc/ssh/sshd-config, set
+# AllowTcpForwarding yes
+# PermitTunnel       yes
+# For VSCode Remote SSH
+RUN sed -i 's/^#AllowTcpForwarding\s.*/AllowTcpForwarding yes/' /etc/ssh/sshd_config && \ 
+    sed -i 's/^#PermitTunnel\s.*/PermitTunnel yes/' /etc/ssh/sshd_config
+
 
 # Start the SSH daemon
 CMD ["/usr/sbin/sshd", "-D"]
