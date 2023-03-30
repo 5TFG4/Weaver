@@ -1,8 +1,8 @@
 FROM python:alpine
 
 # Update and remove dropbear for OpenSSH
-RUN apk update && \
-    apk del dropbear
+RUN apk del dropbear && \
+    apk update
 
 # Set the timezone
 RUN apk add --no-cache tzdata
@@ -46,7 +46,7 @@ EXPOSE $DOCKER_SSH_PORT
 # Generate SSH credentials
 RUN ssh-keygen -A
 
-# in /etc/ssh/sshd-config, set
+# In /etc/ssh/sshd-config, set
 # AllowTcpForwarding yes
 # PermitTunnel       yes
 # For VSCode Remote SSH
