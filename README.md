@@ -34,3 +34,8 @@ Backtesting module.
 
 ### Haro
 Web UI module.
+
+---
+
+## How to run the bot
+`python -m weaver`
