@@ -1,26 +1,24 @@
-import asyncio
-from .trading_engine import start_trading
-from src.WallE import WallE
-from src.Veda import Veda
-from src.Marvin import Marvin
-from src.Greta import Greta
-from src.Haro import Haro
+#from .glados_core import GLaDOSCore
+from ..models import Trade
+#from .trading_engine import TradingEngine
+from .event_handlers import EventHandler
 
 class GLaDOS:
-    def __init__(self):
-        self.walle = WallE()
-        self.veda = Veda()
-        self.marvin = Marvin()
-        self.greta = Greta()
-        self.haro = Haro()
-        # other initialization code
-
-    # other methods and event handlers
-    async def run(self):
-        print("GLaDOS")
-        await start_trading()
+    _instance = None
     
-if __name__ == '__main__':
-    glados = GLaDOS()
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(glados.run())
+    def __new__(cls, veda):
+        if not cls._instance:
+            cls._instance = super().__new__(cls, veda)
+            #cls.walle = WallE()
+            cls.veda = veda
+            # cls.marvin = Marvin()
+            # cls.greta = Greta()
+            # cls.haro = Haro()
+            cls.event_handler = EventHandler()
+        return cls._instance
+    
+    async def start_trading(self):
+        while True:
+            trade_data = await self.veda.get_trade_data()
+            #trade = Trade.from_dict(trade_data[0])
+            self.event_handler.handle_trade(trade_data[0])

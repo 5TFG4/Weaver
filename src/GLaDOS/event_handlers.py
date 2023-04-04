@@ -1,6 +1,11 @@
-from .models import Trade
+from ..models import Trade
+#from .glados_core import GLaDOSCore
 
-class TradeEventHandler:
+class EventHandler:
+    def __init__(self):
+        #self.glados = GLaDOSCore()
+        pass
+        
     def handle_trade(self, trade: Trade):
-        # 处理交易数据
+        print("handle_trade")
         pass
