@@ -1,5 +1,5 @@
 from ..models import Trade
-from .glados_core import GLaDOSCore
+from .glados import GLaDOSCore
 
 class TradingEngine:
     def __init__(self):

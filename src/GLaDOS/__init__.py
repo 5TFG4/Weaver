@@ -1,24 +1,21 @@
-#from .glados_core import GLaDOSCore
-from ..models import Trade
-#from .trading_engine import TradingEngine
-from .event_handlers import EventHandler
+# #from .glados_core import GLaDOSCore
+# from ..models import Trade
+# #from .trading_engine import TradingEngine
+# from .event_handlers import EventHandler
+import enum
 
-class GLaDOS:
-    _instance = None
-    
-    def __new__(cls, veda):
-        if not cls._instance:
-            cls._instance = super().__new__(cls, veda)
-            #cls.walle = WallE()
-            cls.veda = veda
-            # cls.marvin = Marvin()
-            # cls.greta = Greta()
-            # cls.haro = Haro()
-            cls.event_handler = EventHandler()
-        return cls._instance
-    
-    async def start_trading(self):
-        while True:
-            trade_data = await self.veda.get_trade_data()
-            #trade = Trade.from_dict(trade_data[0])
-            self.event_handler.handle_trade(trade_data[0])
+ALPINE_RELEASE_FILE = "/etc/alpine-release"
+
+class CoreState(enum.Enum):
+    """Represent the current state of Weaver."""
+
+    not_running = "NOT_RUNNING"
+    starting = "STARTING"
+    running = "RUNNING"
+    stopping = "STOPPING"
+    final_write = "FINAL_WRITE"
+    stopped = "STOPPED"
+
+    def __str__(self) -> str:
+        """Return the event."""
+        return self.value
