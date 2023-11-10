@@ -16,10 +16,13 @@ ARG DOCKER_SSH_PORT
 ARG SSH_USERNAME
 ARG SSH_PASSWORD
 
+# Copy the pip requirements.txt
+COPY requirements.txt /tmp/
+
 # Install necessary python packages
 RUN apt-get update && \
     apt-get install -y build-essential libssl-dev libffi-dev && \
-    pip install flask flask_sqlalchemy && \
+    pip install -r /tmp/requirements.txt && \
     rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
