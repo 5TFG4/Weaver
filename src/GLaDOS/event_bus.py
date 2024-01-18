@@ -9,7 +9,9 @@ class EventBus:
             self.event_handlers[event_name] = []
         self.event_handlers[event_name].append(handler)
 
-    async def emit_event(self, event_name, *args, **kwargs):
+    def emit_event(self, event_name, *args, **kwargs):
         handlers = self.event_handlers.get(event_name, [])
         for handler in handlers:
-            asyncio.create_task(handler(*args, **kwargs))
+            # 使用 loop.create_task 以保证 "fire and forget"
+            loop = asyncio.get_event_loop()
+            loop.create_task(handler(*args, **kwargs))

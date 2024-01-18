@@ -20,15 +20,32 @@ class Controller:
         self.api_handler = ApiHandler(self.veda)
         self.event_bus = EventBus()
         self.error_handler = ErrorHandler()
+        
+        self.register_events()
+        
         self.running = True
 
-    async def run(self):
-        while self.running:
-            symbols = ["BTC/USD"]
+    def register_events(self):
+        self.event_bus.register_event("fetch_data_btc/usd", self.fetch_data_handler("BTC/USD", 2))
+        self.event_bus.register_event("fetch_data_eth/usd", self.fetch_data_handler("ETH/USD", 1))
+
+    def fetch_data_handler(self, symbol, sleepTime):
+        async def handler():
             start_date = datetime.strptime("2024-01-01", "%Y-%m-%d")
-            data = await self.api_handler.get_stock_data("alpaca", symbols, start_date)
-            print (data.df.head(20))
-            await asyncio.sleep(1)  # 示例: 休眠1秒
+            data = await self.api_handler.get_stock_data("alpaca", [symbol], start_date)
+            #print(f"Data for {symbol}:")
+            #print(data.df.head(20))
+            print(symbol)
+            await asyncio.sleep(sleepTime)
+            self.event_bus.emit_event(f"fetch_data_{symbol.lower()}")
+        return handler
+
+    async def run(self):
+        self.event_bus.emit_event("fetch_data_btc/usd")
+        self.event_bus.emit_event("fetch_data_eth/usd")
+
+        while self.running:
+            await asyncio.sleep(1)
 
     def stop(self):
         self.running = False
