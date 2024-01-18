@@ -1,9 +1,9 @@
 import asyncio
-from src.GLaDOS import create_app
+from src.GLaDOS.controller import Controller
 
 async def main():
-  app = create_app()
-  await app.start()
+    controller = Controller()
+    await controller.run()
 
-if __name__ == '__main__':
-  asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

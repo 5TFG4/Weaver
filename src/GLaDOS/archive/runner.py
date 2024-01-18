@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from Veda.veda import Veda
+from src.Veda.api_handler import Veda
 
 from .glados import GLaDOS
 
