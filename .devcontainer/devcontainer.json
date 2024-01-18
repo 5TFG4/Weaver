@@ -1,7 +1,7 @@
 {
 	"name": "Weaver",
 	"dockerComposeFile": "../docker-compose.dev.yml",
-	"service": "app",
-	"workspaceFolder": "/app",
+	"service": "weaver_dev",
+	"workspaceFolder": "/weaver",
 	"extensions": ["ms-python.python"]
 }

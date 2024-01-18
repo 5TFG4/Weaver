@@ -1,10 +1,10 @@
 version: '3.8'
 services:
-  app:
+  weaver_dev:
     build: .
     ports:
-      - "8000:8000"
+      - "${HOST_PORT}:${CONTAINER_PORT}"
     volumes:
-      - .:/app
+      - .:/weaver
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
