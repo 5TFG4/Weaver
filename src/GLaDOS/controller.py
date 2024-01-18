@@ -18,7 +18,7 @@ class Controller:
         self.data_manager = DataManager()
         self.strategy_loader = StrategyLoader()
         self.api_handler = ApiHandler(self.veda)
-        self.event_bus = EventBus()
+        self.event_bus = EventBus(min_interval=6)
         self.error_handler = ErrorHandler()
         
         self.register_events()
@@ -26,8 +26,8 @@ class Controller:
         self.running = True
 
     def register_events(self):
-        self.event_bus.register_event("fetch_data_btc/usd", self.fetch_data_handler("BTC/USD", 2))
-        self.event_bus.register_event("fetch_data_eth/usd", self.fetch_data_handler("ETH/USD", 1))
+        self.event_bus.register_event("fetch_data_btc/usd", self.fetch_data_handler("BTC/USD", 12))
+        self.event_bus.register_event("fetch_data_eth/usd", self.fetch_data_handler("ETH/USD", 2))
 
     def fetch_data_handler(self, symbol, sleepTime):
         async def handler():
