@@ -48,8 +48,12 @@ weaver/
 │   └── workflows/          # GitHub Actions workflows directory
 │       └── ci_cd.yml       # CI/CD workflow configuration file
 │
+├── .devcontainer/
+│   └── devcontainer.json
+│
 ├── Dockerfile              # Docker configuration file
-├── docker-compose.yml      # Docker Compose configuration file
+├── docker-compose.dev.yml  # Docker Compose configuration file for dev env
+├── docker-compose.pord.yml # Docker Compose configuration file for prod env
 ├── .env                    # Environment configuration file (not to be version controlled)
 ├── .dockerignore           # Docker ignore file
 ├── .gitignore              # Git ignore file
