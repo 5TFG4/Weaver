@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from datetime import datetime
 
@@ -28,6 +29,8 @@ class Controller:
     def register_events(self):
         self.event_bus.register_event("fetch_data_btc/usd", self.fetch_data_handler("BTC/USD", 12))
         self.event_bus.register_event("fetch_data_eth/usd", self.fetch_data_handler("ETH/USD", 2))
+        self.event_bus.register_event("account_details", self.fetch_account_handler(6))
+        self.event_bus.register_event("assets_details", self.fetch_assets_handler(6))
 
     def fetch_data_handler(self, symbol, sleepTime):
         async def handler():
@@ -39,10 +42,31 @@ class Controller:
             await asyncio.sleep(sleepTime)
             self.event_bus.emit_event(f"fetch_data_{symbol.lower()}")
         return handler
+    
+    def fetch_account_handler(self, sleepTime):
+        async def handler():
+            account_details = await self.api_handler.get_account_details("alpaca")
+            print(account_details)
+            await asyncio.sleep(sleepTime)
+            self.event_bus.emit_event(f"account_details")
+        return handler
+    
+    def fetch_assets_handler(self, sleepTime):
+        async def handler():
+            assets = await self.api_handler.get_assets("alpaca")
+
+            #for asset in assets:
+                #print(asset)
+            
+            await asyncio.sleep(sleepTime)
+            self.event_bus.emit_event(f"assets_details")
+        return handler
 
     async def run(self):
         self.event_bus.emit_event("fetch_data_btc/usd")
         self.event_bus.emit_event("fetch_data_eth/usd")
+        self.event_bus.emit_event("account_details")
+        self.event_bus.emit_event("assets_details")
 
         while self.running:
             await asyncio.sleep(1)

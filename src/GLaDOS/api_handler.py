@@ -9,3 +9,11 @@ class ApiHandler:
     async def place_order(self, source, order_details):
         # 调用Veda模块下单
         return await self.veda.place_order(source, order_details)
+    
+    async def get_account_details(self, source):
+        # 调用Veda模块获取账户详情
+        return await self.veda.get_account_details(source)
+    
+    async def get_assets(self, source):
+        # 调用Veda模块获取资产信息
+        return await self.veda.get_assets(source)

@@ -1,10 +1,18 @@
+import os
+
+from src.constants import ALPACA
+
 from .alpaca_api_handler import AlpacaApiHandler
 # 其他API处理器的导入...
 
 class Veda:
     def __init__(self):
+        # 读取环境变量
+        alpaca_api_key = os.getenv('ALPACA_PAPER_API_KEY')
+        alpaca_api_secret = os.getenv('ALPACA_PAPER_API_SECRET')
+
         self.handlers = {
-            "alpaca": AlpacaApiHandler(),
+            ALPACA: AlpacaApiHandler(api_key=alpaca_api_key, api_secret=alpaca_api_secret),
             # 初始化其他交易所的API处理器...
         }
 
@@ -19,5 +27,19 @@ class Veda:
         handler = self.handlers.get(source)
         if handler:
             return await handler.place_order(*args, **kwargs)
+        else:
+            raise ValueError(f"API handler for {source} not found")
+        
+    async def get_account_details(self, source, *args, **kwargs):
+        handler = self.handlers.get(source)
+        if handler:
+            return await handler.get_account_details(*args, **kwargs)
+        else:
+            raise ValueError(f"API handler for {source} not found")
+        
+    async def get_assets(self, source, *args, **kwargs):
+        handler = self.handlers.get(source)
+        if handler:
+            return await handler.get_assets(*args, **kwargs)
         else:
             raise ValueError(f"API handler for {source} not found")

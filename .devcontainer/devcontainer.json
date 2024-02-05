@@ -3,5 +3,11 @@
 	"dockerComposeFile": "../docker-compose.dev.yml",
 	"service": "weaver_dev",
 	"workspaceFolder": "/weaver",
-	"extensions": ["ms-python.python"]
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python"
+			]
+		}
+	}
 }

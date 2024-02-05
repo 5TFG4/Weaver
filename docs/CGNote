@@ -1,8 +1,10 @@
-我需要做一个python自动交易机器人。我的要求是可以部署在我的服务器上24/7运行，其次为了方便部署使用docker配置开发和部署环境。然后要可以通过web来访问机器人的交易信息和记录。还有需要有记录历史交易数据并回测策略的能力。机器人要有兼容多个交易所api的能力。目前确定下的交易所只有alpaca一个，使用alpaca-py库进行api通信。同时使用GitHub Secrets来管理敏感信息以及GitHub Actions来持续部署。整个项目由vscode remote-containers连接至dev容器开发。目前项目的架构如下。
+我需要做一个python自动交易机器人。我的要求是可以部署在我的服务器上24/7运行，其次为了方便部署使用docker配置开发和部署环境。然后要可以通过web来访问机器人的交易信息和记录。还有需要有记录历史交易数据并回测策略的能力。机器人要有兼容多个交易所api的能力。目前确定下的交易所只有alpaca一个，使用alpaca-py库进行api通信。同时使用GitHub Secrets来管理敏感信息以及GitHub Actions来持续部署。整个项目由vscode remote-containers连接至dev容器开发, devcontainer.json已经完善可以正常使用。目前项目的架构如下。
 
 weaver/
 │
 ├── src/                    # Source code directory
+│   ├── __init__.py         # Makes src a Python package
+│   ├── constants.py        # Global constants
 │   ├── WallE/              # Data storage module
 │   │   ├── __init__.py
 │   │   ├── data_storage.py     # Data storage functions
