@@ -13,3 +13,6 @@ class BaseApiHandler:
     
     async def get_assets(self, *args, **kwargs):
         raise NotImplementedError("This method should be implemented by subclasses.")
+    
+    async def submit_market_order(self, *args, **kwargs):
+        raise NotImplementedError("This method should be implemented by subclasses.")

@@ -17,3 +17,7 @@ class ApiHandler:
     async def get_assets(self, source):
         # 调用Veda模块获取资产信息
         return await self.veda.get_assets(source)
+    
+    async def submit_market_order(self, source, symbol, qty, side):
+        # 调用Veda模块下单
+        return await self.veda.submit_market_order(source, symbol, qty, side)

@@ -43,3 +43,10 @@ class Veda:
             return await handler.get_assets(*args, **kwargs)
         else:
             raise ValueError(f"API handler for {source} not found")
+        
+    async def submit_market_order(self, source, *args, **kwargs):
+        handler = self.handlers.get(source)
+        if handler:
+            return await handler.submit_market_order(*args, **kwargs)
+        else:
+            raise ValueError(f"API handler for {source} not found")
