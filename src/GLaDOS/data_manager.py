@@ -1,4 +1,4 @@
-from error_handler import ErrorHandler
+from .error_handler import ErrorHandler
 
 class DataManager:
     def __init__(self):
