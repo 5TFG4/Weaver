@@ -3,7 +3,7 @@ import sys
 #import asyncio
 # from src.GLaDOS import GLaDOS
 # from src.WallE import WallE
-from src.Veda.api_handler import Veda
+from src.Veda import Veda
 # from src.Marvin import Marvin
 # from src.Greta import Greta
 # from src.Haro import Haro
