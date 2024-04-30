@@ -1,6 +1,6 @@
 {
 	"name": "Weaver",
-	"dockerComposeFile": "../docker-compose.dev.yml",
+	"dockerComposeFile": "../docker/docker-compose.dev.yml",
 	"service": "weaver_dev",
 	"workspaceFolder": "/weaver",
 	"customizations": {

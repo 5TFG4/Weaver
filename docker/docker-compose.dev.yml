@@ -1,11 +1,13 @@
 version: '3.8'
 services:
   weaver_dev:
-    build: .
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
     ports:
       - "${HOST_PORT}:${CONTAINER_PORT}"
     volumes:
-      - .:/weaver
+      - ../:/weaver
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     env_file:

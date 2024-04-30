@@ -1,7 +1,9 @@
 version: '3.8'
 services:
   weaver_prod:
-    build: .
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
     ports:
       - "${HOST_PORT}:${CONTAINER_PORT}"
     volumes:
