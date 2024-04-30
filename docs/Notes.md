@@ -1,6 +1,8 @@
 weaver/
 │
 ├── src/                    # Source code directory
+│   ├── __init__.py         # Makes src a Python package
+│   ├── constants.py        # Global constants
 │   ├── WallE/              # Data storage module
 │   │   ├── __init__.py
 │   │   ├── data_storage.py     # Data storage functions
@@ -16,7 +18,7 @@ weaver/
 │   ├── GLaDOS/             # Main control system
 │   │   ├── __init__.py
 │   │   ├── api_handler.py
-│   │   ├── controller.py
+│   │   ├── glados.py
 │   │   ├── data_manager.py
 │   │   ├── error_handler.py
 │   │   ├── event_bus.py
@@ -57,13 +59,16 @@ weaver/
 ├── .devcontainer/
 │   └── devcontainer.json
 │
-├── Dockerfile              # Docker configuration file
-├── docker-compose.dev.yml  # Docker Compose configuration file for dev env
-├── docker-compose.pord.yml # Docker Compose configuration file for prod env
-├── .env                    # Environment configuration file (not to be version controlled)
+├── docker/
+│   ├── Dockerfile              # Docker configuration file
+│   ├── docker-compose.dev.yml  # Docker Compose configuration file for dev env
+│   ├── docker-compose.pord.yml # Docker Compose configuration file for prod env
+│   ├── .env                    # Environment configuration file (not to be version controlled)
+│   ├── .env.example            # Environment configuration file example
+│   ├── .dockerignore           # Docker ignore file
+│   └── requirements.txt        # List of Python dependencies
+│
 ├── weaver.py                    # Main entrypoint
-├── .dockerignore           # Docker ignore file
 ├── .gitignore              # Git ignore file
 ├── README.md               # Project documentation
-├── LICENSE                 # MIT License file
-└── requirements.txt        # List of Python dependencies
+└── LICENSE                 # MIT License file
