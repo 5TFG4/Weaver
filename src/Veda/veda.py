@@ -3,17 +3,17 @@ import os
 from src.constants import ALPACA
 
 from .alpaca_api_handler import AlpacaApiHandler
-# 其他API处理器的导入...
+# Other API imports...
 
 class Veda:
     def __init__(self):
-        # 读取环境变量
+        # Read ENV
         alpaca_api_key = os.getenv('ALPACA_PAPER_API_KEY')
         alpaca_api_secret = os.getenv('ALPACA_PAPER_API_SECRET')
 
         self.handlers = {
             ALPACA: AlpacaApiHandler(api_key=alpaca_api_key, api_secret=alpaca_api_secret),
-            # 初始化其他交易所的API处理器...
+            # Init other API handler...
         }
 
     async def get_data(self, source, *args, **kwargs):

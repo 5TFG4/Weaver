@@ -3,5 +3,5 @@ class StrategyLoader:
         self.strategies = []
 
     def load_strategy(self, strategy):
-        # 加载策略的逻辑
+        # Load strategy
         pass
