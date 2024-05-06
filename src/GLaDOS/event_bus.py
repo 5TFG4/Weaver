@@ -23,11 +23,11 @@ class EventBus:
         else:
             if event_name not in self.pending_events:
                 self.pending_events[event_name] = (args, kwargs)
-                asyncio.create_task(self.trigger_event_after_delay(event_name))
+                asyncio.create_task(self.trigger_event_after_delay(event_name, *args, **kwargs))
             else:
                 self.pending_events[event_name] = (args, kwargs)
 
-    async def trigger_event_after_delay(self, event_name):
+    async def trigger_event_after_delay(self, event_name, *args, **kwargs):
         await asyncio.sleep(self.min_interval - (time.time() - self.last_execution_time[event_name]))
         if event_name in self.pending_events:
             args, kwargs = self.pending_events.pop(event_name)
