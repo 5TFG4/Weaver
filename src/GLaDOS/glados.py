@@ -8,7 +8,6 @@ from src.Veda.veda import Veda
 from src.constants import ALPACA
 
 from .data_manager import DataManager
-from .strategy_loader import StrategyLoader
 from .api_handler import ApiHandler
 from .event_bus import EventBus
 from .error_handler import ErrorHandler
@@ -19,7 +18,6 @@ class GLaDOS:
         self.veda = Veda()
         # Init modules
         self.data_manager = DataManager()
-        self.strategy_loader = StrategyLoader()
         self.api_handler = ApiHandler(self.veda)
         self.event_bus = EventBus(min_interval=6)
         self.error_handler = ErrorHandler()
