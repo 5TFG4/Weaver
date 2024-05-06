@@ -12,8 +12,7 @@ weaver/
 │   │   ├── __init__.py
 │   │   ├── alpaca_api_handler.py      # Alpaca API handling functions
 │   │   ├── base_api_handler.py      # Base API handling functions
-│   │   ├── veda.py
-│   │   └── data_uploader.py    # Data uploading functions
+│   │   └── veda.py
 │   │
 │   ├── GLaDOS/             # Main control system
 │   │   ├── __init__.py
