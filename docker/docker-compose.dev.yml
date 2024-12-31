@@ -5,13 +5,16 @@ services:
       context: ../
       dockerfile: docker/Dockerfile
     ports:
-      - "${HOST_PORT}:${CONTAINER_PORT}"
+      - "${HOST_PORT}:${CONTAINER_PORT}"  # FastAPI
+      - "${DEBUG_PORT}:${DEBUG_PORT}"     # Debugpy
     volumes:
       - ../:/weaver
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
+    command: >
+      python -m debugpy --listen 0.0.0.0:${DEBUG_PORT} -m uvicorn main:app --host 0.0.0.0 --port ${CONTAINER_PORT} --reload
 
   db:
     image: postgres
@@ -20,7 +23,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_DEV_PORT}:5432"
+      - "${POSTGRES_DEV_PORT}:5432"     # PostgreSQL
     volumes:
       - weaver_dev_postgres_data:/var/lib/postgresql/data
 
