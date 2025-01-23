@@ -1,170 +1,178 @@
-### Project Background and Goals
+### Project Background and Objectives
 
-**Goals**:
-Develop a Python-based automated trading bot that operates 24/7 on a local server. The bot will be containerized using Docker and will include the following core functionalities:
+**Objectives:**
+Build a Python-based automated trading bot, deployable on a local server, capable of 24/7 operation. The bot will be containerized using Docker and support the following core functionalities:
 
-- Interact with multiple exchange APIs (initially supporting Alpaca).
-- Dynamically load and execute complex trading strategies.
-- Record trading history and support backtesting strategies using local data.
-- Provide a React.js-based web interface to monitor trading information and logs.
+- Integration with multiple exchange APIs (with priority support for Alpaca).
+- Dynamic loading and execution of trading strategies.
+- Logging of trade history with support for strategy backtesting using local data.
+- A React.js-based web interface for viewing trading data and records.
 
-**Features**:
+**Key Features:**
 
-- Modular design with extensibility in mind.
+- Modular design to facilitate scalability and extensibility.
 - Backend architecture based on RESTful APIs.
-- Secure sensitive information using GitHub Secrets and enable CI/CD with GitHub Actions.
-- Task scheduling and event-driven design using Celery integrated with RabbitMQ.
+- Sensitive data managed using GitHub Secrets, with CI/CD workflows implemented via GitHub Actions.
+- Task scheduling and event-driven architecture powered by Celery combined with RabbitMQ.
 
 ---
 
-### Module Breakdown
+### Module Overview
 
-#### **1. GLaDOS (Core Control System)**
+#### **1. GLaDOS (Main Control System)**
 
-- **Responsibilities**:
-  - Coordinate communication between modules, acting as the system’s central dispatcher.
-  - Expose RESTful API endpoints for frontend interactions.
-  - Retrieve market data from Veda and trigger strategy execution in Marvin.
-  - Log system activities and monitor system health.
-- **Design Characteristics**:
-  - Use Celery for asynchronous task distribution to other modules.
+- **Responsibilities:**
+  - Coordinate communication between modules, acting as the system’s central scheduler.
+  - Expose RESTful API endpoints for frontend interaction.
+  - Call Veda to fetch market data and trigger Marvin to execute strategies.
+  - Log actions and monitor system status.
+- **Design Features:**
+  - Tasks are distributed to other modules asynchronously via Celery.
 
-#### **2. Veda (API Data Processing Module)**
+#### **2. Veda (API Interaction Module)**
 
-- **Responsibilities**:
-  - Interact with exchange APIs to:
-    - Fetch market data.
-    - Retrieve account information.
-    - Execute buy/sell orders.
-  - Support historical data fetching and save it to the local database.
-  - Provide standardized interfaces to simplify extending support for additional exchanges.
-- **Design Characteristics**:
-  - Use Celery for handling high-concurrency tasks.
-  - Dynamically load exchange-specific implementations.
+- **Responsibilities:**
+  - Handle all interactions with exchanges, including:
+    - Fetching market data.
+    - Retrieving account information.
+    - Executing buy/sell orders.
+  - Support historical data fetching and save it to a local database.
+  - Provide standardized interfaces to facilitate the addition of new exchanges.
+- **Design Features:**
+  - Execute high-concurrency tasks using Celery.
+  - Dynamically load implementations for different exchanges.
 
 #### **3. WallE (Data Storage Module)**
 
-- **Responsibilities**:
-  - Manage the PostgreSQL database for storing trading records and market data.
+- **Responsibilities:**
+  - Manage the PostgreSQL database to store trading records and market data.
   - Provide efficient data read/write interfaces for other modules.
-  - Store strategy configurations and backtesting results.
-- **Design Characteristics**:
-  - Utilize SQLAlchemy as an ORM layer to support complex queries and transactions.
+  - Save strategy configurations and backtesting results.
+- **Design Features:**
+  - Utilize SQLAlchemy to implement an ORM layer, supporting complex queries and transaction handling.
 
 #### **4. Marvin (Strategy Execution Module)**
 
-- **Responsibilities**:
-  - Dynamically load strategy modules and generate trading signals based on market data.
-  - Provide a unified interface to standardize strategy module interactions.
-  - Support multi-strategy combinations and complex decision logic.
-  - Directly request additional data from Veda when required for high-frequency scenarios.
-- **Design Characteristics**:
-  - Each strategy is implemented as an independent Python module for flexibility and maintainability.
-  - Return standardized results for seamless integration with GLaDOS.
+- **Responsibilities:**
+  - Dynamically load strategy modules and generate trade signals based on market data.
+  - Provide a unified interface to standardize the execution of all strategy modules.
+  - Support multi-strategy combinations and complex decision-making logic.
+  - Directly call Veda for additional data required for strategy logic.
+- **Design Features:**
+  - Each strategy is implemented as a standalone Python module for easy maintenance and extension.
+  - Returns standardized results for GLaDOS to process.
 
 #### **5. Greta (Backtesting Module)**
 
-- **Responsibilities**:
-  - Simulate trading strategies using historical data.
-  - Return backtesting results, including key performance metrics like profitability and risk.
-  - Store backtesting results in the database for future analysis.
-- **Design Characteristics**:
-  - Support flexible configurations to enable batch backtesting for multiple strategies.
+- **Responsibilities:**
+  - Use local historical data to simulate trades.
+  - Return backtesting results, including profitability and risk metrics.
+  - Save backtesting results to the database for future analysis.
+- **Design Features:**
+  - Support flexible backtesting configurations, enabling batch tests for multiple strategies.
 
 #### **6. Haro (Web UI Interaction Module)**
 
-- **Responsibilities**:
+- **Responsibilities:**
   - Provide a React.js-based frontend interface to display:
     - Account information.
     - Current strategy status.
-    - Historical trading logs.
+    - Historical trading records.
     - Backtesting results.
-  - Allow users to manage strategies and monitor system activity via the interface.
-- **Design Characteristics**:
-  - Use Axios for REST API communication.
-  - Support real-time data updates via WebSocket.
+  - Enable users to manage strategies and monitor the system through the interface.
+- **Design Features:**
+  - Use Axios to communicate with the backend via REST APIs.
+  - Support real-time data updates through WebSocket.
 
 ---
 
 ### Communication and Data Flow Design
 
-**Inter-Module Communication**:
+**Inter-Module Communication:**
 
-- **Core Architecture**:
-  - GLaDOS serves as the system’s central controller, managing communication between modules.
-  - GLaDOS communicates with the frontend via FastAPI, providing RESTful API endpoints.
-  - Celery and RabbitMQ facilitate asynchronous task scheduling and message passing between modules.
+- **Core Architecture:**
+  - GLaDOS serves as the core of the system, coordinating communication between modules.
+  - GLaDOS interacts with the frontend through RESTful APIs provided by FastAPI.
+  - Inter-module communication is facilitated by Celery and RabbitMQ for asynchronous task distribution and result processing.
 
-**Data Flow Example**:
+**Example Data Flow:**
 
-1. GLaDOS periodically triggers Veda to fetch market data, broadcasting the results via Celery to Marvin.
-2. Marvin processes the market data, generates trading signals, and sends instructions back to GLaDOS.
-3. GLaDOS forwards these instructions to Veda, which executes the trades using exchange APIs.
-4. Execution results are sent back to GLaDOS via Celery, logged, and optionally displayed on the frontend.
+1. GLaDOS periodically calls Veda to fetch market data, which is distributed to Marvin via Celery.
+2. Marvin processes the data and generates trading instructions, sending them back to GLaDOS.
+3. GLaDOS forwards the trading instructions to Veda, which interacts with the exchange API to execute trades.
+4. Execution results are passed back to GLaDOS via Celery. GLaDOS logs the results and notifies the frontend.
 
 ---
 
 ### Tech Stack
 
-- **Backend**: FastAPI (RESTful API)
-- **Frontend**: React.js
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy
-- **Task Scheduling**: Celery + RabbitMQ
-- **Containerization**: Docker + Docker Compose
-- **CI/CD**: GitHub Actions
-- **Monitoring and Logging**: Prometheus/Grafana + Python logging
+- **Backend:** FastAPI (RESTful API)
+- **Frontend:** React.js
+- **Database:** PostgreSQL
+- **ORM:** SQLAlchemy
+- **Task Scheduling:** Celery + RabbitMQ
+- **Containerization:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions
+- **Monitoring and Logging:** Prometheus/Grafana + Python logging
 
 ---
 
 ### Directory Structure
 
 ```plaintext
-project/
-├── backend/
-│   ├── glados/        # Core Control System
+weaver/
+├── src/               # Main code directory
+│   ├── glados/        # Main Control System
 │   │   ├── __init__.py
 │   │   ├── controller.py  # Core logic
-│   │   ├── routes.py      # FastAPI route definitions
+│   │   ├── routes.py      # FastAPI routes
 │   │   ├── tasks.py       # Celery tasks
-│   │   └── tests/         # Test files
-│   ├── veda/          # API Data Processing Module
+│   ├── veda/          # API Interaction Module
 │   │   ├── __init__.py
-│   │   ├── alpaca.py       # Alpaca exchange implementation
+│   │   ├── alpaca.py       # Alpaca exchange integration
 │   │   ├── tasks.py        # Celery tasks
-│   │   └── tests/          # Test files
 │   ├── walle/         # Data Storage Module
 │   │   ├── __init__.py
-│   │   ├── models.py       # Database models
+│   │   ├── models.py       # Data models
 │   │   ├── database.py     # Database connection logic
-│   │   └── tests/          # Test files
 │   ├── marvin/        # Strategy Execution Module
 │   │   ├── __init__.py
 │   │   ├── base_strategy.py  # Strategy base class
 │   │   ├── strategies/       # Strategy implementations
-│   │   └── tests/            # Test files
 │   ├── greta/         # Backtesting Module
 │   │   ├── __init__.py
 │   │   ├── backtest.py       # Backtesting logic
-│   │   └── tests/            # Test files
-│   ├── tasks.py       # Global Celery task definitions
-│   ├── main.py        # FastAPI entry point
-├── frontend/
-│   ├── public/
-│   ├── src/
+│   ├── haro/          # Frontend Module
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── App.js     # React entry point
-│   │   └── api.js     # API request wrapper
-├── docker/
-│   ├── backend.Dockerfile
-│   ├── frontend.Dockerfile
-│   ├── celery.Dockerfile
-│   └── docker-compose.yml
+│   │   ├── App.js          # React entry point
+│   │   └── api.js          # Frontend API abstraction
+│   ├── tasks.py       # Celery global tasks
+│   ├── main.py        # FastAPI entry point
+├── tests/             # Test directory
+│   ├── glados/        # GLaDOS tests
+│   ├── veda/          # Veda tests
+│   ├── walle/         # WallE tests
+│   ├── marvin/        # Marvin tests
+│   ├── greta/         # Greta tests
+│   ├── haro/          # Haro tests
+├── docker/            # Docker configuration directory
+│   ├── backend/       # Backend Docker configuration
+│   │   ├── Dockerfile
+│   │   ├── Dockerfile.dev
+│   │   ├── requirements.txt
+│   ├── frontend/      # Frontend Docker configuration
+│   │   ├── Dockerfile
+│   │   ├── Dockerfile.dev
+│   ├── .dockerignore
+│   ├── .env
+│   ├── .env.dev
+│   ├── docker-compose.yml
+│   ├── docker-compose.dev.yml
+│   ├── example.env
+│   └── example.env.dev
 ├── .github/
-│   ├── workflows/     # GitHub Actions configurations
-├── .env.example       # Environment variable template
-├── README.md          # Project documentation
-└── requirements.txt   # Python dependencies
+│   ├── workflows/     # GitHub Actions workflows
+└── README.md          # Project documentation
 ```
 

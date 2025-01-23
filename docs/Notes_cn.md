@@ -120,50 +120,59 @@
 ### 目录结构
 
 ```plaintext
-project/
-├── backend/
+weaver/
+├── src/               # 主代码目录
 │   ├── glados/        # 主控系统
 │   │   ├── __init__.py
 │   │   ├── controller.py  # 核心逻辑
 │   │   ├── routes.py      # FastAPI 路由定义
 │   │   ├── tasks.py       # Celery 任务
-│   │   └── tests/         # 测试文件
 │   ├── veda/          # API接口数据处理模块
 │   │   ├── __init__.py
 │   │   ├── alpaca.py       # Alpaca 交易所支持
 │   │   ├── tasks.py        # Celery 任务
-│   │   └── tests/          # 测试文件
 │   ├── walle/         # 数据存储模块
 │   │   ├── __init__.py
 │   │   ├── models.py       # 数据模型
 │   │   ├── database.py     # 数据库连接逻辑
-│   │   └── tests/          # 测试文件
 │   ├── marvin/        # 策略执行模块
 │   │   ├── __init__.py
 │   │   ├── base_strategy.py  # 策略基类
 │   │   ├── strategies/       # 策略实现目录
-│   │   └── tests/            # 测试文件
 │   ├── greta/         # 回测模块
 │   │   ├── __init__.py
 │   │   ├── backtest.py       # 回测逻辑
-│   │   └── tests/            # 测试文件
-│   ├── tasks.py       # Celery 全局任务定义
-│   ├── main.py        # FastAPI 主入口
-├── frontend/
-│   ├── public/
-│   ├── src/
+│   ├── haro/          # 前端模块
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── App.js     # React 主入口
-│   │   └── api.js     # 前端 API 调用封装
-├── docker/
-│   ├── backend.Dockerfile
-│   ├── frontend.Dockerfile
-│   ├── celery.Dockerfile
-│   └── docker-compose.yml
+│   │   ├── App.js          # React 主入口
+│   │   └── api.js          # 前端 API 调用封装
+│   ├── tasks.py       # Celery 全局任务定义
+│   ├── main.py        # FastAPI 主入口
+├── tests/             # 测试目录
+│   ├── glados/        # GLaDOS 测试
+│   ├── veda/          # Veda 测试
+│   ├── walle/         # WallE 测试
+│   ├── marvin/        # Marvin 测试
+│   ├── greta/         # Greta 测试
+│   ├── haro/          # Haro 测试
+├── docker/            # Docker 配置目录
+│   ├── backend/       # 后端 Docker 配置
+│   │   ├── Dockerfile
+│   │   ├── Dockerfile.dev
+│   │   ├── requirements.txt
+│   ├── frontend/      # 前端 Docker 配置
+│   │   ├── Dockerfile
+│   │   ├── Dockerfile.dev
+│   ├── .dockerignore
+│   ├── .env
+│   ├── .env.dev
+│   ├── docker-compose.yml
+│   ├── docker-compose.dev.yml
+│   ├── example.env
+│   └── example.env.dev
 ├── .github/
 │   ├── workflows/     # GitHub Actions 配置
-├── .env.example       # 环境变量模板
-├── README.md          # 项目说明文档
-└── requirements.txt   # Python 依赖
+└── README.md          # 项目说明文档
 ```
+
