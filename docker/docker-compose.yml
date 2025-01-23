@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT}:8000"           # FastAPI
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - .env
+    command: >
+      gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:80"                       # Frontend port
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - REACT_APP_API_BASE_URL=http://backend:${HOST_PORT}
+    depends_on:
+      - backend
+    command: >
+      nginx -g 'daemon off;'
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: weaverdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PROD_PORT}:5432"  # PostgreSQL
+    volumes:
+      - weaver_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  weaver_postgres_data:

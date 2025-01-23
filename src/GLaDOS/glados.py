@@ -33,9 +33,9 @@ class GLaDOS:
         self.event_bus.register_event("submit_market_order", self.submit_market_order_handler)
 
     async def fetch_data_handler(self, symbol, sleepTime):
-        start_date = datetime.strptime("2024-01-01", "%Y-%m-%d")
+        start_date = datetime.strptime("2024-05-01", "%Y-%m-%d")
         data = await self.api_handler.get_stock_data(ALPACA, [symbol], start_date)
-        print(f"Data for {symbol}:")
+        #print(f"Data for {symbol}:")
         print(data.df.head(20))
         #print(symbol)
         await asyncio.sleep(sleepTime)
