@@ -3,3 +3,5 @@ flask_sqlalchemy
 alpaca-py
 SQLAlchemy
 psycopg2-binary
+debugpy
+uvicorn

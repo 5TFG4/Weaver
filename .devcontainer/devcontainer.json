@@ -1,7 +1,7 @@
 {
 	"name": "Weaver",
 	"dockerComposeFile": "../docker/docker-compose.dev.yml",
-	"service": "weaver_dev",
+	"service": "backend_dev",
 	"workspaceFolder": "/weaver",
 	"customizations": {
 		"vscode": {
