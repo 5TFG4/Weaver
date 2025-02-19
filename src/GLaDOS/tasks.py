@@ -4,7 +4,8 @@ import logging
 
 logger = logging.getLogger("celery.glados")
 
-celery_app = Celery('glados', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+# Update Celery configuration to use Redis as broker and backend.
+celery_app = Celery('glados', broker='redis://localhost:6379/0', backend='redis://localhost:6379/1')
 
 @celery_app.task
 def fetch_data_task(symbol, sleepTime):

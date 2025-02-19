@@ -13,7 +13,7 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - Modular design to facilitate scalability and extensibility.
 - Backend architecture based on RESTful APIs.
 - Sensitive data managed using GitHub Secrets, with CI/CD workflows implemented via GitHub Actions.
-- Task scheduling and event-driven architecture powered by Celery combined with RabbitMQ.
+- Task scheduling and event-driven architecture powered by Celery combined with Redis.
 
 ---
 
@@ -93,7 +93,7 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - **Core Architecture:**
   - GLaDOS serves as the core of the system, coordinating communication between modules.
   - GLaDOS interacts with the frontend through RESTful APIs provided by FastAPI.
-  - Inter-module communication is facilitated by Celery and RabbitMQ for asynchronous task distribution and result processing.
+  - Inter-module communication is facilitated by Celery and Redis for asynchronous task distribution and result processing.
 
 **Example Data Flow:**
 

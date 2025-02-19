@@ -13,7 +13,7 @@
 - 模块化设计，支持扩展。
 - 基于 RESTful API 的后端架构。
 - 敏感信息通过 GitHub Secrets 管理，使用 GitHub Actions 实现 CI/CD。
-- 以 Celery 为核心，结合 RabbitMQ，实现任务调度与事件驱动的结合。
+- 以 Celery 为核心，结合 Redis，实现任务调度与事件驱动的结合。
 
 ---
 
@@ -93,7 +93,7 @@
 - **核心架构**：
   - GLaDOS 作为系统核心，负责模块间的协调通信。
   - GLaDOS 与前端通过 FastAPI 提供 RESTful API 交互。
-  - 模块间通过 Celery 和 RabbitMQ 实现异步任务分发和结果处理。
+  - 模块间通过 Celery 和 Redis 实现异步任务分发和结果处理。
 
 **数据流示例**：
 

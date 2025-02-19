@@ -10,7 +10,11 @@ class GLaDOS:
 
     async def run(self):
         logger.info("Dispatching Celery task for BTC/USD...")
-        fetch_data_task.delay("BTC/USD", 1)
+        try:
+            fetch_data_task.delay("BTC/USD", 1)
+        except Exception as e:
+            logger.error(f"Failed to dispatch Celery task: {e}")
+            self.running = False  # Stop the loop if task dispatch fails
         while self.running:
             await asyncio.sleep(1)
 
