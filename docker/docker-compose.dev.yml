@@ -14,6 +14,8 @@ services:
       - .env.dev
     command: >
       python -m debugpy --listen 0.0.0.0:5678 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - backend
 
   frontend_dev:
     build:
@@ -41,5 +43,16 @@ services:
     volumes:
       - weaver_dev_postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
 volumes:
   weaver_dev_postgres_data:
+
+networks:
+  backend:
+    driver: bridge

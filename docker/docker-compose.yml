@@ -40,5 +40,14 @@ services:
     volumes:
       - weaver_postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:alpine
+    networks:
+      - backend
+
 volumes:
   weaver_postgres_data:
+
+networks:
+  backend:
+    driver: bridge
