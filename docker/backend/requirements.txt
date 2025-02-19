@@ -1,7 +1,8 @@
-flask
-flask_sqlalchemy
-alpaca-py
-SQLAlchemy
-psycopg2-binary
-debugpy
-uvicorn
+flask>=2.3,<3.0
+flask_sqlalchemy>=3.0,<4.0
+alpaca-py>=2.0,<3.0
+SQLAlchemy>=2.0,<3.0
+psycopg2-binary>=2.9,<3.0
+debugpy>=1.6,<2.0
+uvicorn>=0.20,<1.0
+celery>=5.2,<6.0
