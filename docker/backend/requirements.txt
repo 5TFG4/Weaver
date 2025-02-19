@@ -1,6 +1,6 @@
 flask>=2.3,<3.0
 flask_sqlalchemy>=3.0,<4.0
-alpaca-py>=2.0,<3.0
+alpaca-py>=0.38.0,<1.0
 SQLAlchemy>=2.0,<3.0
 psycopg2-binary>=2.9,<3.0
 debugpy>=1.6,<2.0
