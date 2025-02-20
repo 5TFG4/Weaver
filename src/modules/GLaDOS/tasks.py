@@ -1,11 +1,15 @@
 import time
+import asyncio
+from src.lib.constants import ALPACA
+from src.modules.Veda.veda import Veda
 from src.lib.logger import get_logger
 from src.config.celery_config import celery_app
 
 logger = get_logger("celery.glados")
 
-@celery_app.task()  # Use namespaced task name
-def fetch_data_task(symbol, sleepTime):
-    logger.info(f"[Celery] Dummy fetch_data event for symbol: {symbol}")
-    time.sleep(sleepTime)
-    return f"Fetched data for {symbol}"
+@celery_app.task()
+def fetch_data_task(symbol):
+    logger.info(f"[Celery] Fetching data for symbol: {symbol}")
+    veda = Veda()
+    data = asyncio.run(veda.get_data(ALPACA, symbols=symbol))
+    return data

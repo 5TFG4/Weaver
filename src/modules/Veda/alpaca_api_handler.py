@@ -1,3 +1,6 @@
+import asyncio
+import json
+from datetime import datetime
 from .base_api_handler import BaseApiHandler
 from alpaca.data.historical import CryptoHistoricalDataClient
 from alpaca.data.requests import CryptoBarsRequest
@@ -13,7 +16,7 @@ class AlpacaApiHandler(BaseApiHandler):
         self.data_client = CryptoHistoricalDataClient(api_key=api_key)
         self.trading_client = TradingClient(api_key=api_key, secret_key=api_secret, paper=True)
 
-    async def get_data(self, symbols, start_date, end_date=None, timeframe=TimeFrame.Day):
+    async def get_data(self, symbols, start_date=datetime(2022, 9, 1), end_date=None, timeframe=TimeFrame.Day):
         """Fetches historical data for given symbols within a specified date range."""
         request_params = CryptoBarsRequest(
                             symbol_or_symbols=symbols,
@@ -21,41 +24,45 @@ class AlpacaApiHandler(BaseApiHandler):
                             start=start_date,
                             end=end_date
                         )
-        bars = self.data_client.get_crypto_bars(request_params)
-        return bars
+        barset = await asyncio.to_thread(self.data_client.get_crypto_bars, request_params)
 
-    async def place_order(self, symbol, qty, order_type, side=OrderSide.BUY, price=None):
+        if barset and barset.data:
+            barset_dict = {symbol: [bar.__dict__ for bar in bars] for symbol, bars in barset.data.items()}
+            return json.dumps(barset_dict, default=str)  
+        else:
+            return json.dumps({'message': 'No data returned.'})
+
+    async def place_order(self, symbol, qty, order_type, side=OrderSide.BUY, price=None, **kwargs):
         """Places an order with specified parameters. Supports market and limit orders."""
         if order_type == "market":
-            order_request = MarketOrderRequest(symbol=symbol, qty=qty, side=side)
+            order_kwargs = {"symbol": symbol, "qty": qty, "side": side}
+            if "time_in_force" in kwargs:
+                order_kwargs["time_in_force"] = kwargs["time_in_force"]
+            order_request = MarketOrderRequest(**order_kwargs)
         elif order_type == "limit":
             if price is None:
                 raise ValueError("Price must be provided for limit orders")
             order_request = LimitOrderRequest(symbol=symbol, qty=qty, side=side, limit_price=price)
         else:
             raise ValueError("Unsupported order type")
-
-        response = self.trading_client.submit_order(order_request)
+        response = await asyncio.to_thread(self.trading_client.submit_order, order_request)
         return response
 
     async def get_account_details(self):
         """Retrieves details of the current account."""
-        account = self.trading_client.get_account()
-        return account
+        return await asyncio.to_thread(self.trading_client.get_account)
     
     async def get_assets(self, asset_class=AssetClass.CRYPTO):
         """Fetches available assets for trading, filtered by asset class."""
         search_params = GetAssetsRequest(asset_class=asset_class)
-        assets = self.trading_client.get_all_assets(search_params)
-        return assets
+        return await asyncio.to_thread(self.trading_client.get_all_assets, search_params)
     
     async def submit_market_order(self, symbol, qty, side, time_in_force=TimeInForce.GTC):
         """Submits a market order for a given symbol and quantity, specifying the side and time in force."""
-        market_order_data = MarketOrderRequest(
-                                symbol=symbol,
-                                qty=qty,
-                                side=OrderSide[side.upper()],  # Converts string parameter to OrderSide enum
-                                time_in_force=time_in_force
-                            )
-        market_order = self.trading_client.submit_order(order_data=market_order_data)
-        return market_order
+        return await self.place_order(
+            symbol=symbol,
+            qty=qty,
+            order_type="market",
+            side=OrderSide[side.upper()],
+            time_in_force=time_in_force
+        )

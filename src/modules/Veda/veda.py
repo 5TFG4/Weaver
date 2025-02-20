@@ -1,6 +1,6 @@
 import os
 
-from src.constants import ALPACA
+from src.lib.constants import ALPACA
 
 from .alpaca_api_handler import AlpacaApiHandler
 # Other API imports...

@@ -11,7 +11,7 @@ class GLaDOS:
     async def run(self):
         logger.info("Dispatching Celery task for BTC/USD...")
         try:
-            result = fetch_data_task.delay("BTC/USD", 1)
+            result = fetch_data_task.delay("BTC/USD")  # Removed sleepTime argument
             logger.info(f"Task dispatched with id: {result.id}")
         except Exception as e:
             logger.error(f"Failed to dispatch Celery task: {e}")
