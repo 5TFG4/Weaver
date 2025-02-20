@@ -1,8 +1,8 @@
 import time
-import logging
+from src.lib.logger import get_logger
 from src.config.celery_config import celery_app
 
-logger = logging.getLogger("celery.glados")
+logger = get_logger("celery.glados")
 
 @celery_app.task()  # Use namespaced task name
 def fetch_data_task(symbol, sleepTime):

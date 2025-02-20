@@ -1,8 +1,8 @@
 import asyncio
-import logging
+from src.lib.logger import get_logger
 from .tasks import fetch_data_task  # Celery task import
 
-logger = logging.getLogger("glados")
+logger = get_logger("glados")
 
 class GLaDOS:
     def __init__(self):

@@ -1,11 +1,10 @@
 import asyncio
-import logging
 import os
+from src.lib.logger import get_logger
 from src.modules.GLaDOS.glados import GLaDOS
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Removed logging.basicConfig & logging.getLogger(__name__)
+logger = get_logger(__name__, log_file='main.log')
 
 async def main():
     # Read environment variable if needed
