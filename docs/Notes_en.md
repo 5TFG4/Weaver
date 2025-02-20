@@ -197,6 +197,8 @@ weaver/
 │   ├── Notes_en.md
 │   └── Notes_cn.md               # Chinese documentation
 │
+├── weaver.py                     # Entry Point
+│
 └── .github/                      # GitHub Actions workflows and CI/CD configurations
     └── workflows/
 ```

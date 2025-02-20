@@ -197,6 +197,8 @@ weaver/
 │   ├── Notes_en.md
 │   └── Notes_cn.md               # 中文说明文档
 │
+├── weaver.py                     # 入口文件
+│
 └── .github/                      # GitHub Actions 工作流和 CI/CD 配置
     └── workflows/
 ```

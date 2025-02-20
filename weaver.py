@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from src.GLaDOS.glados import GLaDOS
+from src.modules.GLaDOS.glados import GLaDOS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
