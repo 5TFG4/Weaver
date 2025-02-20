@@ -110,7 +110,7 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - **Frontend:** React.js
 - **Database:** PostgreSQL
 - **ORM:** SQLAlchemy
-- **Task Scheduling:** Celery + RabbitMQ
+- **Task Scheduling:** Celery + Redis
 - **Containerization:** Docker + Docker Compose
 - **CI/CD:** GitHub Actions
 - **Monitoring and Logging:** Prometheus/Grafana + Python logging
@@ -121,49 +121,70 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 
 ```plaintext
 weaver/
-├── src/               # Main code directory
-│   ├── glados/        # Main Control System
+├── src/                           
+│   ├── api/                      # API layer: FastAPI routes and application startup
 │   │   ├── __init__.py
-│   │   ├── controller.py  # Core logic
-│   │   ├── routes.py      # FastAPI routes
-│   │   ├── tasks.py       # Celery tasks
-│   ├── veda/          # API Interaction Module
+│   │   ├── main.py               # FastAPI application entry point
+│   │   └── routes.py             # Route definitions
+│   │
+│   ├── modules/                  # Core modules of the project
+│   │   ├── glados/               # Main control system: schedules tasks and coordinates modules
+│   │   │   ├── __init__.py
+│   │   │   ├── controller.py     # Core business logic
+│   │   │   └── tasks.py          # Celery tasks for GLaDOS
+│   │   │
+│   │   ├── veda/                 # API interaction module: handles exchange integration (e.g., Alpaca)
+│   │   │   ├── __init__.py
+│   │   │   ├── alpaca.py         # Alpaca exchange integration
+│   │   │   └── tasks.py          # Asynchronous tasks for Veda
+│   │   │
+│   │   ├── walle/                # Data storage module, manages database operations
+│   │   │   ├── __init__.py
+│   │   │   ├── models.py         # Data model definitions
+│   │   │   └── database.py       # Database connection and operations
+│   │   │
+│   │   ├── marvin/               # Strategy execution module: loads and executes trading strategies
+│   │   │   ├── __init__.py
+│   │   │   ├── base_strategy.py  # Base strategy class
+│   │   │   └── strategies/       # Specific strategy implementations
+│   │   │
+│   │   ├── greta/                # Backtesting module: simulates trades using historical data
+│   │   │   ├── __init__.py
+│   │   │   └── backtest.py       # Backtesting logic
+│   │   │
+│   │   └── haro/                 # Frontend integration module: provides API support for the React UI
+│   │       ├── __init__.py
+│   │       └── api.py            # API encapsulation
+│   │
+│   ├── lib/                      # Common utilities and helper functions
 │   │   ├── __init__.py
-│   │   ├── alpaca.py       # Alpaca exchange integration
-│   │   ├── tasks.py        # Celery tasks
-│   ├── walle/         # Data Storage Module
+│   │   └── utils.py
+│   │
+│   ├── config/                   # Configuration files (e.g., logging, database, Celery settings)
 │   │   ├── __init__.py
-│   │   ├── models.py       # Data models
-│   │   ├── database.py     # Database connection logic
-│   ├── marvin/        # Strategy Execution Module
-│   │   ├── __init__.py
-│   │   ├── base_strategy.py  # Strategy base class
-│   │   ├── strategies/       # Strategy implementations
-│   ├── greta/         # Backtesting Module
-│   │   ├── __init__.py
-│   │   ├── backtest.py       # Backtesting logic
-│   ├── haro/          # Frontend Module
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── App.js          # React entry point
-│   │   └── api.js          # Frontend API abstraction
-│   ├── tasks.py       # Celery global tasks
-│   ├── main.py        # FastAPI entry point
-├── tests/             # Test directory
-│   ├── glados/        # GLaDOS tests
-│   ├── veda/          # Veda tests
-│   ├── walle/         # WallE tests
-│   ├── marvin/        # Marvin tests
-│   ├── greta/         # Greta tests
-│   ├── haro/          # Haro tests
-├── docker/            # Docker configuration directory
-│   ├── backend/       # Backend Docker configuration
+│   │   ├── settings.py
+│   │   └── celery_config.py
+│   │
+│   ├── tasks.py                  # Global tasks entry point (if needed)
+│   └── main.py                   # Project entry point (can be used to start FastAPI, etc.)
+│
+├── tests/                        # Unit tests for each module
+│   ├── glados/
+│   ├── veda/
+│   ├── walle/
+│   ├── marvin/
+│   ├── greta/
+│   └── haro/
+│
+├── docker/                       # Docker configuration directory
+│   ├── backend/                  # Backend Docker configuration
 │   │   ├── Dockerfile
 │   │   ├── Dockerfile.dev
-│   │   ├── requirements.txt
-│   ├── frontend/      # Frontend Docker configuration
+│   │   └── requirements.txt
+│   ├── frontend/                 # Frontend Docker configuration
 │   │   ├── Dockerfile
 │   │   ├── Dockerfile.dev
+│   │   └── package.json
 │   ├── .dockerignore
 │   ├── .env
 │   ├── .env.dev
@@ -171,8 +192,12 @@ weaver/
 │   ├── docker-compose.dev.yml
 │   ├── example.env
 │   └── example.env.dev
-├── .github/
-│   ├── workflows/     # GitHub Actions workflows
-└── README.md          # Project documentation
+│
+├── docs/                         # Project documentation
+│   ├── Notes_en.md
+│   └── Notes_cn.md               # Chinese documentation
+│
+└── .github/                      # GitHub Actions workflows and CI/CD configurations
+    └── workflows/
 ```
 

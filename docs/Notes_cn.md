@@ -110,7 +110,7 @@
 - **前端**：React.js
 - **数据库**：PostgreSQL
 - **ORM**：SQLAlchemy
-- **任务调度**：Celery + RabbitMQ
+- **任务调度**：Celery + Redis
 - **容器化**：Docker + Docker Compose
 - **CI/CD**：GitHub Actions
 - **监控与日志**：Prometheus/Grafana + Python logging
@@ -121,49 +121,70 @@
 
 ```plaintext
 weaver/
-├── src/               # 主代码目录
-│   ├── glados/        # 主控系统
+├── src/                           
+│   ├── api/                      # API 层（例如 FastAPI 路由和入口）
 │   │   ├── __init__.py
-│   │   ├── controller.py  # 核心逻辑
-│   │   ├── routes.py      # FastAPI 路由定义
-│   │   ├── tasks.py       # Celery 任务
-│   ├── veda/          # API接口数据处理模块
+│   │   ├── main.py               # FastAPI 应用入口
+│   │   └── routes.py             # 路由定义
+│   │
+│   ├── modules/                  # 各个核心模块
+│   │   ├── glados/               # 主控系统：调度任务、协调各模块
+│   │   │   ├── __init__.py
+│   │   │   ├── controller.py     # 核心业务逻辑
+│   │   │   └── tasks.py          # Celery 相关任务
+│   │   │
+│   │   ├── veda/                 # API 交互模块：与交易所交互（如 Alpaca）
+│   │   │   ├── __init__.py
+│   │   │   ├── alpaca.py         # Alpaca 交易所集成
+│   │   │   └── tasks.py          # 交易所异步任务
+│   │   │
+│   │   ├── walle/                # 数据存储模块
+│   │   │   ├── __init__.py
+│   │   │   ├── models.py         # 数据模型定义
+│   │   │   └── database.py       # 数据库连接及操作
+│   │   │
+│   │   ├── marvin/               # 策略执行模块：加载并执行交易策略
+│   │   │   ├── __init__.py
+│   │   │   ├── base_strategy.py  # 策略基类
+│   │   │   └── strategies/       # 具体策略实现
+│   │   │
+│   │   ├── greta/                # 回测模块
+│   │   │   ├── __init__.py
+│   │   │   └── backtest.py       # 回测逻辑
+│   │   │
+│   │   └── haro/                 # 前端交互模块（后端部分），为 React 提供 API 支持
+│   │       ├── __init__.py
+│   │       └── api.py            # API 封装
+│   │
+│   ├── lib/                      # 公共工具库、辅助函数等
 │   │   ├── __init__.py
-│   │   ├── alpaca.py       # Alpaca 交易所支持
-│   │   ├── tasks.py        # Celery 任务
-│   ├── walle/         # 数据存储模块
+│   │   └── utils.py
+│   │
+│   ├── config/                   # 配置文件（如日志、数据库、Celery 的配置等）
 │   │   ├── __init__.py
-│   │   ├── models.py       # 数据模型
-│   │   ├── database.py     # 数据库连接逻辑
-│   ├── marvin/        # 策略执行模块
-│   │   ├── __init__.py
-│   │   ├── base_strategy.py  # 策略基类
-│   │   ├── strategies/       # 策略实现目录
-│   ├── greta/         # 回测模块
-│   │   ├── __init__.py
-│   │   ├── backtest.py       # 回测逻辑
-│   ├── haro/          # 前端模块
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── App.js          # React 主入口
-│   │   └── api.js          # 前端 API 调用封装
-│   ├── tasks.py       # Celery 全局任务定义
-│   ├── main.py        # FastAPI 主入口
-├── tests/             # 测试目录
-│   ├── glados/        # GLaDOS 测试
-│   ├── veda/          # Veda 测试
-│   ├── walle/         # WallE 测试
-│   ├── marvin/        # Marvin 测试
-│   ├── greta/         # Greta 测试
-│   ├── haro/          # Haro 测试
-├── docker/            # Docker 配置目录
-│   ├── backend/       # 后端 Docker 配置
+│   │   ├── settings.py
+│   │   └── celery_config.py
+│   │
+│   ├── tasks.py                  # 全局任务入口（如果需要统一管理部分任务）
+│   └── main.py                   # 整体项目的入口（可用于启动 FastAPI 等）
+│
+├── tests/                        # 单元测试目录，对应各模块的测试
+│   ├── glados/
+│   ├── veda/
+│   ├── walle/
+│   ├── marvin/
+│   ├── greta/
+│   └── haro/
+│
+├── docker/                       # Docker 配置目录
+│   ├── backend/                  # 后端 Docker 配置
 │   │   ├── Dockerfile
 │   │   ├── Dockerfile.dev
-│   │   ├── requirements.txt
-│   ├── frontend/      # 前端 Docker 配置
+│   │   └── requirements.txt
+│   ├── frontend/                 # 前端 Docker 配置
 │   │   ├── Dockerfile
 │   │   ├── Dockerfile.dev
+│   │   └── package.json
 │   ├── .dockerignore
 │   ├── .env
 │   ├── .env.dev
@@ -171,8 +192,12 @@ weaver/
 │   ├── docker-compose.dev.yml
 │   ├── example.env
 │   └── example.env.dev
-├── .github/
-│   ├── workflows/     # GitHub Actions 配置
-└── README.md          # 项目说明文档
+│
+├── docs/                         # 项目文档
+│   ├── Notes_en.md
+│   └── Notes_cn.md               # 中文说明文档
+│
+└── .github/                      # GitHub Actions 工作流和 CI/CD 配置
+    └── workflows/
 ```
 
