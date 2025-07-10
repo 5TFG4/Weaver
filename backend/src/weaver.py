@@ -1,21 +1,27 @@
 import asyncio
 import os
-from src.lib.logger import get_logger
-from backend.src.modules.glados import GLaDOS
+from core.logger import get_logger
+from modules.glados import GLaDOS
 
-# Removed logging.basicConfig & logging.getLogger(__name__)
 logger = get_logger(__name__, log_file='main.log')
 
 async def main():
+    """Main entry point for the Weaver trading system"""
     # Read environment variable if needed
     env = os.getenv("ENV", "production")
-    logger.info("Starting GLaDOS system in %s mode", env)
+    logger.info("Starting Weaver trading system in %s mode", env)
 
-    # Initialize the core controller
-    glados = GLaDOS()
+    # Initialize GLaDOS as the main application
+    glados = GLaDOS(env)
     
-    # Run the main loop (this could also start the FastAPI server and initialize Celery tasks)
+    # Run the main application
     await glados.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt, shutting down...")
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
+        raise

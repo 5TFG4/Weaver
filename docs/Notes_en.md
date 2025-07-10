@@ -1,4 +1,17 @@
-### Project Background and Objectives
+### Project Backgroun#### **1. GLaDOS (Main Application Class)**
+
+- **Responsibilities:**
+  - **Primary Role:** Main application class that manages the entire trading system lifecycle.
+  - **System Orchestration:** Coordinates startup, shutdown, and module initialization.
+  - **Module Coordination:** Manages communication between all trading modules through event bus.
+  - **Application Management:** Handles system health monitoring, error recovery, and graceful shutdown.
+  - **Event Coordination:** Processes key system events (market data, trade signals, order fills).
+  - **Process Management:** Maintains the main application loop and ensures system stability.
+- **Design Features:**
+  - Contains the main application instance and manages core system infrastructure.
+  - Implements proper signal handling for graceful shutdown.
+  - Coordinates module startup sequence and dependency management.
+  - Provides centralized system monitoring and health checks.ectives
 
 **Objectives:**
 Build a Python-based automated trading bot, deployable on a local server, capable of 24/7 operation. The bot will be containerized using Docker and support the following core functionalities:
@@ -90,16 +103,18 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 **Inter-Module Communication:**
 
 - **Core Architecture:**
-  - GLaDOS serves as the core of the system, coordinating communication between modules.
-  - GLaDOS interacts with the frontend through RESTful APIs provided by FastAPI.
+  - GLaDOS serves as the main application class, managing system lifecycle and module coordination.
+  - GLaDOS uses the core.Application class for system infrastructure (event bus, startup/shutdown).
+  - Haro provides RESTful APIs and WebSocket connections for frontend communication.
   - Inter-module communication is facilitated by an internal event bus for real-time data flow and command execution.
 
 **Example Data Flow:**
 
-1. GLaDOS periodically calls Veda to fetch market data, which is published to the event bus.
-2. Marvin subscribes to market data events, processes the data and generates trading instructions.
-3. GLaDOS receives trading signals and forwards instructions to Veda for execution.
-4. Execution results are published to the event bus, logged by GLaDOS, and sent to the frontend via WebSocket.
+1. GLaDOS initializes all modules and starts the event bus during system startup.
+2. Veda periodically fetches market data and publishes 'market_data' events to the event bus.
+3. Marvin subscribes to 'market_data' events, processes data, and publishes 'trade_signal' events.
+4. GLaDOS receives 'trade_signal' events and coordinates with Veda to execute orders.
+5. Order execution results are published as 'order_filled' events, logged by WallE, and sent to frontend via Haro's WebSocket.
 
 ---
 
@@ -126,12 +141,12 @@ weaver/
 │   │   ├── core/                 # Core system infrastructure
 │   │   │   ├── __init__.py
 │   │   │   ├── event_bus.py      # Publishes: 'market_data', 'trade_signal', 'order_filled'
-│   │   │   ├── application.py    # Starts all modules, coordinates everything
-│   │   │   ├── logging.py        # Logging configuration and utilities
+│   │   │   ├── application.py    # Core application class used by GLaDOS for system management
+│   │   │   ├── logger.py         # Logging configuration and utilities
 │   │   │   └── constants.py      # Application-wide constants (ALPACA, etc.)
 │   │   │
 │   │   ├── modules/              # All main business modules (uniform treatment)
-│   │   │   ├── glados.py         # Main orchestrator (starts strategies, handles signals)
+│   │   │   ├── glados.py         # Main Application Class (system orchestrator, module coordinator)
 │   │   │   ├── veda.py           # Exchange manager (routes orders to correct platform)
 │   │   │   ├── walle.py          # Database operations (saves trades, market data)
 │   │   │   ├── marvin.py         # Strategy executor (loads and runs strategies)
