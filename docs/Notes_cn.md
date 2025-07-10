@@ -126,7 +126,9 @@ weaver/
 │   │   ├── core/                 # 核心系统基础设施
 │   │   │   ├── __init__.py
 │   │   │   ├── event_bus.py      # 发布: 'market_data', 'trade_signal', 'order_filled'
-│   │   │   └── application.py    # 启动所有模块，协调一切
+│   │   │   ├── application.py    # 启动所有模块，协调一切
+│   │   │   ├── logging.py        # 日志配置和工具
+│   │   │   └── constants.py      # 应用程序范围常量（ALPACA等）
 │   │   │
 │   │   ├── modules/              # 所有主要业务模块（统一处理）
 │   │   │   ├── glados.py         # 主协调器（启动策略，处理信号）
@@ -135,6 +137,10 @@ weaver/
 │   │   │   ├── marvin.py         # 策略执行器（加载和运行策略）
 │   │   │   ├── greta.py          # 回测引擎（模拟历史交易）
 │   │   │   └── haro.py           # UI后端（前端的FastAPI路由，WebSocket实时更新）
+│   │   │
+│   │   ├── lib/                  # 共享工具和助手
+│   │   │   ├── __init__.py
+│   │   │   └── utils.py          # 通用工具函数（日期解析，验证等）
 │   │   │
 │   │   ├── connectors/           # 交易所实现（当有多个时）
 │   │   │   ├── __init__.py
@@ -159,9 +165,7 @@ weaver/
 │   │   │   ├── strategy_run.py   # 策略执行记录
 │   │   │   └── portfolio.py      # 投资组合持仓和余额
 │   │   │
-│   │   └── main.py               # 入口点: python -m src.main
-│   │
-│   └── requirements.txt          # Python依赖
+│   │   └── weaver.py             # 入口点: python -m src.weaver
 │
 ├── frontend/                     # React.js网络界面
 │   ├── src/
@@ -173,9 +177,8 @@ weaver/
 │   ├── public/
 │   │   ├── index.html
 │   │   └── favicon.ico
-│   ├── package.json              # NPM依赖和脚本
-│   ├── package-lock.json
-│   └── .env                      # 前端环境变量
+│   ├── package.json              # NPM依赖和脚本（React必需）
+│   └── package-lock.json         # 确切的依赖版本（NPM必需）
 │
 ├── tests/                        # 单元测试，镜像backend/src结构
 │   ├── test_modules/             # modules/的测试
@@ -221,11 +224,6 @@ weaver/
 │
 ├── .devcontainer/                # VS Code开发容器
 │   └── devcontainer.json         # 开发容器配置
-│
-├── .vscode/                      # VS Code工作区设置
-│   ├── settings.json             # 工作区设置
-│   ├── tasks.json                # 构建和运行任务
-│   └── launch.json               # 调试配置
 │
 ├── weaver.py                     # 替代入口点（向后兼容）
 ├── README.md                     # 项目概述和设置说明

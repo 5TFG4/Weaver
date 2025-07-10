@@ -126,7 +126,9 @@ weaver/
 │   │   ├── core/                 # Core system infrastructure
 │   │   │   ├── __init__.py
 │   │   │   ├── event_bus.py      # Publishes: 'market_data', 'trade_signal', 'order_filled'
-│   │   │   └── application.py    # Starts all modules, coordinates everything
+│   │   │   ├── application.py    # Starts all modules, coordinates everything
+│   │   │   ├── logging.py        # Logging configuration and utilities
+│   │   │   └── constants.py      # Application-wide constants (ALPACA, etc.)
 │   │   │
 │   │   ├── modules/              # All main business modules (uniform treatment)
 │   │   │   ├── glados.py         # Main orchestrator (starts strategies, handles signals)
@@ -135,6 +137,10 @@ weaver/
 │   │   │   ├── marvin.py         # Strategy executor (loads and runs strategies)
 │   │   │   ├── greta.py          # Backtesting engine (simulates historical trades)
 │   │   │   └── haro.py           # UI Backend (FastAPI routes for frontend, WebSocket for real-time updates)
+│   │   │
+│   │   ├── lib/                  # Shared utilities and helpers
+│   │   │   ├── __init__.py
+│   │   │   └── utils.py          # General utility functions (date parsing, validation, etc.)
 │   │   │
 │   │   ├── connectors/           # Exchange implementations (when you have multiple)
 │   │   │   ├── __init__.py
@@ -159,9 +165,7 @@ weaver/
 │   │   │   ├── strategy_run.py   # Strategy execution records
 │   │   │   └── portfolio.py      # Portfolio positions and balances
 │   │   │
-│   │   └── main.py               # Entry point: python -m src.main
-│   │
-│   └── requirements.txt          # Python dependencies
+│   │   └── weaver.py             # Entry point: python -m src.weaver
 │
 ├── frontend/                     # React.js web interface
 │   ├── src/
@@ -173,9 +177,8 @@ weaver/
 │   ├── public/
 │   │   ├── index.html
 │   │   └── favicon.ico
-│   ├── package.json              # NPM dependencies and scripts
-│   ├── package-lock.json
-│   └── .env                      # Frontend environment variables
+│   ├── package.json              # NPM dependencies and scripts (required by React)
+│   └── package-lock.json         # Exact dependency versions (required by NPM)
 │
 ├── tests/                        # Unit tests mirroring backend/src structure
 │   ├── test_modules/             # Tests for modules/
@@ -221,11 +224,6 @@ weaver/
 │
 ├── .devcontainer/                # VS Code development container
 │   └── devcontainer.json         # Container configuration for development
-│
-├── .vscode/                      # VS Code workspace settings
-│   ├── settings.json             # Workspace settings
-│   ├── tasks.json                # Build and run tasks
-│   └── launch.json               # Debug configurations
 │
 ├── weaver.py                     # Alternative entry point (backward compatibility)
 ├── README.md                     # Project overview and setup instructions

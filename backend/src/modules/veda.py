@@ -2,7 +2,7 @@ import os
 
 from src.lib.constants import ALPACA
 
-from .alpaca_api_handler import AlpacaApiHandler
+from .Veda.alpaca_api_handler import AlpacaApiHandler
 # Other API imports...
 
 class Veda:

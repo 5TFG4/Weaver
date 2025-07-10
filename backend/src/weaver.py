@@ -1,7 +1,7 @@
 import asyncio
 import os
 from src.lib.logger import get_logger
-from src.modules.GLaDOS.glados import GLaDOS
+from backend.src.modules.glados import GLaDOS
 
 # Removed logging.basicConfig & logging.getLogger(__name__)
 logger = get_logger(__name__, log_file='main.log')
