@@ -38,5 +38,4 @@ Web UI module.
 ---
 
 ## How to run the bot
-`celery -A src.config.celery_config worker --loglevel=info`
 `python -m weaver`

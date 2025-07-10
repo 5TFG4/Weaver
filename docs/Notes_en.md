@@ -13,7 +13,7 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - Modular design to facilitate scalability and extensibility.
 - Backend architecture based on RESTful APIs.
 - Sensitive data managed using GitHub Secrets, with CI/CD workflows implemented via GitHub Actions.
-- Task scheduling and event-driven architecture powered by Celery combined with Redis.
+- Event-driven architecture with internal message bus for module communication.
 
 ---
 
@@ -27,7 +27,7 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
   - Call Veda to fetch market data and trigger Marvin to execute strategies.
   - Log actions and monitor system status.
 - **Design Features:**
-  - Tasks are distributed to other modules asynchronously via Celery.
+  - Module coordination through internal event bus system.
 
 #### **2. Veda (API Interaction Module)**
 
@@ -39,8 +39,8 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
   - Support historical data fetching and save it to a local database.
   - Provide standardized interfaces to facilitate the addition of new exchanges.
 - **Design Features:**
-  - Execute high-concurrency tasks using Celery.
-  - Dynamically load implementations for different exchanges.
+  - Manages multiple exchange connectors through plugin architecture.
+  - Direct API calls with async support for high-performance data operations.
 
 #### **3. WallE (Data Storage Module)**
 
@@ -71,18 +71,17 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - **Design Features:**
   - Support flexible backtesting configurations, enabling batch tests for multiple strategies.
 
-#### **6. Haro (Web UI Interaction Module)**
+#### **6. Haro (UI Backend Module)**
 
 - **Responsibilities:**
-  - Provide a React.js-based frontend interface to display:
-    - Account information.
-    - Current strategy status.
-    - Historical trading records.
-    - Backtesting results.
-  - Enable users to manage strategies and monitor the system through the interface.
+  - Provide FastAPI routes specifically for frontend communication.
+  - Handle WebSocket connections for real-time data updates to the UI.
+  - Format data from other modules for frontend consumption.
+  - Manage UI-specific concerns (user sessions, UI state, chart data formatting).
 - **Design Features:**
-  - Use Axios to communicate with the backend via REST APIs.
-  - Support real-time data updates through WebSocket.
+  - Dedicated UI backend - while GLaDOS handles core business logic, Haro focuses on UI needs.
+  - WebSocket support for real-time updates without polling.
+  - Clean separation: frontend/ directory contains React app, Haro provides its backend API.
 
 ---
 
@@ -93,14 +92,14 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - **Core Architecture:**
   - GLaDOS serves as the core of the system, coordinating communication between modules.
   - GLaDOS interacts with the frontend through RESTful APIs provided by FastAPI.
-  - Inter-module communication is facilitated by Celery and Redis for asynchronous task distribution and result processing.
+  - Inter-module communication is facilitated by an internal event bus for real-time data flow and command execution.
 
 **Example Data Flow:**
 
-1. GLaDOS periodically calls Veda to fetch market data, which is distributed to Marvin via Celery.
-2. Marvin processes the data and generates trading instructions, sending them back to GLaDOS.
-3. GLaDOS forwards the trading instructions to Veda, which interacts with the exchange API to execute trades.
-4. Execution results are passed back to GLaDOS via Celery. GLaDOS logs the results and notifies the frontend.
+1. GLaDOS periodically calls Veda to fetch market data, which is published to the event bus.
+2. Marvin subscribes to market data events, processes the data and generates trading instructions.
+3. GLaDOS receives trading signals and forwards instructions to Veda for execution.
+4. Execution results are published to the event bus, logged by GLaDOS, and sent to the frontend via WebSocket.
 
 ---
 
@@ -110,7 +109,8 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 - **Frontend:** React.js
 - **Database:** PostgreSQL
 - **ORM:** SQLAlchemy
-- **Task Scheduling:** Celery + Redis
+- **Module Communication:** Internal Event Bus
+- **Real-time Updates:** WebSockets
 - **Containerization:** Docker + Docker Compose
 - **CI/CD:** GitHub Actions
 - **Monitoring and Logging:** Prometheus/Grafana + Python logging
@@ -121,85 +121,114 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 
 ```plaintext
 weaver/
-├── src/                           
-│   ├── api/                      # API layer: FastAPI routes and application startup
-│   │   ├── __init__.py
-│   │   ├── main.py               # FastAPI application entry point
-│   │   └── routes.py             # Route definitions
+├── backend/                      # Backend Python code
+│   ├── src/                      # Main application code
+│   │   ├── core/                 # Core system infrastructure
+│   │   │   ├── __init__.py
+│   │   │   ├── event_bus.py      # Publishes: 'market_data', 'trade_signal', 'order_filled'
+│   │   │   └── application.py    # Starts all modules, coordinates everything
+│   │   │
+│   │   ├── modules/              # All main business modules (uniform treatment)
+│   │   │   ├── glados.py         # Main orchestrator (starts strategies, handles signals)
+│   │   │   ├── veda.py           # Exchange manager (routes orders to correct platform)
+│   │   │   ├── walle.py          # Database operations (saves trades, market data)
+│   │   │   ├── marvin.py         # Strategy executor (loads and runs strategies)
+│   │   │   ├── greta.py          # Backtesting engine (simulates historical trades)
+│   │   │   └── haro.py           # UI Backend (FastAPI routes for frontend, WebSocket for real-time updates)
+│   │   │
+│   │   ├── connectors/           # Exchange implementations (when you have multiple)
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # Common interface: get_data(), place_order()
+│   │   │   ├── alpaca.py         # Alpaca API implementation
+│   │   │   ├── binance.py        # Binance API implementation (future)
+│   │   │   └── coinbase.py       # Coinbase Pro API implementation (future)
+│   │   │
+│   │   ├── strategies/           # Trading strategies (when you have multiple)
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # Base strategy class with common methods
+│   │   │   ├── simple_ma.py      # Moving average strategy (includes MA calculation)
+│   │   │   ├── rsi_strategy.py   # RSI strategy (includes RSI calculation)
+│   │   │   ├── bollinger_bands.py # Bollinger strategy (includes Bollinger calculation)
+│   │   │   ├── portfolio_risk.py # Portfolio-level risk management
+│   │   │   └── buy_and_hold.py   # Simple buy and hold strategy
+│   │   │
+│   │   ├── models/               # Database models (when you have multiple)
+│   │   │   ├── __init__.py
+│   │   │   ├── trade.py          # Trade table: symbol, qty, price, timestamp
+│   │   │   ├── market_data.py    # Market data: symbol, ohlcv, timestamp
+│   │   │   ├── strategy_run.py   # Strategy execution records
+│   │   │   └── portfolio.py      # Portfolio positions and balances
+│   │   │
+│   │   └── main.py               # Entry point: python -m src.main
 │   │
-│   ├── modules/                  # Core modules of the project
-│   │   ├── glados/               # Main control system: schedules tasks and coordinates modules
-│   │   │   ├── __init__.py
-│   │   │   ├── controller.py     # Core business logic
-│   │   │   └── tasks.py          # Celery tasks for GLaDOS
-│   │   │
-│   │   ├── veda/                 # API interaction module: handles exchange integration (e.g., Alpaca)
-│   │   │   ├── __init__.py
-│   │   │   ├── alpaca.py         # Alpaca exchange integration
-│   │   │   └── tasks.py          # Asynchronous tasks for Veda
-│   │   │
-│   │   ├── walle/                # Data storage module, manages database operations
-│   │   │   ├── __init__.py
-│   │   │   ├── models.py         # Data model definitions
-│   │   │   └── database.py       # Database connection and operations
-│   │   │
-│   │   ├── marvin/               # Strategy execution module: loads and executes trading strategies
-│   │   │   ├── __init__.py
-│   │   │   ├── base_strategy.py  # Base strategy class
-│   │   │   └── strategies/       # Specific strategy implementations
-│   │   │
-│   │   ├── greta/                # Backtesting module: simulates trades using historical data
-│   │   │   ├── __init__.py
-│   │   │   └── backtest.py       # Backtesting logic
-│   │   │
-│   │   └── haro/                 # Frontend integration module: provides API support for the React UI
-│   │       ├── __init__.py
-│   │       └── api.py            # API encapsulation
+│   └── requirements.txt          # Python dependencies
+│
+├── frontend/                     # React.js web interface
+│   ├── src/
+│   │   ├── components/           # React components (charts, tables, forms)
+│   │   ├── pages/                # React pages (dashboard, strategies, trades)
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── services/             # API calls to backend
+│   │   └── App.js                # Main React app component
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── package.json              # NPM dependencies and scripts
+│   ├── package-lock.json
+│   └── .env                      # Frontend environment variables
+│
+├── tests/                        # Unit tests mirroring backend/src structure
+│   ├── test_modules/             # Tests for modules/
+│   ├── test_strategies/          # Tests for strategies/
+│   ├── test_connectors/          # Tests for connectors/
+│   ├── test_models/              # Tests for models/
+│   └── conftest.py               # Pytest configuration
+│
+├── docker/                       # Container configurations and deployment
+│   ├── backend/                  # Backend container setup
+│   │   ├── Dockerfile            # Production backend container
+│   │   └── Dockerfile.dev        # Development backend container
 │   │
-│   ├── lib/                      # Common utilities and helper functions
-│   │   ├── __init__.py
-│   │   └── utils.py
+│   ├── frontend/                 # Frontend container setup
+│   │   ├── Dockerfile            # Production frontend container (nginx)
+│   │   └── Dockerfile.dev        # Development frontend container
 │   │
-│   ├── config/                   # Configuration files (e.g., logging, database, Celery settings)
-│   │   ├── __init__.py
-│   │   ├── settings.py
-│   │   └── celery_config.py
-│   │
-│   ├── tasks.py                  # Global tasks entry point (if needed)
-│   └── main.py                   # Project entry point (can be used to start FastAPI, etc.)
+│   ├── docker-compose.yml        # Production deployment
+│   ├── docker-compose.dev.yml    # Development environment
+│   ├── example.env               # Example production environment variables
+│   ├── example.env.dev           # Example development environment variables
+│   ├── .env                      # Actual production environment variables (gitignored)
+│   ├── .env.dev                  # Actual development environment variables (gitignored)
+│   └── .dockerignore             # Files to exclude from docker build
 │
-├── tests/                        # Unit tests for each module
-│   ├── glados/
-│   ├── veda/
-│   ├── walle/
-│   ├── marvin/
-│   ├── greta/
-│   └── haro/
+├── docs/                         # Documentation
+│   ├── Notes_en.md               # English architecture documentation
+│   ├── Notes_cn.md               # Chinese architecture documentation
+│   └── API.md                    # API endpoint documentation
 │
-├── docker/                       # Docker configuration directory
-│   ├── backend/                  # Backend Docker configuration
-│   │   ├── Dockerfile
-│   │   ├── Dockerfile.dev
-│   │   └── requirements.txt
-│   ├── frontend/                 # Frontend Docker configuration
-│   │   ├── Dockerfile
-│   │   ├── Dockerfile.dev
-│   │   └── package.json
-│   ├── .dockerignore
-│   ├── .env
-│   ├── .env.dev
-│   ├── docker-compose.yml
-│   ├── docker-compose.dev.yml
-│   ├── example.env
-│   └── example.env.dev
+├── logs/                         # Application logs (created at runtime)
+│   ├── app.log                   # General application logs
+│   └── main.log                  # Main process logs
 │
-├── docs/                         # Project documentation
-│   ├── Notes_en.md
-│   └── Notes_cn.md               # Chinese documentation
+├── .github/                      # CI/CD workflows and issue templates
+│   ├── workflows/                # GitHub Actions workflows
+│   │   ├── ci.yml                # Continuous integration
+│   │   └── deploy.yml            # Deployment pipeline
+│   ├── ISSUE_TEMPLATE/           # Issue templates
+│   │   ├── BUG-REPORT.yml
+│   │   └── FEATURE-REQUEST.yml
+│   └── PULL_REQUEST_TEMPLATE.md
 │
-├── weaver.py                     # Entry Point
+├── .devcontainer/                # VS Code development container
+│   └── devcontainer.json         # Container configuration for development
 │
-└── .github/                      # GitHub Actions workflows and CI/CD configurations
-    └── workflows/
+├── .vscode/                      # VS Code workspace settings
+│   ├── settings.json             # Workspace settings
+│   ├── tasks.json                # Build and run tasks
+│   └── launch.json               # Debug configurations
+│
+├── weaver.py                     # Alternative entry point (backward compatibility)
+├── README.md                     # Project overview and setup instructions
+└── .gitignore                    # Git ignore patterns
 ```
 

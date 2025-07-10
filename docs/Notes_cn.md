@@ -13,7 +13,7 @@
 - 模块化设计，支持扩展。
 - 基于 RESTful API 的后端架构。
 - 敏感信息通过 GitHub Secrets 管理，使用 GitHub Actions 实现 CI/CD。
-- 以 Celery 为核心，结合 Redis，实现任务调度与事件驱动的结合。
+- 基于内部事件总线的模块间通信系统。
 
 ---
 
@@ -27,7 +27,7 @@
   - 调用 Veda 获取市场数据，触发 Marvin 执行策略。
   - 记录操作日志，监控系统运行状态。
 - **设计特点**：
-  - 通过 Celery 将任务分发给其他模块，实现异步处理。
+  - 通过内部事件总线系统实现模块协调。
 
 #### **2. Veda (API接口数据处理模块)**
 
@@ -39,8 +39,8 @@
   - 支持历史数据抓取，并保存到本地数据库。
   - 提供标准化接口，使扩展到其他交易所更容易。
 - **设计特点**：
-  - 使用 Celery 执行高并发任务。
-  - 动态加载不同交易所实现模块。
+  - 通过插件架构管理多个交易所连接器。
+  - 直接 API 调用，支持异步操作以实现高性能数据处理。
 
 #### **3. WallE (数据存储模块)**
 
@@ -71,18 +71,17 @@
 - **设计特点**：
   - 支持灵活的回测配置，可对多种策略进行批量回测。
 
-#### **6. Haro (Web UI 交互模块)**
+#### **6. Haro (UI后端模块)**
 
 - **职责**：
-  - 提供基于 React.js 的前端界面，展示：
-    - 账户信息。
-    - 当前策略状态。
-    - 历史交易记录。
-    - 回测结果。
-  - 支持用户通过界面管理策略和查看系统状态。
+  - 为前端通信提供专门的FastAPI路由。
+  - 处理WebSocket连接，向UI提供实时数据更新。
+  - 将其他模块的数据格式化供前端使用。
+  - 管理UI特定关注点（用户会话、UI状态、图表数据格式化）。
 - **设计特点**：
-  - 使用 Axios 调用 REST API 实现前后端通信。
-  - 通过 WebSocket 支持实时数据更新。
+  - 专用UI后端 - GLaDOS处理核心业务逻辑，Haro专注于UI需求。
+  - WebSocket支持无需轮询的实时更新。
+  - 清晰分离：frontend/ 目录包含React应用，Haro提供其后端API。
 
 ---
 
@@ -93,14 +92,14 @@
 - **核心架构**：
   - GLaDOS 作为系统核心，负责模块间的协调通信。
   - GLaDOS 与前端通过 FastAPI 提供 RESTful API 交互。
-  - 模块间通过 Celery 和 Redis 实现异步任务分发和结果处理。
+  - 模块间通过内部事件总线实现实时数据流和命令执行。
 
 **数据流示例**：
 
-1. GLaDOS 定时调用 Veda 拉取市场数据，结果通过 Celery 广播给 Marvin。
-2. Marvin 根据策略逻辑生成交易指令，将指令返回给 GLaDOS。
-3. GLaDOS 将交易指令传递给 Veda，Veda 调用交易所 API 执行交易。
-4. 交易执行结果通过 Celery 回传给 GLaDOS，GLaDOS 记录日志并通知前端。
+1. GLaDOS 定时调用 Veda 拉取市场数据，数据发布到事件总线。
+2. Marvin 订阅市场数据事件，处理数据并生成交易指令。
+3. GLaDOS 接收交易信号并将指令转发给 Veda 执行。
+4. 执行结果发布到事件总线，由 GLaDOS 记录日志并通过 WebSocket 发送给前端。
 
 ---
 
@@ -110,7 +109,8 @@
 - **前端**：React.js
 - **数据库**：PostgreSQL
 - **ORM**：SQLAlchemy
-- **任务调度**：Celery + Redis
+- **模块通信**：内部事件总线
+- **实时更新**：WebSockets
 - **容器化**：Docker + Docker Compose
 - **CI/CD**：GitHub Actions
 - **监控与日志**：Prometheus/Grafana + Python logging
@@ -121,85 +121,114 @@
 
 ```plaintext
 weaver/
-├── src/                           
-│   ├── api/                      # API 层（例如 FastAPI 路由和入口）
-│   │   ├── __init__.py
-│   │   ├── main.py               # FastAPI 应用入口
-│   │   └── routes.py             # 路由定义
+├── backend/                      # 后端Python代码
+│   ├── src/                      # 主应用代码
+│   │   ├── core/                 # 核心系统基础设施
+│   │   │   ├── __init__.py
+│   │   │   ├── event_bus.py      # 发布: 'market_data', 'trade_signal', 'order_filled'
+│   │   │   └── application.py    # 启动所有模块，协调一切
+│   │   │
+│   │   ├── modules/              # 所有主要业务模块（统一处理）
+│   │   │   ├── glados.py         # 主协调器（启动策略，处理信号）
+│   │   │   ├── veda.py           # 交易所管理器（将订单路由到正确平台）
+│   │   │   ├── walle.py          # 数据库操作（保存交易，市场数据）
+│   │   │   ├── marvin.py         # 策略执行器（加载和运行策略）
+│   │   │   ├── greta.py          # 回测引擎（模拟历史交易）
+│   │   │   └── haro.py           # UI后端（前端的FastAPI路由，WebSocket实时更新）
+│   │   │
+│   │   ├── connectors/           # 交易所实现（当有多个时）
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # 通用接口: get_data(), place_order()
+│   │   │   ├── alpaca.py         # Alpaca API 实现
+│   │   │   ├── binance.py        # Binance API 实现（未来）
+│   │   │   └── coinbase.py       # Coinbase Pro API 实现（未来）
+│   │   │
+│   │   ├── strategies/           # 交易策略（当有多个时）
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # 包含通用方法的基础策略类
+│   │   │   ├── simple_ma.py      # 移动平均策略（包含MA计算）
+│   │   │   ├── rsi_strategy.py   # RSI策略（包含RSI计算）
+│   │   │   ├── bollinger_bands.py # 布林带策略（包含布林带计算）
+│   │   │   ├── portfolio_risk.py # 投资组合级别风险管理
+│   │   │   └── buy_and_hold.py   # 简单买入持有策略
+│   │   │
+│   │   ├── models/               # 数据库模型（当有多个时）
+│   │   │   ├── __init__.py
+│   │   │   ├── trade.py          # 交易表: symbol, qty, price, timestamp
+│   │   │   ├── market_data.py    # 市场数据: symbol, ohlcv, timestamp
+│   │   │   ├── strategy_run.py   # 策略执行记录
+│   │   │   └── portfolio.py      # 投资组合持仓和余额
+│   │   │
+│   │   └── main.py               # 入口点: python -m src.main
 │   │
-│   ├── modules/                  # 各个核心模块
-│   │   ├── glados/               # 主控系统：调度任务、协调各模块
-│   │   │   ├── __init__.py
-│   │   │   ├── controller.py     # 核心业务逻辑
-│   │   │   └── tasks.py          # Celery 相关任务
-│   │   │
-│   │   ├── veda/                 # API 交互模块：与交易所交互（如 Alpaca）
-│   │   │   ├── __init__.py
-│   │   │   ├── alpaca.py         # Alpaca 交易所集成
-│   │   │   └── tasks.py          # 交易所异步任务
-│   │   │
-│   │   ├── walle/                # 数据存储模块
-│   │   │   ├── __init__.py
-│   │   │   ├── models.py         # 数据模型定义
-│   │   │   └── database.py       # 数据库连接及操作
-│   │   │
-│   │   ├── marvin/               # 策略执行模块：加载并执行交易策略
-│   │   │   ├── __init__.py
-│   │   │   ├── base_strategy.py  # 策略基类
-│   │   │   └── strategies/       # 具体策略实现
-│   │   │
-│   │   ├── greta/                # 回测模块
-│   │   │   ├── __init__.py
-│   │   │   └── backtest.py       # 回测逻辑
-│   │   │
-│   │   └── haro/                 # 前端交互模块（后端部分），为 React 提供 API 支持
-│   │       ├── __init__.py
-│   │       └── api.py            # API 封装
+│   └── requirements.txt          # Python依赖
+│
+├── frontend/                     # React.js网络界面
+│   ├── src/
+│   │   ├── components/           # React组件（图表，表格，表单）
+│   │   ├── pages/                # React页面（仪表板，策略，交易）
+│   │   ├── hooks/                # 自定义React钩子
+│   │   ├── services/             # 对后端的API调用
+│   │   └── App.js                # 主React应用组件
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── package.json              # NPM依赖和脚本
+│   ├── package-lock.json
+│   └── .env                      # 前端环境变量
+│
+├── tests/                        # 单元测试，镜像backend/src结构
+│   ├── test_modules/             # modules/的测试
+│   ├── test_strategies/          # strategies/的测试
+│   ├── test_connectors/          # connectors/的测试
+│   ├── test_models/              # models/的测试
+│   └── conftest.py               # Pytest配置
+│
+├── docker/                       # 容器配置和部署
+│   ├── backend/                  # 后端容器设置
+│   │   ├── Dockerfile            # 生产后端容器
+│   │   └── Dockerfile.dev        # 开发后端容器
 │   │
-│   ├── lib/                      # 公共工具库、辅助函数等
-│   │   ├── __init__.py
-│   │   └── utils.py
+│   ├── frontend/                 # 前端容器设置
+│   │   ├── Dockerfile            # 生产前端容器（nginx）
+│   │   └── Dockerfile.dev        # 开发前端容器
 │   │
-│   ├── config/                   # 配置文件（如日志、数据库、Celery 的配置等）
-│   │   ├── __init__.py
-│   │   ├── settings.py
-│   │   └── celery_config.py
-│   │
-│   ├── tasks.py                  # 全局任务入口（如果需要统一管理部分任务）
-│   └── main.py                   # 整体项目的入口（可用于启动 FastAPI 等）
+│   ├── docker-compose.yml        # 生产部署
+│   ├── docker-compose.dev.yml    # 开发环境
+│   ├── example.env               # 示例生产环境变量
+│   ├── example.env.dev           # 示例开发环境变量
+│   ├── .env                      # 实际生产环境变量（gitignored）
+│   ├── .env.dev                  # 实际开发环境变量（gitignored）
+│   └── .dockerignore             # 从docker构建中排除的文件
 │
-├── tests/                        # 单元测试目录，对应各模块的测试
-│   ├── glados/
-│   ├── veda/
-│   ├── walle/
-│   ├── marvin/
-│   ├── greta/
-│   └── haro/
+├── docs/                         # 文档
+│   ├── Notes_en.md               # 英文架构文档
+│   ├── Notes_cn.md               # 中文架构文档
+│   └── API.md                    # API端点文档
 │
-├── docker/                       # Docker 配置目录
-│   ├── backend/                  # 后端 Docker 配置
-│   │   ├── Dockerfile
-│   │   ├── Dockerfile.dev
-│   │   └── requirements.txt
-│   ├── frontend/                 # 前端 Docker 配置
-│   │   ├── Dockerfile
-│   │   ├── Dockerfile.dev
-│   │   └── package.json
-│   ├── .dockerignore
-│   ├── .env
-│   ├── .env.dev
-│   ├── docker-compose.yml
-│   ├── docker-compose.dev.yml
-│   ├── example.env
-│   └── example.env.dev
+├── logs/                         # 应用日志（运行时创建）
+│   ├── app.log                   # 通用应用日志
+│   └── main.log                  # 主进程日志
 │
-├── docs/                         # 项目文档
-│   ├── Notes_en.md
-│   └── Notes_cn.md               # 中文说明文档
+├── .github/                      # CI/CD工作流和问题模板
+│   ├── workflows/                # GitHub Actions工作流
+│   │   ├── ci.yml                # 持续集成
+│   │   └── deploy.yml            # 部署管道
+│   ├── ISSUE_TEMPLATE/           # 问题模板
+│   │   ├── BUG-REPORT.yml
+│   │   └── FEATURE-REQUEST.yml
+│   └── PULL_REQUEST_TEMPLATE.md
 │
-├── weaver.py                     # 入口文件
+├── .devcontainer/                # VS Code开发容器
+│   └── devcontainer.json         # 开发容器配置
 │
-└── .github/                      # GitHub Actions 工作流和 CI/CD 配置
-    └── workflows/
+├── .vscode/                      # VS Code工作区设置
+│   ├── settings.json             # 工作区设置
+│   ├── tasks.json                # 构建和运行任务
+│   └── launch.json               # 调试配置
+│
+├── weaver.py                     # 替代入口点（向后兼容）
+├── README.md                     # 项目概述和设置说明
+└── .gitignore                    # Git忽略模式
 ```
 
