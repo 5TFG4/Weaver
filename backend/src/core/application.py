@@ -2,8 +2,6 @@
 Core Application Module
 Provides the main Application class for system startup and configuration.
 """
-
-import asyncio
 import os
 from typing import Optional
 from core.logger import get_logger

@@ -1,0 +1,348 @@
+"""
+Marvin - Strategy Execution Module
+Dynamically loads and manages trading strategies.
+Generates trade signals based on market data and strategy logic.
+"""
+
+import asyncio
+from typing import Dict, Any, Optional, List
+from core.logger import get_logger
+from core.event_bus import EventBus
+
+logger = get_logger(__name__)
+
+class SimpleStrategy:
+    """Dummy trading strategy for testing"""
+    
+    def __init__(self, name: str, config: Dict[str, Any]):
+        self.name = name
+        self.config = config
+        self.enabled = True
+        self.position_size = config.get("position_size", 100)
+        self.symbols = config.get("symbols", ["AAPL"])
+        
+    def analyze(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Analyze market data and generate trading signal"""
+        symbol = market_data.get("symbol")
+        change_percent = market_data.get("data", {}).get("change_percent", 0)
+        
+        if symbol not in self.symbols:
+            return None
+            
+        # Simple dummy strategy logic
+        if change_percent > 2.0:  # Price up > 2%
+            return {
+                "action": "sell",
+                "symbol": symbol,
+                "quantity": self.position_size,
+                "reason": f"Price increased {change_percent}% - taking profit",
+                "strategy": self.name
+            }
+        elif change_percent < -2.0:  # Price down > 2%
+            return {
+                "action": "buy", 
+                "symbol": symbol,
+                "quantity": self.position_size,
+                "reason": f"Price dropped {change_percent}% - buying dip",
+                "strategy": self.name
+            }
+        
+        return None
+
+
+class Marvin:
+    """
+    Strategy Execution Module - Autonomous module for trading strategy management.
+    
+    Loads strategies, processes market data, and generates trade signals.
+    Operates autonomously based on events.
+    """
+    
+    def __init__(self, event_bus: EventBus):
+        self.event_bus = event_bus
+        self.running = False
+        self.ready = False
+        
+        # Strategy management
+        self.strategies: Dict[str, SimpleStrategy] = {}
+        self.strategy_performance: Dict[str, Dict[str, Any]] = {}
+        
+        # Market data tracking
+        self.latest_market_data: Dict[str, Dict[str, Any]] = {}
+        
+        # Trading state
+        self.platforms_available = False
+        self.market_data_active = False
+        
+        # Subscribe to system events immediately during initialization
+        self.event_bus.subscribe("system_init", self._on_system_init)
+        self.event_bus.subscribe("system_ready", self._on_system_ready)
+        self.event_bus.subscribe("system_terminate", self._on_system_terminate)
+        
+        logger.info("Marvin initialized - Strategy Execution Module ready")
+    
+    async def startup(self) -> None:
+        """Start Marvin module and register event handlers"""
+        logger.info("Marvin starting up - Initializing strategy management...")
+        
+        # Subscribe to trading-specific events
+        self.event_bus.subscribe("platform_available", self._on_platform_available)
+        self.event_bus.subscribe("market_data_update", self._on_market_data_update)
+        self.event_bus.subscribe("order_filled", self._on_order_filled)
+        
+        # Load default strategies
+        await self._load_strategies()
+        
+        self.running = True
+        self.ready = True
+        
+        # Report ready to GLaDOS
+        await self.event_bus.publish("module_ready", {
+            "module": "marvin",
+            "status": "ready",
+            "strategies_loaded": len(self.strategies),
+            "message": "Strategy management system online"
+        })
+        
+        logger.info("Marvin startup complete - Strategy Execution Module online")
+    
+    async def _on_system_init(self, data: Any) -> None:
+        """Handle system initialization"""
+        logger.info("Marvin received system_init - Initializing strategies")
+        await self.startup()
+    
+    async def _on_system_ready(self, data: Any) -> None:
+        """Handle system ready - start requesting platforms and market data"""
+        logger.info("Marvin received system_ready - Beginning trading operations")
+        
+        # Request trading platforms
+        await self.event_bus.publish("trading_platform_request", {
+            "module": "marvin",
+            "request_id": f"marvin_platform_req_{asyncio.get_event_loop().time()}",
+            "timestamp": asyncio.get_event_loop().time()
+        })
+        
+        # Start requesting market data for tracked symbols
+        await self._request_market_data()
+    
+    async def _on_system_terminate(self, data: Any) -> None:
+        """Handle system termination"""
+        logger.info("Marvin received system_terminate - Stopping strategy execution")
+        await self.shutdown()
+    
+    async def _on_platform_available(self, data: Any) -> None:
+        """Handle platform availability response"""
+        platforms = data.get("platforms", {})
+        logger.info(f"Platforms available: {list(platforms.keys())}")
+        
+        self.platforms_available = True
+        
+        # Log platform capabilities
+        for platform_id, platform_info in platforms.items():
+            logger.info(f"Platform {platform_id}: {platform_info.get('name')} - {platform_info.get('features')}")
+    
+    async def _on_market_data_update(self, data: Any) -> None:
+        """Handle market data updates and generate trading signals"""
+        symbol = data.get("symbol")
+        market_data = data.get("data", {})
+        
+        if not symbol:
+            return
+            
+        # Store latest market data
+        self.latest_market_data[symbol] = data
+        self.market_data_active = True
+        
+        logger.debug(f"Market data update: {symbol} @ ${market_data.get('price', 0):.2f}")
+        
+        # Process through all strategies
+        for strategy_name, strategy in self.strategies.items():
+            if not strategy.enabled:
+                continue
+                
+            try:
+                signal = strategy.analyze(data)
+                if signal:
+                    await self._execute_signal(signal)
+                    
+            except Exception as e:
+                logger.error(f"Error in strategy {strategy_name}: {e}")
+    
+    async def _on_order_filled(self, data: Any) -> None:
+        """Handle order execution confirmations"""
+        order_id = data.get("order_id")
+        symbol = data.get("symbol")
+        side = data.get("side")
+        quantity = data.get("quantity")
+        price = data.get("price")
+        strategy = data.get("strategy", "unknown")
+        
+        logger.info(f"Order filled: {order_id} - {side} {quantity} {symbol} @ ${price:.2f}")
+        
+        # Update strategy performance tracking
+        if strategy in self.strategy_performance:
+            self.strategy_performance[strategy]["trades"] += 1
+            if side == "buy":
+                self.strategy_performance[strategy]["total_invested"] += quantity * price
+            else:
+                self.strategy_performance[strategy]["total_returns"] += quantity * price
+    
+    async def _load_strategies(self) -> None:
+        """Load trading strategies"""
+        logger.info("Loading trading strategies...")
+        
+        # Load dummy strategies for testing
+        strategy_configs: List[Dict[str, Any]] = [
+            {
+                "name": "momentum_strategy",
+                "position_size": 50,
+                "symbols": ["AAPL", "GOOGL"]
+            },
+            {
+                "name": "mean_reversion_strategy", 
+                "position_size": 75,
+                "symbols": ["MSFT", "TSLA"]
+            },
+            {
+                "name": "tech_stock_strategy",
+                "position_size": 100,
+                "symbols": ["NVDA", "AAPL", "GOOGL"]
+            }
+        ]
+        
+        for config in strategy_configs:
+            strategy_name: str = config["name"]
+            strategy = SimpleStrategy(strategy_name, config)
+            self.strategies[strategy_name] = strategy
+            
+            # Initialize performance tracking
+            self.strategy_performance[strategy_name] = {
+                "trades": 0,
+                "total_invested": 0.0,
+                "total_returns": 0.0,
+                "active": True
+            }
+            
+            logger.info(f"Loaded strategy: {strategy_name} (symbols: {config['symbols']})")
+        
+        # Publish strategy load completion
+        await self.event_bus.publish("strategy_load_complete", {
+            "strategies": list(self.strategies.keys()),
+            "total_loaded": len(self.strategies),
+            "timestamp": asyncio.get_event_loop().time()
+        })
+        
+        logger.info(f"Strategy loading complete - {len(self.strategies)} strategies loaded")
+    
+    async def _request_market_data(self) -> None:
+        """Request market data for all symbols tracked by strategies"""
+        all_symbols: set[str] = set()
+        
+        # Collect all symbols from all strategies
+        for strategy in self.strategies.values():
+            all_symbols.update(strategy.symbols)
+        
+        logger.info(f"Requesting market data for symbols: {list(all_symbols)}")
+        
+        # Request market data for each symbol
+        for symbol in all_symbols:
+            await self.event_bus.publish("market_data_request", {
+                "symbol": symbol,
+                "type": "real_time",
+                "module": "marvin",
+                "request_id": f"marvin_data_req_{symbol}_{asyncio.get_event_loop().time()}",
+                "timestamp": asyncio.get_event_loop().time()
+            })
+    
+    async def _execute_signal(self, signal: Dict[str, Any]) -> None:
+        """Execute a trading signal"""
+        action = signal.get("action", "")
+        symbol = signal.get("symbol", "")
+        quantity = signal.get("quantity", 0)
+        reason = signal.get("reason", "")
+        strategy = signal.get("strategy", "")
+        
+        logger.info(f"Trading signal: {action.upper()} {quantity} {symbol} - {reason} (Strategy: {strategy})")
+        
+        # Check if we have platforms available
+        if not self.platforms_available:
+            logger.warning("No trading platforms available - signal ignored")
+            return
+        
+        # Publish trade signal for other modules to see
+        await self.event_bus.publish("trade_signal", {
+            "action": action,
+            "symbol": symbol, 
+            "quantity": quantity,
+            "reason": reason,
+            "strategy": strategy,
+            "timestamp": asyncio.get_event_loop().time()
+        })
+        
+        # Execute order directly
+        order_request: Dict[str, Any] = {
+            "order": {
+                "symbol": symbol,
+                "side": action,
+                "quantity": quantity,
+                "type": "market",
+                "strategy": strategy
+            },
+            "module": "marvin",
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        await self.event_bus.publish("order_request", order_request)
+        
+        logger.info(f"Order request sent: {action} {quantity} {symbol}")
+    
+    async def _report_health(self) -> None:
+        """Report module health status"""
+        active_strategies = len([s for s in self.strategies.values() if s.enabled])
+        
+        health_status: Dict[str, Any] = {
+            "module": "marvin",
+            "status": "healthy" if self.running and self.ready else "error",
+            "strategies_loaded": len(self.strategies),
+            "strategies_active": active_strategies,
+            "platforms_available": self.platforms_available,
+            "market_data_active": self.market_data_active,
+            "symbols_tracked": len(self.latest_market_data),
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        await self.event_bus.publish("module_health", health_status)
+    
+    async def shutdown(self) -> None:
+        """Gracefully shutdown Marvin module"""
+        logger.info("Marvin shutting down - Stopping strategy execution...")
+        
+        self.running = False
+        
+        # Disable all strategies
+        for strategy in self.strategies.values():
+            strategy.enabled = False
+        
+        # Log final performance
+        logger.info("Final strategy performance:")
+        for name, perf in self.strategy_performance.items():
+            logger.info(f"  {name}: {perf['trades']} trades, "
+                       f"${perf['total_invested']:.2f} invested, "
+                       f"${perf['total_returns']:.2f} returns")
+        
+        self.ready = False
+        
+        # Report shutdown complete
+        await self.event_bus.publish("module_shutdown_complete", {
+            "module": "marvin",
+            "message": "Strategy execution stopped, performance logged"
+        })
+        
+        logger.info("Marvin shutdown complete - Strategy Execution Module offline")
+
+
+# Utility functions for external access
+async def create_marvin(event_bus: EventBus) -> Marvin:
+    """Factory function to create and initialize Marvin module"""
+    marvin = Marvin(event_bus)
+    return marvin

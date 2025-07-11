@@ -10,42 +10,66 @@
 
 **特点**：
 
+- **事件驱动架构**：通过内部事件总线实现模块间自主通信。
 - 模块化设计，支持扩展。
 - 基于 RESTful API 的后端架构。
 - 敏感信息通过 GitHub Secrets 管理，使用 GitHub Actions 实现 CI/CD。
-- 基于内部事件总线的模块间通信系统。
 
 ---
 
-### 模块划分
+### 事件驱动架构设计
+
+**核心原则**：模块通过事件进行自主通信，最小化中央协调。
+
+**GLaDOS 角色**：最小化编排器，仅处理系统初始化、健康监控和关闭协调。
+
+**模块自主性**：每个模块管理自己的生命周期，直接通过事件与其他模块通信。
+
+**通信流程示例**：
+1. GLaDOS 发布 `system_init` → 所有模块开始初始化
+2. 模块完成启动并发布 `module_ready` → GLaDOS 收集就绪状态
+3. GLaDOS 在所有模块就绪时发布 `system_ready` → 开始操作
+4. Marvin 发布 `strategy_load_request` → 策略初始化
+5. 策略发布 `trading_platform_request` → Veda 响应
+6. Veda 发布 `platform_available` → 策略接收
+7. 策略发布 `market_data_request` → WallE/Veda 响应
+8. 持续自主通信...
+9. GLaDOS 发布 `system_terminate` → 有序关闭序列开始
+
+---
+
+### 模块概述
 
 #### **1. GLaDOS (主应用程序类)**
 
 - **职责**：
-  - **主要角色**：管理整个交易系统生命周期的主应用程序类。
-  - **系统编排**：协调启动、关闭和模块初始化。
-  - **模块协调**：通过事件总线管理所有交易模块之间的通信。
-  - **应用管理**：处理系统健康监控、错误恢复和优雅关闭。
-  - **事件协调**：处理关键系统事件（市场数据、交易信号、订单成交）。
-  - **进程管理**：维护主应用程序循环并确保系统稳定性。
+  - **系统初始化**：发布 `system_init` 事件并协调模块启动
+  - **健康监控**：收集模块健康状态并协调系统就绪状态
+  - **模块协调**：等待所有模块报告就绪后开始操作
+  - **关闭协调**：编排有序关闭序列以防止问题
+  - **应急响应**：处理系统错误和紧急关闭
 - **设计特点**：
-  - 包含主应用程序实例并管理核心系统基础设施。
-  - 实现适当的信号处理以实现优雅关闭。
-  - 协调模块启动顺序和依赖管理。
-  - 提供集中的系统监控和健康检查。
+  - 操作前模块健康检查协调
+  - 有序关闭序列（策略 → 数据 → APIs → 核心）
+  - 紧急干预能力
+- **事件通信**：
+  - 发布：`system_init`, `system_ready`, `system_terminate`, `emergency_shutdown`
+  - 监听：`module_ready`, `module_health`, `system_error`, `module_shutdown_request`
 
-#### **2. Veda (API接口数据处理模块)**
+#### **2. Veda (交易所API管理器)**
 
 - **职责**：
-  - 负责与交易所的所有交互，包括：
-    - 拉取市场数据。
-    - 获取账户信息。
-    - 执行买卖订单。
-  - 支持历史数据抓取，并保存到本地数据库。
-  - 提供标准化接口，使扩展到其他交易所更容易。
+  - **API集成**：处理与交易平台/交易所的所有交互
+  - **市场数据**：提供实时和历史市场数据
+  - **订单执行**：通过交易所API执行买卖订单
+  - **账户管理**：获取账户信息和投资组合状态
+  - **平台发现**：响应平台可用性请求
+- **事件通信**：
+  - 监听：`trading_platform_request`, `market_data_request`, `order_request`
+  - 发布：`platform_available`, `market_data_update`, `order_filled`
 - **设计特点**：
-  - 通过插件架构管理多个交易所连接器。
-  - 直接 API 调用，支持异步操作以实现高性能数据处理。
+  - 通过插件架构管理多个交易所连接器
+  - 基于事件请求的自主操作
 
 #### **3. WallE (数据存储模块)**
 
@@ -87,6 +111,85 @@
   - 专用UI后端 - GLaDOS处理核心业务逻辑，Haro专注于UI需求。
   - WebSocket支持无需轮询的实时更新。
   - 清晰分离：frontend/ 目录包含React应用，Haro提供其后端API。
+
+---
+
+### 系统协调模式
+
+#### **模块健康检查系统**
+
+**启动协调**：
+1. GLaDOS 发布 `system_init`
+2. 每个模块初始化并发布带状态的 `module_ready`
+3. GLaDOS 等待所有模块报告就绪
+4. GLaDOS 发布 `system_ready` → 交易操作开始
+5. 通过 `module_health` 事件进行定期健康检查
+
+**健康检查事件**：
+- `module_ready`: 模块初始化完成并准备操作
+- `module_health`: 定期健康状态（健康/降级/错误）
+- `system_ready`: 所有模块就绪，可以开始交易操作
+- `system_status_check`: 请求所有模块报告当前健康状态
+
+#### **有序关闭序列**
+
+**关闭优先级顺序**：
+1. **策略** (Marvin) - 停止生成新信号，完成待处理操作
+2. **UI后端** (Haro) - 关闭WebSocket连接，停止API端点
+3. **交易所API** (Veda) - 取消待处理订单，关闭API连接
+4. **数据库** (WallE) - 刷新待写入数据，关闭数据库连接
+5. **核心系统** - 事件总线、日志、应用程序关闭
+
+**关闭事件**：
+- `system_terminate`: 开始有序关闭序列
+- `module_shutdown_complete`: 模块已完成关闭
+- `emergency_shutdown`: 需要立即关闭
+- `shutdown_timeout`: 模块关闭超时
+
+---
+
+### 事件总线通信模式
+
+#### **系统事件（GLaDOS管理）**：
+- `system_init`: 系统启动通知
+- `system_ready`: 所有模块就绪，可以开始操作
+- `system_terminate`: 开始有序关闭序列
+- `system_status_check`: 请求系统范围健康检查
+- `emergency_shutdown`: 需要立即关闭
+- `module_ready`: 模块初始化完成
+- `module_health`: 模块健康状态报告
+- `module_shutdown_complete`: 模块关闭确认
+- `system_error`: 需要GLaDOS干预的关键错误
+
+#### **模块间事件**：
+
+**策略与交易**：
+- `strategy_load_request`: 请求加载策略
+- `trading_platform_request`: 请求可用交易平台
+- `platform_available`: 响应平台信息
+- `market_data_request`: 请求市场数据
+- `market_data_update`: 市场数据广播
+- `trade_signal`: 生成交易信号
+- `order_request`: 请求执行订单
+- `order_filled`: 订单执行确认
+
+**数据管理**：
+- `data_store_request`: 请求存储数据
+- `data_query_request`: 从数据库请求数据
+- `data_stored`: 数据存储确认
+- `data_response`: 数据查询响应
+- `historical_data_request`: 请求历史数据
+- `historical_data_response`: 历史数据交付
+
+**回测**：
+- `backtest_request`: 请求回测
+- `backtest_complete`: 回测完成
+- `backtest_results`: 回测结果
+
+**UI通信**：
+- `ui_data_request`: UI请求数据
+- `ui_update`: 用新数据更新UI
+- `user_action`: 来自前端的用户操作
 
 ---
 
@@ -237,5 +340,4 @@ weaver/
 ├── weaver.py                     # 替代入口点（向后兼容）
 ├── README.md                     # 项目概述和设置说明
 └── .gitignore                    # Git忽略模式
-```
 

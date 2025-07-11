@@ -4,10 +4,13 @@ Provides internal message passing system for module communication.
 """
 
 import asyncio
-from typing import Dict, List, Callable, Any
+from typing import Dict, List, Callable, Any, Union, Awaitable
 from core.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Type alias for event callbacks
+EventCallback = Callable[[Any], Union[None, Awaitable[None]]]
 
 class EventBus:
     """
@@ -16,34 +19,34 @@ class EventBus:
     """
     
     def __init__(self):
-        self.subscribers: Dict[str, List[Callable]] = {}
+        self.subscribers: Dict[str, List[EventCallback]] = {}
         self.running = False
         
-    async def start(self):
+    async def start(self) -> None:
         """Start the event bus"""
         self.running = True
         logger.info("Event bus started")
         
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the event bus"""
         self.running = False
         logger.info("Event bus stopped")
         
-    def subscribe(self, event_type: str, callback: Callable):
+    def subscribe(self, event_type: str, callback: EventCallback) -> None:
         """Subscribe to an event type"""
         if event_type not in self.subscribers:
             self.subscribers[event_type] = []
         self.subscribers[event_type].append(callback)
         logger.debug(f"Subscribed to event: {event_type}")
         
-    def unsubscribe(self, event_type: str, callback: Callable):
+    def unsubscribe(self, event_type: str, callback: EventCallback) -> None:
         """Unsubscribe from an event type"""
         if event_type in self.subscribers:
             if callback in self.subscribers[event_type]:
                 self.subscribers[event_type].remove(callback)
                 logger.debug(f"Unsubscribed from event: {event_type}")
                 
-    async def publish(self, event_type: str, data: Any = None):
+    async def publish(self, event_type: str, data: Any = None) -> None:
         """Publish an event to all subscribers"""
         if not self.running:
             logger.warning(f"Event bus not running, discarding event: {event_type}")

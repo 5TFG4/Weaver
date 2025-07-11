@@ -1,19 +1,20 @@
-### Project Backgroun#### **1. GLaDOS (Main Application Class)**
+### Project Background and Objectives
+
+*#### **1. GLaDOS (Main Application Class)**
 
 - **Responsibilities:**
-  - **Primary Role:** Main application class that manages the entire trading system lifecycle.
-  - **System Orchestration:** Coordinates startup, shutdown, and module initialization.
-  - **Module Coordination:** Manages communication between all trading modules through event bus.
-  - **Application Management:** Handles system health monitoring, error recovery, and graceful shutdown.
-  - **Event Coordination:** Processes key system events (market data, trade signals, order fills).
-  - **Process Management:** Maintains the main application loop and ensures system stability.
+  - **System Initialization:** Publishes `system_init` event and coordinates module startup
+  - **Health Monitoring:** Collect module health status and coordinate system readiness
+  - **Module Coordination:** Wait for all modules to report ready before starting operations
+  - **Shutdown Coordination:** Orchestrate ordered shutdown sequence to prevent issues
+  - **Emergency Response:** Handle system errors and emergency shutdowns
 - **Design Features:**
-  - Contains the main application instance and manages core system infrastructure.
-  - Implements proper signal handling for graceful shutdown.
-  - Coordinates module startup sequence and dependency management.
-  - Provides centralized system monitoring and health checks.ectives
-
-**Objectives:**
+  - Module health check coordination before system operations
+  - Ordered shutdown sequence (strategies → data → APIs → core)
+  - Emergency intervention capabilities
+- **Event Communication:**
+  - Publishes: `system_init`, `system_ready`, `system_terminate`, `emergency_shutdown`
+  - Listens: `module_ready`, `module_health`, `system_error`, `module_shutdown_request`es:**
 Build a Python-based automated trading bot, deployable on a local server, capable of 24/7 operation. The bot will be containerized using Docker and support the following core functionalities:
 
 - Integration with multiple exchange APIs (with priority support for Alpaca).
@@ -23,10 +24,31 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 
 **Key Features:**
 
-- Modular design to facilitate scalability and extensibility.
+- **Event-Driven Architecture:** Autonomous module communication through internal event bus.
+- **Modular design** to facilitate scalability and extensibility.
 - Backend architecture based on RESTful APIs.
 - Sensitive data managed using GitHub Secrets, with CI/CD workflows implemented via GitHub Actions.
-- Event-driven architecture with internal message bus for module communication.
+
+---
+
+### Event-Driven Architecture Design
+
+**Core Principle:** Modules communicate autonomously through events, with minimal central coordination.
+
+**GLaDOS Role:** Minimal orchestrator handling only system initialization, health monitoring, and shutdown coordination.
+
+**Module Autonomy:** Each module manages its own lifecycle and communicates directly with other modules via events.
+
+**Communication Flow Example:**
+1. GLaDOS publishes `system_init` → all modules start initialization
+2. Modules complete startup and publish `module_ready` → GLaDOS collects readiness
+3. GLaDOS publishes `system_ready` when all modules are ready → operations begin
+4. Marvin publishes `strategy_load_request` → strategies initialize  
+5. Strategy publishes `trading_platform_request` → Veda responds
+6. Veda publishes `platform_available` → strategies receive
+7. Strategy publishes `market_data_request` → WallE/Veda respond
+8. Continuous autonomous communication...
+9. GLaDOS publishes `system_terminate` → ordered shutdown sequence begins
 
 ---
 
@@ -98,7 +120,54 @@ Build a Python-based automated trading bot, deployable on a local server, capabl
 
 ---
 
-### Communication and Data Flow Design
+### System Coordination Patterns
+
+#### **Module Health Check System**
+
+**Startup Coordination:**
+1. GLaDOS publishes `system_init` 
+2. Each module initializes and publishes `module_ready` with status
+3. GLaDOS waits for all modules to report ready
+4. GLaDOS publishes `system_ready` → trading operations begin
+5. Periodic health checks via `module_health` events
+
+**Health Check Events:**
+- `module_ready`: Module initialization complete and ready for operations
+- `module_health`: Periodic health status (healthy/degraded/error)
+- `system_ready`: All modules ready, trading operations can begin
+- `system_status_check`: Request all modules to report current health
+
+#### **Ordered Shutdown Sequence**
+
+**Shutdown Priority Order:**
+1. **Strategies** (Marvin) - Stop generating new signals, complete pending operations
+2. **UI Backend** (Haro) - Close WebSocket connections, stop API endpoints  
+3. **Exchange APIs** (Veda) - Cancel pending orders, close API connections
+4. **Database** (WallE) - Flush pending writes, close database connections
+5. **Core Systems** - Event bus, logging, application shutdown
+
+**Shutdown Events:**
+- `system_terminate`: Begin ordered shutdown sequence
+- `module_shutdown_complete`: Module has completed shutdown
+- `emergency_shutdown`: Immediate shutdown required
+- `shutdown_timeout`: Module taking too long to shutdown
+
+---
+
+### Event Bus Communication Patterns
+
+#### **System Events (GLaDOS Managed):**
+- `system_init`: System startup notification
+- `system_ready`: All modules ready, operations can begin
+- `system_terminate`: Begin ordered shutdown sequence
+- `system_status_check`: Request system-wide health check
+- `emergency_shutdown`: Immediate shutdown required
+- `module_ready`: Module initialization complete
+- `module_health`: Module health status report
+- `module_shutdown_complete`: Module shutdown confirmation
+- `system_error`: Critical error requiring GLaDOS intervention
+
+#### **Module-to-Module Events:**
 
 **Inter-Module Communication:**
 
