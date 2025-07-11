@@ -32,17 +32,21 @@ class PaperTradingConnector(BaseTradingConnector):
         super().__init__(config, event_bus)
         
         # Initialize paper trading account
-        self._account = Account(
+        self._account = self._create_default_account()
+        
+        # Market data simulation
+        self._market_prices: Dict[str, Decimal] = {}
+        self._price_task: Optional[asyncio.Task[None]] = None
+        
+    def _create_default_account(self) -> Account:
+        """Create a default paper trading account"""
+        return Account(
             account_id="paper_account",
             buying_power=Decimal("100000"),  # $100k starting capital
             portfolio_value=Decimal("100000"),
             cash=Decimal("100000"),
             day_trade_buying_power=Decimal("400000")  # 4x leverage
         )
-        
-        # Market data simulation
-        self._market_prices: Dict[str, Decimal] = {}
-        self._price_task: Optional[asyncio.Task[None]] = None
         
     async def connect(self) -> bool:
         """Connect to paper trading system"""
@@ -117,6 +121,10 @@ class PaperTradingConnector(BaseTradingConnector):
         
     async def get_account_info(self) -> Account:
         """Get simulated account information"""
+        # Ensure account is initialized
+        if self._account is None:
+            self._account = self._create_default_account()
+        
         # Update portfolio value based on positions
         portfolio_value = self._account.cash
         
@@ -146,7 +154,7 @@ class PaperTradingConnector(BaseTradingConnector):
         current_price = self._market_prices.get(symbol, Decimal("100"))
         
         # Generate 100 data points for simulation
-        for i in range(100):
+        for _ in range(100):
             # Random walk
             change = Decimal(str(random.uniform(-0.05, 0.05)))  # ±5% change
             current_price = current_price * (1 + change)
@@ -198,6 +206,10 @@ class PaperTradingConnector(BaseTradingConnector):
             
     async def _fill_order(self, order: Order, fill_price: Decimal, fill_quantity: Decimal) -> None:
         """Fill a simulated order"""
+        # Ensure account is initialized
+        if self._account is None:
+            self._account = self._create_default_account()
+            
         order.status = OrderStatus.FILLED
         order.filled_quantity = fill_quantity
         order.filled_price = fill_price

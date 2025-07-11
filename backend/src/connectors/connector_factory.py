@@ -7,7 +7,7 @@ Factory for creating and managing different types of connectors.
 from typing import Dict, Any, Optional, List, Type, TYPE_CHECKING
 from enum import Enum
 
-from .base_connector import BaseConnector, ConnectorConfig
+from .base_connector import BaseConnector
 from .base_trading_connector import BaseTradingConnector, TradingConnectorConfig
 from .base_data_connector import BaseDataConnector, DataConnectorConfig
 from .paper_trading_connector import PaperTradingConnector

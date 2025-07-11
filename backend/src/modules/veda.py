@@ -6,21 +6,18 @@ Provides market data, executes orders, and manages exchange connections.
 """
 
 import asyncio
-from typing import Dict, List, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional
+from decimal import Decimal
 from core.logger import get_logger
 from core.event_bus import EventBus
 
 # Import connector components
 from connectors import (
     ConnectorFactory, ConnectorType, 
-    TradingConnectorConfig, DataConnectorConfig,
+    TradingConnectorConfig,
     BaseTradingConnector, BaseDataConnector,
-    Order, OrderSide, OrderType, OrderStatus,
-    get_default_connector_configs
+    Order, OrderSide, OrderType
 )
-
-if TYPE_CHECKING:
-    from connectors import BaseConnector
 
 logger = get_logger(__name__)
 
@@ -43,9 +40,6 @@ class VedaConnectorManager:
         """Initialize default connectors"""
         logger.info("Initializing trading connectors...")
         
-        # Get default configurations
-        default_configs = get_default_connector_configs()
-        
         # Create paper trading connector
         paper_config = TradingConnectorConfig(
             name="paper_trading",
@@ -54,7 +48,7 @@ class VedaConnectorManager:
             retry_attempts=3,
             retry_delay=1.0,
             timeout=30.0,
-            commission_rate=0.001,
+            commission_rate=Decimal("0.001"),
             supported_symbols=["AAPL", "GOOGL", "MSFT", "TSLA", "NVDA", "AMZN"]
         )
         
@@ -115,7 +109,7 @@ class VedaConnectorManager:
                 
     def get_available_trading_platforms(self) -> Dict[str, Dict[str, Any]]:
         """Get available trading platforms"""
-        platforms = {}
+        platforms: Dict[str, Dict[str, Any]] = {}
         
         for name, connector in self.trading_connectors.items():
             if connector.is_connected:
@@ -283,7 +277,6 @@ class Veda:
         """Handle market data requests"""
         symbol: str = self._safe_get(data, "symbol", "AAPL")
         data_type: str = self._safe_get(data, "type", "real_time")
-        request_id: Optional[str] = self._safe_get(data, "request_id")
         
         logger.info(f"Market data request: {symbol} ({data_type})")
         
