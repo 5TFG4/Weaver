@@ -6,18 +6,18 @@ Handles dynamic loading and creation of trading strategies.
 from typing import Dict, Any, List, Type
 from .base_strategy import BaseStrategy, StrategyConfig
 from .momentum_strategy import MomentumStrategy
-from .mean_reversion_strategy import MeanReversionStrategy
-from .tech_stock_strategy import TechStockStrategy
+# from .mean_reversion_strategy import MeanReversionStrategy  # Disabled for now
+# from .tech_stock_strategy import TechStockStrategy  # Disabled for now
 
 
 class StrategyFactory:
     """Factory for creating trading strategy instances"""
     
-    # Registry of available strategies
+    # Registry of available strategies - simplified to only momentum strategy
     STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
         "momentum_strategy": MomentumStrategy,
-        "mean_reversion_strategy": MeanReversionStrategy,
-        "tech_stock_strategy": TechStockStrategy
+        # "mean_reversion_strategy": MeanReversionStrategy,  # Disabled for now
+        # "tech_stock_strategy": TechStockStrategy  # Disabled for now
     }
     
     @classmethod
@@ -73,37 +73,16 @@ class StrategyLoader:
     
     @staticmethod
     def get_default_strategy_configs() -> List[Dict[str, Any]]:
-        """Get default strategy configurations for testing"""
+        """Get default strategy configuration for testing - simplified to one strategy"""
         return [
             {
-                "name": "momentum_strategy",
+                "name": "simple_momentum",
                 "strategy_type": "momentum_strategy",
                 "position_size": 50,
-                "symbols": ["AAPL", "GOOGL"],
+                "symbols": ["AAPL", "GOOGL", "MSFT"],
                 "parameters": {
                     "momentum_threshold": 2.0,
                     "min_price_change": 0.5
-                }
-            },
-            {
-                "name": "mean_reversion_strategy",
-                "strategy_type": "mean_reversion_strategy", 
-                "position_size": 75,
-                "symbols": ["MSFT", "TSLA"],
-                "parameters": {
-                    "reversion_threshold": 2.5,
-                    "max_position_multiplier": 1.5
-                }
-            },
-            {
-                "name": "tech_stock_strategy",
-                "strategy_type": "tech_stock_strategy",
-                "position_size": 100,
-                "symbols": ["NVDA", "AAPL", "GOOGL"],
-                "parameters": {
-                    "tech_momentum_threshold": 2.0,
-                    "volatility_adjustment": 1.2,
-                    "large_position_multiplier": 2.0
                 }
             }
         ]

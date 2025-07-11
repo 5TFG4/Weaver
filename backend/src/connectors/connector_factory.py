@@ -10,7 +10,8 @@ from enum import Enum
 from .base_connector import BaseConnector
 from .base_trading_connector import BaseTradingConnector, TradingConnectorConfig
 from .base_data_connector import BaseDataConnector, DataConnectorConfig
-from .paper_trading_connector import PaperTradingConnector
+# from .paper_trading_connector import PaperTradingConnector  # Disabled for now
+from .alpaca_connector import AlpacaConnector
 
 if TYPE_CHECKING:
     from core.event_bus import EventBus
@@ -33,9 +34,9 @@ class ConnectorFactory:
     
     # Registry of available connectors
     _trading_connectors: Dict[ConnectorType, Type[BaseTradingConnector]] = {
-        ConnectorType.PAPER_TRADING: PaperTradingConnector,
+        # ConnectorType.PAPER_TRADING: PaperTradingConnector,  # Disabled for now
+        ConnectorType.ALPACA: AlpacaConnector,
         # TODO: Add other trading connectors
-        # ConnectorType.ALPACA: AlpacaConnector,
         # ConnectorType.INTERACTIVE_BROKERS: InteractiveBrokersConnector,
     }
     

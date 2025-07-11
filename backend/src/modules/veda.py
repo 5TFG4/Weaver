@@ -7,14 +7,12 @@ Provides market data, executes orders, and manages exchange connections.
 
 import asyncio
 from typing import Dict, Any, Optional
-from decimal import Decimal
 from core.logger import get_logger
 from core.event_bus import EventBus
+from core.application import Application
 
 # Import connector components
 from connectors import (
-    ConnectorFactory, ConnectorType, 
-    TradingConnectorConfig,
     BaseTradingConnector, BaseDataConnector,
     Order, OrderSide, OrderType
 )
@@ -26,42 +24,34 @@ class VedaConnectorManager:
     """
     Manages connectors for Veda module.
     
-    Handles creation, configuration, and lifecycle management of
-    trading and data connectors.
+    Uses the Application's connectors instead of creating its own.
     """
     
-    def __init__(self, event_bus: EventBus):
+    def __init__(self, event_bus: EventBus, application: Application):
         self.event_bus = event_bus
-        self.factory = ConnectorFactory(event_bus)
+        self.application = application
         self.trading_connectors: Dict[str, BaseTradingConnector] = {}
         self.data_connectors: Dict[str, BaseDataConnector] = {}
         
     async def initialize_connectors(self) -> None:
-        """Initialize default connectors"""
+        """Initialize connectors by getting them from Application"""
         logger.info("Initializing trading connectors...")
         
-        # Create paper trading connector
-        paper_config = TradingConnectorConfig(
-            name="paper_trading",
-            enabled=True,
-            paper_trading=True,
-            retry_attempts=3,
-            retry_delay=1.0,
-            timeout=30.0,
-            commission_rate=Decimal("0.001"),
-            supported_symbols=["AAPL", "GOOGL", "MSFT", "TSLA", "NVDA", "AMZN"]
-        )
-        
         try:
-            paper_connector = self.factory.create_trading_connector(
-                ConnectorType.PAPER_TRADING, 
-                paper_config
-            )
-            self.trading_connectors["paper_trading"] = paper_connector
-            logger.info("Paper trading connector created")
+            # Get connectors from Application
+            app_connectors = self.application.get_connectors()
             
-            # Start connectors
-            await self.start_all_connectors()
+            # Separate trading and data connectors
+            for name, connector in app_connectors.items():
+                if isinstance(connector, BaseTradingConnector):
+                    self.trading_connectors[name] = connector
+                    logger.info(f"Using trading connector: {name}")
+                elif isinstance(connector, BaseDataConnector):
+                    self.data_connectors[name] = connector
+                    logger.info(f"Using data connector: {name}")
+            
+            if not self.trading_connectors:
+                logger.warning("No trading connectors available")
             
         except Exception as e:
             logger.error(f"Failed to initialize connectors: {e}")
@@ -170,13 +160,14 @@ class Veda:
     Uses the new connector architecture for platform abstraction.
     """
     
-    def __init__(self, event_bus: EventBus) -> None:
+    def __init__(self, event_bus: EventBus, application: Application) -> None:
         self.event_bus: EventBus = event_bus
+        self.application: Application = application
         self.running: bool = False
         self.ready: bool = False
         
         # Connector manager
-        self.connector_manager = VedaConnectorManager(event_bus)
+        self.connector_manager = VedaConnectorManager(event_bus, application)
         
         # Subscribe to system events immediately during initialization
         self.event_bus.subscribe("system_init", self._on_system_init)

@@ -100,7 +100,7 @@ class GLaDOS:
             from modules.veda import Veda
             from modules.marvin import Marvin
             
-            self.veda = Veda(event_bus)
+            self.veda = Veda(event_bus, self.app)  # Pass Application to Veda
             self.marvin = Marvin(event_bus)
             
             logger.info("Core modules initialized (Veda, Marvin)")
