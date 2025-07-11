@@ -103,12 +103,6 @@ class GLaDOS:
             self.veda = Veda(event_bus)
             self.marvin = Marvin(event_bus)
             
-            # Initialize module readiness tracking
-            self.modules_ready = {
-                "veda": False,
-                "marvin": False
-            }
-            
             logger.info("Core modules initialized (Veda, Marvin)")
             
             # TODO: Initialize remaining modules when implemented

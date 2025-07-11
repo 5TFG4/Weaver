@@ -1,60 +1,22 @@
 """
 Marvin - Strategy Execution Module
-Dynamically loads and manages trading strategies.
+Dynamically loads and manages trading strategies using the new strategy architecture.
 Generates trade signals based on market data and strategy logic.
 """
 
 import asyncio
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from core.logger import get_logger
 from core.event_bus import EventBus
+from strategies import StrategyLoader, BaseStrategy, StrategySignal
 
 logger = get_logger(__name__)
-
-class SimpleStrategy:
-    """Dummy trading strategy for testing"""
-    
-    def __init__(self, name: str, config: Dict[str, Any]):
-        self.name = name
-        self.config = config
-        self.enabled = True
-        self.position_size = config.get("position_size", 100)
-        self.symbols = config.get("symbols", ["AAPL"])
-        
-    def analyze(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Analyze market data and generate trading signal"""
-        symbol = market_data.get("symbol")
-        change_percent = market_data.get("data", {}).get("change_percent", 0)
-        
-        if symbol not in self.symbols:
-            return None
-            
-        # Simple dummy strategy logic
-        if change_percent > 2.0:  # Price up > 2%
-            return {
-                "action": "sell",
-                "symbol": symbol,
-                "quantity": self.position_size,
-                "reason": f"Price increased {change_percent}% - taking profit",
-                "strategy": self.name
-            }
-        elif change_percent < -2.0:  # Price down > 2%
-            return {
-                "action": "buy", 
-                "symbol": symbol,
-                "quantity": self.position_size,
-                "reason": f"Price dropped {change_percent}% - buying dip",
-                "strategy": self.name
-            }
-        
-        return None
-
 
 class Marvin:
     """
     Strategy Execution Module - Autonomous module for trading strategy management.
     
-    Loads strategies, processes market data, and generates trade signals.
+    Loads strategies using the new architecture, processes market data, and generates trade signals.
     Operates autonomously based on events.
     """
     
@@ -63,8 +25,8 @@ class Marvin:
         self.running = False
         self.ready = False
         
-        # Strategy management
-        self.strategies: Dict[str, SimpleStrategy] = {}
+        # Strategy management - now uses BaseStrategy instances
+        self.strategies: Dict[str, BaseStrategy] = {}
         self.strategy_performance: Dict[str, Dict[str, Any]] = {}
         
         # Market data tracking
@@ -132,19 +94,21 @@ class Marvin:
     
     async def _on_platform_available(self, data: Any) -> None:
         """Handle platform availability response"""
-        platforms = data.get("platforms", {})
+        platforms: Dict[str, Dict[str, Any]] = data.get("platforms", {})
         logger.info(f"Platforms available: {list(platforms.keys())}")
         
         self.platforms_available = True
         
         # Log platform capabilities
         for platform_id, platform_info in platforms.items():
-            logger.info(f"Platform {platform_id}: {platform_info.get('name')} - {platform_info.get('features')}")
+            name: str = platform_info.get("name", "Unknown")
+            features: List[str] = platform_info.get("features", [])
+            logger.info(f"Platform {platform_id}: {name} - {features}")
     
     async def _on_market_data_update(self, data: Any) -> None:
         """Handle market data updates and generate trading signals"""
-        symbol = data.get("symbol")
-        market_data = data.get("data", {})
+        symbol: Optional[str] = data.get("symbol")
+        market_data: Dict[str, Any] = data.get("data", {})
         
         if not symbol:
             return
@@ -153,15 +117,16 @@ class Marvin:
         self.latest_market_data[symbol] = data
         self.market_data_active = True
         
-        logger.debug(f"Market data update: {symbol} @ ${market_data.get('price', 0):.2f}")
+        price: float = market_data.get("price", 0.0)
+        logger.debug(f"Market data update: {symbol} @ ${price:.2f}")
         
         # Process through all strategies
         for strategy_name, strategy in self.strategies.items():
-            if not strategy.enabled:
+            if not strategy.is_enabled():
                 continue
                 
             try:
-                signal = strategy.analyze(data)
+                signal: Optional[StrategySignal] = strategy.analyze(data)
                 if signal:
                     await self._execute_signal(signal)
                     
@@ -170,12 +135,12 @@ class Marvin:
     
     async def _on_order_filled(self, data: Any) -> None:
         """Handle order execution confirmations"""
-        order_id = data.get("order_id")
-        symbol = data.get("symbol")
-        side = data.get("side")
-        quantity = data.get("quantity")
-        price = data.get("price")
-        strategy = data.get("strategy", "unknown")
+        order_id: str = data.get("order_id", "")
+        symbol: str = data.get("symbol", "")
+        side: str = data.get("side", "")
+        quantity: int = data.get("quantity", 0)
+        price: float = data.get("price", 0.0)
+        strategy: str = data.get("strategy", "unknown")
         
         logger.info(f"Order filled: {order_id} - {side} {quantity} {symbol} @ ${price:.2f}")
         
@@ -188,34 +153,17 @@ class Marvin:
                 self.strategy_performance[strategy]["total_returns"] += quantity * price
     
     async def _load_strategies(self) -> None:
-        """Load trading strategies"""
+        """Load trading strategies using the new architecture"""
         logger.info("Loading trading strategies...")
         
-        # Load dummy strategies for testing
-        strategy_configs: List[Dict[str, Any]] = [
-            {
-                "name": "momentum_strategy",
-                "position_size": 50,
-                "symbols": ["AAPL", "GOOGL"]
-            },
-            {
-                "name": "mean_reversion_strategy", 
-                "position_size": 75,
-                "symbols": ["MSFT", "TSLA"]
-            },
-            {
-                "name": "tech_stock_strategy",
-                "position_size": 100,
-                "symbols": ["NVDA", "AAPL", "GOOGL"]
-            }
-        ]
+        # Get default strategy configurations
+        strategy_configs = StrategyLoader.get_default_strategy_configs()
         
-        for config in strategy_configs:
-            strategy_name: str = config["name"]
-            strategy = SimpleStrategy(strategy_name, config)
-            self.strategies[strategy_name] = strategy
-            
-            # Initialize performance tracking
+        # Load strategies using the new architecture
+        self.strategies = StrategyLoader.load_strategies_from_config(strategy_configs)
+        
+        # Initialize performance tracking for each strategy
+        for strategy_name, strategy in self.strategies.items():
             self.strategy_performance[strategy_name] = {
                 "trades": 0,
                 "total_invested": 0.0,
@@ -223,7 +171,7 @@ class Marvin:
                 "active": True
             }
             
-            logger.info(f"Loaded strategy: {strategy_name} (symbols: {config['symbols']})")
+            logger.info(f"Loaded strategy: {strategy_name} (symbols: {strategy.symbols})")
         
         # Publish strategy load completion
         await self.event_bus.publish("strategy_load_complete", {
@@ -254,13 +202,21 @@ class Marvin:
                 "timestamp": asyncio.get_event_loop().time()
             })
     
-    async def _execute_signal(self, signal: Dict[str, Any]) -> None:
-        """Execute a trading signal"""
-        action = signal.get("action", "")
-        symbol = signal.get("symbol", "")
-        quantity = signal.get("quantity", 0)
-        reason = signal.get("reason", "")
-        strategy = signal.get("strategy", "")
+    async def _execute_signal(self, signal: Union[StrategySignal, Dict[str, Any]]) -> None:
+        """Execute a trading signal from a StrategySignal object"""
+        # Handle both StrategySignal objects and dict signals for backward compatibility
+        if isinstance(signal, StrategySignal):
+            # It's a StrategySignal object
+            signal_dict = signal.to_dict()
+        else:
+            # It's already a dict
+            signal_dict = signal
+            
+        action: str = signal_dict.get("action", "")
+        symbol: str = signal_dict.get("symbol", "")
+        quantity: int = signal_dict.get("quantity", 0)
+        reason: str = signal_dict.get("reason", "")
+        strategy: str = signal_dict.get("strategy", "")
         
         logger.info(f"Trading signal: {action.upper()} {quantity} {symbol} - {reason} (Strategy: {strategy})")
         
@@ -270,14 +226,7 @@ class Marvin:
             return
         
         # Publish trade signal for other modules to see
-        await self.event_bus.publish("trade_signal", {
-            "action": action,
-            "symbol": symbol, 
-            "quantity": quantity,
-            "reason": reason,
-            "strategy": strategy,
-            "timestamp": asyncio.get_event_loop().time()
-        })
+        await self.event_bus.publish("trade_signal", signal_dict)
         
         # Execute order directly
         order_request: Dict[str, Any] = {
@@ -298,7 +247,7 @@ class Marvin:
     
     async def _report_health(self) -> None:
         """Report module health status"""
-        active_strategies = len([s for s in self.strategies.values() if s.enabled])
+        active_strategies = len([s for s in self.strategies.values() if s.is_enabled()])
         
         health_status: Dict[str, Any] = {
             "module": "marvin",
@@ -321,7 +270,7 @@ class Marvin:
         
         # Disable all strategies
         for strategy in self.strategies.values():
-            strategy.enabled = False
+            strategy.enabled = False  # type: ignore[attr-defined]
         
         # Log final performance
         logger.info("Final strategy performance:")
