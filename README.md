@@ -1,40 +1,76 @@
 # Weaver
-> An automatic trading system
 
-<div align='center' ><strong>&ensp;&ensp;&nbsp;&nbsp;&nbsp;[W]allE</strong></div>
+> An automated trading system (live + backtesting) with a React UI.
 
-<div align='center' ><strong>&ensp;&nbsp;V[E]da</strong></div>
-
-<div align='center' ><strong>&nbsp;&nbsp;&nbsp;&nbsp;GL[A]DOS</strong></div>
-
-<div align='center' ><strong>Mar[V]in&ensp;&nbsp;</strong></div>
-
-<div align='center' ><strong>Gr[E]ta</strong></div>
-
-<div align='center' ><strong>Ha[R]o&ensp;</strong></div>
+<p align="center">
+  <strong>&ensp;&ensp;&nbsp;&nbsp;&nbsp;[W]allE</strong><br/>
+  <strong>&ensp;&nbsp;V[E]da</strong><br/>
+  <strong>&nbsp;&nbsp;&nbsp;&nbsp;GL[A]DOS</strong><br/>
+  <strong>Mar[V]in&ensp;&nbsp;</strong><br/>
+  <strong>Gr[E]ta</strong><br/>
+  <strong>Ha[R]o&ensp;</strong>
+</p>
 
 
-## Modules
 
-### WallE
-Data storage module.
+## Architecture
 
-### Veda
-API control module.
+* Full spec: **[Architecture Baseline](docs/ARCHITECTURE_BASELINE.md)**
 
-### GLaDOS
-Central control module for all modules.
+  * Quick jump: [Repository Structure](docs/ARCHITECTURE_BASELINE.md#11-repository-structure)
+  * Quick jump: [Deployment & Environment](docs/ARCHITECTURE_BASELINE.md#8-deployment--environment)
 
-### Marvin
-Main Control module for strategies.
 
-### Greta
-Backtesting module.
 
-### Haro
-Web UI module.
+## Modules (brief)
 
----
+* **GLaDOS** — Control plane & API (REST + SSE), domain routing, self‑clock.
+* **Veda** — Live data & trading (exchange adapters, orders, caching).
+* **Greta** — Backtesting (historical windows, fill/slippage/fees simulation).
+* **Marvin** — Strategy execution (strategy intents & decisions).
+* **WallE** — Persistence layer (centralized writes, repositories).
+* **Haro** — React web UI (SSE for thin events, details via REST).
 
-## How to run the bot
-`python -m weaver`
+
+
+## Quickstart
+
+### 1) Dev with Docker (recommended)
+
+```bash
+# from repository root
+cp .env.example .env
+cp .env.dev.example .env.dev
+
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
+# API:     http://localhost:8000
+# Frontend http://localhost:3000
+```
+
+### 2) “Prod-like” locally
+
+```bash
+docker compose -f docker/docker-compose.yml up -d --build
+# API:     http://localhost:8000
+# Frontend http://localhost:8080
+```
+
+### 3) Local (no Docker)
+
+```bash
+# backend
+pip install -r docker/backend/requirements.txt
+uvicorn glados.main:app --host 0.0.0.0 --port 8000 --reload
+
+# frontend (in ./haro)
+npm install
+npm run dev   # http://localhost:3000
+```
+
+
+
+## Endpoints (essentials)
+
+* REST: `GET /healthz`, `GET/POST /runs`, `GET /orders`, `GET /candles`
+* Realtime: `GET /events/stream` (SSE)  ·  Alternative: `/events/tail` (REST incremental)
+
