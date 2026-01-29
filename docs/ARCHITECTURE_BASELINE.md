@@ -205,6 +205,11 @@ weaver/
 │   │   │   ├── api.py                 # /healthz, /runs, /orders, /candles
 │   │   │   └── sse.py                 # /events/stream (or REST tail)
 │   │   ├── domain_router.py           # route strategy.* → live|backtest.*
+│   │   ├── clock/
+│   │   │   ├── base.py                # BaseClock ABC
+│   │   │   ├── realtime.py            # RealtimeClock (wall-clock aligned)
+│   │   │   ├── backtest.py            # BacktestClock (fast-forward)
+│   │   │   └── utils.py               # bar alignment calculations
 │   │   └── main.py                    # start EventPump/Clock/API
 │   ├── events/
 │   │   ├── protocol.py                # envelope/error model
@@ -283,9 +288,668 @@ weaver/
 
 
 
-## 12. Terms & Quick Reference
+## 12. Clock System (Self‑Clock)
+
+> **Critical Design Note**: Python's `asyncio.sleep()` is not precise. The clock system must handle both realtime trading (strict wall‑clock alignment) and backtesting (fast‑forward simulation).
+
+### 12.1 Clock Abstraction
+
+The clock system uses a **strategy pattern** with a common interface:
+
+```python
+class BaseClock(ABC):
+    @abstractmethod
+    async def start(self, run_id: str, timeframe: str) -> None:
+        """Start emitting clock.Tick events."""
+        pass
+
+    @abstractmethod
+    async def stop(self) -> None:
+        """Stop the clock."""
+        pass
+
+    @abstractmethod
+    def current_time(self) -> datetime:
+        """Return the current clock time (wall or simulated)."""
+        pass
+```
+
+### 12.2 RealtimeClock (Live Trading)
+
+Used for **live trading** where ticks must align to actual wall‑clock time.
+
+* **Bar Alignment**: Ticks fire at the **start of each bar** (e.g., every minute at `:00` seconds).
+* **Drift Compensation**: Calculate sleep duration dynamically to compensate for execution time.
+* **Implementation Strategy**:
+  1. Calculate `next_tick_time` based on timeframe (e.g., next minute boundary).
+  2. Sleep until `next_tick_time - small_buffer` (e.g., 100ms before).
+  3. Busy‑wait or precise sleep for the remaining time.
+  4. Emit `clock.Tick` with `ts = next_tick_time` (not actual wall time).
+
+```python
+class RealtimeClock(BaseClock):
+    """
+    Emits clock.Tick aligned to wall-clock bar boundaries.
+    
+    Example for 1-minute bars:
+      - 09:30:00.000 → Tick
+      - 09:31:00.000 → Tick
+      - 09:32:00.000 → Tick
+    
+    Handles drift by recalculating sleep duration each iteration.
+    """
+    async def _tick_loop(self):
+        while self.running:
+            next_tick = self._calculate_next_bar_start()
+            await self._sleep_until(next_tick)
+            await self._emit_tick(next_tick)
+```
+
+* **Precision Target**: ±50ms of intended tick time.
+* **Fallback**: If system clock drifts significantly, log warning and continue.
+
+### 12.3 BacktestClock (Simulation)
+
+Used for **backtesting** where simulation should run as fast as possible.
+
+* **Fast‑Forward Mode**: No actual sleeping; ticks are emitted immediately.
+* **Simulated Time**: Advances based on historical data range.
+* **Backpressure Awareness**: Wait for strategy to finish processing before advancing.
+
+```python
+class BacktestClock(BaseClock):
+    """
+    Emits clock.Tick as fast as possible for backtesting.
+    
+    Does NOT sleep. Advances simulated time immediately.
+    Waits for strategy acknowledgment before next tick (backpressure).
+    """
+    def __init__(self, start_time: datetime, end_time: datetime, timeframe: str):
+        self.simulated_time = start_time
+        self.end_time = end_time
+        self.timeframe = timeframe
+
+    async def _tick_loop(self):
+        while self.simulated_time <= self.end_time and self.running:
+            await self._emit_tick(self.simulated_time)
+            await self._wait_for_strategy_ack()  # backpressure
+            self.simulated_time = self._advance_time()
+```
+
+* **Speed**: Limited only by strategy execution time and I/O.
+* **Determinism**: Same inputs produce same tick sequence.
+
+### 12.4 Clock Selection (GLaDOS Responsibility)
+
+GLaDOS selects the appropriate clock based on run mode:
+
+```python
+def create_clock(run_config: RunConfig) -> BaseClock:
+    if run_config.mode == "live":
+        return RealtimeClock(timeframe=run_config.timeframe)
+    elif run_config.mode == "backtest":
+        return BacktestClock(
+            start_time=run_config.backtest_start,
+            end_time=run_config.backtest_end,
+            timeframe=run_config.timeframe
+        )
+```
+
+### 12.5 clock.Tick Event
+
+```python
+@dataclass
+class ClockTick:
+    run_id: str
+    ts: datetime          # Bar start time (not emission time)
+    timeframe: str        # "1m", "5m", "1h", "1d"
+    bar_index: int        # Sequential bar number within run
+    is_backtest: bool     # Hint for logging/metrics (strategy should NOT use this for logic)
+```
+
+### 12.6 Timeframe Support
+
+| Timeframe | Code | Bar Alignment |
+|-----------|------|---------------|
+| 1 minute  | `1m` | `:00` seconds |
+| 5 minutes | `5m` | `:00`, `:05`, `:10`, ... |
+| 15 minutes| `15m`| `:00`, `:15`, `:30`, `:45` |
+| 1 hour    | `1h` | `:00:00` |
+| 1 day     | `1d` | `00:00:00 UTC` |
+
+### 12.7 Files
+
+```plaintext
+src/glados/
+├── clock/
+│   ├── __init__.py
+│   ├── base.py           # BaseClock ABC
+│   ├── realtime.py       # RealtimeClock implementation
+│   ├── backtest.py       # BacktestClock implementation
+│   └── utils.py          # Bar alignment calculations
+```
+
+
+
+## 13. Implementation Roadmap (Test‑Driven)
+
+> This project follows **Test‑Driven Development (TDD)** to ensure reliability and prevent scope creep.
+> 
+> **Core Principle**: Write tests FIRST, then implement just enough code to pass.
+
+### 13.1 Testing Strategy Overview
+
+#### Test Pyramid
+
+```
+        ┌───────────────┐
+        │     E2E       │  ← Few, slow, high confidence
+        │   (Playwright)│
+        ├───────────────┤
+        │  Integration  │  ← Medium, test module interactions
+        │   (pytest)    │
+        ├───────────────┤
+        │     Unit      │  ← Many, fast, isolated
+        │   (pytest)    │
+        └───────────────┘
+```
+
+#### Test Categories
+
+| Category | Scope | Speed | Dependencies |
+|----------|-------|-------|--------------|
+| **Unit** | Single function/class | <10ms | Mocked |
+| **Integration** | Module interactions | <1s | Real DB (test container) |
+| **E2E** | Full system | <30s | All services running |
+
+#### Testing Tools
+
+```
+pytest                 # Test runner
+pytest-asyncio         # Async test support
+pytest-cov             # Coverage reporting
+hypothesis             # Property-based testing
+testcontainers         # Postgres in Docker for integration tests
+factory-boy            # Test data factories
+freezegun              # Time mocking (critical for clock tests)
+respx / httpx          # HTTP mocking for exchange APIs
+playwright             # E2E browser testing (for Haro)
+```
+
+### 13.2 Test Infrastructure Setup (Day 1)
+
+Before writing any feature code, set up the testing foundation:
+
+```plaintext
+tests/
+├── conftest.py              # Shared fixtures
+├── factories/               # Test data factories
+│   ├── __init__.py
+│   ├── events.py            # Event envelope factories
+│   ├── orders.py            # Order factories
+│   └── runs.py              # Run factories
+├── fixtures/                # Reusable test fixtures
+│   ├── __init__.py
+│   ├── database.py          # Test DB setup/teardown
+│   ├── event_log.py         # In-memory event log for unit tests
+│   └── clock.py             # Controllable test clock
+├── unit/
+│   ├── events/
+│   ├── glados/
+│   ├── veda/
+│   ├── greta/
+│   ├── marvin/
+│   └── walle/
+├── integration/
+│   ├── test_event_flow.py
+│   ├── test_order_flow.py
+│   └── test_backtest_flow.py
+└── e2e/
+    └── test_ui_flows.py
+```
+
+#### Key Fixtures
+
+```python
+# conftest.py - Critical shared fixtures
+
+@pytest.fixture
+def test_clock():
+    """Controllable clock for deterministic tests."""
+    return ControllableClock(start_time=datetime(2024, 1, 1, 9, 30))
+
+@pytest.fixture
+def in_memory_event_log():
+    """In-memory event log for unit tests (no DB)."""
+    return InMemoryEventLog()
+
+@pytest.fixture
+async def test_db(tmp_path):
+    """Isolated Postgres via testcontainers."""
+    async with PostgresContainer() as pg:
+        engine = create_async_engine(pg.get_connection_url())
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        yield engine
+
+@pytest.fixture
+def mock_alpaca():
+    """Mocked Alpaca API responses."""
+    with respx.mock:
+        # Pre-configure common responses
+        yield AlpacaMockBuilder()
+```
+
+### 13.3 TDD Workflow Per Feature
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TDD Cycle (Red-Green-Refactor)           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   1. RED: Write a failing test                              │
+│      - Test describes the expected behavior                 │
+│      - Run test → FAIL (proves test works)                  │
+│                                                             │
+│   2. GREEN: Write minimal code to pass                      │
+│      - Only implement what's needed                         │
+│      - Run test → PASS                                      │
+│                                                             │
+│   3. REFACTOR: Improve code quality                         │
+│      - Clean up, optimize, extract patterns                 │
+│      - Run test → STILL PASS                                │
+│                                                             │
+│   4. REPEAT for next test case                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 13.4 Current State Assessment
+
+| Component | Status | Completion |
+|-----------|--------|------------|
+| GLaDOS core | Basic framework | ~25% |
+| Veda/Alpaca | Can fetch data, place orders | ~40% |
+| EventBus | Simple in‑memory | ~15% |
+| WallE/DB | Basic SQLAlchemy model | ~10% |
+| Docker config | Dev/prod configs exist | ~50% |
+| Events module | ❌ Not implemented | 0% |
+| REST API | ❌ Not implemented | 0% |
+| SSE streaming | ❌ Not implemented | 0% |
+| Greta (backtest) | ❌ Empty shell | 0% |
+| Marvin (strategy) | ❌ Empty shell | 0% |
+| Haro (frontend) | ❌ Does not exist | 0% |
+| Alembic migrations | ❌ Not set up | 0% |
+| **Test infrastructure** | ❌ Not set up | 0% |
+
+### 13.5 Phase 1: Foundation + Test Infrastructure (Week 1–2)
+
+**Goal**: Establish test infrastructure AND core modules together.
+
+#### 1.0 Test Infrastructure (FIRST)
+- [ ] Set up `pytest.ini` / `pyproject.toml` test config
+- [ ] Create `tests/conftest.py` with core fixtures
+- [ ] Create `tests/fixtures/database.py` — testcontainers setup
+- [ ] Create `tests/fixtures/clock.py` — ControllableClock
+- [ ] Create `tests/factories/` — factory-boy models
+- [ ] Verify: `pytest --collect-only` works
+
+#### 1.1 Project Restructure
+- [ ] Rename directories to match spec (`GLaDOS` → `glados`, etc.)
+- [ ] Clean up archive folders
+- [ ] Update `requirements.txt` + `requirements.dev.txt`
+- [ ] Add `pyproject.toml` for tooling config
+
+#### 1.2 Events Module (TDD)
+
+**Tests First:**
+```python
+# tests/unit/events/test_protocol.py
+def test_envelope_creation():
+    """Envelope should have all required fields."""
+    
+def test_envelope_immutable():
+    """Envelope should be frozen after creation."""
+
+def test_envelope_serialization():
+    """Envelope should serialize to/from JSON."""
+
+# tests/unit/events/test_registry.py
+def test_register_event_type():
+    """Should register event type with payload schema."""
+
+def test_validate_payload_success():
+    """Should pass validation for correct payload."""
+
+def test_validate_payload_failure():
+    """Should raise ValidationError for incorrect payload."""
+
+# tests/integration/events/test_outbox.py
+async def test_outbox_write_and_notify():
+    """Writing to outbox should trigger NOTIFY."""
+
+async def test_consumer_offset_tracking():
+    """Consumer should track processed offset."""
+
+async def test_at_least_once_delivery():
+    """Events should be redelivered after consumer crash."""
+```
+
+**Implementation:**
+- [ ] `events/protocol.py` — Envelope dataclass, ErrorResponse
+- [ ] `events/types.py` — Event type constants
+- [ ] `events/registry.py` — Type → Payload registry
+- [ ] `events/log.py` — Outbox write + LISTEN/NOTIFY
+- [ ] `events/offsets.py` — Consumer offset management
+
+#### 1.3 Database Setup (TDD)
+
+**Tests First:**
+```python
+# tests/unit/walle/test_models.py
+def test_run_model_has_required_fields():
+    """Run model should have id, created_at, updated_at."""
+
+def test_order_model_relationships():
+    """Order should link to Run via run_id."""
+
+# tests/integration/walle/test_repos.py
+async def test_create_and_get_run():
+    """Should persist and retrieve a run."""
+
+async def test_order_idempotency():
+    """Duplicate client_order_id should not create duplicate."""
+```
+
+**Implementation:**
+- [ ] Initialize Alembic
+- [ ] Create initial migration
+- [ ] `walle/database.py` — Session management
+- [ ] `walle/models.py` — SQLAlchemy models
+- [ ] `walle/repos.py` — Repository pattern
+
+### 13.6 Phase 2: GLaDOS Core (Week 2–3)
+
+**Goal**: REST API + SSE + Clock with full test coverage.
+
+#### 2.1 Clock System (TDD) — HIGH PRIORITY
+
+**Tests First:**
+```python
+# tests/unit/glados/clock/test_utils.py
+def test_next_bar_start_1m():
+    """09:30:45 → next bar at 09:31:00."""
+
+def test_next_bar_start_5m():
+    """09:32:00 → next bar at 09:35:00."""
+
+def test_bar_alignment_edge_cases():
+    """Exactly on boundary should return next bar, not current."""
+
+# tests/unit/glados/clock/test_realtime.py
+@freeze_time("2024-01-01 09:30:00")
+async def test_realtime_clock_emits_on_boundary():
+    """RealtimeClock should emit tick at bar boundary."""
+
+async def test_realtime_clock_drift_compensation():
+    """Should compensate for execution time drift."""
+
+# tests/unit/glados/clock/test_backtest.py
+async def test_backtest_clock_no_sleep():
+    """BacktestClock should not actually sleep."""
+
+async def test_backtest_clock_respects_backpressure():
+    """Should wait for strategy ack before next tick."""
+
+async def test_backtest_clock_deterministic():
+    """Same inputs should produce same tick sequence."""
+```
+
+**Implementation:**
+- [ ] `glados/clock/base.py` — BaseClock ABC
+- [ ] `glados/clock/utils.py` — Bar alignment utilities
+- [ ] `glados/clock/realtime.py` — RealtimeClock
+- [ ] `glados/clock/backtest.py` — BacktestClock
+
+#### 2.2 FastAPI Application (TDD)
+
+**Tests First:**
+```python
+# tests/unit/glados/routes/test_api.py
+async def test_healthz_returns_ok():
+    """GET /healthz should return 200."""
+
+async def test_create_run_validates_config():
+    """POST /runs with invalid config should return 422."""
+
+async def test_create_run_returns_run_id():
+    """POST /runs should return created run_id."""
+
+async def test_get_orders_filters_by_run_id():
+    """GET /orders?run_id=X should only return orders for that run."""
+
+# tests/unit/glados/routes/test_sse.py
+async def test_sse_stream_format():
+    """SSE should use correct event format."""
+
+async def test_sse_reconnection_with_last_event_id():
+    """Should resume from Last-Event-ID header."""
+```
+
+**Implementation:**
+- [ ] `glados/app.py` — FastAPI instance
+- [ ] `glados/main.py` — Startup logic
+- [ ] `glados/routes/api.py` — REST endpoints
+- [ ] `glados/routes/sse.py` — SSE streaming
+
+#### 2.3 Domain Routing (TDD)
+
+**Tests First:**
+```python
+# tests/unit/glados/test_domain_router.py
+def test_route_strategy_fetch_to_live():
+    """strategy.FetchWindow → live.FetchWindow when mode=live."""
+
+def test_route_strategy_fetch_to_backtest():
+    """strategy.FetchWindow → backtest.FetchWindow when mode=backtest."""
+
+def test_route_preserves_correlation_id():
+    """Routed event should maintain corr_id."""
+```
+
+**Implementation:**
+- [ ] `glados/domain_router.py`
+
+### 13.7 Phase 3: Veda & Greta (Week 3–4)
+
+#### 3.1 Veda (TDD)
+
+**Tests First:**
+```python
+# tests/unit/veda/test_trading.py
+def test_order_idempotency_same_client_order_id():
+    """Same client_order_id should not place duplicate order."""
+
+def test_order_side_conversion():
+    """Should convert 'buy'/'sell' to exchange format."""
+
+# tests/integration/veda/test_alpaca.py (with mocked HTTP)
+async def test_fetch_crypto_bars():
+    """Should parse Alpaca bar response correctly."""
+
+async def test_submit_order_success():
+    """Should handle successful order response."""
+
+async def test_submit_order_insufficient_funds():
+    """Should handle rejection gracefully."""
+```
+
+#### 3.2 Greta (TDD)
+
+**Tests First:**
+```python
+# tests/unit/greta/test_simulator.py
+def test_market_order_fill_with_slippage():
+    """Market order should fill with configured slippage."""
+
+def test_limit_order_fill_price_respected():
+    """Limit order should not fill above limit price."""
+
+def test_commission_calculation():
+    """Commission should be calculated correctly."""
+
+# tests/unit/greta/test_stats.py
+def test_sharpe_ratio_calculation():
+    """Should calculate Sharpe ratio correctly."""
+
+def test_max_drawdown_calculation():
+    """Should calculate max drawdown correctly."""
+```
+
+### 13.8 Phase 4: Marvin (Week 4–5)
+
+**Tests First:**
+```python
+# tests/unit/marvin/test_base_strategy.py
+def test_strategy_receives_tick():
+    """Strategy on_tick should be called on clock.Tick."""
+
+def test_strategy_emits_fetch_intent():
+    """Strategy should emit strategy.FetchWindow."""
+
+# tests/integration/marvin/test_sma_cross.py
+async def test_sma_cross_generates_buy_signal():
+    """SMA cross up should generate buy signal."""
+
+async def test_sma_cross_generates_sell_signal():
+    """SMA cross down should generate sell signal."""
+
+# Property-based test
+@given(prices=st.lists(st.floats(min_value=1, max_value=1000), min_size=50))
+def test_sma_cross_never_crashes(prices):
+    """SMA strategy should handle any valid price sequence."""
+```
+
+### 13.9 Phase 5: Haro Frontend (Week 5–7)
+
+**Tests First (Playwright):**
+```typescript
+// tests/e2e/runs.spec.ts
+test('can create a new run', async ({ page }) => {
+  await page.goto('/runs');
+  await page.click('button:has-text("New Run")');
+  await page.fill('[name="strategy"]', 'sma_cross');
+  await page.click('button:has-text("Start")');
+  await expect(page.locator('.run-status')).toHaveText('Running');
+});
+
+test('can stop a running run', async ({ page }) => {
+  // ...
+});
+
+test('displays real-time order updates', async ({ page }) => {
+  // ...
+});
+```
+
+### 13.10 Phase 6: Integration & E2E (Week 7–8)
+
+**Full Flow Integration Tests:**
+```python
+# tests/integration/test_full_live_flow.py
+async def test_live_order_flow_end_to_end():
+    """
+    1. Create run (mode=live)
+    2. Clock ticks
+    3. Strategy emits FetchWindow
+    4. GLaDOS routes to live.FetchWindow
+    5. Veda fetches data, emits data.WindowReady
+    6. Strategy emits PlaceRequest
+    7. Veda places order, emits orders.Placed
+    8. WallE persists order
+    9. SSE emits ui.OrderUpdated
+    """
+
+# tests/integration/test_full_backtest_flow.py
+async def test_backtest_completes_with_stats():
+    """
+    1. Create run (mode=backtest, start/end dates)
+    2. BacktestClock runs fast-forward
+    3. Greta provides historical data
+    4. Greta simulates fills
+    5. Stats calculated at end
+    """
+```
+
+### 13.11 Test Coverage Requirements
+
+| Module | Min Coverage | Critical Paths |
+|--------|--------------|----------------|
+| `events/` | 90% | Outbox write, offset tracking |
+| `glados/clock/` | 95% | Bar alignment, drift compensation |
+| `glados/routes/` | 85% | All endpoints |
+| `veda/` | 85% | Order idempotency |
+| `greta/` | 90% | Fill simulation |
+| `marvin/` | 85% | Strategy lifecycle |
+| `walle/` | 80% | Repository CRUD |
+
+### 13.12 CI Pipeline
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -r docker/backend/requirements.dev.txt
+      
+      - name: Run unit tests
+        run: pytest tests/unit -v --cov=src --cov-report=xml
+      
+      - name: Run integration tests
+        run: pytest tests/integration -v
+      
+      - name: Check coverage
+        run: coverage report --fail-under=80
+```
+
+### 13.13 Milestone Definitions (Updated for TDD)
+
+| Milestone | Definition of Done |
+|-----------|-------------------|
+| **M0: Test Infra** | pytest runs; fixtures work; CI pipeline green |
+| **M1: Foundation** | Events tests pass; DB tests pass; all repos tested |
+| **M2: API Live** | Route tests pass; SSE tests pass; Clock tests pass (including edge cases) |
+| **M3: Trading Works** | Veda tests pass with mocked exchange; Order idempotency proven |
+| **M4: Backtest Works** | Greta simulation tests pass; Stats calculations verified |
+| **M5: Strategy Runs** | Marvin tests pass; SMA strategy backtested successfully |
+| **M6: UI Functional** | Playwright E2E tests pass |
+| **M7: MVP Complete** | All tests pass; Coverage ≥80%; Docs complete |
+
+
+
+## 14. Terms & Quick Reference
 
 * **Modulith**: a single‑process architecture with multiple domain packages.
 * **EventLog**: DB‑backed event log (Outbox + Offsets); `LISTEN/NOTIFY` is used only for wake‑ups.
 * **Thin events**: keys/status only for realtime UI; details fetched via REST.
 * **Domain routing**: translate `strategy.*` into `live.*` or `backtest.*` based on the execution domain.
+* **RealtimeClock**: Wall‑clock aligned clock for live trading; ticks at bar boundaries.
+* **BacktestClock**: Fast‑forward clock for simulation; no sleeping, advances immediately.
+* **Bar Alignment**: Ticks fire at the start of each bar (e.g., minute boundary for 1m bars).
