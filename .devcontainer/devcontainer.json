@@ -3,7 +3,7 @@
 	"dockerComposeFile": "../docker/docker-compose.dev.yml",
 	"service": "backend_dev",
 	"workspaceFolder": "/weaver",
-	"initializeCommand": "bash .devcontainer/init-env.sh",
+	"initializeCommand": "bash docker/init-env.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
