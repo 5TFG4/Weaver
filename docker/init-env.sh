@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Enable debug mode (prints commands) to see exactly where it fails, if it does.
-set -x
+set -euo pipefail
 
 # ==============================================================================
-# 1. CONFIGURATION
+# CONFIGURATION
 # ==============================================================================
+
+# 1. Define the list of variables to inject from GitHub Secrets/Env
+#    Add any new API keys or Endpoints here.
 VARS_TO_INJECT=(
   "ALPACA_API_ENDPOINT"
   "ALPACA_API_KEY"
@@ -15,82 +17,67 @@ VARS_TO_INJECT=(
 )
 
 # ==============================================================================
-# 2. HELPER FUNCTION
+# FUNCTION DEFINITION
 # ==============================================================================
-configure_env_file() {
+
+# Function: sync_env_file
+# Arguments:
+#   $1: The target .env file path (e.g., docker/.env.dev)
+#   $2: The source example file path (e.g., docker/example.env.dev)
+sync_env_file() {
   local TARGET_FILE="$1"
   local EXAMPLE_FILE="$2"
 
   echo "----------------------------------------------------------------"
   echo "Processing: ${TARGET_FILE}"
 
-  # --- Step A: Create file if missing ---
+  # Step A: Create file from example if missing
   if [[ ! -f "${TARGET_FILE}" ]]; then
     if [[ -f "${EXAMPLE_FILE}" ]]; then
       echo " -> Creating from ${EXAMPLE_FILE}..."
       cp "${EXAMPLE_FILE}" "${TARGET_FILE}"
     else
-      echo " -> Error: Example file ${EXAMPLE_FILE} missing. Skipping." >&2
-      # Return 1 to signal failure, but since we removed 'set -e', script continues.
-      return 1 
+      echo " -> Error: Source '${EXAMPLE_FILE}' missing. Skipping." >&2
+      return
     fi
   else
-    echo " -> File already exists."
+    echo " -> File already exists. checking for updates..."
   fi
 
-  # --- Step B: Inject Secrets ---
-  echo " -> Checking for secrets to inject..."
-  local injected_count=0
-
+  # Step B: Inject secrets
   for VAR_NAME in "${VARS_TO_INJECT[@]}"; do
-    # 1. Safe Variable Expansion (Pure Bash)
-    # ${!VAR_NAME} gets the value of the variable named by VAR_NAME.
-    # If the variable is unset, it returns an empty string (no error).
-    local VAL="${!VAR_NAME}"
+    # Get value from environment (GitHub Secret or Codespace Env)
+    local CURRENT_VALUE="${!VAR_NAME:-}"
 
-    if [[ -n "$VAL" ]]; then
-      # 2. Escape special characters for sed
-      # We replace '|' with '\|' to prevent breaking the sed command delimiter.
-      local ESCAPED_VAL="${VAL//|/\\|}"
-
-      # 3. Check if key exists in the file (grep returns 0 if found, 1 if not)
+    if [[ -n "$CURRENT_VALUE" ]]; then
+      # Check if variable exists in file to decide replace or append
       if grep -q "^${VAR_NAME}=" "${TARGET_FILE}"; then
-        # UPDATE: Found key, perform substitution
-        # We ignore sed exit code in case of weird permission issues, but usually it works.
-        sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${ESCAPED_VAL}|" "${TARGET_FILE}"
+        # Replace existing value (using | as delimiter for URLs)
+        sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${TARGET_FILE}"
+        echo "    - Injected: ${VAR_NAME}"
       else
-        # APPEND: Key not found, append to end of file
-        # Check if file ends with a newline character. If not, add one.
-        # 'tail -c1' gets last byte. We use '|| true' to prevent any possible crash.
-        if [ -s "${TARGET_FILE}" ]; then
-           local LAST_CHAR
-           LAST_CHAR=$(tail -c1 "${TARGET_FILE}" || true)
-           if [ -n "$LAST_CHAR" ]; then
-             echo "" >> "${TARGET_FILE}"
-           fi
-        fi
-        echo "${VAR_NAME}=${VAL}" >> "${TARGET_FILE}"
+        # Append new value if missing
+        echo "" >> "${TARGET_FILE}"
+        echo "${VAR_NAME}=${CURRENT_VALUE}" >> "${TARGET_FILE}"
+        echo "    - Appended: ${VAR_NAME}"
       fi
-      ((injected_count++))
     fi
   done
-
-  echo " -> Injected ${injected_count} secrets."
 }
 
 # ==============================================================================
-# 3. EXECUTION
+# EXECUTION
 # ==============================================================================
 
-# Configure Development Environment
-configure_env_file "docker/.env.dev" "docker/example.env.dev"
+echo "Starting Environment Initialization..."
 
-# Configure Production Environment (Only if example exists)
-if [[ -f "docker/example.env" ]]; then
-    configure_env_file "docker/.env" "docker/example.env"
-fi
+# 1. Configure the DEV environment
+#    Usage: sync_env_file "TARGET_PATH" "EXAMPLE_PATH"
+sync_env_file "docker/.env.dev" "docker/example.env.dev"
+
+# 2. Configure the PRODUCTION environment (or main .env)
+#    Adjust the paths below if your prod .env is in the root folder (e.g., ".env")
+sync_env_file "docker/.env" "docker/example.env"
 
 echo "----------------------------------------------------------------"
-echo "Initialization complete."
-# Explicitly exit with success
-exit 0
+echo "Initialization Complete."
