@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Configuration
-ENV_FILE="docker/.env.dev"
-EXAMPLE_FILE="docker/example.env.dev"
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
 
-# Define the list of variables you want to sync from GitHub Secrets/Env to the .env file.
-# Add any new API keys or Endpoints here.
+# List of variable names to inject from GitHub Secrets/Environment into the .env files.
+# The script will look for these in the system environment. If found, they overwrite the file.
 VARS_TO_INJECT=(
   "ALPACA_API_ENDPOINT"
   "ALPACA_API_KEY"
@@ -16,46 +16,77 @@ VARS_TO_INJECT=(
   "ALPACA_PAPER_API_SECRET"
 )
 
-# ------------------------------------------------------------------
-# Step 1: Ensure the .env file exists
-# ------------------------------------------------------------------
-if [[ ! -f "${ENV_FILE}" ]]; then
-  if [[ -f "${EXAMPLE_FILE}" ]]; then
-    echo "Creating ${ENV_FILE} from ${EXAMPLE_FILE}..."
-    cp "${EXAMPLE_FILE}" "${ENV_FILE}"
-  else
-    echo "Error: Missing ${EXAMPLE_FILE}. Cannot initialize environment." >&2
-    exit 1
-  fi
-else
-  echo "${ENV_FILE} already exists. Proceeding to update..."
-fi
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
 
-# ------------------------------------------------------------------
-# Step 2: Loop through the list and inject values if they exist
-# ------------------------------------------------------------------
-echo "Checking environment variables for injection..."
+# Function: configure_env_file
+# Arguments:
+#   $1: Target file path (e.g., docker/.env)
+#   $2: Example file path (e.g., docker/example.env)
+configure_env_file() {
+  local TARGET_FILE="$1"
+  local EXAMPLE_FILE="$2"
 
-for VAR_NAME in "${VARS_TO_INJECT[@]}"; do
-  # Use indirect expansion to get the value of the variable name stored in VAR_NAME
-  # e.g., if VAR_NAME is "ALPACA_API_KEY", this gets the value of $ALPACA_API_KEY
-  CURRENT_VALUE="${!VAR_NAME:-}"
+  echo "----------------------------------------------------------------"
+  echo "Processing: ${TARGET_FILE}"
 
-  if [[ -n "$CURRENT_VALUE" ]]; then
-    echo " -> Found value for ${VAR_NAME}, injecting..."
-
-    # Check if the variable already exists in the file (to decide replace vs append)
-    if grep -q "^${VAR_NAME}=" "${ENV_FILE}"; then
-      # Update existing line
-      # We use '|' as delimiter to handle URLs safely (e.g., http://...)
-      sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${ENV_FILE}"
+  # 1. Create file from example if it doesn't exist
+  if [[ ! -f "${TARGET_FILE}" ]]; then
+    if [[ -f "${EXAMPLE_FILE}" ]]; then
+      echo " -> Creating from ${EXAMPLE_FILE}..."
+      cp "${EXAMPLE_FILE}" "${TARGET_FILE}"
     else
-      # Append new line if it doesn't exist in the example file
-      # Ensure there is a newline before appending
-      echo "" >> "${ENV_FILE}"
-      echo "${VAR_NAME}=${CURRENT_VALUE}" >> "${ENV_FILE}"
+      echo " -> Error: Example file ${EXAMPLE_FILE} missing. Skipping." >&2
+      return 1 # Skip this file but don't exit script completely
     fi
+  else
+    echo " -> File already exists. Preserving existing values."
   fi
-done
 
-echo "Environment initialization complete."
+  # 2. Inject Secrets
+  echo " -> Checking for secrets to inject..."
+  local injected_count=0
+
+  for VAR_NAME in "${VARS_TO_INJECT[@]}"; do
+    # Get the value of the variable from the environment (Host/Codespace)
+    local CURRENT_VALUE="${!VAR_NAME:-}"
+
+    if [[ -n "$CURRENT_VALUE" ]]; then
+      # Check if the variable exists in the file (to decide replace vs append)
+      if grep -q "^${VAR_NAME}=" "${TARGET_FILE}"; then
+        # Update existing line using | as delimiter to handle URLs safely
+        sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${TARGET_FILE}"
+      else
+        # Append to file if not found, ensuring a preceding newline
+        # Check if file ends with newline, if not add one
+        if [ -s "${TARGET_FILE}" ] && [ "$(tail -c1 "${TARGET_FILE}" | wc -l)" -eq 0 ]; then
+             echo "" >> "${TARGET_FILE}"
+        fi
+        echo "${VAR_NAME}=${CURRENT_VALUE}" >> "${TARGET_FILE}"
+      fi
+      ((injected_count++))
+    fi
+  done
+
+  if [[ "$injected_count" -gt 0 ]]; then
+    echo " -> Successfully injected ${injected_count} secrets."
+  else
+    echo " -> No secrets found in environment (Local Dev mode). No changes made."
+  fi
+}
+
+# ==============================================================================
+# MAIN EXECUTION
+# ==============================================================================
+
+# 1. Configure Development Environment
+# Adjust filename "docker/example.env.dev" if your actual file is named differently
+configure_env_file "docker/.env.dev" "docker/example.env.dev"
+
+# 2. Configure Production Environment
+# Adjust filename "docker/example.env" if your actual file is named differently
+configure_env_file "docker/.env" "docker/example.env"
+
+echo "----------------------------------------------------------------"
+echo "All environment configurations complete."
