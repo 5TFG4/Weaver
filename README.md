@@ -58,6 +58,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 ### 3) Local (no Docker)
 
 ```bash
+# Requires Python 3.13+
 # backend
 pip install -r docker/backend/requirements.txt
 uvicorn glados.main:app --host 0.0.0.0 --port 8000 --reload
@@ -67,6 +68,17 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
+
+## Development Status
+
+| Milestone | Status |
+|-----------|--------|
+| M0: Test Infrastructure | ✅ Complete (14 tests) |
+| M1: Foundation | 🔄 Next |
+| M2: API Live | ⏳ Pending |
+| M3-M7 | ⏳ Pending |
+
+**Environment**: Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 
 ## Endpoints (essentials)
