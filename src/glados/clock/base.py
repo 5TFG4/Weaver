@@ -1,0 +1,133 @@
+"""
+Base Clock Abstraction
+
+Defines the interface for clock implementations used in GLaDOS.
+Both RealtimeClock and BacktestClock implement this interface.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Callable
+
+
+@dataclass(frozen=True)
+class ClockTick:
+    """
+    Represents a single clock tick event.
+
+    Attributes:
+        run_id: Associated run identifier
+        ts: Bar start time (not emission time)
+        timeframe: Timeframe code (e.g., '1m', '5m', '1h')
+        bar_index: Sequential bar number within run
+        is_backtest: Hint for logging/metrics (strategy should NOT use for logic)
+    """
+
+    run_id: str
+    ts: datetime
+    timeframe: str
+    bar_index: int
+    is_backtest: bool = False
+
+    def to_dict(self) -> dict:
+        """Serialize to dictionary."""
+        return {
+            "run_id": self.run_id,
+            "ts": self.ts.isoformat(),
+            "timeframe": self.timeframe,
+            "bar_index": self.bar_index,
+            "is_backtest": self.is_backtest,
+        }
+
+
+# Type alias for tick callback
+TickCallback = Callable[[ClockTick], None]
+
+
+class BaseClock(ABC):
+    """
+    Abstract base class for clock implementations.
+
+    The clock is responsible for:
+    - Emitting clock.Tick events at appropriate intervals
+    - Providing current time (wall or simulated)
+    - Managing start/stop lifecycle
+    """
+
+    def __init__(self, timeframe: str = "1m") -> None:
+        """
+        Initialize the clock.
+
+        Args:
+            timeframe: Bar timeframe (e.g., '1m', '5m', '1h', '1d')
+        """
+        self.timeframe = timeframe
+        self._callbacks: list[TickCallback] = []
+        self._running = False
+        self._tick_count = 0
+
+    @abstractmethod
+    async def start(self, run_id: str) -> None:
+        """
+        Start emitting clock.Tick events.
+
+        Args:
+            run_id: The run identifier to include in ticks
+        """
+        pass
+
+    @abstractmethod
+    async def stop(self) -> None:
+        """Stop the clock."""
+        pass
+
+    @abstractmethod
+    def current_time(self) -> datetime:
+        """
+        Return the current clock time.
+
+        For RealtimeClock: actual wall clock time
+        For BacktestClock: simulated time
+        """
+        pass
+
+    def on_tick(self, callback: TickCallback) -> Callable[[], None]:
+        """
+        Register a callback for tick events.
+
+        Args:
+            callback: Function to call on each tick
+
+        Returns:
+            Unsubscribe function
+        """
+        self._callbacks.append(callback)
+
+        def unsubscribe() -> None:
+            if callback in self._callbacks:
+                self._callbacks.remove(callback)
+
+        return unsubscribe
+
+    def _emit_tick(self, tick: ClockTick) -> None:
+        """Emit a tick to all registered callbacks."""
+        self._tick_count += 1
+        for callback in self._callbacks:
+            try:
+                callback(tick)
+            except Exception:
+                # Log but don't fail on callback errors
+                pass
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the clock is running."""
+        return self._running
+
+    @property
+    def tick_count(self) -> int:
+        """Get the total number of ticks emitted."""
+        return self._tick_count

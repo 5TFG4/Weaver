@@ -1,0 +1,67 @@
+# Deployment & Operations
+
+> Part of [Architecture Documentation](../ARCHITECTURE.md)
+
+## 1. Container Topology
+
+* **Backend**: one multi‑stage Dockerfile (`dev`/`prod` targets).
+* **Frontend**: `haro/Dockerfile` multi‑stage (`dev`: Node dev server; `prod`: Nginx static).
+* **Compose**: `docker-compose.yml` (production‑like) + `docker-compose.dev.yml` (dev overrides).
+
+## 2. Environment Variables & Secrets
+
+* **Templates in repo**: `docker/example.env` (prod template), `docker/example.env.dev` (dev template).
+* **Local files**: `.env / .env.dev` are copied from templates and **not committed** (`.gitignore`).
+* **Build‑time args**: non‑secrets only (e.g., `VITE_API_BASE`).
+* **Run‑time secrets**: DB/exchange keys injected by the deployment system; **never baked into image layers**.
+* **CI build‑time private sources**: use **BuildKit Secrets** (ephemeral mounts, no layer leakage).
+
+## 3. Migrations
+
+* Use **Alembic** from day one; run `upgrade head` before release; keep migrations minimal and necessary.
+
+## 4. Operations & Reliability
+
+* **Backpressure**: throttle based on `consumer_offsets` lag thresholds.
+* **Rate limiting**: live access coordinated by GLaDOS (DB token bucket/quotas).
+* **Observability**: structured logs (include `run_id / corr_id`); optional metrics for lag/in‑flight/error rates.
+* **Idempotency & Recovery**: event dedupe (`id/corr_id`); `client_order_id` on orders; consumers resume via offsets; outbox is replayable.
+
+## 5. Versioning & Compatibility
+
+* **Additive changes are backward‑compatible**; breaking changes use new names like `*.v2` and run in parallel for migration.
+* **Pluggable implementation**: if LISTEN/NOTIFY is insufficient, swap `events/log.py` for Redis Streams/Kafka; protocol and business code remain unchanged.
+* **Decomposition**: modules can be split into separate processes if needed, reusing the same protocol and offsets semantics.
+
+## 6. Repository Structure
+
+```plaintext
+weaver/
+├── README.md
+├── pyproject.toml                     # tooling config
+├── docker/
+│   ├── backend/
+│   │   ├── Dockerfile                 # multi-stage dev/prod
+│   │   ├── requirements.txt           # runtime deps
+│   │   └── requirements.dev.txt       # dev deps
+│   ├── example.env                    # prod template
+│   ├── example.env.dev                # dev template
+│   ├── docker-compose.yml             # production-like
+│   └── docker-compose.dev.yml         # dev overrides
+├── src/
+│   ├── glados/                        # Control plane & API
+│   ├── events/                        # Event protocol & log
+│   ├── veda/                          # Live data & trading
+│   ├── greta/                         # Backtest simulation
+│   ├── marvin/                        # Strategy execution
+│   ├── walle/                         # Persistence layer
+│   └── config.py                      # Configuration
+├── haro/                              # React frontend (TBD)
+├── migrations/                        # Alembic migrations
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+└── docs/
+    └── architecture/
+```

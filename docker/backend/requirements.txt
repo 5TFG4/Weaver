@@ -19,6 +19,7 @@ pydantic-settings>=2.1.0      # Settings management
 
 # --- Trading ---
 alpaca-py>=0.21.0
+pytz>=2024.1                  # Timezone support (alpaca-py dependency)
 
 # --- Utilities ---
 httpx>=0.26.0                 # Async HTTP client

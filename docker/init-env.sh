@@ -7,13 +7,23 @@ set -euo pipefail
 
 # 1. Define the list of variables to inject from GitHub Secrets/Env
 #    Add any new API keys or Endpoints here.
+#
+#    Naming convention:
+#      ALPACA_LIVE_*  -> Real money trading
+#      ALPACA_PAPER_* -> Simulation / backtest
+#
 VARS_TO_INJECT=(
-  "ALPACA_API_ENDPOINT"
-  "ALPACA_API_KEY"
-  "ALPACA_API_SECRET"
-  "ALPACA_PAPER_API_ENDPOINT"
+  # Live Trading (Real Money)
+  "ALPACA_LIVE_API_KEY"
+  "ALPACA_LIVE_API_SECRET"
+  "ALPACA_LIVE_BASE_URL"
+  # Paper Trading (Simulation / Backtest)
   "ALPACA_PAPER_API_KEY"
   "ALPACA_PAPER_API_SECRET"
+  "ALPACA_PAPER_BASE_URL"
+  # Database
+  "POSTGRES_USER"
+  "POSTGRES_PASSWORD"
 )
 
 # ==============================================================================
