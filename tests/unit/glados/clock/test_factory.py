@@ -4,7 +4,7 @@ Tests for Clock Factory
 TDD tests for ClockConfig and create_clock function.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import pytest
 
@@ -57,7 +57,7 @@ class TestClockConfig:
         """ClockConfig is a frozen dataclass."""
         config = ClockConfig()
         with pytest.raises(AttributeError):
-            config.timeframe = "5m"  # type: ignore
+            config.timeframe = "5m"  # type: ignore[misc]
 
     def test_raises_if_only_start_provided(self):
         """Must provide both start and end, or neither."""
@@ -80,6 +80,11 @@ class TestClockConfig:
                 backtest_start=datetime(2025, 1, 31, tzinfo=timezone.utc),
                 backtest_end=datetime(2025, 1, 1, tzinfo=timezone.utc),
             )
+
+    def test_raises_for_invalid_timeframe(self):
+        """Invalid timeframe fails fast at config creation."""
+        with pytest.raises(ValueError, match="Unknown timeframe"):
+            ClockConfig(timeframe="invalid")
 
     def test_allows_equal_start_and_end(self):
         """Single-tick backtest (start == end) is valid."""

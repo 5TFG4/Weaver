@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import cast
 
 from .backtest import BacktestClock
 from .base import BaseClock
 from .realtime import RealtimeClock
+from .utils import parse_timeframe
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,9 @@ class ClockConfig:
 
     def __post_init__(self) -> None:
         """Validate configuration."""
+        # Validate timeframe early (fail fast)
+        parse_timeframe(self.timeframe)
+
         # Must provide both start and end, or neither
         has_start = self.backtest_start is not None
         has_end = self.backtest_end is not None
@@ -45,9 +50,10 @@ class ClockConfig:
 
         # End must be >= start
         if has_start and has_end:
-            assert self.backtest_start is not None  # for type checker
-            assert self.backtest_end is not None
-            if self.backtest_end < self.backtest_start:
+            # Safe to cast since we verified both are not None
+            start = cast(datetime, self.backtest_start)
+            end = cast(datetime, self.backtest_end)
+            if end < start:
                 raise ValueError("backtest_end must be >= backtest_start")
 
     @property
@@ -67,11 +73,10 @@ def create_clock(config: ClockConfig) -> BaseClock:
         RealtimeClock for live/paper trading, BacktestClock for backtesting
     """
     if config.is_backtest:
-        assert config.backtest_start is not None  # for type checker
-        assert config.backtest_end is not None
+        # Safe to cast: is_backtest guarantees both times are set
         return BacktestClock(
-            start_time=config.backtest_start,
-            end_time=config.backtest_end,
+            start_time=cast(datetime, config.backtest_start),
+            end_time=cast(datetime, config.backtest_end),
             timeframe=config.timeframe,
         )
     return RealtimeClock(timeframe=config.timeframe)
