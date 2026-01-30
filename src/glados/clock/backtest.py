@@ -79,6 +79,16 @@ class BacktestClock(BaseClock):
                 pass
             self._task = None
 
+    async def wait(self) -> None:
+        """
+        Wait for the backtest to complete.
+
+        This is the preferred way to wait for the simulation to finish,
+        rather than accessing the internal _task directly.
+        """
+        if self._task is not None:
+            await self._task
+
     def current_time(self) -> datetime:
         """Return the current simulated time."""
         return self._simulated_time
@@ -101,38 +111,42 @@ class BacktestClock(BaseClock):
         tf = parse_timeframe(self.timeframe)
         delta = timedelta(seconds=tf.seconds)
 
-        while self._running and self._simulated_time <= self._end_time:
-            try:
-                # Wait for acknowledgment if backpressure is enabled
-                if self._use_backpressure:
-                    self._ack_event.clear()
+        try:
+            while self._running and self._simulated_time <= self._end_time:
+                try:
+                    # Wait for acknowledgment if backpressure is enabled
+                    if self._use_backpressure:
+                        self._ack_event.clear()
 
-                # Emit tick
-                self._bar_index += 1
-                tick = ClockTick(
-                    run_id=self._run_id,
-                    ts=self._simulated_time,
-                    timeframe=self.timeframe,
-                    bar_index=self._bar_index,
-                    is_backtest=True,
-                )
-                self._emit_tick(tick)
+                    # Emit tick
+                    self._bar_index += 1
+                    tick = ClockTick(
+                        run_id=self._run_id,
+                        ts=self._simulated_time,
+                        timeframe=self.timeframe,
+                        bar_index=self._bar_index,
+                        is_backtest=True,
+                    )
+                    self._emit_tick(tick)
 
-                # Wait for acknowledgment if backpressure is enabled
-                if self._use_backpressure:
-                    await self._ack_event.wait()
+                    # Wait for acknowledgment if backpressure is enabled
+                    if self._use_backpressure:
+                        await self._ack_event.wait()
 
-                # Advance simulated time
-                self._simulated_time += delta
+                    # Advance simulated time
+                    self._simulated_time += delta
 
-                # Yield to allow other tasks to run
-                await asyncio.sleep(0)
+                    # Yield to allow other tasks to run
+                    await asyncio.sleep(0)
 
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                # Log error but continue
-                self._simulated_time += delta
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    # Log error but continue
+                    self._simulated_time += delta
+        finally:
+            # Mark as not running when loop exits (natural completion or cancellation)
+            self._running = False
 
     @property
     def simulated_time(self) -> datetime:
