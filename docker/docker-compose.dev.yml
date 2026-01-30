@@ -12,6 +12,11 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env.dev
+    environment:
+      - DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_dev:5432/${POSTGRES_DB}
+    depends_on:
+      db_dev:
+        condition: service_healthy
     command: >
       python -m debugpy --listen 0.0.0.0:5678 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
@@ -31,7 +36,7 @@ services:
       - backend_dev
 
   db_dev:
-    image: postgres
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: weaverdb
       POSTGRES_USER: ${POSTGRES_USER}
@@ -40,6 +45,11 @@ services:
       - "${POSTGRES_DEV_PORT}:5432"     # PostgreSQL
     volumes:
       - weaver_dev_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d weaverdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   weaver_dev_postgres_data:

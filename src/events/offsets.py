@@ -93,61 +93,67 @@ class InMemoryOffsetStore(OffsetStore):
 
 class PostgresOffsetStore(OffsetStore):
     """
-    PostgreSQL-backed offset store.
+    PostgreSQL-backed offset store using SQLAlchemy.
 
     Stores consumer offsets in the 'consumer_offsets' table.
-
-    Note: Requires asyncpg and a running PostgreSQL instance.
-    This is a placeholder implementation - will be completed in integration phase.
+    Uses upsert for atomic set_offset operations.
     """
 
-    def __init__(self, pool: "AsyncConnectionPool") -> None:
+    def __init__(self, session_factory: Any) -> None:
         """
-        Initialize with a database connection pool.
+        Initialize with a SQLAlchemy session factory.
 
         Args:
-            pool: asyncpg connection pool
+            session_factory: SQLAlchemy async_sessionmaker
         """
-        self._pool = pool
+        self._session_factory = session_factory
 
     async def get_offset(self, consumer_id: str) -> int:
         """Get the last processed offset from the database."""
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT last_offset
-                FROM consumer_offsets
-                WHERE consumer_id = $1
-                """,
-                consumer_id,
+        from sqlalchemy import select
+        from src.walle.models import ConsumerOffset
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(ConsumerOffset.last_offset).where(
+                    ConsumerOffset.consumer_id == consumer_id
+                )
             )
-            return row["last_offset"] if row else -1
+            offset = result.scalar()
+            return offset if offset is not None else -1
 
     async def set_offset(self, consumer_id: str, offset: int) -> None:
         """Update the last processed offset in the database."""
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO consumer_offsets (consumer_id, last_offset, updated_at)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (consumer_id)
-                DO UPDATE SET last_offset = $2, updated_at = $3
-                """,
-                consumer_id,
-                offset,
-                datetime.now(timezone.utc),
+        from sqlalchemy.dialects.postgresql import insert
+        from src.walle.models import ConsumerOffset
+
+        async with self._session_factory() as session:
+            stmt = insert(ConsumerOffset).values(
+                consumer_id=consumer_id,
+                last_offset=offset,
+                updated_at=datetime.now(timezone.utc),
             )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["consumer_id"],
+                set_={
+                    "last_offset": offset,
+                    "updated_at": datetime.now(timezone.utc),
+                },
+            )
+            await session.execute(stmt)
+            await session.commit()
 
     async def get_all_offsets(self) -> dict[str, int]:
         """Get all consumer offsets from the database."""
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT consumer_id, last_offset
-                FROM consumer_offsets
-                """
+        from sqlalchemy import select
+        from src.walle.models import ConsumerOffset
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(ConsumerOffset.consumer_id, ConsumerOffset.last_offset)
             )
-            return {row["consumer_id"]: row["last_offset"] for row in rows}
+            rows = result.all()
+            return {row.consumer_id: row.last_offset for row in rows}
 
 
 class EventConsumer:

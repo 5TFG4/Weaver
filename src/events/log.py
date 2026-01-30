@@ -9,10 +9,11 @@ After commit, NOTIFY wakes subscribers for at-least-once delivery.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable
+
+import sqlalchemy as sa
 
 from .protocol import Envelope
 
@@ -176,22 +177,29 @@ class PostgresEventLog(EventLog):
     Uses LISTEN/NOTIFY for real-time notification.
     Events are stored in the 'outbox' table.
 
-    Note: Requires asyncpg and a running PostgreSQL instance.
-    This is a placeholder implementation - will be completed in integration phase.
+    Supports two modes:
+    1. SQLAlchemy AsyncSession (recommended for transaction integration)
+    2. asyncpg connection pool (for LISTEN/NOTIFY)
     """
 
     CHANNEL = "weaver_events"
 
-    def __init__(self, pool: "AsyncConnectionPool") -> None:
+    def __init__(
+        self,
+        session_factory: Any | None = None,
+        pool: "AsyncConnectionPool | None" = None,
+    ) -> None:
         """
-        Initialize with a database connection pool.
+        Initialize with session factory and/or connection pool.
 
         Args:
-            pool: asyncpg connection pool
+            session_factory: SQLAlchemy async_sessionmaker (for append/read)
+            pool: asyncpg connection pool (for LISTEN/NOTIFY)
         """
+        self._session_factory = session_factory
         self._pool = pool
         self._subscribers: list[Callable[[Envelope], Any]] = []
-        self._listener_task: asyncio.Task | None = None
+        self._listener_task: asyncio.Task[None] | None = None
 
     async def append(
         self,
@@ -202,30 +210,50 @@ class PostgresEventLog(EventLog):
         """
         Append an event to the outbox table.
 
-        Should be called within a transaction with business writes.
+        Can use either:
+        - An existing SQLAlchemy session (passed via connection)
+        - The session factory to create a new session
+
+        Returns the sequence number (offset) of the appended event.
         """
-        conn = connection or await self._pool.acquire()
-        try:
-            # Insert into outbox
-            row = await conn.fetchrow(
-                """
-                INSERT INTO outbox (type, payload, created_at)
-                VALUES ($1, $2, $3)
-                RETURNING id
-                """,
-                envelope.type,
-                json.dumps(envelope.to_dict()),
-                envelope.ts,
+        from src.walle.models import OutboxEvent
+
+        # If connection is an AsyncSession, use it directly
+        if connection is not None:
+            event = OutboxEvent(
+                type=envelope.type,
+                payload=envelope.to_dict(),
+                created_at=envelope.ts,
             )
-            offset = row["id"]
+            connection.add(event)
+            await connection.flush()  # Get the ID without committing
+            offset = event.id
 
-            # Notify listeners (after successful insert)
-            await conn.execute(f"NOTIFY {self.CHANNEL}, '{offset}'")
-
+            # NOTIFY using raw SQL
+            await connection.execute(
+                sa.text(f"NOTIFY {self.CHANNEL}, '{offset}'")
+            )
             return offset
-        finally:
-            if connection is None:
-                await self._pool.release(conn)
+
+        # Otherwise, create a new session
+        if self._session_factory is None:
+            raise RuntimeError("No session factory configured")
+
+        async with self._session_factory() as session:
+            event = OutboxEvent(
+                type=envelope.type,
+                payload=envelope.to_dict(),
+                created_at=envelope.ts,
+            )
+            session.add(event)
+            await session.flush()
+            offset = event.id
+
+            await session.execute(
+                sa.text(f"NOTIFY {self.CHANNEL}, '{offset}'")
+            )
+            await session.commit()
+            return offset
 
     async def read_from(
         self,
@@ -233,21 +261,22 @@ class PostgresEventLog(EventLog):
         limit: int = 100,
     ) -> list[tuple[int, Envelope]]:
         """Read events from the outbox table."""
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT id, payload
-                FROM outbox
-                WHERE id > $1
-                ORDER BY id
-                LIMIT $2
-                """,
-                offset,
-                limit,
+        from src.walle.models import OutboxEvent
+
+        if self._session_factory is None:
+            raise RuntimeError("No session factory configured")
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                sa.select(OutboxEvent)
+                .where(OutboxEvent.id > offset)
+                .order_by(OutboxEvent.id)
+                .limit(limit)
             )
+            events = result.scalars().all()
             return [
-                (row["id"], Envelope.from_dict(json.loads(row["payload"])))
-                for row in rows
+                (event.id, Envelope.from_dict(event.payload))
+                for event in events
             ]
 
     async def subscribe(
@@ -257,8 +286,8 @@ class PostgresEventLog(EventLog):
         """Subscribe to new events via LISTEN/NOTIFY."""
         self._subscribers.append(callback)
 
-        # Start listener if not running
-        if self._listener_task is None:
+        # Start listener if not running and pool is available
+        if self._listener_task is None and self._pool is not None:
             self._listener_task = asyncio.create_task(self._listen_loop())
 
         def unsubscribe() -> None:
@@ -269,6 +298,9 @@ class PostgresEventLog(EventLog):
 
     async def _listen_loop(self) -> None:
         """Background task to listen for notifications."""
+        if self._pool is None:
+            return
+
         async with self._pool.acquire() as conn:
             await conn.add_listener(self.CHANNEL, self._on_notify)
             try:
@@ -303,6 +335,14 @@ class PostgresEventLog(EventLog):
 
     async def get_latest_offset(self) -> int:
         """Get the latest event offset from the outbox."""
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT MAX(id) as max_id FROM outbox")
-            return row["max_id"] or -1
+        from src.walle.models import OutboxEvent
+
+        if self._session_factory is None:
+            raise RuntimeError("No session factory configured")
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                sa.select(sa.func.max(OutboxEvent.id))
+            )
+            max_id = result.scalar()
+            return max_id if max_id is not None else -1
