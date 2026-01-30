@@ -314,11 +314,24 @@ Day 3: Integration & Factory
 - [x] `test_realtime.py`: ≥10 tests, all passing ✅ **24 tests, 89% coverage**
 - [x] Coverage for `glados/clock/`: ≥95% ✅ **93% overall**
 - [x] No flaky tests (time-dependent tests use mocking) ✅
-- [ ] Clock can be injected into GLaDOS (pending: Clock Factory)
+- [x] Clock can be injected into GLaDOS ✅ **ClockConfig + create_clock (18 tests, 100%)**
 
 ---
 
 ## Changelog
+
+### 2026-01-30 (Night) — Clock Factory Complete 🎉
+
+**Clock Factory TDD** (`src/glados/clock/factory.py`):
+- `ClockConfig` frozen dataclass with validation
+- `create_clock()` factory function
+- 18 unit tests, 100% coverage
+- Automatic mode detection: has backtest times → BacktestClock, otherwise → RealtimeClock
+
+**Tests**: 145 → 163 tests passing (+18)
+**Clock Module**: 92 tests total, 93% coverage
+
+---
 
 ### 2026-01-30 (Evening) — Clock Module Complete 🎉
 
