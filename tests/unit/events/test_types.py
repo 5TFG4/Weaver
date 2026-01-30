@@ -4,12 +4,9 @@ Unit Tests for Event Types
 Tests event type constants and namespaces.
 """
 
-import pytest
-
 from src.events.types import (
     ALL_EVENT_TYPES,
     ClockEvents,
-    DataEvents,
     LiveEvents,
     Namespace,
     OrderEvents,

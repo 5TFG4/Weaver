@@ -175,11 +175,15 @@ def seconds_until_next_bar(
     Calculate seconds until the next bar starts.
 
     Args:
-        current_time: The current timestamp
+        current_time: The current timestamp (naive assumed UTC, or timezone-aware)
         timeframe: Timeframe code
 
     Returns:
         Seconds until next bar (can be fractional)
     """
+    # Normalize to UTC if naive (same logic as calculate_next_bar_start)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+    
     next_bar = calculate_next_bar_start(current_time, timeframe)
     return (next_bar - current_time).total_seconds()

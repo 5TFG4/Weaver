@@ -11,7 +11,7 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Callable
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ class BaseClock(ABC):
             try:
                 await self._task
             except asyncio.CancelledError:
-                pass
+                pass  # Expected when cancelling the task
             self._task = None
 
     async def wait(self) -> None:
@@ -115,7 +115,7 @@ class BaseClock(ABC):
             try:
                 await self._task
             except asyncio.CancelledError:
-                pass
+                pass  # Expected when task was cancelled via stop()
 
     @abstractmethod
     def current_time(self) -> datetime:

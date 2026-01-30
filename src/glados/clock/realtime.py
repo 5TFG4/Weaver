@@ -12,9 +12,9 @@ import logging
 from datetime import datetime, timezone
 
 from .base import BaseClock, ClockTick
+from .utils import calculate_next_bar_start
 
 logger = logging.getLogger(__name__)
-from .utils import calculate_next_bar_start, seconds_until_next_bar
 
 
 class RealtimeClock(BaseClock):

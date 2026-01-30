@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Callable
+from datetime import datetime, timedelta
 
 from .base import BaseClock, ClockTick
 from .utils import parse_timeframe

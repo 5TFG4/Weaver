@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 import pytest
 
 from src.glados.clock.utils import (
-    TIMEFRAME_SECONDS,
     calculate_bar_start,
     calculate_next_bar_start,
     parse_timeframe,
