@@ -10,8 +10,12 @@ The clock system uses a **strategy pattern** with a common interface:
 
 ```python
 class BaseClock(ABC):
+    def __init__(self, timeframe: str = "1m") -> None:
+        """Initialize with timeframe (e.g., '1m', '5m', '1h')."""
+        ...
+
     @abstractmethod
-    async def start(self, run_id: str, timeframe: str) -> None:
+    async def start(self, run_id: str) -> None:
         """Start emitting clock.Tick events."""
         pass
 
@@ -24,6 +28,10 @@ class BaseClock(ABC):
     def current_time(self) -> datetime:
         """Return the current clock time (wall or simulated)."""
         pass
+
+    def on_tick(self, callback: TickCallback) -> Callable[[], None]:
+        """Register a callback for tick events. Returns unsubscribe function."""
+        ...
 ```
 
 ## 2. RealtimeClock (Live Trading)

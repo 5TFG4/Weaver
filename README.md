@@ -82,10 +82,10 @@ npm run dev   # http://localhost:3000
 |-----------|--------|-------|
 | M0: Test Infrastructure | ✅ Complete | 14 |
 | M0.5: Project Restructure | ✅ Complete | +74 |
-| M1: Foundation (DB/Events) | 🔄 In Progress | — |
+| M1: Foundation (DB/Events) | 🔄 In Progress | +57 |
 | M2-M7 | ⏳ Pending | — |
 
-**Current**: 88 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 145 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 ### Recent Changes (2026-01-30)
 

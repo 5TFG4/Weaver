@@ -58,7 +58,7 @@ playwright             # E2E browser testing (for Haro)
 | Component | Status | Completion |
 |-----------|--------|------------|
 | **Python Environment** | ✅ Upgraded to 3.13 | 100% |
-| **Test Infrastructure** | ✅ M0 Complete (121 tests passing) | 100% |
+| **Test Infrastructure** | ✅ M0 Complete (145 tests passing) | 100% |
 | **Project Restructure** | ✅ Phase 1.1 Complete | 100% |
 | **Events Module** | ✅ Core types/protocol/registry (33 tests) | 60% |
 | **Clock Module** | ✅ Complete (74 tests, 93% coverage) | 100% |
