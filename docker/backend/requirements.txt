@@ -1,7 +1,29 @@
-flask
-flask_sqlalchemy
-alpaca-py
-SQLAlchemy
-psycopg2-binary
-debugpy
-uvicorn
+# =============================================================================
+# Weaver - Runtime Dependencies
+# =============================================================================
+
+# --- Web Framework ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+sse-starlette>=2.0.0          # SSE support for FastAPI
+
+# --- Database ---
+sqlalchemy[asyncio]>=2.0.25
+asyncpg>=0.29.0               # Async PostgreSQL driver
+alembic>=1.13.0               # Database migrations
+psycopg2-binary>=2.9.9        # Sync PostgreSQL (for Alembic)
+
+# --- Data Validation ---
+pydantic>=2.5.0
+pydantic-settings>=2.1.0      # Settings management
+
+# --- Trading ---
+alpaca-py>=0.21.0
+
+# --- Utilities ---
+httpx>=0.26.0                 # Async HTTP client
+python-dateutil>=2.8.2
+structlog>=24.1.0             # Structured logging
+
+# --- Debug (dev only, but included for simplicity) ---
+debugpy>=1.8.0

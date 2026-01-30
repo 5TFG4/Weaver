@@ -476,36 +476,43 @@ respx / httpx          # HTTP mocking for exchange APIs
 playwright             # E2E browser testing (for Haro)
 ```
 
-### 13.2 Test Infrastructure Setup (Day 1)
+#### Runtime Environment
 
-Before writing any feature code, set up the testing foundation:
+* **Python**: 3.13+ (required)
+* **Base Image**: `python:3.13-slim-bookworm`
+* **OS**: Debian 12 (bookworm)
+
+### 13.2 Test Infrastructure Setup (Day 1) — ✅ COMPLETE
+
+The testing foundation has been established with the following structure:
 
 ```plaintext
 tests/
-├── conftest.py              # Shared fixtures
+├── __init__.py
+├── conftest.py              # Shared fixtures (frozen_time, sample_ids, test_config, etc.)
 ├── factories/               # Test data factories
 │   ├── __init__.py
-│   ├── events.py            # Event envelope factories
-│   ├── orders.py            # Order factories
-│   └── runs.py              # Run factories
+│   ├── events.py            # EventFactory, create_event()
+│   ├── orders.py            # OrderFactory, create_order()
+│   └── runs.py              # RunFactory, create_run()
 ├── fixtures/                # Reusable test fixtures
 │   ├── __init__.py
-│   ├── database.py          # Test DB setup/teardown
-│   ├── event_log.py         # In-memory event log for unit tests
-│   └── clock.py             # Controllable test clock
+│   ├── clock.py             # ControllableClock, ClockTick
+│   ├── database.py          # TestDatabaseConfig, MockDatabaseSession
+│   ├── event_log.py         # InMemoryEventLog, TestEnvelope
+│   └── http.py              # AlpacaMockBuilder, MockBar/Order/Account
 ├── unit/
+│   ├── test_infrastructure.py  # 14 smoke tests verifying test setup
 │   ├── events/
 │   ├── glados/
+│   │   ├── clock/
+│   │   └── routes/
 │   ├── veda/
 │   ├── greta/
 │   ├── marvin/
 │   └── walle/
 ├── integration/
-│   ├── test_event_flow.py
-│   ├── test_order_flow.py
-│   └── test_backtest_flow.py
 └── e2e/
-    └── test_ui_flows.py
 ```
 
 #### Key Fixtures
@@ -566,13 +573,17 @@ def mock_alpaca():
 
 ### 13.4 Current State Assessment
 
+> **Last Updated**: 2026-01-29
+
 | Component | Status | Completion |
 |-----------|--------|------------|
+| **Python Environment** | ✅ Upgraded to 3.13 | 100% |
+| **Test Infrastructure** | ✅ M0 Complete (14 tests passing) | 100% |
+| Docker config | ✅ Dev/prod configs, slim images | ~80% |
 | GLaDOS core | Basic framework | ~25% |
 | Veda/Alpaca | Can fetch data, place orders | ~40% |
 | EventBus | Simple in‑memory | ~15% |
 | WallE/DB | Basic SQLAlchemy model | ~10% |
-| Docker config | Dev/prod configs exist | ~50% |
 | Events module | ❌ Not implemented | 0% |
 | REST API | ❌ Not implemented | 0% |
 | SSE streaming | ❌ Not implemented | 0% |
@@ -580,19 +591,21 @@ def mock_alpaca():
 | Marvin (strategy) | ❌ Empty shell | 0% |
 | Haro (frontend) | ❌ Does not exist | 0% |
 | Alembic migrations | ❌ Not set up | 0% |
-| **Test infrastructure** | ❌ Not set up | 0% |
 
 ### 13.5 Phase 1: Foundation + Test Infrastructure (Week 1–2)
 
 **Goal**: Establish test infrastructure AND core modules together.
 
-#### 1.0 Test Infrastructure (FIRST)
-- [ ] Set up `pytest.ini` / `pyproject.toml` test config
-- [ ] Create `tests/conftest.py` with core fixtures
-- [ ] Create `tests/fixtures/database.py` — testcontainers setup
-- [ ] Create `tests/fixtures/clock.py` — ControllableClock
-- [ ] Create `tests/factories/` — factory-boy models
-- [ ] Verify: `pytest --collect-only` works
+#### 1.0 Test Infrastructure (FIRST) — ✅ COMPLETE
+- [x] Set up `pyproject.toml` test config (pytest, coverage, ruff, mypy)
+- [x] Create `tests/conftest.py` with core fixtures
+- [x] Create `tests/fixtures/database.py` — TestDatabaseConfig, MockDatabaseSession
+- [x] Create `tests/fixtures/clock.py` — ControllableClock, ClockTick
+- [x] Create `tests/fixtures/event_log.py` — InMemoryEventLog, TestEnvelope
+- [x] Create `tests/fixtures/http.py` — AlpacaMockBuilder, MockBar/Order/Account
+- [x] Create `tests/factories/` — EventFactory, OrderFactory, RunFactory
+- [x] Verify: `pytest tests/ -v` → 14 tests passing
+- [x] Upgrade Python to 3.13 (from 3.8)
 
 #### 1.1 Project Restructure
 - [ ] Rename directories to match spec (`GLaDOS` → `glados`, etc.)
@@ -914,7 +927,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       
       - name: Install dependencies
         run: pip install -r docker/backend/requirements.dev.txt
@@ -931,9 +944,9 @@ jobs:
 
 ### 13.13 Milestone Definitions (Updated for TDD)
 
-| Milestone | Definition of Done |
-|-----------|-------------------|
-| **M0: Test Infra** | pytest runs; fixtures work; CI pipeline green |
+| Milestone | Definition of Done | Status |
+|-----------|-------------------|--------|
+| **M0: Test Infra** | pytest runs; fixtures work; CI pipeline green | ✅ DONE |
 | **M1: Foundation** | Events tests pass; DB tests pass; all repos tested |
 | **M2: API Live** | Route tests pass; SSE tests pass; Clock tests pass (including edge cases) |
 | **M3: Trading Works** | Veda tests pass with mocked exchange; Order idempotency proven |

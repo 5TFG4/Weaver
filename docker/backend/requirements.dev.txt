@@ -1,0 +1,27 @@
+# =============================================================================
+# Weaver - Development & Testing Dependencies
+# =============================================================================
+# Install with: pip install -r requirements.dev.txt
+
+# Include runtime dependencies
+-r requirements.txt
+
+# --- Testing Framework ---
+pytest>=8.0.0                 # Matches pyproject.toml minversion
+pytest-asyncio>=0.23.0        # Async test support (0.23+ for asyncio_mode=auto)
+pytest-cov>=4.1.0             # Coverage reporting
+pytest-xdist>=3.3.0           # Parallel test execution
+pytest-timeout>=2.1.0         # Test timeouts
+
+# --- Test Utilities ---
+hypothesis>=6.82.0            # Property-based testing
+factory-boy>=3.3.0            # Test data factories
+freezegun>=1.2.0              # Time mocking
+respx>=0.20.0                 # HTTPX mocking
+
+# --- Code Quality ---
+ruff>=0.0.280                 # Linter + formatter
+mypy>=1.4.0                   # Type checking
+
+# --- Type Stubs ---
+types-python-dateutil>=2.8.0
