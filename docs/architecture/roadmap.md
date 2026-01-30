@@ -57,11 +57,11 @@ playwright             # E2E browser testing (for Haro)
 | Component | Status | Completion |
 |-----------|--------|------------|
 | **Python Environment** | ✅ Upgraded to 3.13 | 100% |
-| **Test Infrastructure** | ✅ M0 Complete (164 tests passing) | 100% |
+| **Test Infrastructure** | ✅ M0 Complete (212 tests passing) | 100% |
 | **Project Restructure** | ✅ Phase 1.1 Complete | 100% |
 | **Events Module** | ✅ Core types/protocol/registry (33 tests) | 60% |
 | **Clock Module** | ✅ Complete (93 tests, 93% coverage) | 100% |
-| **Config Module** | ✅ Dual credentials support (25 tests) | 100% |
+| **Config Module** | ✅ Dual credentials support (24 tests) | 100% |
 | Docker config | ✅ Dev/prod configs, slim images | ~80% |
 | GLaDOS core | Basic framework | ~25% |
 | Veda/Alpaca | Can fetch data, place orders | ~40% |
@@ -79,8 +79,8 @@ playwright             # E2E browser testing (for Haro)
 |-----------|-------------------|--------|
 | **M0: Test Infra** | pytest runs; fixtures work; CI pipeline green | ✅ DONE |
 | **M0.5: Restructure** | Directories renamed; events/clock modules created; config system ready | ✅ DONE |
-| **M1: Foundation** | Clock full impl; Events DB integration; Alembic migrations | 🔄 IN PROGRESS |
-| **M2: API Live** | Route tests pass; SSE tests pass | ⏳ PENDING |
+| **M1: Foundation** | Clock full impl; Events DB integration; Alembic migrations | ✅ DONE |
+| **M2: API Live** | Route tests pass; SSE tests pass | 🔄 IN PROGRESS |
 | **M3: Trading Works** | Veda tests pass with mocked exchange; Order idempotency proven | ⏳ PENDING |
 | **M4: Backtest Works** | Greta simulation tests pass; Stats calculations verified | ⏳ PENDING |
 | **M5: Strategy Runs** | Marvin tests pass; SMA strategy backtested successfully | ⏳ PENDING |
@@ -89,30 +89,25 @@ playwright             # E2E browser testing (for Haro)
 
 ## 4. Phase Details
 
-### Phase 1: Foundation (Week 1–2) — 🔄 IN PROGRESS
+### Phase 1: Foundation (Week 1–2) — ✅ COMPLETE
 
 - ✅ Test infrastructure
 - ✅ Project restructure
 - ✅ Events module (core)
-- ✅ Clock module (utils)
+- ✅ Clock module (complete: 93 tests, 93% coverage)
 - ✅ Config module
-- ⏳ **Clock full implementation** (realtime + backtest) ← *moved up*
-- ⏳ Database/Alembic setup
-- ⏳ Events DB integration (Outbox + LISTEN/NOTIFY)
+- ✅ Database/Alembic setup
+- ✅ Events DB integration (Outbox + LISTEN/NOTIFY)
 
-> **Why Clock before Database?**
-> 1. **Core business logic** — Clock drives strategy execution and backtesting
-> 2. **Data fetching dependency** — Scheduled data retrieval may use clock alignment
-> 3. **Continuity** — Clock utils (17 tests) already complete, natural next step
-> 4. **Zero external dependencies** — Can test without Docker/Postgres
-> 5. **InMemoryEventLog sufficient** — Unit tests don't need real DB yet
+### Phase 2: GLaDOS Core (Week 2–3) — 🔄 IN PROGRESS
 
-### Phase 2: GLaDOS Core (Week 2–3)
+- ⏳ FastAPI application factory
+- ⏳ Dependency injection setup
+- ⏳ REST endpoints (health, runs, orders, candles)
+- ⏳ SSE streaming (/events/stream)
+- ⏳ Domain routing foundation
 
-- FastAPI application
-- REST endpoints
-- SSE streaming
-- Domain routing
+> **Detailed Plan**: See Section 9 below
 
 ### Phase 3: Veda & Greta (Week 3–4)
 
@@ -451,7 +446,438 @@ All phases complete ✅
 
 ---
 
+## 9. GLaDOS API Implementation Plan (Current Focus)
+
+> **Status**: 🔄 IN PROGRESS | **Target**: M2 completion, 85% coverage
+
+### 9.1 Current State
+
+**✅ Already Have**:
+- `src/glados/__init__.py`: Module definition with lazy import
+- `src/glados/glados.py`: Legacy prototype code (needs refactor)
+- `src/glados/routes/api.py`: Empty placeholder
+- `src/glados/routes/sse.py`: Empty placeholder
+- `src/glados/clock/`: Complete (93 tests)
+- `src/events/`: Core types, protocol, registry, log, offsets
+- `src/config.py`: Full configuration system
+- `requirements.txt`: FastAPI, uvicorn, sse-starlette
+
+**❌ Missing**:
+- `src/glados/app.py`: FastAPI application factory
+- `src/glados/dependencies.py`: Dependency injection
+- `src/glados/schemas.py`: Pydantic request/response schemas
+- REST endpoint implementations
+- SSE streaming implementation
+- Tests for all routes
+
+### 9.2 API Endpoints Design
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  REST Endpoints                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  GET  /healthz              → Health check                      │
+│  GET  /api/v1/runs          → List runs                         │
+│  POST /api/v1/runs          → Start new run                     │
+│  GET  /api/v1/runs/{id}     → Get run details                   │
+│  POST /api/v1/runs/{id}/stop → Stop a run                       │
+│  GET  /api/v1/orders        → Query orders (filter by run_id)   │
+│  GET  /api/v1/orders/{id}   → Get order details                 │
+│  GET  /api/v1/candles       → Query candle data                 │
+├─────────────────────────────────────────────────────────────────┤
+│  SSE Endpoint                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  GET  /api/v1/events/stream → SSE stream (thin events)          │
+│  GET  /api/v1/events/tail   → REST polling alternative          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 Implementation Phases
+
+#### Phase A: Application Foundation (~1 hour)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| A1: Create `app.py` (factory pattern) | FastAPI app with lifespan | 3 |
+| A2: Create `dependencies.py` | DI container, get_db, get_event_log | 4 |
+| A3: Create `schemas.py` | Pydantic models for API | 5 |
+| A4: Implement `/healthz` | Health check endpoint | 2 |
+
+**Files**:
+```
+src/glados/
+├── app.py              # create_app() factory
+├── dependencies.py     # Dependency injection
+├── schemas.py          # Pydantic request/response models
+└── routes/
+    └── api.py          # Add healthz endpoint
+```
+
+**Test First** (`tests/unit/glados/test_app.py`):
+```python
+def test_create_app_returns_fastapi_instance():
+    """App factory should return configured FastAPI app."""
+
+def test_healthz_returns_ok():
+    """GET /healthz should return 200 with status ok."""
+
+def test_app_includes_api_router():
+    """App should include /api/v1 router."""
+```
+
+#### Phase B: Run Management Endpoints (~1.5 hours)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| B1: `GET /api/v1/runs` | List all runs | 3 |
+| B2: `POST /api/v1/runs` | Start new run | 4 |
+| B3: `GET /api/v1/runs/{id}` | Get run details | 3 |
+| B4: `POST /api/v1/runs/{id}/stop` | Stop a run | 3 |
+
+**Schemas**:
+```python
+class RunMode(str, Enum):
+    LIVE = "live"
+    PAPER = "paper"
+    BACKTEST = "backtest"
+
+class RunStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    STOPPED = "stopped"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+class RunCreate(BaseModel):
+    strategy_id: str
+    mode: RunMode
+    symbols: list[str]
+    timeframe: str = "1m"
+    # Backtest only
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+
+class RunResponse(BaseModel):
+    id: str
+    strategy_id: str
+    mode: RunMode
+    status: RunStatus
+    symbols: list[str]
+    timeframe: str
+    created_at: datetime
+    started_at: datetime | None
+    stopped_at: datetime | None
+```
+
+**Test First** (`tests/unit/glados/routes/test_runs.py`):
+```python
+def test_list_runs_empty():
+    """GET /runs with no runs should return empty list."""
+
+def test_list_runs_returns_all():
+    """GET /runs should return all runs."""
+
+def test_create_run_validates_mode():
+    """POST /runs with invalid mode should return 422."""
+
+def test_create_run_returns_201():
+    """POST /runs with valid data should return 201."""
+
+def test_get_run_not_found():
+    """GET /runs/{id} with unknown id should return 404."""
+
+def test_stop_run_transitions_status():
+    """POST /runs/{id}/stop should change status to stopped."""
+```
+
+#### Phase C: Order Query Endpoints (~1 hour)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| C1: `GET /api/v1/orders` | Query orders with filters | 4 |
+| C2: `GET /api/v1/orders/{id}` | Get order details | 3 |
+
+**Schemas**:
+```python
+class OrderSide(str, Enum):
+    BUY = "buy"
+    SELL = "sell"
+
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    SUBMITTED = "submitted"
+    FILLED = "filled"
+    PARTIALLY_FILLED = "partially_filled"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+
+class OrderResponse(BaseModel):
+    id: str
+    run_id: str
+    client_order_id: str      # For idempotency
+    symbol: str
+    side: OrderSide
+    qty: Decimal
+    filled_qty: Decimal
+    price: Decimal | None     # Limit price
+    filled_avg_price: Decimal | None
+    status: OrderStatus
+    created_at: datetime
+    filled_at: datetime | None
+```
+
+**Test First** (`tests/unit/glados/routes/test_orders.py`):
+```python
+def test_list_orders_filters_by_run_id():
+    """GET /orders?run_id=x should filter by run."""
+
+def test_list_orders_filters_by_status():
+    """GET /orders?status=filled should filter by status."""
+
+def test_get_order_not_found():
+    """GET /orders/{id} with unknown id should return 404."""
+```
+
+#### Phase D: Candle Data Endpoint (~45 min)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| D1: `GET /api/v1/candles` | Query candle data | 4 |
+
+**Schemas**:
+```python
+class CandleResponse(BaseModel):
+    symbol: str
+    timeframe: str
+    timestamp: datetime
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    volume: Decimal
+```
+
+**Test First** (`tests/unit/glados/routes/test_candles.py`):
+```python
+def test_candles_requires_symbol():
+    """GET /candles without symbol should return 422."""
+
+def test_candles_returns_ohlcv():
+    """GET /candles should return OHLCV data."""
+```
+
+#### Phase E: SSE Streaming (~1.5 hours)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| E1: Create `SSEBroadcaster` class | Manages SSE connections | 4 |
+| E2: `GET /api/v1/events/stream` | SSE endpoint | 5 |
+| E3: `GET /api/v1/events/tail` | REST polling fallback | 3 |
+| E4: Integrate with EventLog | Broadcast on new events | 3 |
+
+**Files**:
+```
+src/glados/
+├── sse_broadcaster.py  # SSEBroadcaster class
+└── routes/
+    └── sse.py          # SSE endpoints
+```
+
+**SSE Event Format** (Thin Events):
+```
+event: ui.run_started
+data: {"run_id": "abc123", "status": "running"}
+
+event: ui.order_updated
+data: {"order_id": "xyz789", "status": "filled", "run_id": "abc123"}
+
+event: ui.tick
+data: {"run_id": "abc123", "timestamp": "2026-01-30T10:00:00Z", "bar_index": 42}
+```
+
+**Test First** (`tests/unit/glados/routes/test_sse.py`):
+```python
+async def test_sse_stream_connects():
+    """GET /events/stream should establish SSE connection."""
+
+async def test_sse_receives_events():
+    """SSE stream should receive published events."""
+
+async def test_sse_reconnect_with_last_event_id():
+    """SSE should support Last-Event-ID for reconnection."""
+
+def test_tail_returns_events_after_offset():
+    """GET /events/tail?after=10 should return events after offset."""
+```
+
+#### Phase F: Error Handling & Middleware (~45 min)
+
+| Task | Output | Tests |
+|------|--------|-------|
+| F1: Create error response schema | Consistent error format | 2 |
+| F2: Add exception handlers | Global error handling | 4 |
+| F3: Add request ID middleware | Correlation tracking | 2 |
+| F4: Add logging middleware | Structured request logs | 2 |
+
+**Error Response Format**:
+```python
+class ErrorResponse(BaseModel):
+    code: str              # e.g., "NOT_FOUND", "VALIDATION_ERROR"
+    message: str           # Human-readable message
+    details: dict | None   # Additional context
+    correlation_id: str    # Request tracking ID
+```
+
+### 9.4 File Changes Summary
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/glados/app.py` | NEW | FastAPI factory with lifespan |
+| `src/glados/dependencies.py` | NEW | DI: get_db, get_event_log, get_config |
+| `src/glados/schemas.py` | NEW | All Pydantic models |
+| `src/glados/sse_broadcaster.py` | NEW | SSE connection manager |
+| `src/glados/routes/api.py` | MODIFY | REST endpoints implementation |
+| `src/glados/routes/sse.py` | MODIFY | SSE endpoints implementation |
+| `src/glados/routes/__init__.py` | MODIFY | Export routers |
+| `src/glados/glados.py` | REFACTOR | Remove legacy code, use new patterns |
+| `tests/unit/glados/test_app.py` | NEW | App factory tests |
+| `tests/unit/glados/test_dependencies.py` | NEW | DI tests |
+| `tests/unit/glados/routes/test_runs.py` | NEW | Run endpoint tests |
+| `tests/unit/glados/routes/test_orders.py` | NEW | Order endpoint tests |
+| `tests/unit/glados/routes/test_candles.py` | NEW | Candle endpoint tests |
+| `tests/unit/glados/routes/test_sse.py` | NEW | SSE endpoint tests |
+| `tests/fixtures/http.py` | MODIFY | Add TestClient fixture |
+
+### 9.5 Execution Order (TDD)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Day 1: Foundation                                              │
+│  ├── A1: app.py (factory)     ← Write tests first               │
+│  ├── A2: dependencies.py      ← Write tests first               │
+│  ├── A3: schemas.py           ← Define all models               │
+│  └── A4: /healthz             ← First working endpoint          │
+├─────────────────────────────────────────────────────────────────┤
+│  Day 2: Run Management                                          │
+│  ├── B1: GET /runs            ← List runs                       │
+│  ├── B2: POST /runs           ← Start run (mock backend)        │
+│  ├── B3: GET /runs/{id}       ← Get details                     │
+│  └── B4: POST /runs/{id}/stop ← Stop run                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Day 3: Orders & Candles                                        │
+│  ├── C1-C2: Order endpoints   ← Query orders                    │
+│  └── D1: Candle endpoint      ← Query candles                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Day 4: SSE Streaming                                           │
+│  ├── E1: SSEBroadcaster       ← Connection manager              │
+│  ├── E2: /events/stream       ← SSE endpoint                    │
+│  ├── E3: /events/tail         ← REST fallback                   │
+│  └── E4: EventLog integration ← Broadcast on append             │
+├─────────────────────────────────────────────────────────────────┤
+│  Day 5: Polish                                                  │
+│  ├── F1-F4: Error handling    ← Middleware, errors              │
+│  ├── Integration tests        ← Full API flow                   │
+│  └── Documentation update     ← API docs                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.6 Dependencies
+
+```
+Phase A ──► Phase B ──► Phase C ──► Phase D
+    │                                   │
+    └──────────► Phase E ◄──────────────┘
+                    │
+                    ▼
+                Phase F
+```
+
+- **A (Foundation)**: No dependencies, start here
+- **B (Runs)**: Depends on A (schemas, dependencies)
+- **C (Orders)**: Depends on A
+- **D (Candles)**: Depends on A
+- **E (SSE)**: Depends on A, needs EventLog
+- **F (Error Handling)**: After all routes work
+
+### 9.7 Success Criteria
+
+- [ ] `pytest tests/unit/glados/routes/ -v` all passing
+- [ ] Coverage ≥85% for `src/glados/routes/`
+- [ ] `/healthz` returns `{"status": "ok"}`
+- [ ] Run CRUD operations work (with mock backend)
+- [ ] SSE stream can be established and receives events
+- [ ] Error responses follow standard format
+- [ ] Request correlation IDs are logged
+- [ ] No flaky tests
+
+### 9.8 Testing Strategy
+
+**Unit Tests** (mock everything):
+- Use FastAPI `TestClient` for sync tests
+- Use `httpx.AsyncClient` for async tests
+- Mock EventLog with `InMemoryEventLog`
+- Mock database with fixtures
+
+**Integration Tests** (real dependencies):
+- Run with Docker Compose
+- Test SSE with real EventLog (Postgres)
+- Test error recovery
+
+**Key Test Fixtures**:
+```python
+# tests/fixtures/http.py
+@pytest.fixture
+def test_client(app: FastAPI) -> TestClient:
+    """Sync test client for route testing."""
+    return TestClient(app)
+
+@pytest.fixture
+async def async_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    """Async test client for SSE testing."""
+    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+# tests/conftest.py
+@pytest.fixture
+def app(mock_event_log, mock_db) -> FastAPI:
+    """Create app with mocked dependencies."""
+    return create_app(
+        event_log=mock_event_log,
+        db=mock_db,
+    )
+```
+
+### 9.9 Notes
+
+1. **TDD Strict**: Write test → Run (RED) → Implement → Run (GREEN) → Refactor
+2. **Mock Backend**: Routes don't call real Veda/Greta yet, just manage state
+3. **Schema First**: Define all Pydantic models before implementing routes
+4. **SSE Testing**: Use `sse-starlette` for server, `httpx-sse` for client testing
+5. **Error Codes**: Use consistent codes like `NOT_FOUND`, `VALIDATION_ERROR`, `INTERNAL_ERROR`
+6. **Correlation ID**: Generate UUID per request, include in all logs and error responses
+7. **OpenAPI**: FastAPI auto-generates `/docs` (Swagger) and `/redoc`
+
+---
+
 ## Changelog
+
+### 2026-01-30 (Late Night) — M1 Complete, M2 Started 🎉
+
+**M1: Foundation Complete**:
+- ✅ Clock module: 93 tests, 93% coverage
+- ✅ Events DB integration: PostgresEventLog, PostgresOffsetStore
+- ✅ Alembic migrations: outbox + consumer_offsets tables
+- ✅ Integration tests: 23 tests (skipped without DB_URL)
+
+**M2: API Live Started**:
+- Created detailed implementation plan (Section 9)
+- 6 phases: Foundation → Runs → Orders → Candles → SSE → Error Handling
+- Estimated: 5 days, ~50 tests
+- Target: 85% coverage for `src/glados/routes/`
+
+**Tests**: 212 total (189 unit + 23 integration)
+
+---
 
 ### 2026-01-30 — Database/Alembic Setup Complete 🎉
 

@@ -82,15 +82,17 @@ npm run dev   # http://localhost:3000
 |-----------|--------|-------|
 | M0: Test Infrastructure | ✅ Complete | 14 |
 | M0.5: Project Restructure | ✅ Complete | +74 |
-| M1: Foundation (DB/Events) | 🔄 In Progress | +76 |
-| M2-M7 | ⏳ Pending | — |
+| M1: Foundation (DB/Events) | ✅ Complete | +124 |
+| M2: API Live | 🔄 In Progress | — |
+| M3-M7 | ⏳ Pending | — |
 
-**Current**: 164 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 212 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 ### Recent Changes (2026-01-30)
 
+- ✅ **M1 Complete**: Database/Alembic + Events integration (212 total tests)
 - ✅ **Clock Factory**: `ClockConfig` + `create_clock()` for automatic clock selection
-- ✅ **Clock Module Complete**: 93 tests, 93% coverage (RealtimeClock, BacktestClock, utils)
+- ✅ **Clock Module Complete**: 93 tests, 94% coverage (RealtimeClock, BacktestClock, utils)
 - ✅ Created `src/events/` module (protocol, types, registry)
 - ✅ Created `src/config.py` with dual Alpaca credentials (Live + Paper parallel)
 - ✅ Renamed modules to lowercase (`glados`, `veda`, `greta`, `marvin`, `walle`)
