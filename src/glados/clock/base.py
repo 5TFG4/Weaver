@@ -7,6 +7,7 @@ Both RealtimeClock and BacktestClock implement this interface.
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -68,6 +69,10 @@ class BaseClock(ABC):
         self._callbacks: list[TickCallback] = []
         self._running = False
         self._tick_count = 0
+        # Shared state for all clock implementations
+        self._run_id: str = ""
+        self._task: asyncio.Task[None] | None = None
+        self._bar_index: int = 0
 
     @abstractmethod
     async def start(self, run_id: str) -> None:
@@ -79,10 +84,35 @@ class BaseClock(ABC):
         """
         pass
 
-    @abstractmethod
     async def stop(self) -> None:
-        """Stop the clock."""
-        pass
+        """
+        Stop the clock.
+
+        Cancels the running task and waits for cleanup.
+        Subclasses can override to add cleanup logic, but should call super().
+        """
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+
+    async def wait(self) -> None:
+        """
+        Wait for the clock to stop.
+
+        This is the preferred way to wait for the clock,
+        rather than accessing the internal _task directly.
+        Handles both natural completion and cancellation.
+        """
+        if self._task is not None:
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
 
     @abstractmethod
     def current_time(self) -> datetime:

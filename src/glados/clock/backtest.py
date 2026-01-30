@@ -47,9 +47,6 @@ class BacktestClock(BaseClock):
         self._start_time = start_time
         self._end_time = end_time
         self._simulated_time = start_time
-        self._run_id: str = ""
-        self._task: asyncio.Task | None = None
-        self._bar_index = 0
 
         # Backpressure support
         self._ack_event: asyncio.Event = asyncio.Event()
@@ -69,25 +66,8 @@ class BacktestClock(BaseClock):
 
     async def stop(self) -> None:
         """Stop the backtest."""
-        self._running = False
         self._ack_event.set()  # Release any waiting
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-            self._task = None
-
-    async def wait(self) -> None:
-        """
-        Wait for the backtest to complete.
-
-        This is the preferred way to wait for the simulation to finish,
-        rather than accessing the internal _task directly.
-        """
-        if self._task is not None:
-            await self._task
+        await super().stop()
 
     def current_time(self) -> datetime:
         """Return the current simulated time."""

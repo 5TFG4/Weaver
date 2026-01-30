@@ -40,9 +40,6 @@ class RealtimeClock(BaseClock):
             timeframe: Bar timeframe (e.g., '1m', '5m', '1h')
         """
         super().__init__(timeframe)
-        self._run_id: str = ""
-        self._task: asyncio.Task | None = None
-        self._bar_index = 0
 
     async def start(self, run_id: str) -> None:
         """Start emitting ticks at bar boundaries."""
@@ -54,51 +51,43 @@ class RealtimeClock(BaseClock):
         self._bar_index = 0
         self._task = asyncio.create_task(self._tick_loop())
 
-    async def stop(self) -> None:
-        """Stop the clock."""
-        self._running = False
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-            self._task = None
-
     def current_time(self) -> datetime:
         """Return the current wall clock time (UTC)."""
         return datetime.now(timezone.utc)
 
     async def _tick_loop(self) -> None:
         """Main loop that emits ticks at bar boundaries."""
-        while self._running:
-            try:
-                # Calculate next bar boundary
-                now = self.current_time()
-                next_bar = calculate_next_bar_start(now, self.timeframe)
+        try:
+            while self._running:
+                try:
+                    # Calculate next bar boundary
+                    now = self.current_time()
+                    next_bar = calculate_next_bar_start(now, self.timeframe)
 
-                # Sleep until close to the boundary
-                await self._sleep_until(next_bar)
+                    # Sleep until close to the boundary
+                    await self._sleep_until(next_bar)
 
-                if not self._running:
-                    break
+                    if not self._running:
+                        break
 
-                # Emit tick with the bar start time (not actual emission time)
-                self._bar_index += 1
-                tick = ClockTick(
-                    run_id=self._run_id,
-                    ts=next_bar,
-                    timeframe=self.timeframe,
-                    bar_index=self._bar_index,
-                    is_backtest=False,
-                )
-                self._emit_tick(tick)
+                    # Emit tick with the bar start time (not actual emission time)
+                    self._bar_index += 1
+                    tick = ClockTick(
+                        run_id=self._run_id,
+                        ts=next_bar,
+                        timeframe=self.timeframe,
+                        bar_index=self._bar_index,
+                        is_backtest=False,
+                    )
+                    self._emit_tick(tick)
 
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                # Log error but continue
-                await asyncio.sleep(1)
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    # Log error but continue
+                    await asyncio.sleep(1)
+        finally:
+            self._running = False
 
     async def _sleep_until(self, target: datetime) -> None:
         """
