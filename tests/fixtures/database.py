@@ -7,11 +7,11 @@ Provides fixtures for database testing:
 - Transaction rollback for test isolation
 """
 from __future__ import annotations
-import asyncio
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
+
+# NOTE: asyncio, AsyncGenerator, asynccontextmanager will be needed
+# when implementing real async database fixtures with testcontainers
 
 import pytest
 

@@ -1,9 +1,9 @@
 FROM python:3.13-bookworm
 WORKDIR /weaver
 
-# Install both production and dev dependencies
+# Install dev dependencies (includes production deps via -r requirements.txt)
 COPY requirements.txt requirements.dev.txt /weaver/
-RUN pip install --no-cache-dir -r requirements.txt -r requirements.dev.txt
+RUN pip install --no-cache-dir -r requirements.dev.txt
 
 COPY . /weaver/
 CMD ["tail", "-f", "/dev/null"]

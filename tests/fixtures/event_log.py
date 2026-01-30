@@ -201,7 +201,7 @@ class InMemoryEventLog:
             Number of events replayed
         """
         count = 0
-        for i, event in enumerate(self._events[from_offset:], start=from_offset):
+        for event in self._events[from_offset:]:
             if event_type is None or event.type == event_type:
                 handler(event)
                 count += 1

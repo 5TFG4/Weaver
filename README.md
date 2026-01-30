@@ -61,7 +61,8 @@ docker compose -f docker/docker-compose.yml up -d --build
 # Requires Python 3.13+
 # backend
 pip install -r docker/backend/requirements.txt
-uvicorn glados.main:app --host 0.0.0.0 --port 8000 --reload
+# TODO: Update entrypoint once GLaDOS main module is implemented
+# uvicorn GLaDOS.main:app --host 0.0.0.0 --port 8000 --reload
 
 # frontend (in ./haro)
 npm install

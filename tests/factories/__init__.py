@@ -2,7 +2,7 @@
 Test Data Factories Package
 
 This package provides factory classes for generating test data.
-Uses factory_boy patterns for consistent, composable test data generation.
+Uses custom dataclass-based builders for consistent, composable test data generation.
 
 Modules:
 - events.py: Event envelope factories

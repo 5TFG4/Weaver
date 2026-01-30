@@ -7,8 +7,8 @@
 -r requirements.txt
 
 # --- Testing Framework ---
-pytest>=7.4.0
-pytest-asyncio>=0.21.0        # Async test support
+pytest>=8.0.0                 # Matches pyproject.toml minversion
+pytest-asyncio>=0.23.0        # Async test support (0.23+ for asyncio_mode=auto)
 pytest-cov>=4.1.0             # Coverage reporting
 pytest-xdist>=3.3.0           # Parallel test execution
 pytest-timeout>=2.1.0         # Test timeouts

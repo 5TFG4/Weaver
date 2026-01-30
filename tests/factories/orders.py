@@ -268,15 +268,13 @@ def create_filled_order(
     run_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a filled order."""
-    return (
+    factory = (
         OrderFactory()
         .with_symbol(symbol)
         .with_side(side)
         .with_qty(qty)
         .with_fill(qty, fill_price)
-        .with_run_id(run_id) if run_id else OrderFactory()
-        .with_symbol(symbol)
-        .with_side(side)
-        .with_qty(qty)
-        .with_fill(qty, fill_price)
-    ).build()
+    )
+    if run_id:
+        factory = factory.with_run_id(run_id)
+    return factory.build()
