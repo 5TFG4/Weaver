@@ -32,6 +32,11 @@ class DatabaseConfig(BaseSettings):
     pool_overflow: int = Field(default=10, ge=0, le=20)
     echo: bool = Field(default=False, description="Echo SQL statements")
 
+    @property
+    def sync_url(self) -> str:
+        """Get sync database URL for Alembic (psycopg2 driver)."""
+        return self.url.replace("+asyncpg", "+psycopg2")
+
 
 @dataclass(frozen=True)
 class AlpacaCredentials:

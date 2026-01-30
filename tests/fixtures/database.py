@@ -2,9 +2,9 @@
 Database Test Fixtures
 
 Provides fixtures for database testing:
-- Test database creation/teardown using testcontainers
-- Session management
-- Transaction rollback for test isolation
+- Mock database session for unit tests
+- Test configuration
+- Integration tests connect to db_dev via DB_URL environment variable
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -132,27 +132,36 @@ def mock_db_session() -> MockDatabaseSession:
 
 
 # =============================================================================
-# Integration Test Support (using testcontainers)
+# Integration Test Support
 # =============================================================================
 
-# Note: The actual testcontainers integration will be set up when we
-# implement the real database layer. For now, we provide the mock versions.
+# Integration tests use the db_dev container from docker-compose.
+# See tests/integration/conftest.py for the actual fixtures.
+#
+# To run integration tests:
+# 1. Start docker-compose: docker-compose -f docker/docker-compose.dev.yml up -d
+# 2. Run tests: pytest tests/integration/ -v
+#
+# The DB_URL environment variable should be set by docker-compose.
+
 
 async def create_test_tables(engine: Any) -> None:
     """
     Create all tables in the test database.
-    
-    This will be implemented when we have the actual models.
+
+    Uses SQLAlchemy metadata to create tables.
     """
-    # TODO: Import Base from walle.models and create tables
-    pass
+    from src.walle.models import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def drop_test_tables(engine: Any) -> None:
     """
     Drop all tables in the test database.
-    
-    This will be implemented when we have the actual models.
+
+    Uses SQLAlchemy metadata to drop tables.
     """
-    # TODO: Import Base from walle.models and drop tables
-    pass
+    from src.walle.models import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)

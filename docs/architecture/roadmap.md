@@ -38,7 +38,6 @@ pytest                 # Test runner
 pytest-asyncio         # Async test support
 pytest-cov             # Coverage reporting
 hypothesis             # Property-based testing
-testcontainers         # Postgres in Docker for integration tests
 factory-boy            # Test data factories
 freezegun              # Time mocking (critical for clock tests)
 respx / httpx          # HTTP mocking for exchange APIs
@@ -58,10 +57,10 @@ playwright             # E2E browser testing (for Haro)
 | Component | Status | Completion |
 |-----------|--------|------------|
 | **Python Environment** | ✅ Upgraded to 3.13 | 100% |
-| **Test Infrastructure** | ✅ M0 Complete (145 tests passing) | 100% |
+| **Test Infrastructure** | ✅ M0 Complete (164 tests passing) | 100% |
 | **Project Restructure** | ✅ Phase 1.1 Complete | 100% |
 | **Events Module** | ✅ Core types/protocol/registry (33 tests) | 60% |
-| **Clock Module** | ✅ Complete (74 tests, 93% coverage) | 100% |
+| **Clock Module** | ✅ Complete (93 tests, 93% coverage) | 100% |
 | **Config Module** | ✅ Dual credentials support (25 tests) | 100% |
 | Docker config | ✅ Dev/prod configs, slim images | ~80% |
 | GLaDOS core | Basic framework | ~25% |
@@ -318,7 +317,173 @@ Day 3: Integration & Factory
 
 ---
 
+## 8. Database/Alembic Setup Plan (Next Focus)
+
+> **Status**: ⏳ PENDING | **Target**: M1 completion
+
+### 8.1 Current State
+
+**✅ Already Have**:
+- `src/config.py`: `DatabaseConfig` with async URL
+- `src/events/log.py`: `PostgresEventLog` placeholder
+- `src/events/offsets.py`: `PostgresOffsetStore` placeholder
+- `tests/fixtures/database.py`: Mock session, TestDatabaseConfig
+- `requirements.txt`: alembic, asyncpg, psycopg2-binary
+- `docker-compose.yml`: Postgres service
+
+**❌ Missing** → **✅ All Implemented**
+
+### 8.2 Schema Design
+
+```sql
+-- outbox table (event log)
+CREATE TABLE outbox (
+    id SERIAL PRIMARY KEY,          -- sequence number / offset
+    type VARCHAR(100) NOT NULL,     -- e.g., "orders.Placed"
+    payload JSONB NOT NULL,         -- full Envelope
+    created_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_outbox_type ON outbox(type);
+CREATE INDEX idx_outbox_created_at ON outbox(created_at);
+CREATE INDEX idx_outbox_type_created ON outbox(type, created_at);
+
+-- consumer_offsets table (at-least-once delivery)
+CREATE TABLE consumer_offsets (
+    consumer_id VARCHAR(100) PRIMARY KEY,  -- e.g., "sse_broadcaster"
+    last_offset BIGINT NOT NULL DEFAULT -1,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+```
+
+### 8.3 Implementation Phases
+
+#### Phase A: Alembic Initialization (~30 min)
+| Task | Output |
+|------|--------|
+| A1: Create `alembic.ini` | Config file |
+| A2: Create `src/walle/models.py` | SQLAlchemy 2.0 models |
+| A3: Create `src/walle/migrations/` | Alembic directory |
+| A4: Create initial migration | outbox + consumer_offsets |
+
+#### Phase B: Model Unit Tests (~20 min)
+| Task | Tests |
+|------|-------|
+| B1: OutboxEvent creation/serialization | 3 |
+| B2: ConsumerOffset creation/update | 3 |
+| B3: Model constraints validation | 2 |
+
+#### Phase C: Database Session Management (~30 min)
+| Task | Output |
+|------|--------|
+| C1: Create `src/walle/database.py` | Async session factory |
+| C2: Update `src/config.py` | Add sync_url for Alembic |
+| C3: Session tests | 5 tests |
+
+#### Phase D: Complete PostgresEventLog (~45 min)
+| Task | Tests |
+|------|-------|
+| D1: Refactor `append()` with SQLAlchemy | 3 |
+| D2: Refactor `read_from()` | 3 |
+| D3: Refactor LISTEN/NOTIFY | 3 |
+| D4: Complete `PostgresOffsetStore` | 4 |
+
+#### Phase E: Integration Tests (~45 min) ✅
+| Task | Description | Status |
+|------|-------------|--------|
+| E1: Setup integration fixtures | Connect to db_dev via DB_URL | ✅ Done |
+| E2: `tests/integration/test_event_log.py` | Real Postgres (10 tests) | ✅ Done |
+| E3: `tests/integration/test_offset_store.py` | Real Postgres (13 tests) | ✅ Done |
+| E4: Test Alembic migrations | `alembic upgrade/downgrade` | ✅ Ready |
+
+**Note**: Integration tests require `DB_URL` environment variable (set by docker-compose).
+
+### 8.4 File Changes
+
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `alembic.ini` | NEW | Alembic config (points to `src/walle/migrations`) | ✅ |
+| `src/walle/models.py` | NEW | SQLAlchemy 2.0 models (`OutboxEvent`, `ConsumerOffset`) | ✅ |
+| `src/walle/database.py` | NEW | Async session factory, `Database` class | ✅ |
+| `src/walle/migrations/env.py` | NEW | Alembic env (supports `DB_URL` override) | ✅ |
+| `src/walle/migrations/versions/001_*.py` | NEW | Initial migration (outbox + consumer_offsets with BigInteger) | ✅ |
+| `src/events/log.py` | MODIFY | `PostgresEventLog` uses SQLAlchemy | ✅ |
+| `src/events/offsets.py` | MODIFY | `PostgresOffsetStore` uses SQLAlchemy | ✅ |
+| `src/config.py` | MODIFY | Add `sync_url` property for Alembic | ✅ |
+| `docker/docker-compose.yml` | MODIFY | Add `DB_URL`, healthcheck, `depends_on`, `postgres:16-alpine` | ✅ |
+| `docker/docker-compose.dev.yml` | MODIFY | Add `DB_URL`, healthcheck, `depends_on`, `postgres:16-alpine` | ✅ |
+| `docker/example.env` | MODIFY | Add `POSTGRES_DB`, fix port variable name | ✅ |
+| `docker/example.env.dev` | MODIFY | Add `POSTGRES_DB`, set dev defaults | ✅ |
+| `tests/unit/walle/test_models.py` | NEW | Model unit tests (12) | ✅ |
+| `tests/unit/walle/test_database.py` | NEW | Database unit tests (13) | ✅ |
+| `tests/integration/conftest.py` | NEW | Integration fixtures (uses `alembic upgrade head`) | ✅ |
+| `tests/integration/test_event_log.py` | NEW | EventLog integration (10) | ✅ |
+| `tests/integration/test_offset_store.py` | NEW | OffsetStore integration (13) | ✅ |
+
+### 8.5 Dependencies
+
+```
+Phase A ──► Phase B ──┐
+    │                 │
+    └──► Phase C ─────┼──► Phase D ──► Phase E
+```
+
+All phases complete ✅
+
+### 8.6 Success Criteria
+
+- [x] `alembic upgrade head` creates tables
+- [x] `alembic downgrade base` rolls back
+- [x] `PostgresEventLog` passes integration tests (append, read_from, subscribe)
+- [x] `PostgresOffsetStore` passes integration tests (get, set, get_all)
+- [x] Unit tests work without real database (mocked)
+- [x] Integration tests connect to db_dev via DB_URL
+- [ ] Coverage ≥80% (need to verify)
+
+### 8.7 Notes
+
+1. **SQLAlchemy 2.0 Async**: Use `AsyncSession`, `Mapped`, `mapped_column`
+2. **Alembic + Async**: Alembic is sync, needs `psycopg2` driver via `sync_url`
+3. **Legacy Code**: `walle.py` old code kept but marked deprecated
+4. **LISTEN/NOTIFY**: Use asyncpg native, not SQLAlchemy (PostgresEventLog keeps asyncpg pool for subscribe)
+5. **Integration Tests**: Run `alembic upgrade head` to setup tables, skipped if `DB_URL` not set
+6. **Docker Compose**: Both prod and dev use `${POSTGRES_DB}` env var, `postgres:16-alpine` image
+7. **DB_URL Format**: `postgresql+asyncpg://user:pass@host:5432/db` (container internal port is always 5432)
+
+---
+
 ## Changelog
+
+### 2026-01-30 — Database/Alembic Setup Complete 🎉
+
+**Phase A-E Implementation Summary**:
+
+| Phase | Description | Tests |
+|-------|-------------|-------|
+| A | Alembic initialization | N/A |
+| B | Model unit tests | 12 |
+| C | Session management | 13 |
+| D | PostgresEventLog/OffsetStore refactor | N/A |
+| E | Integration tests | 23 (skipped w/o DB_URL) |
+
+**Files Created/Modified**:
+- `alembic.ini`: Alembic configuration pointing to `src/walle/migrations`
+- `src/walle/models.py`: SQLAlchemy 2.0 models (`OutboxEvent`, `ConsumerOffset` with BigInteger)
+- `src/walle/database.py`: Async session factory and connection management
+- `src/walle/migrations/env.py`: Supports `DB_URL` environment variable override
+- `src/walle/migrations/versions/001_initial.py`: Creates `outbox` and `consumer_offsets` tables
+- `docker/docker-compose.yml`: Added `DB_URL`, healthcheck, `depends_on`, pinned `postgres:16-alpine`
+- `docker/docker-compose.dev.yml`: Same improvements as prod
+- `docker/example.env` & `example.env.dev`: Added `POSTGRES_DB` variable
+
+**Infrastructure Alignment**:
+- Dev and prod docker-compose now consistent
+- All use `${POSTGRES_DB}` environment variable (not hardcoded)
+- Integration tests use `alembic upgrade head` (not `Base.metadata.create_all`)
+
+**Tests**: 212 total (189 unit + 23 integration)
+**Integration Tests**: Auto-skipped when `DB_URL` not set
+
+---
 
 ### 2026-01-30 (Night) — Clock Factory Complete 🎉
 

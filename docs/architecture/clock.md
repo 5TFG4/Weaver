@@ -101,19 +101,28 @@ class BacktestClock(BaseClock):
 
 ## 4. Clock Selection (GLaDOS Responsibility)
 
-GLaDOS selects the appropriate clock based on run mode:
+GLaDOS selects the appropriate clock using the factory function:
 
 ```python
-def create_clock(run_config: RunConfig) -> BaseClock:
-    if run_config.mode == "live":
-        return RealtimeClock(timeframe=run_config.timeframe)
-    elif run_config.mode == "backtest":
-        return BacktestClock(
-            start_time=run_config.backtest_start,
-            end_time=run_config.backtest_end,
-            timeframe=run_config.timeframe
-        )
+from src.glados.clock import ClockConfig, create_clock
+
+# Realtime trading (live or paper)
+config = ClockConfig(timeframe="5m")
+clock = create_clock(config)  # → RealtimeClock
+
+# Backtesting
+config = ClockConfig(
+    timeframe="1h",
+    backtest_start=datetime(2025, 1, 1, tzinfo=timezone.utc),
+    backtest_end=datetime(2025, 6, 30, tzinfo=timezone.utc),
+)
+clock = create_clock(config)  # → BacktestClock
 ```
+
+**ClockConfig** is a frozen dataclass with validation:
+- `timeframe`: Validated against supported values (1m, 5m, 15m, 30m, 1h, 4h, 1d)
+- `backtest_start`/`backtest_end`: Must both be provided or neither (fail-fast validation)
+- `is_backtest` property: Auto-detects mode based on whether times are set
 
 ## 5. clock.Tick Event
 
@@ -141,9 +150,12 @@ class ClockTick:
 
 ```plaintext
 src/glados/clock/
-├── __init__.py
+├── __init__.py       # Public exports
 ├── base.py           # BaseClock ABC, ClockTick dataclass
+├── factory.py        # ClockConfig + create_clock() factory
 ├── realtime.py       # RealtimeClock implementation
 ├── backtest.py       # BacktestClock implementation
-└── utils.py          # Bar alignment calculations (17 tests)
+└── utils.py          # Bar alignment calculations
 ```
+
+**Test Coverage**: 93 tests, 93% coverage
