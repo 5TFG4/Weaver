@@ -132,8 +132,8 @@ class TestCreateClock:
         )
         clock = create_clock(config)
         assert isinstance(clock, BacktestClock)
-        assert clock._start_time == start
-        assert clock._end_time == end
+        assert clock.start_time == start
+        assert clock.end_time == end
 
 
 class TestClockModuleExports:

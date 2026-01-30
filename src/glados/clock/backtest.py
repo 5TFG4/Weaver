@@ -71,6 +71,16 @@ class BacktestClock(BaseClock):
         self._ack_event.set()  # Release any waiting
         await super().stop()
 
+    @property
+    def start_time(self) -> datetime:
+        """Return the backtest start time."""
+        return self._start_time
+
+    @property
+    def end_time(self) -> datetime:
+        """Return the backtest end time."""
+        return self._end_time
+
     def current_time(self) -> datetime:
         """Return the current simulated time."""
         return self._simulated_time
