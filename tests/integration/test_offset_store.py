@@ -193,9 +193,9 @@ class TestPostgresOffsetStoreConcurrency:
         _, read_offsets = await asyncio.gather(writer(), reader())
 
         # Read offsets should be monotonically non-decreasing
-        # (they might not be strictly increasing due to timing)
+        # (may not be strictly increasing due to timing, but should never decrease)
         for i in range(1, len(read_offsets)):
-            assert read_offsets[i] >= read_offsets[i - 1] - 1  # Allow for some variance
+            assert read_offsets[i] >= read_offsets[i - 1]
 
 
 class TestPostgresOffsetStoreEdgeCases:

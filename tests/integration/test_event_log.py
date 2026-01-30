@@ -142,7 +142,7 @@ class TestPostgresEventLogRead:
         """Should read only events after specified offset."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
 
-        # Append events
+        # Append events (index 0-4 → offsets 1-5)
         for i in range(5):
             envelope = Envelope(
                 type=f"test.event.{i}",
@@ -151,11 +151,12 @@ class TestPostgresEventLogRead:
             )
             await event_log.append(envelope)
 
-        # Read from offset 2 (should get events 3, 4, 5)
+        # Read from offset 2 (exclusive) → returns offsets 3, 4, 5
+        # which correspond to test.event.2, test.event.3, test.event.4
         events = await event_log.read_from(2)
 
         assert len(events) == 3
-        assert events[0][1].type == "test.event.2"
+        assert events[0][1].type == "test.event.2"  # offset 3
         assert events[0][1].payload == {"index": 2}
 
     async def test_read_with_limit(

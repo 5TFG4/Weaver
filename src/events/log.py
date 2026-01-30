@@ -229,9 +229,10 @@ class PostgresEventLog(EventLog):
             await connection.flush()  # Get the ID without committing
             offset = event.id
 
-            # NOTIFY using raw SQL
+            # NOTIFY using pg_notify() function (supports parameterization)
             await connection.execute(
-                sa.text(f"NOTIFY {self.CHANNEL}, '{offset}'")
+                sa.text("SELECT pg_notify(:channel, :payload)"),
+                {"channel": self.CHANNEL, "payload": str(offset)},
             )
             return offset
 
@@ -250,7 +251,8 @@ class PostgresEventLog(EventLog):
             offset = event.id
 
             await session.execute(
-                sa.text(f"NOTIFY {self.CHANNEL}, '{offset}'")
+                sa.text("SELECT pg_notify(:channel, :payload)"),
+                {"channel": self.CHANNEL, "payload": str(offset)},
             )
             await session.commit()
             return offset
