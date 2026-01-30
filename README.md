@@ -82,18 +82,18 @@ npm run dev   # http://localhost:3000
 |-----------|--------|-------|
 | M0: Test Infrastructure | ✅ Complete | 14 |
 | M0.5: Project Restructure | ✅ Complete | +74 |
-| M1: Foundation (DB/Events) | 🔄 In Progress | +57 |
+| M1: Foundation (DB/Events) | 🔄 In Progress | +76 |
 | M2-M7 | ⏳ Pending | — |
 
-**Current**: 145 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 164 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 ### Recent Changes (2026-01-30)
 
-- ✅ Renamed modules to lowercase (`glados`, `veda`, `greta`, `marvin`, `walle`)
+- ✅ **Clock Factory**: `ClockConfig` + `create_clock()` for automatic clock selection
+- ✅ **Clock Module Complete**: 93 tests, 93% coverage (RealtimeClock, BacktestClock, utils)
 - ✅ Created `src/events/` module (protocol, types, registry)
-- ✅ Created `src/glados/clock/` module (base, utils, realtime, backtest)
 - ✅ Created `src/config.py` with dual Alpaca credentials (Live + Paper parallel)
-- ✅ Updated env templates for new credential naming
+- ✅ Renamed modules to lowercase (`glados`, `veda`, `greta`, `marvin`, `walle`)
 
 
 ## Endpoints (essentials)
