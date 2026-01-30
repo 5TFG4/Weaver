@@ -15,10 +15,16 @@
 
 ## Architecture
 
-* Full spec: **[Architecture Baseline](docs/ARCHITECTURE_BASELINE.md)**
+* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here
 
-  * Quick jump: [Repository Structure](docs/ARCHITECTURE_BASELINE.md#11-repository-structure)
-  * Quick jump: [Deployment & Environment](docs/ARCHITECTURE_BASELINE.md#8-deployment--environment)
+| Detail Docs | |
+|-------------|---|
+| [Events](docs/architecture/events.md) | Event model, envelope, delivery |
+| [API](docs/architecture/api.md) | REST, SSE, thin events |
+| [Clock](docs/architecture/clock.md) | Realtime & backtest clocks |
+| [Config](docs/architecture/config.md) | Credentials, security |
+| [Deployment](docs/architecture/deployment.md) | Docker, env vars |
+| [Roadmap](docs/architecture/roadmap.md) | Progress tracking |
 
 
 
@@ -72,14 +78,22 @@ npm run dev   # http://localhost:3000
 
 ## Development Status
 
-| Milestone | Status |
-|-----------|--------|
-| M0: Test Infrastructure | ✅ Complete (14 tests) |
-| M1: Foundation | 🔄 Next |
-| M2: API Live | ⏳ Pending |
-| M3-M7 | ⏳ Pending |
+| Milestone | Status | Tests |
+|-----------|--------|-------|
+| M0: Test Infrastructure | ✅ Complete | 14 |
+| M0.5: Project Restructure | ✅ Complete | +74 |
+| M1: Foundation (DB/Events) | 🔄 In Progress | +57 |
+| M2-M7 | ⏳ Pending | — |
 
-**Environment**: Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 145 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+
+### Recent Changes (2026-01-30)
+
+- ✅ Renamed modules to lowercase (`glados`, `veda`, `greta`, `marvin`, `walle`)
+- ✅ Created `src/events/` module (protocol, types, registry)
+- ✅ Created `src/glados/clock/` module (base, utils, realtime, backtest)
+- ✅ Created `src/config.py` with dual Alpaca credentials (Live + Paper parallel)
+- ✅ Updated env templates for new credential naming
 
 
 ## Endpoints (essentials)
