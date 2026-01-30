@@ -45,7 +45,7 @@ class TestAlpacaCredentials:
         )
 
         with pytest.raises(AttributeError):
-            creds.api_key = "new_key"  # type: ignore
+            creds.api_key = "new_key"  # type: ignore[misc]
 
     def test_is_configured_true(self) -> None:
         """is_configured should return True when both key and secret are set."""

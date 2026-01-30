@@ -8,10 +8,13 @@ Both RealtimeClock and BacktestClock implement this interface.
 from __future__ import annotations
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -149,8 +152,7 @@ class BaseClock(ABC):
             try:
                 callback(tick)
             except Exception:
-                # Log but don't fail on callback errors
-                pass
+                logger.exception("Tick callback failed in clock")
 
     @property
     def is_running(self) -> bool:

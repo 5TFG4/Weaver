@@ -5,7 +5,39 @@ Defines all event type namespaces and specific event types used in the system.
 Event types follow the pattern: namespace.EventName[.version]
 """
 
-from typing import Final
+from typing import Any, Callable, Final, Protocol, runtime_checkable
+
+
+# =============================================================================
+# Database Protocol
+# =============================================================================
+
+
+@runtime_checkable
+class AsyncConnection(Protocol):
+    """Protocol for async database connection (e.g., asyncpg.Connection)."""
+
+    async def fetchrow(self, query: str, *args: Any) -> Any: ...
+    async def fetch(self, query: str, *args: Any) -> list[Any]: ...
+    async def execute(self, query: str, *args: Any) -> Any: ...
+    async def add_listener(self, channel: str, callback: Callable[..., Any]) -> None: ...
+    async def remove_listener(self, channel: str, callback: Callable[..., Any]) -> None: ...
+
+
+@runtime_checkable
+class AsyncConnectionPool(Protocol):
+    """
+    Protocol for async database connection pool (e.g., asyncpg.Pool).
+
+    This allows type-safe usage without importing asyncpg directly,
+    enabling easier testing and potential future database swaps.
+
+    Note: acquire() returns an async context manager that can be used with
+    `async with pool.acquire() as conn:` syntax.
+    """
+
+    def acquire(self) -> Any: ...
+    async def release(self, connection: AsyncConnection) -> None: ...
 
 
 # =============================================================================

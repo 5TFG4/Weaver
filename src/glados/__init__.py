@@ -11,7 +11,7 @@ The central orchestrator for Weaver, responsible for:
 """
 
 # Note: GLaDOS class import deferred to avoid circular imports
-# Use: from src.glados.glados import GLaDOS
+# Use: from src.glados import GLaDOS
 
 __all__ = ["GLaDOS"]
 

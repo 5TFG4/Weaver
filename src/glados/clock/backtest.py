@@ -8,11 +8,14 @@ No actual sleeping - advances as fast as strategy can process.
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from .base import BaseClock, ClockTick
 from .utils import parse_timeframe
+
+logger = logging.getLogger(__name__)
 
 
 class BacktestClock(BaseClock):
@@ -122,7 +125,7 @@ class BacktestClock(BaseClock):
                 except asyncio.CancelledError:
                     raise
                 except Exception:
-                    # Log error but continue
+                    logger.exception("Error in backtest clock tick loop, skipping tick")
                     self._simulated_time += delta
         finally:
             # Mark as not running when loop exits (natural completion or cancellation)

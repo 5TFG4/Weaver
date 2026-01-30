@@ -8,9 +8,12 @@ Ticks fire at bar boundaries with drift compensation.
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 from .base import BaseClock, ClockTick
+
+logger = logging.getLogger(__name__)
 from .utils import calculate_next_bar_start, seconds_until_next_bar
 
 
@@ -84,7 +87,7 @@ class RealtimeClock(BaseClock):
                 except asyncio.CancelledError:
                     raise
                 except Exception:
-                    # Log error but continue
+                    logger.exception("Error in realtime clock tick loop, retrying in 1s")
                     await asyncio.sleep(1)
         finally:
             self._running = False

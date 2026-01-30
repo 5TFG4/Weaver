@@ -66,7 +66,7 @@ class TestClockTick:
             bar_index=1,
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match="cannot assign to field"):
             tick.run_id = "modified"  # type: ignore[misc]
 
 

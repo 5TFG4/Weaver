@@ -10,11 +10,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Callable
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable
 
 from .protocol import Envelope
+
+if TYPE_CHECKING:
+    from .types import AsyncConnectionPool
+
+logger = logging.getLogger(__name__)
 
 
 class EventLog(ABC):
@@ -116,8 +122,7 @@ class InMemoryEventLog(EventLog):
                 if asyncio.iscoroutine(result):
                     await result
             except Exception:
-                # Log but don't fail on subscriber errors
-                pass
+                logger.exception("Subscriber callback failed in InMemoryEventLog")
 
         return offset
 
@@ -178,7 +183,7 @@ class PostgresEventLog(EventLog):
 
     CHANNEL = "weaver_events"
 
-    def __init__(self, pool: Any) -> None:
+    def __init__(self, pool: "AsyncConnectionPool") -> None:
         """
         Initialize with a database connection pool.
 
@@ -295,7 +300,7 @@ class PostgresEventLog(EventLog):
                     if asyncio.iscoroutine(result):
                         await result
                 except Exception:
-                    pass
+                    logger.exception("Subscriber callback failed in PostgresEventLog")
 
     async def get_latest_offset(self) -> int:
         """Get the latest event offset from the outbox."""

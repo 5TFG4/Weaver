@@ -2,7 +2,7 @@
 
 import asyncio
 
-from src.glados.glados import GLaDOS
+from src.glados import GLaDOS
 
 
 async def main() -> None:

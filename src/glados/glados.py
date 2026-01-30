@@ -4,7 +4,7 @@ import asyncio
 import json
 from datetime import datetime
 
-from src.veda.veda import Veda
+from src.veda import Veda
 from src.constants import ALPACA
 
 from .data_manager import DataManager

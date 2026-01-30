@@ -10,7 +10,10 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .types import AsyncConnectionPool
 
 
 class OffsetStore(ABC):
@@ -98,7 +101,7 @@ class PostgresOffsetStore(OffsetStore):
     This is a placeholder implementation - will be completed in integration phase.
     """
 
-    def __init__(self, pool: Any) -> None:
+    def __init__(self, pool: "AsyncConnectionPool") -> None:
         """
         Initialize with a database connection pool.
 

@@ -197,7 +197,7 @@ class WeaverConfig(BaseSettings):
     debug: bool = Field(default=False)
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_config() -> WeaverConfig:
     """
     Get the global configuration instance (cached).
