@@ -6,10 +6,10 @@ SQLAlchemy 2.0 async models for Weaver persistence layer.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, Index, String, Text, func
+from sqlalchemy import BigInteger, DateTime, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -74,20 +74,12 @@ class ConsumerOffset(Base):
 
 
 # =============================================================================
-# Future tables (stubs for M2+)
+# Future Models (M2+)
 # =============================================================================
-
-# class Run(Base):
-#     """Trading run record."""
-#     __tablename__ = "runs"
-#     ...
-
-# class Order(Base):
-#     """Order record."""
-#     __tablename__ = "orders"
-#     ...
-
-# class Fill(Base):
-#     """Fill/execution record."""
-#     __tablename__ = "fills"
-#     ...
+# The following domain models will be added in future migrations:
+#
+# - Run: Trading run records (run_id, strategy, mode, status, timestamps)
+# - Order: Order records (order_id, run_id, symbol, side, qty, status)
+# - Fill: Fill/execution records (fill_id, order_id, price, qty, timestamp)
+#
+# Concrete SQLAlchemy models will be defined here once schemas are finalized.

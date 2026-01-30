@@ -65,9 +65,10 @@ def init_tables(database_url: str) -> None:
     This ensures migrations are tested alongside the application code.
     """
     # Run alembic upgrade head
+    project_root = os.environ.get("PROJECT_ROOT", os.getcwd())
     result = subprocess.run(
         ["alembic", "upgrade", "head"],
-        cwd="/weaver",
+        cwd=project_root,
         capture_output=True,
         text=True,
     )

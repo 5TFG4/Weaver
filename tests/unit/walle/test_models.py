@@ -6,9 +6,9 @@ These tests verify model structure without requiring a real database.
 """
 
 from datetime import datetime, timezone
+from typing import cast
 
-import pytest
-from sqlalchemy import inspect
+from sqlalchemy import Table, inspect
 
 from src.walle.models import Base, ConsumerOffset, OutboxEvent
 
@@ -38,15 +38,15 @@ class TestOutboxEvent:
 
     def test_type_column_has_index(self):
         """type column is indexed."""
-        indexes = OutboxEvent.__table__.indexes
+        table = cast(Table, OutboxEvent.__table__)
         # Check that 'type' appears in at least one index
-        type_indexed = any("type" in list(idx.columns.keys()) for idx in indexes)
+        type_indexed = any("type" in list(idx.columns.keys()) for idx in table.indexes)
         assert type_indexed
 
     def test_created_at_column_has_index(self):
         """created_at column is indexed."""
-        indexes = OutboxEvent.__table__.indexes
-        created_at_indexed = any("created_at" in list(idx.columns.keys()) for idx in indexes)
+        table = cast(Table, OutboxEvent.__table__)
+        created_at_indexed = any("created_at" in list(idx.columns.keys()) for idx in table.indexes)
         assert created_at_indexed
 
     def test_repr(self):

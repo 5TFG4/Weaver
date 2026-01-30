@@ -156,7 +156,7 @@ class TestPostgresEventLogRead:
         events = await event_log.read_from(2)
 
         assert len(events) == 3
-        assert events[0][1].type == "test.event.2"  # offset 3
+        assert events[0][1].type == "test.event.2"  # offset 3 contains event index 2
         assert events[0][1].payload == {"index": 2}
 
     async def test_read_with_limit(
