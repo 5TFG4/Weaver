@@ -203,9 +203,6 @@ TestYard/
 setup/
 setup.py
 
-# vscode files
-.vscode
-
 # UserInfo files
 usr/user.json
 
