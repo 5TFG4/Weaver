@@ -36,7 +36,31 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: WeaverConfig = app.state.settings
 
     # =========================================================================
-    # Startup
+    # Startup - Always-initialized services (no DB required)
+    # =========================================================================
+    
+    # RunManager (in-memory, always available)
+    from src.glados.services.run_manager import RunManager
+    app.state.run_manager = RunManager()
+    logger.info("RunManager initialized")
+    
+    # OrderService (mock, always available)
+    from src.glados.services.order_service import MockOrderService
+    app.state.order_service = MockOrderService()
+    logger.info("OrderService initialized")
+    
+    # MarketDataService (mock, always available)
+    from src.glados.services.market_data_service import MockMarketDataService
+    app.state.market_data_service = MockMarketDataService()
+    logger.info("MarketDataService initialized")
+    
+    # SSEBroadcaster (always available)
+    from src.glados.sse_broadcaster import SSEBroadcaster
+    app.state.broadcaster = SSEBroadcaster()
+    logger.info("SSEBroadcaster initialized")
+
+    # =========================================================================
+    # Startup - DB-dependent services
     # =========================================================================
 
     # 1. Initialize Database (if DB_URL is configured)
@@ -58,9 +82,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("EventLog initialized")
 
         # 3. Subscribe SSEBroadcaster to EventLog for real-time events
-        from src.glados.routes.sse import get_broadcaster
-
-        broadcaster = get_broadcaster()
+        broadcaster = app.state.broadcaster
 
         async def on_event(envelope):
             """Forward events from EventLog to SSE clients."""
