@@ -4,15 +4,42 @@
 
 ## 1. REST API
 
-* **Endpoints**: `/healthz`, `/runs` (list/start/stop), `/orders` query, `/candles` query.
-* **Purpose**: Synchronous queries and control operations.
-* **Implementation**: `src/glados/routes/api.py`
+### Implemented Endpoints (M2)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/healthz` | Health check |
+| GET | `/api/v1/runs` | List all runs |
+| POST | `/api/v1/runs` | Create a new run |
+| GET | `/api/v1/runs/{id}` | Get run details |
+| POST | `/api/v1/runs/{id}/stop` | Stop a running run |
+| GET | `/api/v1/orders` | List orders (optional `run_id` filter) |
+| GET | `/api/v1/orders/{id}` | Get order details |
+| GET | `/api/v1/candles` | Get OHLCV candles (`symbol`, `timeframe` required) |
+
+### API Documentation
+
+- **Swagger UI**: `/docs`
+- **ReDoc**: `/redoc`
+- **OpenAPI JSON**: `/openapi.json`
+
+### Implementation
+
+- `src/glados/app.py` - Application factory
+- `src/glados/routes/` - Route handlers
 
 ## 2. Realtime Updates (SSE)
 
-* **Endpoint**: `/events/stream` (SSE) or `/events/tail` (REST incremental polling).
-* **Purpose**: Push thin events to the frontend in real-time.
-* **Implementation**: `src/glados/routes/sse.py`
+### Implemented Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/events/stream` | SSE event stream |
+
+### Implementation
+
+- `src/glados/sse_broadcaster.py` - Connection manager
+- `src/glados/routes/sse.py` - SSE endpoint
 
 ### Why SSE over WebSocket?
 

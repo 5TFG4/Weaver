@@ -24,7 +24,7 @@ class TestSSEStreamEndpoint:
         from src.glados.app import create_app
 
         app = create_app()
-        routes = [r.path for r in app.routes]
+        routes = [getattr(r, "path", None) for r in app.routes]
 
         assert "/api/v1/events/stream" in routes
 

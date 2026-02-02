@@ -64,6 +64,6 @@ class TestCreateApp:
         from src.glados.app import create_app
 
         app = create_app(settings=test_settings)
-        routes = [route.path for route in app.routes]
+        routes = [getattr(route, "path", None) for route in app.routes]
 
         assert "/healthz" in routes

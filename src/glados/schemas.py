@@ -91,3 +91,100 @@ class RunListResponse(BaseModel):
     page: int = 1
     page_size: int = 20
 
+
+# =============================================================================
+# Order Schemas
+# =============================================================================
+
+
+class OrderSide(str, Enum):
+    """Order side."""
+
+    BUY = "buy"
+    SELL = "sell"
+
+
+class OrderType(str, Enum):
+    """Order type."""
+
+    MARKET = "market"
+    LIMIT = "limit"
+    STOP = "stop"
+    STOP_LIMIT = "stop_limit"
+
+
+class OrderStatus(str, Enum):
+    """Order status."""
+
+    PENDING = "pending"
+    SUBMITTED = "submitted"
+    ACCEPTED = "accepted"
+    PARTIALLY_FILLED = "partial"
+    FILLED = "filled"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+
+
+class OrderResponse(BaseModel):
+    """Full order details response."""
+
+    id: str
+    run_id: str
+    client_order_id: str
+    exchange_order_id: str | None = None
+    # Order details
+    symbol: str
+    side: OrderSide
+    order_type: OrderType
+    qty: str  # Decimal as string for JSON
+    price: str | None = None
+    stop_price: str | None = None
+    time_in_force: str = "day"
+    # Fill info
+    filled_qty: str = "0"
+    filled_avg_price: str | None = None
+    # Status & timestamps
+    status: OrderStatus
+    created_at: datetime
+    submitted_at: datetime | None = None
+    filled_at: datetime | None = None
+    # Error info
+    reject_reason: str | None = None
+
+
+class OrderListResponse(BaseModel):
+    """Paginated list of orders."""
+
+    items: list[OrderResponse]
+    total: int
+    page: int = 1
+    page_size: int = 50
+
+
+# =============================================================================
+# Candle Schemas
+# =============================================================================
+
+
+class CandleResponse(BaseModel):
+    """Single OHLCV candle."""
+
+    symbol: str
+    timeframe: str
+    timestamp: datetime
+    open: str  # Decimal as string for JSON
+    high: str
+    low: str
+    close: str
+    volume: str
+    trade_count: int | None = None
+
+
+class CandleListResponse(BaseModel):
+    """List of candles."""
+
+    symbol: str
+    timeframe: str
+    items: list[CandleResponse]
+
