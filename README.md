@@ -82,18 +82,20 @@ npm run dev   # http://localhost:3000
 |-----------|--------|-------|
 | M0: Test Infrastructure | ✅ Complete | 14 |
 | M0.5: Project Restructure | ✅ Complete | +74 |
-| M1: Foundation (DB/Events) | 🔄 In Progress | +76 |
-| M2-M7 | ⏳ Pending | — |
+| M1: Foundation (DB/Events) | ✅ Complete | +124 |
+| M2: API Live | ✅ Complete | +85 |
+| M3-M7 | ⏳ Pending | — |
 
-**Current**: 164 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 274 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
-### Recent Changes (2026-01-30)
+### Recent Changes (2026-02-02)
 
-- ✅ **Clock Factory**: `ClockConfig` + `create_clock()` for automatic clock selection
-- ✅ **Clock Module Complete**: 93 tests, 93% coverage (RealtimeClock, BacktestClock, utils)
-- ✅ Created `src/events/` module (protocol, types, registry)
-- ✅ Created `src/config.py` with dual Alpaca credentials (Live + Paper parallel)
-- ✅ Renamed modules to lowercase (`glados`, `veda`, `greta`, `marvin`, `walle`)
+- ✅ **M2 Complete**: GLaDOS API with REST endpoints and SSE streaming (274 total tests)
+- ✅ REST endpoints: /healthz, /api/v1/runs, /api/v1/orders, /api/v1/candles
+- ✅ SSE streaming: /api/v1/events/stream with SSEBroadcaster
+- ✅ CORS middleware and OpenAPI docs (/docs, /redoc)
+- ✅ RunManager with start/stop lifecycle
+- ✅ Mock OrderService and MarketDataService for MVP
 
 
 ## Endpoints (essentials)
