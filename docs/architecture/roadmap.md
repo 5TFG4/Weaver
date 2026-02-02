@@ -230,7 +230,7 @@ playwright             # E2E browser testing (for Haro)
 | Component | Status | Completion |
 |-----------|--------|------------|
 | **Python Environment** | ✅ Upgraded to 3.13 | 100% |
-| **Test Infrastructure** | ✅ M0 Complete (274 tests passing) | 100% |
+| **Test Infrastructure** | ✅ M0 Complete (493 tests passing) | 100% |
 | **Project Restructure** | ✅ Phase 1.1 Complete | 100% |
 | **Events Module** | ✅ Core types/protocol/registry (33 tests) | 60% |
 | **Clock Module** | ✅ Complete (93 tests, 93% coverage) | 100% |
@@ -239,8 +239,10 @@ playwright             # E2E browser testing (for Haro)
 | **GLaDOS API** | ✅ M2 Complete (85 tests) | 100% |
 | **REST API** | ✅ health, runs, orders, candles | 100% |
 | **SSE streaming** | ✅ /events/stream with broadcaster | 100% |
-| Veda/Alpaca | Can fetch data, place orders | ~40% |
-| WallE/DB | Basic SQLAlchemy model | ~10% |
+| **Veda Trading** | ✅ M3 Complete (196 tests) | 100% |
+| **Exchange Adapters** | ✅ MockAdapter + AlpacaAdapter | 100% |
+| **Order Management** | ✅ OrderManager + Persistence | 100% |
+| WallE/DB | ✅ Basic models + VedaOrder migration | ~30% |
 | Greta (backtest) | ❌ Empty shell | 0% |
 | Marvin (strategy) | ❌ Empty shell | 0% |
 | Haro (frontend) | ❌ Does not exist | 0% |

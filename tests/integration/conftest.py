@@ -101,6 +101,7 @@ async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
         # Clean before test
         await sess.execute(text("TRUNCATE TABLE outbox RESTART IDENTITY CASCADE"))
         await sess.execute(text("TRUNCATE TABLE consumer_offsets CASCADE"))
+        await sess.execute(text("TRUNCATE TABLE veda_orders CASCADE"))
         await sess.commit()
 
     yield
@@ -109,6 +110,7 @@ async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
         # Clean after test
         await sess.execute(text("TRUNCATE TABLE outbox RESTART IDENTITY CASCADE"))
         await sess.execute(text("TRUNCATE TABLE consumer_offsets CASCADE"))
+        await sess.execute(text("TRUNCATE TABLE veda_orders CASCADE"))
         await sess.commit()
 
 
