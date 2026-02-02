@@ -113,3 +113,39 @@ Before starting implementation:
 | Use `print()` for debugging | Use `logging` module |
 | Catch generic `Exception` | Catch specific exceptions |
 | Store secrets in code | Use environment variables |
+
+## 8. Documentation Structure
+
+### File Purposes
+
+| File | Contains | Max Lines |
+|------|----------|-----------|
+| `ARCHITECTURE.md` | System overview, quick links | ~150 |
+| `DEVELOPMENT.md` | Methodology, standards | ~150 |
+| `AUDIT_FINDINGS.md` | Issue tracking, progress | No limit |
+| `architecture/roadmap.md` | Status, milestones, checklists | ~150 |
+| `architecture/*.md` | Module-specific docs | ~200 each |
+| `archive/milestone-details/` | Full designs per milestone | No limit |
+
+### Roadmap Rules
+
+**roadmap.md contains ONLY**:
+- Current state table
+- Milestone list with status
+- Phase timeline
+- Architecture invariants
+- Entry gate checklists
+
+**roadmap.md does NOT contain**:
+- Full design specs (→ `archive/milestone-details/mX-name.md`)
+- Issue details (→ `AUDIT_FINDINGS.md`)
+- Code examples longer than 5 lines
+- Test specifications
+
+### New Milestone Workflow
+
+1. Create `docs/archive/milestone-details/mX-name.md` with full design
+2. Add one-line entry to `roadmap.md` milestone table
+3. Link to detail doc from roadmap
+4. Update status as work progresses
+5. After completion, design doc becomes reference archive
