@@ -4,20 +4,43 @@
 
 **Last Updated**: 2026-02-02 · **Tests**: 493 passing
 
+---
+
+## ⚠️ Key Planning Documents
+
+> **Start a new session?** These contain critical project planning info:
+
+| What You Need | Where to Find It |
+|---------------|------------------|
+| **Issue backlog & milestone schedule** | [AUDIT_FINDINGS.md §5](AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
+| **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
+| **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
+| **Current milestone design** | [M3.5 Integration](archive/milestone-details/m3.5-integration.md) |
+| **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
+
+---
+
 ## Quick Links
 
 | Document | Description |
 |----------|-------------|
-| [Development](DEVELOPMENT.md) | Methodology, TDD, coding standards |
-| [Audit Findings](AUDIT_FINDINGS.md) | Design-vs-implementation issues to fix |
+| [Development](DEVELOPMENT.md) | Methodology, TDD, coding standards, **doc structure rules (§8)** |
+| [Audit Findings](AUDIT_FINDINGS.md) | Issues to fix, **milestone schedule (§5)**, **progress (§6)** |
+| [Roadmap](architecture/roadmap.md) | Milestones, phases, **entry checklists (§5)** |
 | [Events](architecture/events.md) | Event model, envelope, namespaces, delivery |
 | [API](architecture/api.md) | REST, SSE, auth, thin events pattern |
 | [Clock](architecture/clock.md) | RealtimeClock, BacktestClock, bar alignment |
 | [Config](architecture/config.md) | Dual credentials, security, testing |
 | [Deployment](architecture/deployment.md) | Docker, env vars, operations |
-| [Roadmap](architecture/roadmap.md) | Milestones, phases, progress tracking |
 
-> **Archived**: Detailed milestone specs → [docs/archive/milestone-details/](archive/milestone-details/)
+### Archived Milestone Details
+
+| Milestone | Design Doc | Status |
+|-----------|-----------|--------|
+| M1 Foundation | [m1-foundation.md](archive/milestone-details/m1-foundation.md) | ✅ Done |
+| M2 GLaDOS API | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md) | ✅ Done |
+| M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
+| **M3.5 Integration** | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ⏳ Next |
 
 ---
 

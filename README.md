@@ -15,7 +15,7 @@
 
 ## Architecture
 
-* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here
+* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here (includes planning doc index)
 
 | Detail Docs | |
 |-------------|---|
@@ -24,7 +24,14 @@
 | [Clock](docs/architecture/clock.md) | Realtime & backtest clocks |
 | [Config](docs/architecture/config.md) | Credentials, security |
 | [Deployment](docs/architecture/deployment.md) | Docker, env vars |
-| [Roadmap](docs/architecture/roadmap.md) | Progress tracking |
+| [Roadmap](docs/architecture/roadmap.md) | Milestones, entry checklists |
+
+### ⚠️ Planning & Issue Tracking
+
+| What | Where |
+|------|-------|
+| Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
+| Current milestone design | [M3.5 Integration](docs/archive/milestone-details/m3.5-integration.md) |
 
 
 
