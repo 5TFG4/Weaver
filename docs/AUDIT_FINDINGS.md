@@ -746,8 +746,8 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Use/remove unused exceptions | ✅ | 2026-02-02 | RunNotStartableError now used |
 | Create proper dependencies.py | ✅ | 2026-02-02 | 7 getters + 9 tests |
 | Update routes to use Depends() | ✅ | 2026-02-02 | All 4 route files migrated |
-| Wire VedaService to routes | ⬜ | | Medium |
-| Add event emission in services | ⬜ | | Medium |
+| Wire VedaService to routes | ⬜ | | Deferred to M5 (needs real orders) |
+| Add event emission in services | ✅ | 2026-02-02 | RunManager emits run.* events |
 
 ### M4: Greta Integration
 | Task | Status | Date | Notes |

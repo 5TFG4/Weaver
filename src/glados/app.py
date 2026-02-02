@@ -39,11 +39,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup - Always-initialized services (no DB required)
     # =========================================================================
     
-    # RunManager (in-memory, always available)
-    from src.glados.services.run_manager import RunManager
-    app.state.run_manager = RunManager()
-    logger.info("RunManager initialized")
-    
     # OrderService (mock, always available)
     from src.glados.services.order_service import MockOrderService
     app.state.order_service = MockOrderService()
@@ -58,6 +53,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from src.glados.sse_broadcaster import SSEBroadcaster
     app.state.broadcaster = SSEBroadcaster()
     logger.info("SSEBroadcaster initialized")
+    
+    # Initialize event_log placeholder (may be set to real EventLog below)
+    event_log = None
 
     # =========================================================================
     # Startup - DB-dependent services
@@ -115,6 +113,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.database = None
         app.state.event_log = None
         app.state.veda_service = None
+
+    # =========================================================================
+    # Startup - Services that may use EventLog
+    # =========================================================================
+    
+    # RunManager (in-memory, optionally with EventLog for event emission)
+    from src.glados.services.run_manager import RunManager
+    app.state.run_manager = RunManager(event_log=event_log)
+    logger.info("RunManager initialized" + (" with EventLog" if event_log else ""))
 
     yield
 

@@ -140,6 +140,7 @@ class OrderEvents:
 class RunEvents:
     """Run lifecycle events."""
 
+    CREATED: Final[str] = "run.Created"
     STARTED: Final[str] = "run.Started"
     STOP_REQUESTED: Final[str] = "run.StopRequested"
     STOPPED: Final[str] = "run.Stopped"

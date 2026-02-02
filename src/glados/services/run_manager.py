@@ -9,11 +9,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+from src.events.protocol import Envelope
+from src.events.types import RunEvents
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
+
+if TYPE_CHECKING:
+    from src.events.log import EventLog
 
 
 @dataclass
@@ -47,8 +52,27 @@ class RunManager:
     - Integration with Marvin (strategy loader)
     """
 
-    def __init__(self) -> None:
+    def __init__(self, event_log: EventLog | None = None) -> None:
         self._runs: dict[str, Run] = {}
+        self._event_log = event_log
+
+    async def _emit_event(self, event_type: str, run: Run) -> None:
+        """Emit an event if event_log is configured."""
+        if self._event_log is None:
+            return
+        
+        envelope = Envelope(
+            type=event_type,
+            producer="glados.run_manager",
+            payload={
+                "run_id": run.id,
+                "strategy_id": run.strategy_id,
+                "mode": run.mode.value,
+                "status": run.status.value,
+            },
+            run_id=run.id,
+        )
+        await self._event_log.append(envelope)
 
     async def create(self, request: RunCreate) -> Run:
         """
@@ -71,6 +95,7 @@ class RunManager:
             created_at=datetime.now(UTC),
         )
         self._runs[run.id] = run
+        await self._emit_event(RunEvents.CREATED, run)
         return run
 
     async def get(self, run_id: str) -> Run | None:
@@ -120,6 +145,7 @@ class RunManager:
         
         run.status = RunStatus.RUNNING
         run.started_at = datetime.now(UTC)
+        await self._emit_event(RunEvents.STARTED, run)
         return run
 
     async def stop(self, run_id: str) -> Run:
@@ -143,5 +169,6 @@ class RunManager:
         if run.status != RunStatus.STOPPED:
             run.status = RunStatus.STOPPED
             run.stopped_at = datetime.now(UTC)
+            await self._emit_event(RunEvents.STOPPED, run)
         
         return run
