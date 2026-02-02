@@ -741,9 +741,9 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 ### M3.5: Integration Fixes
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Add `orders.Created` to types.py | ⬜ | | Trivial |
-| Fix OrderRepository session handling | ⬜ | | Trivial |
-| Use/remove unused exceptions | ⬜ | | Trivial |
+| Add `orders.Created` to types.py | ✅ | 2026-02-02 | Trivial |
+| Fix OrderRepository session handling | ✅ | 2026-02-02 | All 6 methods use `async with` |
+| Use/remove unused exceptions | ✅ | 2026-02-02 | RunNotStartableError now used |
 | Create proper dependencies.py | ⬜ | | Medium |
 | Update routes to use Depends() | ⬜ | | Medium |
 | Wire VedaService to routes | ⬜ | | Medium |

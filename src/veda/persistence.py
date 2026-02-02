@@ -172,10 +172,10 @@ class OrderRepository:
         Args:
             order_state: The OrderState to persist
         """
-        session = self._session_factory()
-        veda_order = VedaOrder.from_order_state(order_state)
-        await session.merge(veda_order)
-        await session.commit()
+        async with self._session_factory() as session:
+            veda_order = VedaOrder.from_order_state(order_state)
+            await session.merge(veda_order)
+            await session.commit()
 
     async def get_by_id(self, order_id: str) -> OrderState | None:
         """
@@ -187,12 +187,12 @@ class OrderRepository:
         Returns:
             OrderState if found, None otherwise
         """
-        session = self._session_factory()
-        result = await session.execute(
-            select(VedaOrder).where(VedaOrder.id == order_id)
-        )
-        row = result.scalar_one_or_none()
-        return row.to_order_state() if row else None
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(VedaOrder).where(VedaOrder.id == order_id)
+            )
+            row = result.scalar_one_or_none()
+            return row.to_order_state() if row else None
 
     async def get_by_client_order_id(
         self, client_order_id: str
@@ -206,12 +206,12 @@ class OrderRepository:
         Returns:
             OrderState if found, None otherwise
         """
-        session = self._session_factory()
-        result = await session.execute(
-            select(VedaOrder).where(VedaOrder.client_order_id == client_order_id)
-        )
-        row = result.scalar_one_or_none()
-        return row.to_order_state() if row else None
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(VedaOrder).where(VedaOrder.client_order_id == client_order_id)
+            )
+            row = result.scalar_one_or_none()
+            return row.to_order_state() if row else None
 
     async def list_by_run_id(
         self, run_id: str, status: OrderStatus | None = None
@@ -226,14 +226,14 @@ class OrderRepository:
         Returns:
             List of OrderState instances
         """
-        session = self._session_factory()
-        query = select(VedaOrder).where(VedaOrder.run_id == run_id)
-        if status is not None:
-            query = query.where(VedaOrder.status == status.value)
-        
-        result = await session.execute(query)
-        rows = result.scalars().all()
-        return [row.to_order_state() for row in rows]
+        async with self._session_factory() as session:
+            query = select(VedaOrder).where(VedaOrder.run_id == run_id)
+            if status is not None:
+                query = query.where(VedaOrder.status == status.value)
+            
+            result = await session.execute(query)
+            rows = result.scalars().all()
+            return [row.to_order_state() for row in rows]
 
     async def list_by_status(
         self, status: OrderStatus, limit: int = 100
@@ -248,11 +248,11 @@ class OrderRepository:
         Returns:
             List of OrderState instances
         """
-        session = self._session_factory()
-        result = await session.execute(
-            select(VedaOrder)
-            .where(VedaOrder.status == status.value)
-            .limit(limit)
-        )
-        rows = result.scalars().all()
-        return [row.to_order_state() for row in rows]
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(VedaOrder)
+                .where(VedaOrder.status == status.value)
+                .limit(limit)
+            )
+            rows = result.scalars().all()
+            return [row.to_order_state() for row in rows]

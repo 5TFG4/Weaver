@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from src.glados.exceptions import RunNotFoundError
+from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 
 
@@ -115,10 +115,11 @@ class RunManager:
             raise RunNotFoundError(run_id)
 
         # Only start if pending
-        if run.status == RunStatus.PENDING:
-            run.status = RunStatus.RUNNING
-            run.started_at = datetime.now(UTC)
-
+        if run.status != RunStatus.PENDING:
+            raise RunNotStartableError(run_id, run.status.value)
+        
+        run.status = RunStatus.RUNNING
+        run.started_at = datetime.now(UTC)
         return run
 
     async def stop(self, run_id: str) -> Run:
@@ -142,5 +143,5 @@ class RunManager:
         if run.status != RunStatus.STOPPED:
             run.status = RunStatus.STOPPED
             run.stopped_at = datetime.now(UTC)
-
+        
         return run
