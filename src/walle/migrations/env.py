@@ -17,6 +17,8 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 from src.walle.models import Base  # noqa: E402
+# Import all models that use Base to ensure they're registered for autogenerate
+from src.veda.persistence import VedaOrder  # noqa: E402, F401
 
 # Alembic Config object
 config = context.config
