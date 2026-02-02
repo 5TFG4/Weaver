@@ -748,7 +748,8 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Update routes to use Depends() | ✅ | 2026-02-02 | All 4 route files migrated |
 | Wire VedaService to routes | ⏳ | | Deferred to M5 (needs real orders) |
 | Add event emission in services | ✅ | 2026-02-02 | RunManager emits run.* events + 5 tests |
-| **Total new tests** | | | **+14 tests (9 deps + 5 events)** |
+| Code review fixes | ✅ | 2026-02-02 | PR feedback addressed |
+| **Total new tests** | | | **+15 tests** |
 
 ### M4: Greta Integration
 | Task | Status | Date | Notes |

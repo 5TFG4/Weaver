@@ -25,12 +25,12 @@
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Test Infrastructure | ✅ Complete | 506 |
+| Test Infrastructure | ✅ Complete | 507 |
 | Events Module | ✅ Core complete | 33 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
-| GLaDOS API | ✅ DI complete | 99 |
-| Veda Trading | ⚠️ Wiring deferred | 196 |
+| GLaDOS API | ✅ DI complete | 191 |
+| Veda Trading | ✅ Complete | 197 |
 | Greta (backtest) | ❌ Empty | 0 |
 | Marvin (strategy) | ❌ Empty | 0 |
 | Haro (frontend) | ❌ Not started | 0 |
