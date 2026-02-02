@@ -101,6 +101,7 @@ async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
         # Clean before test
         await sess.execute(text("TRUNCATE TABLE outbox RESTART IDENTITY CASCADE"))
         await sess.execute(text("TRUNCATE TABLE consumer_offsets CASCADE"))
+        await sess.execute(text("TRUNCATE TABLE veda_orders CASCADE"))
         await sess.commit()
 
     yield
@@ -109,4 +110,23 @@ async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
         # Clean after test
         await sess.execute(text("TRUNCATE TABLE outbox RESTART IDENTITY CASCADE"))
         await sess.execute(text("TRUNCATE TABLE consumer_offsets CASCADE"))
+        await sess.execute(text("TRUNCATE TABLE veda_orders CASCADE"))
         await sess.commit()
+
+
+@pytest_asyncio.fixture
+async def db_session(
+    async_engine: "AsyncEngine", init_tables: None
+) -> AsyncGenerator["AsyncSession", None]:
+    """
+    Provide an AsyncSession for integration tests.
+    
+    Each test gets a fresh session with automatic rollback.
+    This fixture can be used in any test file that needs database access.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession
+    
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        yield session
+        # Rollback any uncommitted changes
+        await session.rollback()

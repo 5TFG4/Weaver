@@ -15,7 +15,7 @@
 
 ## Architecture
 
-* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here
+* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here (includes planning doc index)
 
 | Detail Docs | |
 |-------------|---|
@@ -24,7 +24,14 @@
 | [Clock](docs/architecture/clock.md) | Realtime & backtest clocks |
 | [Config](docs/architecture/config.md) | Credentials, security |
 | [Deployment](docs/architecture/deployment.md) | Docker, env vars |
-| [Roadmap](docs/architecture/roadmap.md) | Progress tracking |
+| [Roadmap](docs/architecture/roadmap.md) | Milestones, entry checklists |
+
+### ⚠️ Planning & Issue Tracking
+
+| What | Where |
+|------|-------|
+| Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
+| Current milestone design | [M3.5 Integration](docs/archive/milestone-details/m3.5-integration.md) |
 
 
 
@@ -84,18 +91,21 @@ npm run dev   # http://localhost:3000
 | M0.5: Project Restructure | ✅ Complete | +74 |
 | M1: Foundation (DB/Events) | ✅ Complete | +124 |
 | M2: API Live | ✅ Complete | +85 |
-| M3-M7 | ⏳ Pending | — |
+| M3: Veda Trading | ✅ Complete | +196 |
+| M4-M7 | ⏳ Pending | — |
 
-**Current**: 274 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 493 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 ### Recent Changes (2026-02-02)
 
-- ✅ **M2 Complete**: GLaDOS API with REST endpoints and SSE streaming (274 total tests)
-- ✅ REST endpoints: /healthz, /api/v1/runs, /api/v1/orders, /api/v1/candles
-- ✅ SSE streaming: /api/v1/events/stream with SSEBroadcaster
-- ✅ CORS middleware and OpenAPI docs (/docs, /redoc)
-- ✅ RunManager with start/stop lifecycle
-- ✅ Mock OrderService and MarketDataService for MVP
+- ✅ **M3 Complete**: Veda Trading module with full exchange adapter pattern (493 total tests)
+- ✅ Core models: OrderIntent, OrderState, Position, Bar, Quote, Trade, AccountInfo
+- ✅ ExchangeAdapter ABC: Unified interface for all exchange integrations
+- ✅ MockExchangeAdapter: Full-featured mock for testing and backtesting
+- ✅ AlpacaAdapter: Paper trading support with Alpaca Markets API
+- ✅ OrderManager: Order lifecycle with idempotency via client_order_id
+- ✅ PositionTracker: Real-time position and P&L tracking
+- ✅ OrderRepository: Database persistence layer for order state
 
 
 ## Endpoints (essentials)

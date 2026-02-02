@@ -29,21 +29,18 @@ def test_settings() -> WeaverConfig:
 def app(test_settings: WeaverConfig) -> FastAPI:
     """Create test application with fresh state."""
     from src.glados.app import create_app
-    from src.glados.routes.candles import reset_market_data_service
-    from src.glados.routes.orders import reset_order_service
-    from src.glados.routes.runs import reset_run_manager
-    from src.glados.routes.sse import reset_broadcaster
 
-    # Reset shared state before each test
-    reset_run_manager()
-    reset_broadcaster()
-    reset_order_service()
-    reset_market_data_service()
-
+    # Each call to create_app() creates fresh services in app.state
+    # No need to reset module-level singletons anymore
     return create_app(settings=test_settings)
 
 
 @pytest.fixture
 def client(app: FastAPI) -> TestClient:
-    """Synchronous test client for HTTP requests."""
-    return TestClient(app)
+    """Synchronous test client for HTTP requests.
+    
+    Uses context manager to trigger app lifespan events,
+    which initializes services in app.state.
+    """
+    with TestClient(app) as client:
+        yield client

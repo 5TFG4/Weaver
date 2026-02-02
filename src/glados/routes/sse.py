@@ -6,42 +6,19 @@ Provides real-time event streaming to clients.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 
+from src.glados.dependencies import get_broadcaster
 from src.glados.sse_broadcaster import SSEBroadcaster
 
 router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
-# Shared broadcaster instance (will be injected via DI in production)
-# Note: For MVP, we use simple lazy initialization. In production,
-# this should be initialized during app startup via app.state.
-_broadcaster: SSEBroadcaster | None = None
 
-
-def get_broadcaster() -> SSEBroadcaster:
-    """
-    Get or create SSEBroadcaster instance.
-    
-    Note: This uses simple lazy initialization which is safe in asyncio
-    since Python's GIL ensures atomic attribute access. For production,
-    initialize in app lifespan and store in app.state.
-    """
-    global _broadcaster
-    if _broadcaster is None:
-        _broadcaster = SSEBroadcaster()
-    return _broadcaster
-
-
-def reset_broadcaster() -> None:
-    """Reset broadcaster (for testing)."""
-    global _broadcaster
-    _broadcaster = None
-
-
-async def _event_generator():
+async def _event_generator(broadcaster: SSEBroadcaster):
     """Generate SSE events from broadcaster."""
-    broadcaster = get_broadcaster()
     async for event in broadcaster.subscribe():
         yield {
             "id": event.id,
@@ -51,7 +28,7 @@ async def _event_generator():
 
 
 @router.get("/stream")
-async def event_stream() -> EventSourceResponse:
+async def event_stream(request: Request) -> EventSourceResponse:
     """
     SSE event stream endpoint.
     
@@ -60,4 +37,5 @@ async def event_stream() -> EventSourceResponse:
     Returns:
         EventSourceResponse with event stream
     """
-    return EventSourceResponse(_event_generator())
+    broadcaster = get_broadcaster(request)
+    return EventSourceResponse(_event_generator(broadcaster))

@@ -215,3 +215,120 @@ class TestRunManagerStop:
         stopped = await run_manager.stop(run.id)
 
         assert stopped.stopped_at is not None
+
+
+class TestRunManagerEventEmission:
+    """Tests for RunManager event emission."""
+
+    async def test_create_emits_runs_created_event(self) -> None:
+        """create() should emit runs.Created event when event_log provided."""
+        from src.events.log import InMemoryEventLog
+        from src.events.types import RunEvents
+        from src.glados.services.run_manager import RunManager
+
+        event_log = InMemoryEventLog()
+        run_manager = RunManager(event_log=event_log)
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.PAPER,
+            symbols=["BTC/USD"],
+        )
+
+        run = await run_manager.create(request)
+
+        events = await event_log.read_from(offset=-1, limit=10)
+        assert len(events) == 1
+        offset, envelope = events[0]
+        assert envelope.type == RunEvents.CREATED
+        assert envelope.payload["run_id"] == run.id
+        assert envelope.payload["status"] == "pending"
+
+    async def test_start_emits_runs_started_event(self) -> None:
+        """start() should emit runs.Started event when event_log provided."""
+        from src.events.log import InMemoryEventLog
+        from src.events.types import RunEvents
+        from src.glados.services.run_manager import RunManager
+
+        event_log = InMemoryEventLog()
+        run_manager = RunManager(event_log=event_log)
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.PAPER,
+            symbols=["BTC/USD"],
+        )
+        run = await run_manager.create(request)
+
+        await run_manager.start(run.id)
+
+        events = await event_log.read_from(offset=-1, limit=10)
+        assert len(events) == 2  # Created + Started
+        _, envelope = events[1]
+        assert envelope.type == RunEvents.STARTED
+        assert envelope.payload["run_id"] == run.id
+        assert envelope.payload["status"] == "running"
+
+    async def test_stop_emits_runs_stopped_event(self) -> None:
+        """stop() should emit runs.Stopped event when event_log provided."""
+        from src.events.log import InMemoryEventLog
+        from src.events.types import RunEvents
+        from src.glados.services.run_manager import RunManager
+
+        event_log = InMemoryEventLog()
+        run_manager = RunManager(event_log=event_log)
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.PAPER,
+            symbols=["BTC/USD"],
+        )
+        run = await run_manager.create(request)
+        await run_manager.start(run.id)
+
+        await run_manager.stop(run.id)
+
+        events = await event_log.read_from(offset=-1, limit=10)
+        assert len(events) == 3  # Created + Started + Stopped
+        _, envelope = events[2]
+        assert envelope.type == RunEvents.STOPPED
+        assert envelope.payload["run_id"] == run.id
+        assert envelope.payload["status"] == "stopped"
+
+    async def test_no_event_when_event_log_none(self) -> None:
+        """No error when event_log is None."""
+        from src.glados.services.run_manager import RunManager
+
+        run_manager = RunManager(event_log=None)
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.PAPER,
+            symbols=["BTC/USD"],
+        )
+
+        # Should not raise
+        run = await run_manager.create(request)
+        await run_manager.start(run.id)
+        await run_manager.stop(run.id)
+
+        assert run.status == RunStatus.STOPPED
+
+    async def test_stop_idempotent_no_duplicate_event(self) -> None:
+        """stop() called twice should only emit one Stopped event."""
+        from src.events.log import InMemoryEventLog
+        from src.events.types import RunEvents
+        from src.glados.services.run_manager import RunManager
+
+        event_log = InMemoryEventLog()
+        run_manager = RunManager(event_log=event_log)
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.PAPER,
+            symbols=["BTC/USD"],
+        )
+        run = await run_manager.create(request)
+        await run_manager.start(run.id)
+
+        await run_manager.stop(run.id)
+        await run_manager.stop(run.id)  # Second stop
+
+        events = await event_log.read_from(offset=-1, limit=10)
+        stopped_events = [e for _, e in events if e.type == RunEvents.STOPPED]
+        assert len(stopped_events) == 1  # Only one Stopped event

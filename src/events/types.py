@@ -123,6 +123,7 @@ class MarketEvents:
 class OrderEvents:
     """Order lifecycle events."""
 
+    CREATED: Final[str] = "orders.Created"
     PLACE_REQUEST: Final[str] = "orders.PlaceRequest"
     ACK: Final[str] = "orders.Ack"
     PLACED: Final[str] = "orders.Placed"
@@ -139,6 +140,7 @@ class OrderEvents:
 class RunEvents:
     """Run lifecycle events."""
 
+    CREATED: Final[str] = "run.Created"
     STARTED: Final[str] = "run.Started"
     STOP_REQUESTED: Final[str] = "run.StopRequested"
     STOPPED: Final[str] = "run.Stopped"

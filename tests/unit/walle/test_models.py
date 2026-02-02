@@ -97,11 +97,12 @@ class TestBaseMetadata:
     """Tests for Base model metadata."""
 
     def test_all_tables_registered(self):
-        """Both tables are registered in metadata."""
+        """Core tables are registered in metadata."""
         table_names = set(Base.metadata.tables.keys())
         assert "outbox" in table_names
         assert "consumer_offsets" in table_names
+        assert "veda_orders" in table_names
 
-    def test_metadata_has_exactly_two_tables(self):
-        """Only outbox and consumer_offsets tables exist (for now)."""
-        assert len(Base.metadata.tables) == 2
+    def test_metadata_has_expected_tables(self):
+        """Expected tables exist: outbox, consumer_offsets, veda_orders."""
+        assert len(Base.metadata.tables) == 3

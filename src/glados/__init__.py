@@ -10,15 +10,6 @@ The central orchestrator for Weaver, responsible for:
 - Publishing thin events to the frontend
 """
 
-# Note: GLaDOS class import deferred to avoid circular imports
-# Use: from src.glados import GLaDOS
+from .app import create_app
 
-__all__ = ["GLaDOS"]
-
-
-def __getattr__(name: str):
-    """Lazy import GLaDOS to avoid circular imports."""
-    if name == "GLaDOS":
-        from .glados import GLaDOS
-        return GLaDOS
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__all__ = ["create_app"]

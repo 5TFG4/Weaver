@@ -21,7 +21,8 @@ from src.glados.app import create_app
 def client() -> TestClient:
     """Fresh test client with a new app instance."""
     app = create_app()
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 # =============================================================================

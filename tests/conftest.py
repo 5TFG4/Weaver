@@ -171,3 +171,80 @@ def pytest_collection_modifyitems(
             item.add_marker(pytest.mark.integration)
         elif "/e2e/" in test_path:
             item.add_marker(pytest.mark.e2e)
+
+
+# =============================================================================
+# Database Fixtures (Integration Tests)
+# =============================================================================
+
+import os
+import subprocess
+from collections.abc import AsyncGenerator
+
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+
+def _get_database_url() -> str | None:
+    """Get database URL from environment."""
+    return os.environ.get("DB_URL")
+
+
+@pytest.fixture(scope="function")
+def database_url() -> str:
+    """Get the database URL from environment."""
+    url = _get_database_url()
+    if not url:
+        pytest.skip("DB_URL environment variable not set")
+    return url
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_engine(database_url: str) -> AsyncGenerator[Any, None]:
+    """Create an async engine for the test database."""
+    engine = create_async_engine(database_url, echo=False)
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def init_tables(database_url: str) -> None:
+    """
+    Initialize database tables using Alembic migrations.
+
+    This ensures migrations are tested alongside the application code.
+    """
+    project_root = os.environ.get("PROJECT_ROOT", "/weaver")
+    result = subprocess.run(
+        ["alembic", "upgrade", "head"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        pytest.fail(f"Alembic migration failed: {result.stderr}")
+
+
+@pytest_asyncio.fixture
+async def db_session(
+    async_engine: Any, init_tables: None
+) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Provide an AsyncSession for integration tests.
+    
+    Each test gets a fresh session with clean tables.
+    Used by tests marked @pytest.mark.integration.
+    """
+    from sqlalchemy import text
+    
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        # Clean tables before test
+        await session.execute(
+            text("TRUNCATE TABLE veda_orders, outbox, consumer_offsets")
+        )
+        await session.commit()
+        
+        yield session
+        
+        # Rollback any uncommitted changes and clean up
+        await session.rollback()

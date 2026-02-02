@@ -7,6 +7,9 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
@@ -22,31 +25,23 @@ class TestSSEStreamEndpoint:
 
         assert "/api/v1/events/stream" in routes
 
-    def test_broadcaster_is_accessible(self) -> None:
-        """get_broadcaster() should return SSEBroadcaster instance."""
-        from src.glados.routes.sse import get_broadcaster
+    def test_broadcaster_in_app_state(self, app: FastAPI) -> None:
+        """Broadcaster should be available in app.state after lifespan."""
         from src.glados.sse_broadcaster import SSEBroadcaster
 
-        broadcaster = get_broadcaster()
+        # Use TestClient to trigger lifespan
+        with TestClient(app):
+            assert hasattr(app.state, "broadcaster")
+            assert isinstance(app.state.broadcaster, SSEBroadcaster)
 
-        assert isinstance(broadcaster, SSEBroadcaster)
+    def test_each_app_gets_fresh_broadcaster(self) -> None:
+        """Each create_app() should create a fresh broadcaster."""
+        from src.config import get_test_config
+        from src.glados.app import create_app
 
-    def test_broadcaster_singleton(self) -> None:
-        """get_broadcaster() should return same instance."""
-        from src.glados.routes.sse import get_broadcaster, reset_broadcaster
+        app1 = create_app(settings=get_test_config())
+        app2 = create_app(settings=get_test_config())
 
-        reset_broadcaster()
-        b1 = get_broadcaster()
-        b2 = get_broadcaster()
-
-        assert b1 is b2
-
-    def test_reset_broadcaster(self) -> None:
-        """reset_broadcaster() should create new instance."""
-        from src.glados.routes.sse import get_broadcaster, reset_broadcaster
-
-        b1 = get_broadcaster()
-        reset_broadcaster()
-        b2 = get_broadcaster()
-
-        assert b1 is not b2
+        with TestClient(app1), TestClient(app2):
+            # Each app has its own broadcaster instance
+            assert app1.state.broadcaster is not app2.state.broadcaster

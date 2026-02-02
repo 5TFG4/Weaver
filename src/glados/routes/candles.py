@@ -6,29 +6,15 @@ REST endpoints for market data queries.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 
+from src.glados.dependencies import get_market_data_service
 from src.glados.schemas import CandleListResponse, CandleResponse
 from src.glados.services.market_data_service import Candle, MockMarketDataService
 
 router = APIRouter(prefix="/api/v1/candles", tags=["candles"])
-
-# Shared service instance for MVP-5
-_market_data_service: MockMarketDataService | None = None
-
-
-def get_market_data_service() -> MockMarketDataService:
-    """Get or create MarketDataService instance."""
-    global _market_data_service
-    if _market_data_service is None:
-        _market_data_service = MockMarketDataService()
-    return _market_data_service
-
-
-def reset_market_data_service() -> None:
-    """Reset MarketDataService (for testing)."""
-    global _market_data_service
-    _market_data_service = None
 
 
 def _candle_to_response(candle: Candle) -> CandleResponse:
