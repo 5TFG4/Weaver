@@ -678,47 +678,46 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-## 5. Recommended Fix Order
+## 5. Milestone-Based Fix Schedule
 
-### Batch 1: Eliminate Confusion (Day 1)
+> Issues are now scheduled into milestones per [roadmap.md](architecture/roadmap.md).
+> See Section 4 of roadmap for M3.5 full design.
 
-| # | Task | Files | Risk |
-|---|------|-------|------|
-| 1 | Delete/archive orphan GLaDOS files | `glados.py`, `data_manager.py`, etc. | Low |
-| 2 | Add `orders.Created` to types.py | `src/events/types.py` | Low |
-| 3 | Fix OrderRepository session handling | `src/veda/orders/repository.py` | Low |
+### M3.5: Integration Fixes (Before M4)
 
-### Batch 2: Connect the Plumbing (Day 2-3)
+| Issue | Task | Complexity |
+|-------|------|------------|
+| 1.1 | Routes use module singletons → Use Depends() | Medium |
+| 1.3 | VedaService unused → Wire to routes | Medium |
+| 1.6 | `orders.Created` undefined → Add to types.py | Trivial |
+| 1.11 | OrderRepository session leak → Use context managers | Trivial |
+| 2.7 | Unused exceptions → Use or remove | Trivial |
+| 2.8 | Routes don't emit events → Add EventLog calls | Medium |
 
-| # | Task | Files | Risk |
-|---|------|-------|------|
-| 4 | Create proper dependencies.py | `src/glados/dependencies.py` | Medium |
-| 5 | Update routes to use app.state | `src/glados/routes/*.py` | Medium |
-| 6 | Wire VedaService to order routes | `src/glados/routes/orders.py` | Medium |
+### M4: With Greta (Backtest)
 
-### Batch 3: Enable Real-Time (Day 4-5)
+| Issue | Task | Notes |
+|-------|------|-------|
+| 1.7 | LISTEN/NOTIFY not activated | Real-time for live runs |
+| 1.8 | Clock not integrated | Greta needs clock |
+| 2.1 | EventConsumer unused | Useful for replay |
 
-| # | Task | Files | Risk |
-|---|------|-------|------|
-| 7 | Provide asyncpg pool to EventLog | `src/glados/app.py` | Medium |
-| 8 | Add event emission in routes/services | `src/glados/services/*.py` | Medium |
-| 9 | Initialize AlpacaAdapter clients | `src/veda/adapters/alpaca_adapter.py` | High |
+### M5: With Marvin (Strategy)
 
-### Batch 4: Complete Integration (Week 2)
+| Issue | Task | Notes |
+|-------|------|-------|
+| 1.4 | AlpacaAdapter clients null | Live trading needs this |
+| 2.2 | 75% event types unused | Strategy events |
 
-| # | Task | Files | Risk |
-|---|------|-------|------|
-| 10 | Connect Clock to RunManager | `src/glados/services/run_manager.py` | High |
-| ~~11~~ | ~~Decide on Veda vs VedaService~~ | ~~`src/veda/`~~ | ✅ Resolved |
-| ~~12~~ | ~~Clean up walle.py~~ | ~~`src/walle/walle.py`~~ | ✅ Resolved |
+### M7: Polish
 
-### Batch 5: Testing & Polish (Week 3)
-
-| # | Task | Files | Risk |
-|---|------|-------|------|
-| 13 | Fix test cleanup consistency | `tests/conftest.py` | Low |
-| 14 | Add behavioral assertions | Various test files | Low |
-| 15 | Remove unused config/event types | `src/config.py`, `src/events/types.py` | Low |
+| Issue | Task |
+|-------|------|
+| 2.3 | Registry not pre-populated |
+| 2.4 | Unused config classes |
+| 2.6 | Credentials repr security |
+| 2.9-2.14 | Test improvements |
+| 3.x | Low priority items |
 
 ---
 
@@ -733,46 +732,43 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 ### Batch 0: Legacy Cleanup (2026-02-02) ✅
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Delete orphan GLaDOS files | ✅ | 2026-02-02 | Removed: glados.py, data_manager.py, api_handler.py, event_bus.py, tasks.py, error_handler.py, routes/api.py |
+| Delete orphan GLaDOS files | ✅ | 2026-02-02 | Removed 7 files |
 | Delete orphan Veda files | ✅ | 2026-02-02 | Removed: veda.py, alpaca_api_handler.py |
 | Delete orphan WallE files | ✅ | 2026-02-02 | Removed: walle.py, data_storage.py, data_retrieval.py |
 | Update weaver.py entry point | ✅ | 2026-02-02 | Now uses FastAPI create_app() |
 | Update __init__.py exports | ✅ | 2026-02-02 | GLaDOS exports create_app, Veda exports VedaService |
 
-### Batch 1: Eliminate Confusion
+### M3.5: Integration Fixes
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| ~~Delete orphan GLaDOS files~~ | ✅ | 2026-02-02 | Moved to Batch 0 |
-| Add `orders.Created` | ⬜ | | |
-| Fix OrderRepository sessions | ⬜ | | |
+| Add `orders.Created` to types.py | ⬜ | | Trivial |
+| Fix OrderRepository session handling | ⬜ | | Trivial |
+| Use/remove unused exceptions | ⬜ | | Trivial |
+| Create proper dependencies.py | ⬜ | | Medium |
+| Update routes to use Depends() | ⬜ | | Medium |
+| Wire VedaService to routes | ⬜ | | Medium |
+| Add event emission in services | ⬜ | | Medium |
 
-### Batch 2: Connect the Plumbing
+### M4: Greta Integration
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Create proper dependencies | ⬜ | | |
-| Update routes | ⬜ | | |
-| Wire VedaService | ⬜ | | |
-
-### Batch 3: Enable Real-Time
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Provide asyncpg pool | ⬜ | | |
-| Add event emission | ⬜ | | |
-| Initialize Alpaca clients | ⬜ | | |
-
-### Batch 4: Complete Integration
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
+| Provide asyncpg pool to EventLog | ⬜ | | |
 | Connect Clock to RunManager | ⬜ | | |
-| ~~Decide Veda vs VedaService~~ | ✅ | 2026-02-02 | Kept VedaService, deleted Veda class |
-| ~~Clean up walle.py~~ | ✅ | 2026-02-02 | Deleted legacy sync DB code |
+| Implement EventConsumer usage | ⬜ | | |
 
-### Batch 5: Testing & Polish
+### M5: Marvin Integration
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Fix test cleanup | ⬜ | | |
+| Initialize AlpacaAdapter clients | ⬜ | | |
+| Use strategy event types | ⬜ | | |
+
+### M7: Polish
+| Task | Status | Date | Notes |
+|------|--------|------|-------|
+| Fix test cleanup consistency | ⬜ | | |
 | Add behavioral assertions | ⬜ | | |
-| Remove unused code | ⬜ | | |
+| Remove unused config/event types | ⬜ | | |
+| Security: credentials repr | ⬜ | | |
 
 ---
 
