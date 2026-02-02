@@ -45,12 +45,10 @@ from .models import (
 from .order_manager import OrderManager
 from .persistence import OrderRepository, VedaOrder
 from .position_tracker import PositionTracker
-from .veda import Veda
 from .veda_service import VedaService, create_veda_service
 
 __all__ = [
     # Main classes
-    "Veda",
     "VedaService",
     # Factory functions
     "create_veda_service",

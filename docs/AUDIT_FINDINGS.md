@@ -709,8 +709,8 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | # | Task | Files | Risk |
 |---|------|-------|------|
 | 10 | Connect Clock to RunManager | `src/glados/services/run_manager.py` | High |
-| 11 | Decide on Veda vs VedaService | `src/veda/` | High |
-| 12 | Clean up walle.py | `src/walle/walle.py` | Medium |
+| ~~11~~ | ~~Decide on Veda vs VedaService~~ | ~~`src/veda/`~~ | ✅ Resolved |
+| ~~12~~ | ~~Clean up walle.py~~ | ~~`src/walle/walle.py`~~ | ✅ Resolved |
 
 ### Batch 5: Testing & Polish (Week 3)
 
@@ -730,10 +730,19 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 - ✅ Completed
 - ❌ Blocked
 
+### Batch 0: Legacy Cleanup (2026-02-02) ✅
+| Task | Status | Date | Notes |
+|------|--------|------|-------|
+| Delete orphan GLaDOS files | ✅ | 2026-02-02 | Removed: glados.py, data_manager.py, api_handler.py, event_bus.py, tasks.py, error_handler.py, routes/api.py |
+| Delete orphan Veda files | ✅ | 2026-02-02 | Removed: veda.py, alpaca_api_handler.py |
+| Delete orphan WallE files | ✅ | 2026-02-02 | Removed: walle.py, data_storage.py, data_retrieval.py |
+| Update weaver.py entry point | ✅ | 2026-02-02 | Now uses FastAPI create_app() |
+| Update __init__.py exports | ✅ | 2026-02-02 | GLaDOS exports create_app, Veda exports VedaService |
+
 ### Batch 1: Eliminate Confusion
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Delete orphan GLaDOS files | ⬜ | | |
+| ~~Delete orphan GLaDOS files~~ | ✅ | 2026-02-02 | Moved to Batch 0 |
 | Add `orders.Created` | ⬜ | | |
 | Fix OrderRepository sessions | ⬜ | | |
 
@@ -755,8 +764,8 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
 | Connect Clock to RunManager | ⬜ | | |
-| Decide Veda vs VedaService | ⬜ | | |
-| Clean up walle.py | ⬜ | | |
+| ~~Decide Veda vs VedaService~~ | ✅ | 2026-02-02 | Kept VedaService, deleted Veda class |
+| ~~Clean up walle.py~~ | ✅ | 2026-02-02 | Deleted legacy sync DB code |
 
 ### Batch 5: Testing & Polish
 | Task | Status | Date | Notes |
