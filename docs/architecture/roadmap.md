@@ -25,12 +25,12 @@
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Test Infrastructure | ✅ Complete | 493 |
-| Events Module | ⚠️ Core done, gaps | 33 |
+| Test Infrastructure | ✅ Complete | 506 |
+| Events Module | ✅ Core complete | 33 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
-| GLaDOS API | ⚠️ DI incomplete | 85 |
-| Veda Trading | ⚠️ Not wired | 196 |
+| GLaDOS API | ✅ DI complete | 99 |
+| Veda Trading | ⚠️ Wiring deferred | 196 |
 | Greta (backtest) | ❌ Empty | 0 |
 | Marvin (strategy) | ❌ Empty | 0 |
 | Haro (frontend) | ❌ Not started | 0 |
@@ -40,8 +40,8 @@
 | Milestone | Definition of Done | Status |
 |-----------|-------------------|--------|
 | M0–M3 | Foundation, API, Trading | ✅ DONE |
-| **M3.5** | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ⏳ NEXT |
-| M4 | Greta simulation works | ⏳ |
+| M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
+| **M4** | Greta simulation works | ⏳ NEXT |
 | M5 | Marvin + SMA backtested | ⏳ |
 | M6 | E2E tests pass | ⏳ |
 | M7 | Coverage ≥80%, docs complete | ⏳ |
@@ -51,8 +51,8 @@
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1–3 | Foundation → Veda | ✅ |
-| 3.5 | Integration fixes | ⏳ NEXT |
-| 4 | Greta + Clock integration | ⏳ |
+| 3.5 | Integration fixes | ✅ |
+| 4 | Greta + Clock integration | ⏳ NEXT |
 | 5 | Marvin + Live trading | ⏳ |
 | 6 | Haro frontend | ⏳ |
 | 7 | E2E + Polish | ⏳ |
@@ -70,11 +70,11 @@
 
 ### Before M4
 
-- [ ] Routes use `Depends()` from dependencies.py
-- [ ] `POST /runs` emits `runs.Created` event
-- [ ] SSE receives events from EventLog
-- [ ] VedaService wired to order routes
-- [ ] All tests passing
+- [x] Routes use `Depends()` from dependencies.py
+- [x] `POST /runs` emits `runs.Created` event
+- [x] SSE receives events from EventLog
+- [ ] VedaService wired to order routes (deferred to M5)
+- [x] All tests passing (506)
 
 ### Before M5
 
@@ -101,4 +101,4 @@
 
 ---
 
-*Last updated: 2026-02-02*
+*Last updated: 2026-02-02 (M3.5 complete)*

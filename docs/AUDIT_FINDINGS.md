@@ -1,7 +1,7 @@
 # Architecture Audit Findings
 
 > **Audit Date**: 2026-02-02 (Post-M3)  
-> **Status**: All 493 tests passing  
+> **Status**: ✅ M3.5 Complete — 506 tests passing  
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution
 
 ---
@@ -738,7 +738,7 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Update weaver.py entry point | ✅ | 2026-02-02 | Now uses FastAPI create_app() |
 | Update __init__.py exports | ✅ | 2026-02-02 | GLaDOS exports create_app, Veda exports VedaService |
 
-### M3.5: Integration Fixes
+### M3.5: Integration Fixes ✅
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
 | Add `orders.Created` to types.py | ✅ | 2026-02-02 | Trivial |
@@ -746,8 +746,9 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Use/remove unused exceptions | ✅ | 2026-02-02 | RunNotStartableError now used |
 | Create proper dependencies.py | ✅ | 2026-02-02 | 7 getters + 9 tests |
 | Update routes to use Depends() | ✅ | 2026-02-02 | All 4 route files migrated |
-| Wire VedaService to routes | ⬜ | | Deferred to M5 (needs real orders) |
-| Add event emission in services | ✅ | 2026-02-02 | RunManager emits run.* events |
+| Wire VedaService to routes | ⏳ | | Deferred to M5 (needs real orders) |
+| Add event emission in services | ✅ | 2026-02-02 | RunManager emits run.* events + 5 tests |
+| **Total new tests** | | | **+14 tests (9 deps + 5 events)** |
 
 ### M4: Greta Integration
 | Task | Status | Date | Notes |

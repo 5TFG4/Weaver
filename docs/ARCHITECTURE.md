@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-02 · **Tests**: 493 passing
+**Last Updated**: 2026-02-02 · **Tests**: 506 passing · **M3.5**: ✅ Complete
 
 ---
 
@@ -15,7 +15,7 @@
 | **Issue backlog & milestone schedule** | [AUDIT_FINDINGS.md §5](AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
 | **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
 | **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
-| **Current milestone design** | [M3.5 Integration](archive/milestone-details/m3.5-integration.md) |
+| **Next milestone design** | [M4 Greta](archive/milestone-details/m4-greta.md) *(to be created)* |
 | **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
 
 ---
@@ -40,7 +40,8 @@
 | M1 Foundation | [m1-foundation.md](archive/milestone-details/m1-foundation.md) | ✅ Done |
 | M2 GLaDOS API | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md) | ✅ Done |
 | M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
-| **M3.5 Integration** | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ⏳ Next |
+| M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
+| **M4 Greta** | [m4-greta.md](archive/milestone-details/m4-greta.md) | ⏳ Next |
 
 ---
 
