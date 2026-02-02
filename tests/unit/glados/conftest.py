@@ -27,8 +27,18 @@ def test_settings() -> WeaverConfig:
 
 @pytest.fixture
 def app(test_settings: WeaverConfig) -> FastAPI:
-    """Create test application."""
+    """Create test application with fresh state."""
     from src.glados.app import create_app
+    from src.glados.routes.candles import reset_market_data_service
+    from src.glados.routes.orders import reset_order_service
+    from src.glados.routes.runs import reset_run_manager
+    from src.glados.routes.sse import reset_broadcaster
+
+    # Reset shared state before each test
+    reset_run_manager()
+    reset_broadcaster()
+    reset_order_service()
+    reset_market_data_service()
 
     return create_app(settings=test_settings)
 

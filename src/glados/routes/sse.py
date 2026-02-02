@@ -6,6 +6,8 @@ Provides real-time event streaming to clients.
 
 from __future__ import annotations
 
+import threading
+
 from fastapi import APIRouter
 from sse_starlette.sse import EventSourceResponse
 
@@ -15,20 +17,25 @@ router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
 # Shared broadcaster instance (will be injected via DI in production)
 _broadcaster: SSEBroadcaster | None = None
+_broadcaster_lock = threading.Lock()
 
 
 def get_broadcaster() -> SSEBroadcaster:
-    """Get or create SSEBroadcaster instance."""
+    """Get or create SSEBroadcaster instance (thread-safe)."""
     global _broadcaster
     if _broadcaster is None:
-        _broadcaster = SSEBroadcaster()
+        with _broadcaster_lock:
+            # Double-check locking pattern
+            if _broadcaster is None:
+                _broadcaster = SSEBroadcaster()
     return _broadcaster
 
 
 def reset_broadcaster() -> None:
     """Reset broadcaster (for testing)."""
     global _broadcaster
-    _broadcaster = None
+    with _broadcaster_lock:
+        _broadcaster = None
 
 
 async def _event_generator():

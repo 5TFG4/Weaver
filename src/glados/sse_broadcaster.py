@@ -80,5 +80,7 @@ class SSEBroadcaster:
             event=event_type,
             data=json.dumps(data),
         )
-        for queue in self._clients:
-            await queue.put(event)
+        # Broadcast concurrently to avoid one slow client blocking others
+        coros = [queue.put(event) for queue in self._clients]
+        if coros:
+            await asyncio.gather(*coros, return_exceptions=True)

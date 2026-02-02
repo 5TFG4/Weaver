@@ -97,6 +97,30 @@ class RunManager:
         runs = list(self._runs.values())
         return runs, len(runs)
 
+    async def start(self, run_id: str) -> Run:
+        """
+        Start a pending run.
+        
+        Args:
+            run_id: The run ID to start
+            
+        Returns:
+            Updated Run with RUNNING status
+            
+        Raises:
+            RunNotFoundError: If run doesn't exist
+        """
+        run = self._runs.get(run_id)
+        if run is None:
+            raise RunNotFoundError(run_id)
+
+        # Only start if pending
+        if run.status == RunStatus.PENDING:
+            run.status = RunStatus.RUNNING
+            run.started_at = datetime.now(UTC)
+
+        return run
+
     async def stop(self, run_id: str) -> Run:
         """
         Stop a run.

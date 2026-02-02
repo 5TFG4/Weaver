@@ -34,11 +34,18 @@ class MockMarketDataService:
     
     Returns fake OHLCV data for testing and development.
     
+    Args:
+        seed: Optional random seed for deterministic test data.
+    
     Future (M3+):
     - Real data from Veda (live) or WallE (historical)
     - Date range filters
     - /symbols endpoint
     """
+
+    def __init__(self, seed: int | None = None) -> None:
+        """Initialize with optional random seed for deterministic tests."""
+        self._rng = random.Random(seed)
 
     async def get_candles(
         self,
@@ -79,11 +86,11 @@ class MockMarketDataService:
             timestamp = now - (interval * (limit - i - 1))
             
             # Generate realistic OHLCV data
-            open_price = base_price + Decimal(str(random.uniform(-500, 500)))
-            close_price = open_price + Decimal(str(random.uniform(-200, 200)))
-            high_price = max(open_price, close_price) + Decimal(str(random.uniform(0, 100)))
-            low_price = min(open_price, close_price) - Decimal(str(random.uniform(0, 100)))
-            volume = Decimal(str(random.uniform(10, 1000)))
+            open_price = base_price + Decimal(str(self._rng.uniform(-500, 500)))
+            close_price = open_price + Decimal(str(self._rng.uniform(-200, 200)))
+            high_price = max(open_price, close_price) + Decimal(str(self._rng.uniform(0, 100)))
+            low_price = min(open_price, close_price) - Decimal(str(self._rng.uniform(0, 100)))
+            volume = Decimal(str(self._rng.uniform(10, 1000)))
             
             candles.append(Candle(
                 symbol=symbol,
@@ -94,7 +101,7 @@ class MockMarketDataService:
                 low=low_price.quantize(Decimal("0.01")),
                 close=close_price.quantize(Decimal("0.01")),
                 volume=volume.quantize(Decimal("0.01")),
-                trade_count=random.randint(100, 5000),
+                trade_count=self._rng.randint(100, 5000),
             ))
             
             # Update base price for next candle

@@ -161,8 +161,8 @@ class TestRunManagerStop:
             symbols=["BTC/USD"],
         )
         run = await run_manager.create(request)
-        # Simulate starting the run (internal state change)
-        run_manager._runs[run.id].status = RunStatus.RUNNING
+        # Use public API to start the run
+        await run_manager.start(run.id)
 
         stopped = await run_manager.stop(run.id)
 
@@ -179,8 +179,10 @@ class TestRunManagerStop:
             symbols=["BTC/USD"],
         )
         run = await run_manager.create(request)
-        run_manager._runs[run.id].status = RunStatus.STOPPED
+        await run_manager.start(run.id)
+        await run_manager.stop(run.id)
 
+        # Call stop again - should be idempotent
         stopped = await run_manager.stop(run.id)
 
         assert stopped.status == RunStatus.STOPPED
@@ -208,7 +210,7 @@ class TestRunManagerStop:
             symbols=["BTC/USD"],
         )
         run = await run_manager.create(request)
-        run_manager._runs[run.id].status = RunStatus.RUNNING
+        await run_manager.start(run.id)
 
         stopped = await run_manager.stop(run.id)
 

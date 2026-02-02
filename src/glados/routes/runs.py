@@ -6,6 +6,8 @@ REST endpoints for run management.
 
 from __future__ import annotations
 
+import threading
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.glados.exceptions import RunNotFoundError
@@ -16,20 +18,25 @@ router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
 # Shared RunManager instance for MVP-2 (will be injected via DI in production)
 _run_manager: RunManager | None = None
+_run_manager_lock = threading.Lock()
 
 
 def get_run_manager() -> RunManager:
-    """Get or create RunManager instance."""
+    """Get or create RunManager instance (thread-safe)."""
     global _run_manager
     if _run_manager is None:
-        _run_manager = RunManager()
+        with _run_manager_lock:
+            # Double-check locking pattern
+            if _run_manager is None:
+                _run_manager = RunManager()
     return _run_manager
 
 
 def reset_run_manager() -> None:
     """Reset RunManager (for testing)."""
     global _run_manager
-    _run_manager = None
+    with _run_manager_lock:
+        _run_manager = None
 
 
 def _run_to_response(run: Run) -> RunResponse:

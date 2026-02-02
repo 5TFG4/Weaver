@@ -13,14 +13,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import WeaverConfig, get_config
-from src.glados.routes.candles import reset_market_data_service
 from src.glados.routes.candles import router as candles_router
 from src.glados.routes.health import router as health_router
-from src.glados.routes.orders import reset_order_service
 from src.glados.routes.orders import router as orders_router
-from src.glados.routes.runs import reset_run_manager
 from src.glados.routes.runs import router as runs_router
-from src.glados.routes.sse import reset_broadcaster
 from src.glados.routes.sse import router as sse_router
 
 
@@ -50,12 +46,6 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     """
     if settings is None:
         settings = get_config()
-
-    # Reset shared state for testing
-    reset_run_manager()
-    reset_broadcaster()
-    reset_order_service()
-    reset_market_data_service()
 
     app = FastAPI(
         title="Weaver API",
@@ -89,10 +79,6 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     app.include_router(candles_router)
 
     return app
-
-
-# Default app instance for uvicorn
-app = create_app()
 
 
 # Default app instance for uvicorn
