@@ -745,7 +745,7 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Fix OrderRepository session handling | ✅ | 2026-02-02 | All 6 methods use `async with` |
 | Use/remove unused exceptions | ✅ | 2026-02-02 | RunNotStartableError now used |
 | Create proper dependencies.py | ✅ | 2026-02-02 | 7 getters + 9 tests |
-| Update routes to use Depends() | ⬜ | | Medium |
+| Update routes to use Depends() | ✅ | 2026-02-02 | All 4 route files migrated |
 | Wire VedaService to routes | ⬜ | | Medium |
 | Add event emission in services | ⬜ | | Medium |
 

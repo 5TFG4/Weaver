@@ -6,38 +6,16 @@ REST endpoints for run management.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from src.glados.dependencies import get_run_manager
 from src.glados.exceptions import RunNotFoundError
 from src.glados.schemas import RunCreate, RunListResponse, RunResponse
 from src.glados.services.run_manager import Run, RunManager
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
-
-# Shared RunManager instance (will be injected via DI in production)
-# Note: For MVP, we use simple lazy initialization. In production,
-# this should be initialized during app startup via app.state.
-_run_manager: RunManager | None = None
-
-
-def get_run_manager() -> RunManager:
-    """
-    Get or create RunManager instance.
-    
-    Note: This uses simple lazy initialization which is safe in asyncio
-    since Python's GIL ensures atomic attribute access. For production,
-    initialize in app lifespan and store in app.state.
-    """
-    global _run_manager
-    if _run_manager is None:
-        _run_manager = RunManager()
-    return _run_manager
-
-
-def reset_run_manager() -> None:
-    """Reset RunManager (for testing)."""
-    global _run_manager
-    _run_manager = None
 
 
 def _run_to_response(run: Run) -> RunResponse:

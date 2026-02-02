@@ -6,29 +6,15 @@ REST endpoints for order queries.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from src.glados.dependencies import get_order_service
 from src.glados.schemas import OrderListResponse, OrderResponse
 from src.glados.services.order_service import MockOrderService, Order
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
-
-# Shared service instance for MVP-4
-_order_service: MockOrderService | None = None
-
-
-def get_order_service() -> MockOrderService:
-    """Get or create OrderService instance."""
-    global _order_service
-    if _order_service is None:
-        _order_service = MockOrderService()
-    return _order_service
-
-
-def reset_order_service() -> None:
-    """Reset OrderService (for testing)."""
-    global _order_service
-    _order_service = None
 
 
 def _order_to_response(order: Order) -> OrderResponse:
