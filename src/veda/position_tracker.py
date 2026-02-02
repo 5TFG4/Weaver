@@ -79,8 +79,12 @@ class PositionTracker:
                 # Weighted average cost basis
                 denom = abs(pos.qty) + fill.qty
                 if denom == Decimal("0"):
+                    # This should be impossible: we only reach here when adding to
+                    # an existing position (pos.qty != 0) with a positive fill.qty.
+                    # If this error occurs, there's a bug in the calling code.
                     raise ValueError(
-                        "Invariant violated: denominator for cost basis calculation is zero "
+                        "Invariant violated: denominator for cost basis calculation is zero. "
+                        "This indicates a bug - we should only add to positions with non-zero qty. "
                         f"(pos.qty={pos.qty}, fill.qty={fill.qty})"
                     )
                 pos.cost_basis = (pos.cost_basis * abs(pos.qty) + fill_cost) / denom

@@ -130,7 +130,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # RunManager (in-memory, optionally with EventLog for event emission)
     from src.glados.services.run_manager import RunManager
     app.state.run_manager = RunManager(event_log=event_log)
-    logger.info("RunManager initialized" + (" with EventLog" if event_log else ""))
+    logger.info("RunManager initialized%s", " with EventLog" if event_log else "")
 
     yield
 
