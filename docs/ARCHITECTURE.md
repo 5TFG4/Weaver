@@ -9,6 +9,7 @@
 | Document | Description |
 |----------|-------------|
 | [Development](DEVELOPMENT.md) | Methodology, TDD, coding standards |
+| [Audit Findings](AUDIT_FINDINGS.md) | Design-vs-implementation issues to fix |
 | [Events](architecture/events.md) | Event model, envelope, namespaces, delivery |
 | [API](architecture/api.md) | REST, SSE, auth, thin events pattern |
 | [Clock](architecture/clock.md) | RealtimeClock, BacktestClock, bar alignment |
