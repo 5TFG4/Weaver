@@ -6,6 +6,8 @@ Creates and configures the FastAPI application.
 
 from __future__ import annotations
 
+import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -19,19 +21,94 @@ from src.glados.routes.orders import router as orders_router
 from src.glados.routes.runs import router as runs_router
 from src.glados.routes.sse import router as sse_router
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """
     Application lifespan context manager.
-    
-    Handles startup and shutdown events.
+
+    Handles startup and shutdown events:
+    - Startup: Initialize Database, EventLog, VedaService, SSE subscription
+    - Shutdown: Close database connections, cleanup resources
     """
-    # Startup: Initialize resources
-    # (Database connections, background tasks, etc. will be added here)
+    settings: WeaverConfig = app.state.settings
+
+    # =========================================================================
+    # Startup
+    # =========================================================================
+
+    # 1. Initialize Database (if DB_URL is configured)
+    db_url = os.environ.get("DB_URL")
+    if db_url:
+        from src.config import DatabaseConfig
+        from src.walle.database import Database
+
+        db_config = DatabaseConfig(url=db_url)
+        database = Database(db_config)
+        app.state.database = database
+        logger.info("Database initialized")
+
+        # 2. Initialize EventLog with database session
+        from src.events.log import PostgresEventLog
+
+        event_log = PostgresEventLog(session_factory=database.session_factory)
+        app.state.event_log = event_log
+        logger.info("EventLog initialized")
+
+        # 3. Subscribe SSEBroadcaster to EventLog for real-time events
+        from src.glados.routes.sse import get_broadcaster
+
+        broadcaster = get_broadcaster()
+
+        async def on_event(envelope):
+            """Forward events from EventLog to SSE clients."""
+            await broadcaster.publish(envelope.type, envelope.payload)
+
+        unsubscribe = await event_log.subscribe(on_event)
+        app.state.event_log_unsubscribe = unsubscribe
+        logger.info("SSEBroadcaster subscribed to EventLog")
+
+        # 4. Initialize VedaService (if Alpaca credentials configured)
+        if settings.alpaca.has_paper_credentials or settings.alpaca.has_live_credentials:
+            from src.veda.adapters.factory import create_adapter_for_mode
+            from src.veda.veda_service import create_veda_service
+
+            # Use paper credentials by default for safety
+            mode = "paper" if settings.alpaca.has_paper_credentials else "live"
+            credentials = settings.alpaca.get_credentials(mode)
+            adapter = create_adapter_for_mode(credentials)
+
+            veda_service = create_veda_service(
+                adapter=adapter,
+                event_log=event_log,
+                session_factory=database.session_factory,
+                config=settings,
+            )
+            app.state.veda_service = veda_service
+            logger.info(f"VedaService initialized (mode={mode})")
+    else:
+        logger.warning("DB_URL not set - running without database (in-memory mode)")
+        app.state.database = None
+        app.state.event_log = None
+        app.state.veda_service = None
+
     yield
-    # Shutdown: Clean up resources
-    # (Close connections, stop tasks, etc. will be added here)
+
+    # =========================================================================
+    # Shutdown
+    # =========================================================================
+
+    # Unsubscribe from EventLog
+    if hasattr(app.state, "event_log_unsubscribe") and app.state.event_log_unsubscribe:
+        app.state.event_log_unsubscribe()
+        logger.info("SSEBroadcaster unsubscribed from EventLog")
+
+    # Close database connection
+    if hasattr(app.state, "database") and app.state.database:
+        await app.state.database.close()
+        logger.info("Database closed")
 
 
 def create_app(settings: WeaverConfig | None = None) -> FastAPI:

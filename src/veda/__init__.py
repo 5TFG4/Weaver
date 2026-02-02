@@ -11,6 +11,11 @@ Responds to live.* events and emits data.*/market.*/orders.* events.
 """
 
 from .adapters import AlpacaAdapter, MockExchangeAdapter
+from .adapters.factory import (
+    create_adapter_for_mode,
+    create_alpaca_adapter,
+    create_mock_adapter,
+)
 from .exceptions import (
     ExchangeConnectionError,
     InsufficientFundsError,
@@ -41,10 +46,17 @@ from .order_manager import OrderManager
 from .persistence import OrderRepository, VedaOrder
 from .position_tracker import PositionTracker
 from .veda import Veda
+from .veda_service import VedaService, create_veda_service
 
 __all__ = [
-    # Main class
+    # Main classes
     "Veda",
+    "VedaService",
+    # Factory functions
+    "create_veda_service",
+    "create_alpaca_adapter",
+    "create_mock_adapter",
+    "create_adapter_for_mode",
     # Adapters
     "ExchangeAdapter",
     "AlpacaAdapter",
@@ -58,7 +70,10 @@ __all__ = [
     # Models
     "OrderIntent",
     "OrderState",
+    "OrderStatus",
+    "OrderType",
     "OrderSide",
+    "TimeInForce",
     "Fill",
     "AccountInfo",
     "Position",
@@ -67,7 +82,6 @@ __all__ = [
     "Quote",
     "Trade",
     # Interfaces
-    "ExchangeAdapter",
     "ExchangeOrder",
     "OrderSubmitResult",
     # Exceptions
@@ -80,4 +94,3 @@ __all__ = [
     "InvalidOrderError",
     "SymbolNotFoundError",
 ]
-

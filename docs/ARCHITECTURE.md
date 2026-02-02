@@ -8,12 +8,15 @@
 
 | Document | Description |
 |----------|-------------|
+| [Development](DEVELOPMENT.md) | Methodology, TDD, coding standards |
 | [Events](architecture/events.md) | Event model, envelope, namespaces, delivery |
 | [API](architecture/api.md) | REST, SSE, auth, thin events pattern |
 | [Clock](architecture/clock.md) | RealtimeClock, BacktestClock, bar alignment |
 | [Config](architecture/config.md) | Dual credentials, security, testing |
 | [Deployment](architecture/deployment.md) | Docker, env vars, operations |
 | [Roadmap](architecture/roadmap.md) | Milestones, phases, progress tracking |
+
+> **Archived**: Detailed milestone specs → [docs/archive/milestone-details/](archive/milestone-details/)
 
 ---
 
