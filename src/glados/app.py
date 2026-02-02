@@ -100,14 +100,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             credentials = settings.alpaca.get_credentials(mode)
             adapter = create_adapter_for_mode(credentials)
 
-            veda_service = create_veda_service(
-                adapter=adapter,
-                event_log=event_log,
-                session_factory=database.session_factory,
-                config=settings,
-            )
-            app.state.veda_service = veda_service
-            logger.info(f"VedaService initialized (mode={mode})")
+            try:
+                veda_service = create_veda_service(
+                    adapter=adapter,
+                    event_log=event_log,
+                    session_factory=database.session_factory,
+                    config=settings,
+                )
+                app.state.veda_service = veda_service
+                logger.info(f"VedaService initialized (mode={mode})")
+            except Exception as exc:
+                logger.exception(
+                    "Failed to initialize VedaService (mode=%s, has_paper_credentials=%s, has_live_credentials=%s)",
+                    mode,
+                    settings.alpaca.has_paper_credentials,
+                    settings.alpaca.has_live_credentials,
+                )
+                raise RuntimeError(f"Failed to initialize VedaService for mode={mode}") from exc
     else:
         logger.warning("DB_URL not set - running without database (in-memory mode)")
         app.state.database = None

@@ -239,7 +239,7 @@ async def db_session(
     
     async with AsyncSession(async_engine, expire_on_commit=False) as session:
         # Clean tables before test
-        await session.execute(text("DELETE FROM veda_orders"))
+        await session.execute(text("TRUNCATE TABLE veda_orders"))
         await session.commit()
         
         yield session

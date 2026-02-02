@@ -296,13 +296,11 @@ class AlpacaAdapter(ExchangeAdapter):
 
     async def stream_bars(self, symbols: list[str]) -> AsyncIterator[Bar]:
         """Stream bars (not yet implemented)."""
-        return
-        yield  # Make this a generator
+        raise NotImplementedError("stream_bars is not yet implemented")
 
     async def stream_quotes(self, symbols: list[str]) -> AsyncIterator[Quote]:
         """Stream quotes (not yet implemented)."""
-        return
-        yield  # Make this a generator
+        raise NotImplementedError("stream_quotes is not yet implemented")
 
     # =========================================================================
     # Mapping Helpers

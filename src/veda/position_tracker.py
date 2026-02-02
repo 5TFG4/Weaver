@@ -77,7 +77,13 @@ class PositionTracker:
             new_qty = pos.qty + fill_qty
             if new_qty != 0:
                 # Weighted average cost basis
-                pos.cost_basis = (pos.cost_basis * abs(pos.qty) + fill_cost) / (abs(pos.qty) + fill.qty)
+                denom = abs(pos.qty) + fill.qty
+                if denom == Decimal("0"):
+                    raise ValueError(
+                        "Invariant violated: denominator for cost basis calculation is zero "
+                        f"(pos.qty={pos.qty}, fill.qty={fill.qty})"
+                    )
+                pos.cost_basis = (pos.cost_basis * abs(pos.qty) + fill_cost) / denom
             pos.qty = new_qty
         else:
             # Reducing or flipping position

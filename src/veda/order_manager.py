@@ -92,7 +92,20 @@ class OrderManager:
             error_code=result.error_code if not result.success else None,
         )
 
-        # If we got fill info from the exchange, update it
+        # If the exchange reports the order as FILLED, hydrate fill details.
+        # NOTE:
+        #   Many exchanges return only basic information from submit_order
+        #   (e.g. status + exchange_order_id) and require a follow-up query
+        #   to retrieve full execution details such as filled quantity and
+        #   average fill price. This extra get_order call is therefore
+        #   intentional, even though it adds an additional API call and
+        #   some latency.
+        #
+        #   If the ExchangeAdapter.submit_order implementation is enhanced
+        #   in the future to always return filled quantities and prices
+        #   when an order is immediately FILLED, this block can be updated
+        #   to avoid the redundant query (e.g. by checking for existing
+        #   fill information on result before calling get_order).
         if result.status == OrderStatus.FILLED and result.exchange_order_id:
             # Query exchange for fill details
             exchange_order = await self._adapter.get_order(result.exchange_order_id)

@@ -293,6 +293,39 @@ class TestPositionTrackerCostBasis:
         # Average of 40k and 44k = 42k
         assert position.avg_entry_price == Decimal("42000.00")
 
+    def test_position_weighted_average_cost_basis(self) -> None:
+        """Multiple fills with different quantities use weighted average."""
+        from src.veda.position_tracker import PositionTracker
+        tracker = PositionTracker()
+        
+        # Buy 1 BTC at $40,000
+        fill1 = Fill(
+            id=str(uuid4()),
+            order_id=str(uuid4()),
+            qty=Decimal("1.0"),
+            price=Decimal("40000.00"),
+            commission=Decimal("10.00"),
+            timestamp=datetime.now(UTC),
+        )
+        # Buy 3 BTC at $44,000
+        fill2 = Fill(
+            id=str(uuid4()),
+            order_id=str(uuid4()),
+            qty=Decimal("3.0"),
+            price=Decimal("44000.00"),
+            commission=Decimal("10.00"),
+            timestamp=datetime.now(UTC),
+        )
+        
+        tracker.apply_fill("BTC/USD", OrderSide.BUY, fill1)
+        tracker.apply_fill("BTC/USD", OrderSide.BUY, fill2)
+        position = tracker.get_position("BTC/USD")
+        
+        assert position is not None
+        assert position.qty == Decimal("4.0")
+        # Weighted average: (1 * 40000 + 3 * 44000) / 4 = 172000 / 4 = 43000
+        assert position.avg_entry_price == Decimal("43000.00")
+
 
 # ============================================================================
 # Test: Position Queries

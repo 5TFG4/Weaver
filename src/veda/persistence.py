@@ -167,7 +167,11 @@ class OrderRepository:
 
     async def save(self, order_state: OrderState) -> None:
         """
-        Save or update an order.
+        Save or update an order (upsert).
+
+        Uses SQLAlchemy's merge() to perform an upsert:
+        - If order with same ID exists, updates all fields
+        - If order doesn't exist, inserts a new row
 
         Args:
             order_state: The OrderState to persist

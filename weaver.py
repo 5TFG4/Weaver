@@ -4,6 +4,8 @@ Run with: uvicorn weaver:app --reload
 Or: python -m weaver
 """
 
+import os
+
 import uvicorn
 
 from src.glados.app import create_app
@@ -16,9 +18,9 @@ def main() -> None:
     """Start the Weaver API server."""
     uvicorn.run(
         "weaver:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=os.getenv("WEAVER_HOST", "127.0.0.1"),
+        port=int(os.getenv("WEAVER_PORT", "8000")),
+        reload=os.getenv("WEAVER_RELOAD", "true").lower() == "true",
     )
 
 
