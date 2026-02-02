@@ -7,10 +7,6 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from decimal import Decimal
-
-import pytest
-
 
 class TestOrderServiceGet:
     """Tests for OrderService.get()."""

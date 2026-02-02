@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from src.glados.schemas import OrderListResponse, OrderResponse, OrderStatus
+from src.glados.schemas import OrderListResponse, OrderResponse
 from src.glados.services.order_service import MockOrderService, Order
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])

@@ -7,8 +7,6 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestMarketDataServiceGetCandles:
     """Tests for MarketDataService.get_candles()."""

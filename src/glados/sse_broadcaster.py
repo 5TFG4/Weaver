@@ -29,6 +29,7 @@ class SSEBroadcaster:
     - Multi-client support
     - Event ID tracking for reconnection support
     - Automatic client cleanup on disconnect
+    - Bounded queues to prevent memory exhaustion from slow clients
     
     MVP-3 Implementation:
     - Basic pub/sub pattern
@@ -40,6 +41,9 @@ class SSEBroadcaster:
     - Heartbeat for connection keep-alive
     - Last-Event-ID support for replay
     """
+
+    # Maximum events queued per client before dropping
+    MAX_QUEUE_SIZE = 100
 
     def __init__(self) -> None:
         self._clients: set[asyncio.Queue[ServerSentEvent]] = set()
@@ -57,7 +61,7 @@ class SSEBroadcaster:
         Yields:
             ServerSentEvent objects as they are published
         """
-        queue: asyncio.Queue[ServerSentEvent] = asyncio.Queue()
+        queue: asyncio.Queue[ServerSentEvent] = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
         self._clients.add(queue)
         try:
             while True:
@@ -73,6 +77,10 @@ class SSEBroadcaster:
         Args:
             event_type: Event type name (e.g., "run.started")
             data: Event payload (will be JSON serialized)
+            
+        Note:
+            Uses put_nowait to avoid blocking on slow clients.
+            If a client's queue is full, the event is dropped for that client.
         """
         self._event_id += 1
         event = ServerSentEvent(
@@ -80,7 +88,10 @@ class SSEBroadcaster:
             event=event_type,
             data=json.dumps(data),
         )
-        # Broadcast concurrently to avoid one slow client blocking others
-        coros = [queue.put(event) for queue in self._clients]
-        if coros:
-            await asyncio.gather(*coros, return_exceptions=True)
+        # Use put_nowait to avoid blocking on slow clients
+        for queue in self._clients.copy():
+            try:
+                queue.put_nowait(event)
+            except asyncio.QueueFull:
+                # Drop event for slow client to avoid memory buildup
+                pass

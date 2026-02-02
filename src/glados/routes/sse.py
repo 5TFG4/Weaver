@@ -6,8 +6,6 @@ Provides real-time event streaming to clients.
 
 from __future__ import annotations
 
-import threading
-
 from fastapi import APIRouter
 from sse_starlette.sse import EventSourceResponse
 
@@ -16,26 +14,29 @@ from src.glados.sse_broadcaster import SSEBroadcaster
 router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
 # Shared broadcaster instance (will be injected via DI in production)
+# Note: For MVP, we use simple lazy initialization. In production,
+# this should be initialized during app startup via app.state.
 _broadcaster: SSEBroadcaster | None = None
-_broadcaster_lock = threading.Lock()
 
 
 def get_broadcaster() -> SSEBroadcaster:
-    """Get or create SSEBroadcaster instance (thread-safe)."""
+    """
+    Get or create SSEBroadcaster instance.
+    
+    Note: This uses simple lazy initialization which is safe in asyncio
+    since Python's GIL ensures atomic attribute access. For production,
+    initialize in app lifespan and store in app.state.
+    """
     global _broadcaster
     if _broadcaster is None:
-        with _broadcaster_lock:
-            # Double-check locking pattern
-            if _broadcaster is None:
-                _broadcaster = SSEBroadcaster()
+        _broadcaster = SSEBroadcaster()
     return _broadcaster
 
 
 def reset_broadcaster() -> None:
     """Reset broadcaster (for testing)."""
     global _broadcaster
-    with _broadcaster_lock:
-        _broadcaster = None
+    _broadcaster = None
 
 
 async def _event_generator():
