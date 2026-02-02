@@ -4,9 +4,13 @@ Unit tests for GLaDOS dependency injection.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock
 
 import pytest
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 from src.glados.dependencies import (
     get_broadcaster,
@@ -19,11 +23,11 @@ from src.glados.dependencies import (
 )
 
 
-class MockRequest:
-    """Mock FastAPI Request with app.state access."""
-
-    def __init__(self, app: MagicMock) -> None:
-        self.app = app
+def create_mock_request(app: MagicMock) -> "Request":
+    """Create a mock request with app.state access."""
+    request = MagicMock()
+    request.app = app
+    return cast("Request", request)
 
 
 class TestGetSettings:
@@ -33,7 +37,7 @@ class TestGetSettings:
         """get_settings returns app.state.settings."""
         app = MagicMock()
         app.state.settings = MagicMock(name="settings")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_settings(request)
 
@@ -47,7 +51,7 @@ class TestGetRunManager:
         """get_run_manager returns app.state.run_manager."""
         app = MagicMock()
         app.state.run_manager = MagicMock(name="run_manager")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_run_manager(request)
 
@@ -61,7 +65,7 @@ class TestGetOrderService:
         """get_order_service returns app.state.order_service."""
         app = MagicMock()
         app.state.order_service = MagicMock(name="order_service")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_order_service(request)
 
@@ -75,7 +79,7 @@ class TestGetMarketDataService:
         """get_market_data_service returns app.state.market_data_service."""
         app = MagicMock()
         app.state.market_data_service = MagicMock(name="market_data_service")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_market_data_service(request)
 
@@ -89,7 +93,7 @@ class TestGetBroadcaster:
         """get_broadcaster returns app.state.broadcaster."""
         app = MagicMock()
         app.state.broadcaster = MagicMock(name="broadcaster")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_broadcaster(request)
 
@@ -103,7 +107,7 @@ class TestGetEventLog:
         """get_event_log returns app.state.event_log when set."""
         app = MagicMock()
         app.state.event_log = MagicMock(name="event_log")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_event_log(request)
 
@@ -113,7 +117,7 @@ class TestGetEventLog:
         """get_event_log returns None when event_log not in state."""
         app = MagicMock(spec=["state"])
         app.state = MagicMock(spec=[])  # No event_log attribute
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_event_log(request)
 
@@ -127,7 +131,7 @@ class TestGetVedaService:
         """get_veda_service returns app.state.veda_service when set."""
         app = MagicMock()
         app.state.veda_service = MagicMock(name="veda_service")
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_veda_service(request)
 
@@ -137,7 +141,7 @@ class TestGetVedaService:
         """get_veda_service returns None when veda_service not in state."""
         app = MagicMock(spec=["state"])
         app.state = MagicMock(spec=[])  # No veda_service attribute
-        request = MockRequest(app)
+        request = create_mock_request(app)
 
         result = get_veda_service(request)
 
