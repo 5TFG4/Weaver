@@ -8,11 +8,12 @@ Both RealtimeClock and BacktestClock implement this interface.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable
+from typing import Awaitable, Callable, Union
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,11 @@ class ClockTick:
         }
 
 
-# Type alias for tick callback
-TickCallback = Callable[[ClockTick], None]
+# Type alias for tick callback (can be sync or async)
+TickCallback = Union[
+    Callable[[ClockTick], None],
+    Callable[[ClockTick], Awaitable[None]],
+]
 
 
 class BaseClock(ABC):
@@ -145,12 +149,15 @@ class BaseClock(ABC):
 
         return unsubscribe
 
-    def _emit_tick(self, tick: ClockTick) -> None:
-        """Emit a tick to all registered callbacks."""
+    async def _emit_tick(self, tick: ClockTick) -> None:
+        """Emit a tick to all registered callbacks (supports async)."""
         self._tick_count += 1
         for callback in self._callbacks:
             try:
-                callback(tick)
+                result = callback(tick)
+                # If callback is async, await it
+                if inspect.isawaitable(result):
+                    await result
             except Exception:
                 logger.exception("Tick callback failed in clock")
 

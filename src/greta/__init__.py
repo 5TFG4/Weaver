@@ -10,6 +10,7 @@ Shares the same contracts as Veda - only execution domain differs.
 """
 
 from src.greta.fill_simulator import DefaultFillSimulator
+from src.greta.greta_service import GretaService
 from src.greta.models import (
     BacktestResult,
     BacktestStats,
@@ -20,6 +21,7 @@ from src.greta.models import (
 
 __all__ = [
     "DefaultFillSimulator",
+    "GretaService",
     "BacktestResult",
     "BacktestStats",
     "FillSimulationConfig",
