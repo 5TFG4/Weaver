@@ -751,18 +751,58 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Code review fixes | ✅ | 2026-02-02 | PR feedback addressed |
 | **Total new tests** | | | **+15 tests** |
 
-### M4: Greta Backtest Engine (Revised 2026-02-03)
+### M4: Greta Backtest Engine ✅ COMPLETED (2026-02-03)
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| **MVP-1**: WallE BarRepository | ⬜ | | ~2h, bars table + repository |
-| **MVP-2**: Greta Models & FillSimulator | ⬜ | | ~2h |
-| **MVP-3**: GretaService (uses BarRepo) | ⬜ | | ~2.5h |
-| **MVP-4**: Marvin Skeleton | ⬜ | | ~2h, StrategyRunner + TestStrategy |
-| **MVP-5**: GLaDOS DomainRouter | ⬜ | | ~1.5h, strategy.* → backtest.* |
-| **MVP-6**: Run Orchestration | ⬜ | | ~2h, wire Clock+Greta+Marvin |
-| **MVP-7**: Integration Test | ⬜ | | ~1.5h |
+| **MVP-1**: WallE BarRepository | ✅ | 2026-02-03 | 16 tests, bars table + migration |
+| **MVP-2**: Greta Models & FillSimulator | ✅ | 2026-02-03 | 29 tests, TDD red→green |
+| **MVP-3**: GretaService (uses BarRepo) | ✅ | 2026-02-03 | 20 tests, per-run instance |
+| **MVP-4**: Marvin Skeleton | ✅ | 2026-02-03 | 32 tests, BaseStrategy + StrategyRunner |
+| **MVP-5**: GLaDOS DomainRouter | ✅ | 2026-02-03 | 12 tests, strategy.* → backtest.* |
+| **MVP-6**: Run Orchestration | ✅ | 2026-02-03 | 10 tests, RunContext + async tick |
+| **MVP-7**: Integration Test | ✅ | 2026-02-03 | 5 tests, end-to-end flow |
 | Provide asyncpg pool to EventLog | ⬜ | | Deferred (nice-to-have) |
-| **Target new tests** | | | **+70 tests** |
+| **Actual new tests** | | | **+79 tests (631 total)** |
+
+#### M4 New Files Created
+
+| File | Purpose |
+|------|---------|
+| `src/greta/models.py` | FillSimulationConfig, SimulatedFill, SimulatedPosition, BacktestStats |
+| `src/greta/fill_simulator.py` | DefaultFillSimulator with slippage/commission |
+| `src/greta/greta_service.py` | Per-run backtest execution engine |
+| `src/marvin/base_strategy.py` | BaseStrategy ABC, StrategyAction dataclass |
+| `src/marvin/strategy_runner.py` | Executes strategy, emits events |
+| `src/marvin/sample_strategy.py` | Mean-reversion test strategy |
+| `src/glados/services/domain_router.py` | Routes strategy.* → backtest.*/live.* |
+| `src/walle/repositories/bar_repository.py` | BarRepository + Bar DTO |
+| `src/walle/migrations/versions/*_add_bars_table.py` | bars table migration |
+
+#### M4 Modified Files
+
+| File | Change |
+|------|--------|
+| `src/glados/services/run_manager.py` | Added RunContext, _start_backtest() |
+| `src/glados/clock/base.py` | Made _emit_tick() async |
+| `src/glados/clock/backtest.py` | await _emit_tick() |
+| `src/glados/clock/realtime.py` | await _emit_tick() |
+| `src/events/types.py` | Added RunEvents.COMPLETED |
+
+#### M4 Design Notes & TODOs
+
+1. **EventLog Pattern**: `InMemoryEventLog` for unit tests, `PostgresEventLog` for integration.
+   - Rationale: Unit tests shouldn't need DB
+   - Alternative: Use PostgresEventLog with test DB everywhere (more realistic)
+   - Decision: Keep as-is for now, evaluate in M5
+
+2. **Greta/Marvin Test Coupling**: `test_backtest_flow.py` contains `SimpleTestStrategy` and `MockStrategyLoader`
+   - These are integration test fixtures, not production code
+   - Consider moving to `tests/fixtures/strategy.py` in M5 for reuse
+   - GretaService itself has no Marvin imports (clean separation)
+
+3. **StrategyRunner Location**: Lives in `src/marvin/` as designed
+   - Uses injection (`event_log`, `strategy`) - no hardcoded dependencies
+   - Integration test wires it with GretaService via RunManager
 
 ### M5: Marvin Full Implementation
 | Task | Status | Date | Notes |

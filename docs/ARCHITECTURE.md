@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-03 · **Tests**: 507 passing · **M4**: ⏳ In Progress
+**Last Updated**: 2026-02-03 · **Tests**: 631 passing · **M4**: ✅ Complete
 
 ---
 
@@ -41,7 +41,8 @@
 | M2 GLaDOS API | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md) | ✅ Done |
 | M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
-| **M4 Greta** | [m4-greta.md](archive/milestone-details/m4-greta.md) | ⏳ Next |
+| M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
+| **M5 Marvin Full** | TBD | ⏳ Next |
 
 ---
 

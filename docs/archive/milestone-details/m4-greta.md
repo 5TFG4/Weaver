@@ -1,8 +1,31 @@
 # M4: Greta Backtesting Engine
 
-> **Status**: ⏳ PENDING  
+> **Status**: ✅ COMPLETED (2026-02-03)  
 > **Prerequisite for**: M5 (Marvin Strategy Execution)  
-> **Estimated Effort**: ~12-14 hours
+> **Actual Effort**: ~8 hours (7 MVPs, 79 new tests)
+> 
+> ## Implementation Summary
+> 
+> All 7 MVPs completed with TDD methodology:
+> - MVP-1: WallE BarRepository (16 tests)
+> - MVP-2: Greta Models & FillSimulator (29 tests) 
+> - MVP-3: GretaService (20 tests)
+> - MVP-4: Marvin Skeleton (32 tests)
+> - MVP-5: DomainRouter (12 tests)
+> - MVP-6: Run Orchestration (10 tests)
+> - MVP-7: Integration Test (5 tests)
+> 
+> ### Design Deviations & Notes
+> 
+> 1. **data.WindowReady flow**: Not fully implemented. GretaService preloads bars at initialize(),
+>    but the strategy.FetchWindow → data.WindowReady event flow is not wired. Deferred to M5.
+> 
+> 2. **backtest.* events**: DomainRouter routes strategy.* → backtest.*, but Greta doesn't 
+>    subscribe to backtest.* events yet. Current flow uses direct method calls via RunManager.
+>    Full event-driven flow is a future enhancement.
+> 
+> 3. **Test fixtures**: `SimpleTestStrategy` and `MockStrategyLoader` live in 
+>    `tests/integration/test_backtest_flow.py`. Consider extracting to `tests/fixtures/` in M5.
 
 ---
 
