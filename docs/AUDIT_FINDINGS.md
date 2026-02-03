@@ -632,13 +632,13 @@ await broadcaster.publish("test.event", {"data": "hello"})
 
 ---
 
-### 3.4 Documentation Missing 30m Timeframe
+### 3.4 Documentation Missing Timeframes
 
 **File**: `docs/architecture/clock.md`
 
-**Problem**: Timeframe table lists 1m, 5m, 15m, 1h, 1d but code supports 30m and 4h.
+**Problem**: Timeframe table was missing 30m and 4h, which are supported in code.
 
-**Fix**: Update documentation table.
+**Status**: ✅ Fixed 2026-02-03 - Added 30m and 4h to documentation.
 
 ---
 
@@ -751,18 +751,27 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Code review fixes | ✅ | 2026-02-02 | PR feedback addressed |
 | **Total new tests** | | | **+15 tests** |
 
-### M4: Greta Integration
+### M4: Greta Backtest Engine (Revised 2026-02-03)
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Provide asyncpg pool to EventLog | ⬜ | | |
-| Connect Clock to RunManager | ⬜ | | |
-| Implement EventConsumer usage | ⬜ | | |
+| **MVP-1**: WallE BarRepository | ⬜ | | ~2h, bars table + repository |
+| **MVP-2**: Greta Models & FillSimulator | ⬜ | | ~2h |
+| **MVP-3**: GretaService (uses BarRepo) | ⬜ | | ~2.5h |
+| **MVP-4**: Marvin Skeleton | ⬜ | | ~2h, StrategyRunner + TestStrategy |
+| **MVP-5**: GLaDOS DomainRouter | ⬜ | | ~1.5h, strategy.* → backtest.* |
+| **MVP-6**: Run Orchestration | ⬜ | | ~2h, wire Clock+Greta+Marvin |
+| **MVP-7**: Integration Test | ⬜ | | ~1.5h |
+| Provide asyncpg pool to EventLog | ⬜ | | Deferred (nice-to-have) |
+| **Target new tests** | | | **+70 tests** |
 
-### M5: Marvin Integration
+### M5: Marvin Full Implementation
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Initialize AlpacaAdapter clients | ⬜ | | |
-| Use strategy event types | ⬜ | | |
+| Complete Marvin strategy loading | ⬜ | | |
+| Initialize AlpacaAdapter clients | ⬜ | | Live trading needs this |
+| Wire VedaService to order routes | ⬜ | | Deferred from M3.5 |
+| Implement SMA strategy | ⬜ | | |
+| Live order flow (paper mode) | ⬜ | | |
 
 ### M7: Polish
 | Task | Status | Date | Notes |
@@ -774,4 +783,4 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-*Last Updated: 2026-02-02*
+*Last Updated: 2026-02-03*

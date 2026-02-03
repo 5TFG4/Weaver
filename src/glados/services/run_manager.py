@@ -2,7 +2,17 @@
 Run Manager Service
 
 Manages trading run lifecycle: create, get, list, stop.
-MVP-2: In-memory storage (persistence deferred to M3).
+
+Multi-Run Architecture (M4+):
+- Each run gets a unique run_id
+- Per-run instances: GretaService, StrategyRunner, Clock
+- Singletons (shared): EventLog, BarRepository, DomainRouter
+- RunManager maintains RunContext dict keyed by run_id
+- Events tagged with run_id for isolation
+
+Current Implementation (MVP-2):
+- In-memory storage (persistence deferred to M3)
+- No per-run service instantiation yet (added in M4)
 """
 
 from __future__ import annotations
@@ -41,20 +51,27 @@ class RunManager:
     """
     Manages trading run lifecycle.
     
-    MVP-2 Implementation:
+    Multi-Run Architecture (M4+):
+    - Creates per-run instances (GretaService, StrategyRunner, Clock)
+    - Maintains _run_contexts: Dict[str, RunContext]
+    - Disposes per-run instances when run completes
+    - Singletons (EventLog, BarRepository) injected at construction
+    
+    Current Implementation (MVP-2):
     - In-memory storage (data lost on restart)
     - No pagination (returns all)
     - No filters (returns all)
     
-    Future (M3+):
-    - PostgreSQL persistence
-    - Pagination and filtering
-    - Integration with Marvin (strategy loader)
+    Future (M4):
+    - RunContext creation in start()
+    - Per-run GretaService/StrategyRunner instantiation
+    - Resource cleanup on stop/complete
     """
 
     def __init__(self, event_log: EventLog | None = None) -> None:
         self._runs: dict[str, Run] = {}
         self._event_log = event_log
+        # M4+: self._run_contexts: dict[str, RunContext] = {}
 
     async def _emit_event(self, event_type: str, run: Run) -> None:
         """Emit an event if event_log is configured."""
@@ -126,6 +143,13 @@ class RunManager:
         """
         Start a pending run.
         
+        M4+ Multi-Run Implementation:
+        1. Create per-run instances based on run.mode:
+           - BACKTEST: GretaService, StrategyRunner, BacktestClock
+           - LIVE/PAPER: StrategyRunner, RealtimeClock (uses VedaService singleton)
+        2. Store in self._run_contexts[run_id]
+        3. Start the clock to begin execution
+        
         Args:
             run_id: The run ID to start
             
@@ -143,6 +167,16 @@ class RunManager:
         if run.status != RunStatus.PENDING:
             raise RunNotStartableError(run_id, run.status.value)
         
+        # M4+: Create per-run context here
+        # if run.mode == RunMode.BACKTEST:
+        #     context = RunContext(
+        #         greta=GretaService(run_id, self._bar_repo, self._event_log),
+        #         runner=StrategyRunner(run_id, ...),
+        #         clock=BacktestClock(run.start_time, run.end_time, run.timeframe),
+        #     )
+        #     self._run_contexts[run_id] = context
+        #     await context.clock.start(run_id)
+        
         run.status = RunStatus.RUNNING
         run.started_at = datetime.now(UTC)
         await self._emit_event(RunEvents.STARTED, run)
@@ -151,6 +185,11 @@ class RunManager:
     async def stop(self, run_id: str) -> Run:
         """
         Stop a run.
+        
+        M4+ Multi-Run Implementation:
+        1. Stop the clock (halts tick generation)
+        2. Dispose per-run instances
+        3. Remove from self._run_contexts[run_id]
         
         Args:
             run_id: The run ID to stop
@@ -164,6 +203,11 @@ class RunManager:
         run = self._runs.get(run_id)
         if run is None:
             raise RunNotFoundError(run_id)
+
+        # M4+: Cleanup per-run context
+        # if run_id in self._run_contexts:
+        #     await self._run_contexts[run_id].clock.stop()
+        #     del self._run_contexts[run_id]
 
         # Idempotent: if already stopped, just return
         if run.status != RunStatus.STOPPED:

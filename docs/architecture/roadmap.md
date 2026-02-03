@@ -41,8 +41,8 @@
 |-----------|-------------------|--------|
 | M0–M3 | Foundation, API, Trading | ✅ DONE |
 | M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
-| **M4** | Greta simulation works | ⏳ NEXT |
-| M5 | Marvin + SMA backtested | ⏳ |
+| **M4** | [Greta backtest engine](../archive/milestone-details/m4-greta.md) (multi-run ready) | ⏳ NEXT |
+| M5 | Marvin + SMA backtested (parallel runs) | ⏳ |
 | M6 | E2E tests pass | ⏳ |
 | M7 | Coverage ≥80%, docs complete | ⏳ |
 
@@ -59,12 +59,14 @@
 
 ## 4. Architecture Invariants
 
-1. **Single EventLog** - All components share one instance
+1. **Single EventLog** - All components share one instance (events tagged with run_id)
 2. **VedaService as entry** - Not OrderManager directly
 3. **Session per request** - No long-lived DB sessions
 4. **SSE receives all events** - EventLog → SSE always connected
 5. **Graceful degradation** - Works without DB_URL
 6. **No module singletons** - Services via DI only
+7. **Multi-Run Support** - Per-run instances (Greta, Marvin, Clock) vs singletons (EventLog, BarRepository)
+8. **Run Isolation** - Events carry run_id; consumers filter by run_id
 
 ## 5. Entry Gate Checklists
 
@@ -78,9 +80,15 @@
 
 ### Before M5
 
-- [ ] Greta can simulate fills
-- [ ] Clock integrated with runs
-- [ ] Backtest stats calculated
+- [ ] WallE BarRepository created (bars table + repository)
+- [ ] GretaService created and tested (uses BarRepository)
+- [ ] Fill simulator handles market/limit orders
+- [ ] Marvin skeleton: StrategyRunner + TestStrategy
+- [ ] DomainRouter routes strategy.* → backtest.*
+- [ ] BacktestClock integrated with RunManager
+- [ ] Backtest run completes via API
+- [ ] All events emitted correctly (run.*, strategy.*, backtest.*, data.*, orders.*)
+- [ ] ~70 new tests passing
 
 ### Before M6
 
@@ -98,7 +106,8 @@
 | M2 | [GLaDOS API](../archive/milestone-details/m2-glados-api.md) |
 | M3 | [Veda Trading](../archive/milestone-details/m3-veda.md) |
 | M3.5 | [Integration](../archive/milestone-details/m3.5-integration.md) |
+| M4 | [Greta Backtest](../archive/milestone-details/m4-greta.md) |
 
 ---
 
-*Last updated: 2026-02-02 (M3.5 complete)*
+*Last updated: 2026-02-03 (M4 design complete)*

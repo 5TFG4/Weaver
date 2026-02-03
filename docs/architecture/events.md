@@ -54,7 +54,32 @@
 
 * Write `outbox` in‑transaction; `NOTIFY` after commit; resume via `consumer_offsets`; deduplicate by `id/corr_id`.
 
-## 6. Consumer Offsets (At-Least-Once Delivery)
+## 6. Multi-Run Event Isolation
+
+When multiple runs execute concurrently (parallel backtests, backtest + live):
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Event Isolation via run_id                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  EventLog (singleton)                                               │
+│    │                                                                │
+│    │  event: { run_id: "run-001", type: "orders.Filled", ... }     │
+│    │  event: { run_id: "run-002", type: "orders.Filled", ... }     │
+│    │                                                                │
+│    ├──► GretaService (run-001) filters: run_id == "run-001"        │
+│    │                                                                │
+│    └──► GretaService (run-002) filters: run_id == "run-002"        │
+│                                                                     │
+│  Result: Each run only sees its own events                          │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Pattern**: Events are shared in one EventLog, but consumers filter by `run_id` to maintain isolation.
+
+## 7. Consumer Offsets (At-Least-Once Delivery)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐

@@ -138,13 +138,15 @@ class ClockTick:
 
 ## 6. Timeframe Support
 
-| Timeframe | Code | Bar Alignment |
-|-----------|------|---------------|
-| 1 minute  | `1m` | `:00` seconds |
-| 5 minutes | `5m` | `:00`, `:05`, `:10`, ... |
-| 15 minutes| `15m`| `:00`, `:15`, `:30`, `:45` |
-| 1 hour    | `1h` | `:00:00` |
-| 1 day     | `1d` | `00:00:00 UTC` |
+| Timeframe  | Code  | Bar Alignment |
+|------------|-------|---------------|
+| 1 minute   | `1m`  | `:00` seconds |
+| 5 minutes  | `5m`  | `:00`, `:05`, `:10`, ... |
+| 15 minutes | `15m` | `:00`, `:15`, `:30`, `:45` |
+| 30 minutes | `30m` | `:00`, `:30` |
+| 1 hour     | `1h`  | `:00:00` |
+| 4 hours    | `4h`  | `00:00`, `04:00`, `08:00`, `12:00`, `16:00`, `20:00` |
+| 1 day      | `1d`  | `00:00:00 UTC` |
 
 ## 7. Files
 
