@@ -49,7 +49,10 @@ class SimpleStrategyLoader(StrategyLoader):
     def load(self, strategy_id: str) -> BaseStrategy:
         """Load a strategy by ID."""
         if strategy_id not in self._strategies:
-            raise StrategyNotFoundError(strategy_id)
+            available = ", ".join(self._strategies.keys()) or "(none)"
+            raise StrategyNotFoundError(
+                f"{strategy_id}. Available: {available}"
+            )
         return self._strategies[strategy_id]()
 
 
@@ -197,7 +200,12 @@ class PluginStrategyLoader(StrategyLoader):
             raise StrategyNotFoundError(meta.id)
 
         module: ModuleType = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as e:
+            raise StrategyNotFoundError(
+                f"{meta.id}: Failed to import from {meta.module_path}: {e}"
+            ) from e
 
         # Get the strategy class
         strategy_class = getattr(module, meta.class_name, None)

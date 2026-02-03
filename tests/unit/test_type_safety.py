@@ -87,6 +87,6 @@ class TestClockFixture:
 
         # Should NOT contain a class definition for ClockTick
         # (it should import from src.glados.clock.base instead)
-        assert "class ClockTick:" not in source or "ClockTick:" in source
+        assert "class ClockTick" not in source
         # The import statement should be present
         assert "from src.glados.clock.base import ClockTick" in source

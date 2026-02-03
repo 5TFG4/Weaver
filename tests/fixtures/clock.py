@@ -80,6 +80,7 @@ class ControllableClock:
         Create a ClockTick without advancing the clock.
         
         Useful for creating test ticks without modifying clock state.
+        Uses the production ClockTick class from src.glados.clock.base.
         
         Args:
             ts: Timestamp for the tick (default: current_time)
