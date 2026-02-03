@@ -269,11 +269,19 @@ class RunManager:
         clock.on_tick(on_tick)
 
         # 5. Run to completion (backtest is synchronous)
-        await clock.start(run.id)
+        try:
+            await clock.start(run.id)
+            run.status = RunStatus.COMPLETED
+        except Exception:
+            run.status = RunStatus.ERROR
+            raise
+        finally:
+            # Cleanup RunContext even if backtest fails
+            run.stopped_at = datetime.now(UTC)
+            if run.id in self._run_contexts:
+                del self._run_contexts[run.id]
 
-        # 6. Complete
-        run.status = RunStatus.COMPLETED
-        run.stopped_at = datetime.now(UTC)
+        # 6. Emit completion event
         await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:

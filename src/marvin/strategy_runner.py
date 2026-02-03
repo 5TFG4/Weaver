@@ -5,7 +5,6 @@ Runs strategy code in response to clock ticks.
 Mode-agnostic: doesn't know if backtest or live.
 """
 
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from src.events.protocol import Envelope

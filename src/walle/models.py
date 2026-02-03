@@ -108,13 +108,68 @@ class BarRecord(Base):
         return f"<BarRecord({self.symbol} {self.timeframe} {self.timestamp})>"
 
 
+class VedaOrder(Base):
+    """
+    SQLAlchemy model for persisting order state.
+
+    Maps to veda_orders table for durable order tracking.
+    
+    Note: Defined in walle/models.py (persistence layer) but used by Veda.
+    This ensures all SQLAlchemy models are registered in Base.metadata
+    consistently, regardless of import order.
+    """
+
+    __tablename__ = "veda_orders"
+
+    # Identity
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    client_order_id: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True, index=True
+    )
+    exchange_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    run_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+
+    # Order details
+    symbol: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    side: Mapped[str] = mapped_column(String(10), nullable=False)  # buy | sell
+    order_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    qty: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    limit_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    stop_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    time_in_force: Mapped[str] = mapped_column(String(10), nullable=False)
+
+    # Status
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+
+    # Fill info
+    filled_qty: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    filled_avg_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    filled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Error handling
+    reject_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Composite indexes
+    __table_args__ = (
+        Index("idx_veda_orders_run_status", "run_id", "status"),
+        Index("idx_veda_orders_symbol_status", "symbol", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<VedaOrder(id={self.id!r}, symbol={self.symbol!r}, status={self.status!r})>"
+
+
 # =============================================================================
-# Future Models (M2+)
+# Model Registration Note
 # =============================================================================
-# The following domain models will be added in future migrations:
+# All SQLAlchemy models MUST be defined in this file to ensure they are
+# registered in Base.metadata when walle.models is imported.
 #
-# - Run: Trading run records (run_id, strategy, mode, status, timestamps)
-# - Order: Order records (order_id, run_id, symbol, side, qty, status)
-# - Fill: Fill/execution records (fill_id, order_id, price, qty, timestamp)
-#
-# Concrete SQLAlchemy models will be defined here once schemas are finalized.
+# DO NOT define models in other modules (e.g., veda/persistence.py).
+# This causes inconsistent metadata state depending on import order.

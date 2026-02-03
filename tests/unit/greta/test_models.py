@@ -17,7 +17,6 @@ from src.greta.models import (
     BacktestStats,
     BacktestResult,
 )
-from src.veda.models import OrderSide
 
 
 class TestFillSimulationConfig:

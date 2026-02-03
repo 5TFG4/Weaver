@@ -10,7 +10,6 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.walle.models import BarRecord
 from src.walle.repositories.bar_repository import Bar, BarRepository

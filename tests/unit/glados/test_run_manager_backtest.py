@@ -5,15 +5,14 @@ Unit tests for backtest flow orchestration in RunManager.
 """
 
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
+
 import pytest_asyncio
 
 from src.glados.schemas import RunCreate, RunMode, RunStatus
-from src.glados.services.run_manager import Run, RunContext, RunManager
+from src.glados.services.run_manager import RunContext, RunManager
 
 
 class TestRunContext:
@@ -76,7 +75,7 @@ class TestRunManagerBacktestStart:
     async def test_start_backtest_creates_run_context(
         self, manager_with_deps: RunManager
     ) -> None:
-        """start() creates RunContext for backtest runs."""
+        """start() creates RunContext for backtest runs and cleans up after completion."""
         run = await manager_with_deps.create(
             RunCreate(
                 strategy_id="test-strategy",
@@ -90,11 +89,10 @@ class TestRunManagerBacktestStart:
 
         await manager_with_deps.start(run.id)
 
-        assert run.id in manager_with_deps._run_contexts
-        ctx = manager_with_deps._run_contexts[run.id]
-        assert ctx.greta is not None
-        assert ctx.runner is not None
-        assert ctx.clock is not None
+        # After backtest completes, context should be cleaned up
+        assert run.id not in manager_with_deps._run_contexts
+        # Run should be marked completed
+        assert run.status == RunStatus.COMPLETED
 
     async def test_start_backtest_initializes_greta(
         self, manager_with_deps: RunManager
@@ -113,10 +111,11 @@ class TestRunManagerBacktestStart:
 
         await manager_with_deps.start(run.id)
 
-        ctx = manager_with_deps._run_contexts[run.id]
-        # Greta should be initialized (has run_id set)
-        assert ctx.greta is not None
-        assert ctx.greta.run_id == run.id
+        # Verify run completed successfully (implies Greta was initialized)
+        assert run.status == RunStatus.COMPLETED
+        # Verify bar_repository was used (Greta calls it during initialize)
+        bar_repo = cast(AsyncMock, manager_with_deps._bar_repository)
+        bar_repo.get_bars.assert_called()
 
     async def test_start_backtest_initializes_runner(
         self, manager_with_deps: RunManager
@@ -135,9 +134,13 @@ class TestRunManagerBacktestStart:
 
         await manager_with_deps.start(run.id)
 
-        ctx = manager_with_deps._run_contexts[run.id]
-        assert ctx.runner.run_id == run.id
-        assert ctx.runner.symbols == ["BTC/USD"]
+        # Verify strategy was loaded and initialized (implies runner was created)
+        strategy_loader = cast(MagicMock, manager_with_deps._strategy_loader)
+        strategy_loader.load.assert_called_once_with("test-strategy")
+        
+        # Verify strategy.initialize was called with correct params
+        mock_strategy = strategy_loader.load.return_value
+        mock_strategy.initialize.assert_called_once_with(["BTC/USD"])
 
     async def test_start_backtest_loads_strategy(
         self, manager_with_deps: RunManager

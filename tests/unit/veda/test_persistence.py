@@ -145,7 +145,7 @@ class TestOrderStateConversion:
 
     def test_veda_order_to_order_state(self) -> None:
         """VedaOrder can convert to OrderState."""
-        from src.veda.persistence import VedaOrder
+        from src.veda.persistence import VedaOrder, veda_order_to_order_state
         
         now = datetime.now(UTC)
         veda_order = VedaOrder(
@@ -171,7 +171,7 @@ class TestOrderStateConversion:
             error_code=None,
         )
         
-        order_state = veda_order.to_order_state()
+        order_state = veda_order_to_order_state(veda_order)
         
         assert order_state.id == veda_order.id
         assert order_state.client_order_id == veda_order.client_order_id
@@ -179,9 +179,9 @@ class TestOrderStateConversion:
         assert order_state.status == OrderStatus.FILLED
 
     def test_order_state_to_veda_order(self) -> None:
-        """VedaOrder.from_order_state creates VedaOrder from OrderState."""
+        """order_state_to_veda_order creates VedaOrder from OrderState."""
         from src.veda.models import OrderState
-        from src.veda.persistence import VedaOrder
+        from src.veda.persistence import VedaOrder, order_state_to_veda_order
         
         now = datetime.now(UTC)
         order_state = OrderState(
@@ -207,7 +207,7 @@ class TestOrderStateConversion:
             error_code=None,
         )
         
-        veda_order = VedaOrder.from_order_state(order_state)
+        veda_order = order_state_to_veda_order(order_state)
         
         assert veda_order.id == order_state.id
         assert veda_order.client_order_id == order_state.client_order_id

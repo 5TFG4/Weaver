@@ -10,8 +10,12 @@ The clock system uses a **strategy pattern** with a common interface:
 
 ```python
 class BaseClock(ABC):
-    def __init__(self, timeframe: str = "1m") -> None:
-        """Initialize with timeframe (e.g., '1m', '5m', '1h')."""
+    def __init__(
+        self, 
+        timeframe: str = "1m",
+        callback_timeout: float = 30.0,  # Timeout for tick callbacks
+    ) -> None:
+        """Initialize with timeframe and callback timeout."""
         ...
 
     @abstractmethod
@@ -32,6 +36,19 @@ class BaseClock(ABC):
     def on_tick(self, callback: TickCallback) -> Callable[[], None]:
         """Register a callback for tick events. Returns unsubscribe function."""
         ...
+```
+
+### Callback Timeout Protection
+
+Tick callbacks have a configurable timeout (default 30s) to prevent stuck backtests:
+
+```python
+async def _emit_tick(self, tick: ClockTick) -> None:
+    for callback in self._callbacks:
+        result = callback(tick)
+        if asyncio.iscoroutine(result):
+            await asyncio.wait_for(result, timeout=self._callback_timeout)
+```
 ```
 
 ## 2. RealtimeClock (Live Trading)

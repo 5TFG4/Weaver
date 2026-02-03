@@ -21,7 +21,7 @@ from src.greta.models import (
     SimulatedFill,
     SimulatedPosition,
 )
-from src.veda.models import OrderIntent, OrderSide, OrderStatus, OrderType
+from src.veda.models import OrderIntent, OrderSide, OrderStatus
 
 if TYPE_CHECKING:
     from src.events.log import EventLog
@@ -318,6 +318,10 @@ class GretaService:
         Signs differ means we crossed zero:
         - Long→Short: old_qty > 0, new_qty < 0
         - Short→Long: old_qty < 0, new_qty > 0
+        
+        Note:
+            Caller must handle new_qty == 0 (position closed) before calling.
+            When new_qty is zero, old_qty * new_qty == 0, returning False.
         """
         return old_qty * new_qty < 0
 

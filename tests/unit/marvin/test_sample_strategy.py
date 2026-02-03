@@ -7,7 +7,6 @@ Unit tests for the simple sample strategy.
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import pytest
 import pytest_asyncio
 
 from src.glados.clock.base import ClockTick

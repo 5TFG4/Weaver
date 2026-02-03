@@ -5,11 +5,9 @@ Unit tests for routing strategy events to domain-specific events.
 """
 
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 import pytest_asyncio
 
 from src.glados.services.domain_router import DomainRouter

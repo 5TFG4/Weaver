@@ -37,7 +37,17 @@
 
 ## 2. Namespaces
 
-`strategy.* / live.* / backtest.* / data.* / market.* / orders.* / run.* / clock.* / ui.*`
+| Namespace | Source | Handler | Events |
+|-----------|--------|---------|--------|
+| `strategy.*` | Marvin | DomainRouter → live/backtest | FetchWindow, PlaceRequest, DecisionMade |
+| `live.*` | DomainRouter | Veda | FetchWindow, PlaceOrder |
+| `backtest.*` | DomainRouter | Greta | FetchWindow, PlaceOrder |
+| `data.*` | Veda/Greta | Marvin | WindowReady, WindowChunk, WindowComplete |
+| `market.*` | Exchange | - | Quote, Trade, Bar |
+| `orders.*` | Veda/Greta | - | Created, PlaceRequest, Ack, Placed, Filled, Rejected |
+| `run.*` | RunManager | SSE | Created, Started, StopRequested, Stopped, Completed, Error |
+| `clock.*` | Clock | StrategyRunner | Tick |
+| `ui.*` | Frontend | - | (future) |
 
 ## 3. Payload & Size Policy
 

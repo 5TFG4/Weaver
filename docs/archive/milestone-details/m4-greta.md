@@ -26,6 +26,23 @@
 > 
 > 3. **Test fixtures**: `SimpleTestStrategy` and `MockStrategyLoader` live in 
 >    `tests/integration/test_backtest_flow.py`. Consider extracting to `tests/fixtures/` in M5.
+>
+> ### Code Review Improvements (Post-M4)
+>
+> 1. **Position sizing helpers**: Added `_is_adding_to_position()` and `_is_position_reversal()` 
+>    with clear docstrings explaining the sign-based logic.
+>
+> 2. **Resource cleanup**: RunManager now uses try/finally to ensure RunContext cleanup even
+>    on backtest failure. Status set to `RunStatus.ERROR` on exception.
+>
+> 3. **Envelope ID**: Removed redundant `id=str(uuid4())` from Envelope calls - the dataclass
+>    has `default_factory=_generate_id` built-in.
+>
+> 4. **Constraint constant**: `BarRecord.UNIQUE_CONSTRAINT = "uq_bar"` - repository references
+>    this constant instead of magic string.
+>
+> 5. **Test factories**: Added `make_tick()` factory using real `ClockTick` dataclass instead
+>    of anonymous `type("Tick", ...)` objects.
 
 ---
 

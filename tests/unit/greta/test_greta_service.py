@@ -4,17 +4,16 @@ Tests for GretaService
 Unit tests for the backtest execution service.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 import pytest_asyncio
 
 # These imports will fail until we implement GretaService
 from src.greta.greta_service import GretaService
-from src.greta.models import FillSimulationConfig, SimulatedFill
+from src.greta.models import FillSimulationConfig
 from src.veda.models import OrderIntent, OrderSide, OrderType, TimeInForce
 from src.walle.repositories.bar_repository import Bar
 

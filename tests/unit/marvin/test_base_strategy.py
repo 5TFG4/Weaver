@@ -5,7 +5,6 @@ Unit tests for the strategy base class and action types.
 """
 
 from dataclasses import FrozenInstanceError
-from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest

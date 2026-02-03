@@ -9,7 +9,6 @@ from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 import pytest_asyncio
 
 from src.glados.clock.base import ClockTick
