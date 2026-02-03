@@ -102,7 +102,8 @@ class TestBaseMetadata:
         assert "outbox" in table_names
         assert "consumer_offsets" in table_names
         assert "veda_orders" in table_names
+        assert "bars" in table_names
 
     def test_metadata_has_expected_tables(self):
-        """Expected tables exist: outbox, consumer_offsets, veda_orders."""
-        assert len(Base.metadata.tables) == 3
+        """Expected tables exist: outbox, consumer_offsets, veda_orders, bars."""
+        assert len(Base.metadata.tables) == 4

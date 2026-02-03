@@ -7,9 +7,10 @@ SQLAlchemy 2.0 async models for Weaver persistence layer.
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, Index, String, func
+from sqlalchemy import BigInteger, DateTime, Index, Numeric, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -71,6 +72,37 @@ class ConsumerOffset(Base):
 
     def __repr__(self) -> str:
         return f"<ConsumerOffset(consumer_id={self.consumer_id!r}, last_offset={self.last_offset})>"
+
+
+class BarRecord(Base):
+    """
+    Historical OHLCV bar data for backtesting.
+
+    Stores candle data fetched from exchanges. Used by Greta
+    during backtests to provide historical market data.
+    
+    Data is immutable once written - safe to share across runs.
+    """
+
+    __tablename__ = "bars"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(32), nullable=False)
+    timeframe: Mapped[str] = mapped_column(String(8), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    open: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    high: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    low: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    close: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    volume: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "timeframe", "timestamp", name="uq_bar"),
+        Index("ix_bars_lookup", "symbol", "timeframe", "timestamp"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<BarRecord({self.symbol} {self.timeframe} {self.timestamp})>"
 
 
 # =============================================================================
