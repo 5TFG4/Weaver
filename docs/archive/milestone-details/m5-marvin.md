@@ -1035,11 +1035,11 @@ class ControllableClock:
 | M5-1 | EventLog Subscription | 12 | P0 | - | ✅ Done |
 | M5-2 | data.WindowReady Flow | 15 | P0 | M5-1 | ✅ Done |
 | M5-3 | SMA Strategy | 17 | P0 | M5-2 | ✅ Done |
-| M5-4 | Plugin Strategy Loader | ~15 | P0 | M5-3 | ⬜ |
+| M5-4 | Plugin Strategy Loader | 17 | P0 | M5-3 | ✅ Done |
 | M5-5 | Code Quality & Test Fixtures | ~12 | P1 | - | ⬜ |
 
-**Estimated Total: ~71 new tests** (44 completed + ~27 remaining)
-**Current Progress: 44 tests completed (12 + 15 + 17)**
+**Estimated Total: ~73 new tests** (61 completed + ~12 remaining)
+**Current Progress: 61 tests completed (12 + 15 + 17 + 17)**
 
 ---
 
@@ -2047,11 +2047,11 @@ class Lazy(BaseStrategy):
 
 #### Definition of Done
 
-- [ ] All 15 tests pass
-- [ ] Strategies discovered without full import (AST parsing)
-- [ ] Dependencies resolved in correct order
-- [ ] Circular dependencies detected
-- [ ] System works after deleting strategy files
+- [x] All 17 tests pass ✅ 2026-02-03
+- [x] Strategies discovered without full import (AST parsing) ✅
+- [x] Dependencies resolved in correct order ✅
+- [x] Circular dependencies detected ✅
+- [x] System works after deleting strategy files ✅
 
 ---
 

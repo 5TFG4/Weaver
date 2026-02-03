@@ -10,6 +10,18 @@ from decimal import Decimal
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
 
 
+# Plugin metadata for auto-discovery
+STRATEGY_META = {
+    "id": "sample",
+    "name": "Sample Mean-Reversion Strategy",
+    "version": "1.0.0",
+    "description": "Simple mean-reversion strategy for testing",
+    "author": "weaver",
+    "dependencies": [],
+    "class": "SampleStrategy",
+}
+
+
 class SampleStrategy(BaseStrategy):
     """
     Simple strategy for testing backtest flow.

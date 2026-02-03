@@ -11,6 +11,18 @@ from decimal import Decimal
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
 
 
+# Plugin metadata for auto-discovery
+STRATEGY_META = {
+    "id": "sma-crossover",
+    "name": "SMA Crossover Strategy",
+    "version": "1.0.0",
+    "description": "Simple Moving Average crossover strategy",
+    "author": "weaver",
+    "dependencies": [],
+    "class": "SMAStrategy",
+}
+
+
 @dataclass(frozen=True)
 class SMAConfig:
     """

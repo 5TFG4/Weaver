@@ -25,14 +25,14 @@
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Test Infrastructure | ✅ Complete | 675 |
+| Test Infrastructure | ✅ Complete | 692 |
 | Events Module | ✅ Subscription added | 57 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
 | GLaDOS API | ✅ DI complete | 201 |
 | Veda Trading | ✅ Complete | 197 |
 | Greta (backtest) | ✅ Events wired | 56 |
-| Marvin (strategy) | ✅ SMA complete | 57 |
+| Marvin (strategy) | ✅ Plugin complete | 74 |
 | WallE (bars) | ✅ Complete | 16 |
 | Haro (frontend) | ❌ Not started | 0 |
 
@@ -43,7 +43,7 @@
 | M0–M3 | Foundation, API, Trading | ✅ DONE |
 | M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
 | M4 | [Greta backtest](../archive/milestone-details/m4-greta.md) | ✅ DONE |
-| **M5** | Marvin Core (Strategy + Plugin) | 🟨 IN PROGRESS (M5-1 ✅, M5-2 ✅, M5-3 ✅) |
+| **M5** | Marvin Core (Strategy + Plugin) | 🟨 IN PROGRESS (M5-1 ✅, M5-2 ✅, M5-3 ✅, M5-4 ✅) |
 | **M6** | Live Trading (Paper/Live Flow) | ⏳ |
 | **M7** | Haro Frontend (React UI) | ⏳ |
 | **M8** | Polish & E2E (Quality + Tests) | ⏳ |
@@ -53,7 +53,7 @@
 | Phase | Focus | Est. Tests | Status |
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
-| **5** | Marvin Core + Plugin Strategy | ~80 | 🟨 44/80 |
+| **5** | Marvin Core + Plugin Strategy | ~80 | 🟨 61/80 |
 | **6** | Live Trading + Plugin Adapter | ~60 | ⏳ |
 | **7** | Haro Frontend + SSE | ~50 | ⏳ |
 | **8** | E2E + Polish | ~40 | ⏳ |
@@ -89,8 +89,8 @@
 - [x] EventLog subscription mechanism added ✅ 2026-02-03
 - [x] data.WindowReady flow implemented ✅ 2026-02-03
 - [x] SMA strategy with indicators implemented ✅ 2026-02-03
-- [ ] **PluginStrategyLoader with auto-discovery**
-- [ ] Code quality fixes (ClockTick, SimulatedFill.side)
+- [x] **PluginStrategyLoader with auto-discovery** ✅ 2026-02-03
+- [ ] Code quality fixes (ClockTick, SimulatedFill.side, test fixtures)
 - [ ] ~80 new tests (target: 711+)
 
 ### Before M7 (M6 Exit Gate)

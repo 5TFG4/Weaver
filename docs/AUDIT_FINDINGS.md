@@ -980,20 +980,36 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | `src/marvin/strategies/sma_strategy.py` | **Created**: SMAConfig + SMAStrategy |
 | `tests/unit/marvin/test_sma_strategy.py` | **Created**: 17 tests for SMA strategy |
 
-### M5-4: Plugin Strategy Loader (~15 tests)
+### M5-4: Plugin Strategy Loader (~17 tests) ✅ COMPLETE
+
 | Task | Status | Notes |
 |------|--------|-------|
-| Create StrategyMeta dataclass | ⬜ | Plugin metadata |
-| Create @strategy decorator (optional) | ⬜ | |
-| Implement PluginStrategyLoader | ⬜ | Auto-discovery |
-| Dependency resolution (topological sort) | ⬜ | |
-| Move sample_strategy.py to strategies/ | ⬜ | Add STRATEGY_META |
-| Remove hardcoded imports from __init__.py | ⬜ | Delete safety |
-| Test: discover strategies | ⬜ | |
-| Test: load by ID | ⬜ | |
-| Test: dependency resolution | ⬜ | |
-| Test: deleted strategy = system works | ⬜ | |
-| Test: missing dependency error | ⬜ | |
+| Create StrategyMeta dataclass | ✅ | strategy_meta.py |
+| Create Marvin exceptions | ✅ | exceptions.py |
+| Implement PluginStrategyLoader | ✅ | Auto-discovery via AST |
+| Dependency resolution | ✅ | With cycle detection |
+| Add STRATEGY_META to sma_strategy.py | ✅ | |
+| Move sample_strategy.py to strategies/ | ✅ | With STRATEGY_META |
+| Update __init__.py exports | ✅ | No hardcoded strategy imports |
+| Test: interface compliance | ✅ | 3 tests |
+| Test: discovery | ✅ | 6 tests |
+| Test: loading | ✅ | 3 tests |
+| Test: dependency resolution | ✅ | 3 tests |
+| Test: delete safety | ✅ | 2 tests |
+| **Total tests added** | | **+17 tests (692 total)** |
+
+#### M5-4 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/exceptions.py` | **Created**: StrategyNotFoundError, DependencyError, CircularDependencyError |
+| `src/marvin/strategy_meta.py` | **Created**: StrategyMeta dataclass |
+| `src/marvin/strategy_loader.py` | **Modified**: Added PluginStrategyLoader with AST parsing |
+| `src/marvin/strategies/sample_strategy.py` | **Created**: Moved from src/marvin/, added STRATEGY_META |
+| `src/marvin/strategies/sma_strategy.py` | **Modified**: Added STRATEGY_META |
+| `src/marvin/__init__.py` | **Modified**: Export new classes, backwards-compatible SampleStrategy |
+| `src/marvin/sample_strategy.py` | **Deleted**: Moved to strategies/ |
+| `tests/unit/marvin/test_plugin_loader.py` | **Created**: 17 tests for plugin loader |
+| `tests/unit/marvin/test_sample_strategy.py` | **Modified**: Updated import path |
 
 ### M5-5: Code Quality & Test Fixtures (~12 tests)
 
