@@ -119,7 +119,7 @@ class BacktestClock(BaseClock):
                         bar_index=self._bar_index,
                         is_backtest=True,
                     )
-                    self._emit_tick(tick)
+                    await self._emit_tick(tick)
 
                     # Wait for acknowledgment if backpressure is enabled
                     if self._use_backpressure:

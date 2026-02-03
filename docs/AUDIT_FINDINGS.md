@@ -1,7 +1,7 @@
 # Architecture Audit Findings
 
-> **Audit Date**: 2026-02-02 (Post-M3)  
-> **Status**: ✅ M3.5 Complete — 506 tests passing  
+> **Audit Date**: 2026-02-03 (Post-M4)  
+> **Status**: ✅ M4 Complete — 631 tests passing  
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution
 
 ---
@@ -632,13 +632,13 @@ await broadcaster.publish("test.event", {"data": "hello"})
 
 ---
 
-### 3.4 Documentation Missing 30m Timeframe
+### 3.4 Documentation Missing Timeframes
 
 **File**: `docs/architecture/clock.md`
 
-**Problem**: Timeframe table lists 1m, 5m, 15m, 1h, 1d but code supports 30m and 4h.
+**Problem**: Timeframe table was missing 30m and 4h, which are supported in code.
 
-**Fix**: Update documentation table.
+**Status**: ✅ Fixed 2026-02-03 - Added 30m and 4h to documentation.
 
 ---
 
@@ -751,18 +751,124 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Code review fixes | ✅ | 2026-02-02 | PR feedback addressed |
 | **Total new tests** | | | **+15 tests** |
 
-### M4: Greta Integration
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Provide asyncpg pool to EventLog | ⬜ | | |
-| Connect Clock to RunManager | ⬜ | | |
-| Implement EventConsumer usage | ⬜ | | |
+### M4: Greta Backtest Engine ✅ COMPLETED (2026-02-03)
 
-### M5: Marvin Integration
+**Branch**: `greta_update` → PR #9 merged  
+**Changes**: 37 files, +6649/-81 lines
+
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Initialize AlpacaAdapter clients | ⬜ | | |
-| Use strategy event types | ⬜ | | |
+| **MVP-1**: WallE BarRepository | ✅ | 2026-02-03 | 16 tests, bars table + migration |
+| **MVP-2**: Greta Models & FillSimulator | ✅ | 2026-02-03 | 29 tests, TDD red→green |
+| **MVP-3**: GretaService (uses BarRepo) | ✅ | 2026-02-03 | 20 tests, per-run instance |
+| **MVP-4**: Marvin Skeleton | ✅ | 2026-02-03 | 32 tests, BaseStrategy + StrategyRunner |
+| **MVP-5**: GLaDOS DomainRouter | ✅ | 2026-02-03 | 12 tests, strategy.* → backtest.* |
+| **MVP-6**: Run Orchestration | ✅ | 2026-02-03 | 10 tests, RunContext + async tick |
+| **MVP-7**: Integration Test | ✅ | 2026-02-03 | 5 tests, end-to-end flow |
+| Code review (20 comments) | ✅ | 2026-02-03 | All addressed |
+| Provide asyncpg pool to EventLog | ⬜ | | Deferred (nice-to-have) |
+| **Actual new tests** | | | **+125 tests (631 total)** |
+
+#### M4 New Files Created
+
+| File | Purpose | Tests |
+|------|---------|-------|
+| `src/greta/models.py` | FillSimulationConfig, SimulatedFill, SimulatedPosition, BacktestStats, BacktestResult | 20 |
+| `src/greta/fill_simulator.py` | DefaultFillSimulator with slippage/commission/limit/stop | 29 |
+| `src/greta/greta_service.py` | Per-run backtest execution engine | 20 |
+| `src/marvin/base_strategy.py` | BaseStrategy ABC, StrategyAction frozen dataclass | 9 |
+| `src/marvin/strategy_runner.py` | Executes strategy on_tick/on_data, emits strategy.* events | 12 |
+| `src/marvin/sample_strategy.py` | Mean-reversion demo strategy (buy low, sell high) | 11 |
+| `src/glados/services/domain_router.py` | Routes strategy.* → backtest.*/live.* based on RunMode | 12 |
+| `src/walle/repositories/__init__.py` | Package exports | - |
+| `src/walle/repositories/bar_repository.py` | BarRepository + Bar frozen DTO, upsert support | 16 |
+| `src/walle/migrations/*_add_bars_table.py` | bars table: symbol, timeframe, timestamp, OHLCV | - |
+| `tests/integration/test_backtest_flow.py` | End-to-end backtest: RunManager → Clock → Strategy → Greta | 5 |
+| `tests/integration/test_bar_repository.py` | BarRepository PostgreSQL integration tests | 16 |
+| `docs/archive/milestone-details/m4-greta.md` | M4 design document with architecture diagrams | - |
+
+#### M4 Modified Files
+
+| File | Change |
+|------|--------|
+| `src/glados/services/run_manager.py` | Added RunContext dataclass, _start_backtest() method, try/finally cleanup, RunStatus.ERROR on failure |
+| `src/glados/clock/base.py` | Made _emit_tick() async, added callback_timeout (default 30s), asyncio.wait_for() protection |
+| `src/glados/clock/backtest.py` | await _emit_tick() |
+| `src/glados/clock/realtime.py` | await _emit_tick() |
+| `src/events/types.py` | Added RunEvents.COMPLETED constant |
+| `src/greta/__init__.py` | Export GretaService, FillSimulationConfig, BacktestResult |
+| `src/marvin/__init__.py` | Export BaseStrategy, StrategyAction, StrategyRunner |
+| `src/marvin/strategy_loader.py` | Updated type hints for BaseStrategy |
+| `src/walle/models.py` | Added BarRecord model with UNIQUE_CONSTRAINT class constant |
+| `tests/integration/conftest.py` | Import updates for new modules |
+| `tests/unit/walle/test_models.py` | Assert 4 tables (outbox, consumer_offsets, bars, veda_orders) |
+| `docs/ARCHITECTURE.md` | Updated test count to 631, M4 status |
+| `docs/architecture/roadmap.md` | M4 entry gate checked, M5 exit gate added |
+| `docs/architecture/clock.md` | Added callback_timeout documentation |
+| `docs/architecture/events.md` | Event namespace updates for strategy.*/backtest.* |
+
+#### M4 Code Review Fixes (2026-02-03)
+
+20 GitHub Copilot code review comments addressed:
+
+| Category | Issue | Fix | Files |
+|----------|-------|-----|-------|
+| **Readability** | Position sizing logic hard to follow | Added `_is_adding_to_position()`, `_is_position_reversal()` static methods with docstrings | greta_service.py |
+| **Bug** | Resource leak on backtest failure | Wrapped clock.start() in try/finally to cleanup RunContext | run_manager.py |
+| **Cleanup** | ~15 unused imports | Removed unused `Decimal`, `patch`, `timedelta`, `pytest` imports | tests/*.py |
+| **Cleanup** | Redundant Envelope ID generation | Removed `id=str(uuid4())` - Envelope has default_factory | strategy_runner.py, domain_router.py |
+| **Cleanup** | Unused dataclass import | Removed `from dataclasses import dataclass` | fill_simulator.py |
+| **Cleanup** | Unused field import | Removed `from dataclasses import field` | base_strategy.py |
+| **Cleanup** | Unused OrderSide import | Removed unused import | test_models.py (greta) |
+| **Quality** | Magic string for constraint name | Defined `BarRecord.UNIQUE_CONSTRAINT = "uq_bar"` | models.py, bar_repository.py |
+| **Quality** | Anonymous tick objects in tests | Added `make_tick()` factory using real `ClockTick` dataclass | test_sample_strategy.py, test_strategy_runner.py |
+| **Quality** | Weak PnL assertion | Changed `pnl > 0` to `150 < pnl <= 300` for meaningful validation | test_greta_service.py |
+| **Docs** | Decimal serialization unclear | Added docstring note about str serialization for precision | strategy_runner.py |
+| **Docs** | Position reversal edge case | Added docstring note about new_qty == 0 handling | greta_service.py |
+
+#### M4 Design Notes & TODOs
+
+1. **EventLog Pattern**: `InMemoryEventLog` for unit tests, `PostgresEventLog` for integration.
+   - Rationale: Unit tests shouldn't need DB
+   - Alternative: Use PostgresEventLog with test DB everywhere (more realistic)
+   - Decision: Keep as-is for now, evaluate in M5
+
+2. **Greta/Marvin Test Coupling**: `test_backtest_flow.py` contains `SimpleTestStrategy` and `MockStrategyLoader`
+   - These are integration test fixtures, not production code
+   - Consider moving to `tests/fixtures/strategy.py` in M5 for reuse
+   - GretaService itself has no Marvin imports (clean separation)
+
+3. **StrategyRunner Location**: Lives in `src/marvin/` as designed
+   - Uses injection (`event_log`, `strategy`) - no hardcoded dependencies
+   - Integration test wires it with GretaService via RunManager
+
+4. **SimulatedFill.side Type**: Currently `str` ("buy"/"sell"), should be `OrderSide` enum
+   - Impact: Comparison uses `fill.side == OrderSide.BUY.value` instead of direct enum
+   - Fix: Change `SimulatedFill.side: str` → `side: OrderSide` in M5
+   - Files affected: `src/greta/models.py`, `src/greta/fill_simulator.py`, `src/greta/greta_service.py`
+
+5. **Duplicate ClockTick Definition**: `tests/fixtures/clock.py` duplicates `src/glados/clock/base.py`
+   - `ControllableClock` uses its own local `ClockTick` dataclass
+   - Should import from `src/glados/clock/base` to avoid drift
+   - Fix: Remove duplicate, update `ControllableClock` to use production `ClockTick`
+   - Files affected: `tests/fixtures/clock.py`, `tests/unit/test_infrastructure.py`
+
+6. **VedaOrder Model Location**: ✅ FIXED - Moved from `veda/persistence.py` to `walle/models.py`
+   - **Problem**: SQLAlchemy models inherit from shared `Base`, but VedaOrder was in veda/
+   - **Impact**: `Base.metadata.tables` count varied (3 vs 4) depending on import order
+   - **Fix**: All SQLAlchemy models MUST be in `walle/models.py` for consistent metadata
+   - **Pattern**: Domain modules (veda/) import models from `walle/models.py`, not define them
+   - Conversion functions (`veda_order_to_order_state`, `order_state_to_veda_order`) stay in veda/
+   - Files changed: `src/walle/models.py`, `src/veda/persistence.py`, `tests/unit/veda/test_persistence.py`
+
+### M5: Marvin Full Implementation
+| Task | Status | Date | Notes |
+|------|--------|------|-------|
+| Complete Marvin strategy loading | ⬜ | | |
+| Initialize AlpacaAdapter clients | ⬜ | | Live trading needs this |
+| Wire VedaService to order routes | ⬜ | | Deferred from M3.5 |
+| Implement SMA strategy | ⬜ | | |
+| Live order flow (paper mode) | ⬜ | | |
 
 ### M7: Polish
 | Task | Status | Date | Notes |
@@ -774,4 +880,4 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-*Last Updated: 2026-02-02*
+*Last Updated: 2026-02-03 (greta_update branch complete, PR #9)*

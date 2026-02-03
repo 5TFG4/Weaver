@@ -144,6 +144,7 @@ class RunEvents:
     STARTED: Final[str] = "run.Started"
     STOP_REQUESTED: Final[str] = "run.StopRequested"
     STOPPED: Final[str] = "run.Stopped"
+    COMPLETED: Final[str] = "run.Completed"
     HEARTBEAT: Final[str] = "run.Heartbeat"
     ERROR: Final[str] = "run.Error"
 

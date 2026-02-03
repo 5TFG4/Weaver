@@ -10,8 +10,12 @@ The clock system uses a **strategy pattern** with a common interface:
 
 ```python
 class BaseClock(ABC):
-    def __init__(self, timeframe: str = "1m") -> None:
-        """Initialize with timeframe (e.g., '1m', '5m', '1h')."""
+    def __init__(
+        self, 
+        timeframe: str = "1m",
+        callback_timeout: float = 30.0,  # Timeout for tick callbacks
+    ) -> None:
+        """Initialize with timeframe and callback timeout."""
         ...
 
     @abstractmethod
@@ -32,6 +36,19 @@ class BaseClock(ABC):
     def on_tick(self, callback: TickCallback) -> Callable[[], None]:
         """Register a callback for tick events. Returns unsubscribe function."""
         ...
+```
+
+### Callback Timeout Protection
+
+Tick callbacks have a configurable timeout (default 30s) to prevent stuck backtests:
+
+```python
+async def _emit_tick(self, tick: ClockTick) -> None:
+    for callback in self._callbacks:
+        result = callback(tick)
+        if asyncio.iscoroutine(result):
+            await asyncio.wait_for(result, timeout=self._callback_timeout)
+```
 ```
 
 ## 2. RealtimeClock (Live Trading)
@@ -138,13 +155,15 @@ class ClockTick:
 
 ## 6. Timeframe Support
 
-| Timeframe | Code | Bar Alignment |
-|-----------|------|---------------|
-| 1 minute  | `1m` | `:00` seconds |
-| 5 minutes | `5m` | `:00`, `:05`, `:10`, ... |
-| 15 minutes| `15m`| `:00`, `:15`, `:30`, `:45` |
-| 1 hour    | `1h` | `:00:00` |
-| 1 day     | `1d` | `00:00:00 UTC` |
+| Timeframe  | Code  | Bar Alignment |
+|------------|-------|---------------|
+| 1 minute   | `1m`  | `:00` seconds |
+| 5 minutes  | `5m`  | `:00`, `:05`, `:10`, ... |
+| 15 minutes | `15m` | `:00`, `:15`, `:30`, `:45` |
+| 30 minutes | `30m` | `:00`, `:30` |
+| 1 hour     | `1h`  | `:00:00` |
+| 4 hours    | `4h`  | `00:00`, `04:00`, `08:00`, `12:00`, `16:00`, `20:00` |
+| 1 day      | `1d`  | `00:00:00 UTC` |
 
 ## 7. Files
 

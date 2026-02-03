@@ -8,11 +8,12 @@ Both RealtimeClock and BacktestClock implement this interface.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable
+from typing import Awaitable, Callable, Union
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,11 @@ class ClockTick:
         }
 
 
-# Type alias for tick callback
-TickCallback = Callable[[ClockTick], None]
+# Type alias for tick callback (can be sync or async)
+TickCallback = Union[
+    Callable[[ClockTick], None],
+    Callable[[ClockTick], Awaitable[None]],
+]
 
 
 class BaseClock(ABC):
@@ -61,17 +65,19 @@ class BaseClock(ABC):
     - Managing start/stop lifecycle
     """
 
-    def __init__(self, timeframe: str = "1m") -> None:
+    def __init__(self, timeframe: str = "1m", callback_timeout: float = 30.0) -> None:
         """
         Initialize the clock.
 
         Args:
             timeframe: Bar timeframe (e.g., '1m', '5m', '1h', '1d')
+            callback_timeout: Max seconds to wait for a callback (default 30s)
         """
         self.timeframe = timeframe
         self._callbacks: list[TickCallback] = []
         self._running = False
         self._tick_count = 0
+        self._callback_timeout = callback_timeout
         # Shared state for all clock implementations
         self._run_id: str = ""
         self._task: asyncio.Task[None] | None = None
@@ -145,12 +151,28 @@ class BaseClock(ABC):
 
         return unsubscribe
 
-    def _emit_tick(self, tick: ClockTick) -> None:
-        """Emit a tick to all registered callbacks."""
+    async def _emit_tick(self, tick: ClockTick) -> None:
+        """
+        Emit a tick to all registered callbacks (supports async).
+        
+        Includes timeout protection to prevent hung callbacks from
+        blocking the entire clock/backtest.
+        """
         self._tick_count += 1
         for callback in self._callbacks:
             try:
-                callback(tick)
+                result = callback(tick)
+                # If callback is async, await it with timeout
+                if inspect.isawaitable(result):
+                    await asyncio.wait_for(result, timeout=self._callback_timeout)
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Tick callback timed out after %.1fs (tick %d)",
+                    self._callback_timeout,
+                    tick.bar_index,
+                )
+            except asyncio.CancelledError:
+                raise  # Propagate cancellation
             except Exception:
                 logger.exception("Tick callback failed in clock")
 

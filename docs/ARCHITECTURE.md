@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-02 · **Tests**: 507 passing · **M3.5**: ✅ Complete
+**Last Updated**: 2026-02-03 · **Tests**: 631 passing · **M4**: ✅ Complete
 
 ---
 
@@ -15,7 +15,7 @@
 | **Issue backlog & milestone schedule** | [AUDIT_FINDINGS.md §5](AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
 | **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
 | **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
-| **Next milestone design** | [M4 Greta](archive/milestone-details/m4-greta.md) *(to be created)* |
+| **Next milestone design** | [M4 Greta](archive/milestone-details/m4-greta.md) |
 | **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
 
 ---
@@ -41,7 +41,8 @@
 | M2 GLaDOS API | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md) | ✅ Done |
 | M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
-| **M4 Greta** | [m4-greta.md](archive/milestone-details/m4-greta.md) | ⏳ Next |
+| M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
+| **M5 Marvin Full** | TBD | ⏳ Next |
 
 ---
 
@@ -69,6 +70,7 @@
 * **Modulith**: A single backend process (Python) hosting domain packages
 * **Only GLaDOS** exposes northbound APIs
 * **Frontend–Backend split**: Haro (React) runs as independent container
+* **Multi-run support**: Multiple strategies can run concurrently (backtests + live)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -89,6 +91,7 @@
 ┌───────────────┐       ┌───────────────┐       ┌───────────────┐
 │     Veda      │       │    Greta      │       │    Marvin     │
 │  Live Trading │       │   Backtest    │       │   Strategy    │
+│  (singleton)  │       │  (per-run)    │       │  (per-run)    │
 └───────────────┘       └───────────────┘       └───────────────┘
         │                       │                       │
         └───────────────────────┼───────────────────────┘
@@ -96,6 +99,7 @@
                         ┌───────────────┐
                         │    WallE      │
                         │  Persistence  │
+                        │  (singleton)  │
                         └───────────────┘
                                 │
                                 ▼
@@ -138,7 +142,41 @@
 
 ---
 
-## 5. Key Design Decisions
+## 5. Instance Model (Per-Run vs Singleton)
+
+When multiple runs execute concurrently (multiple backtests, or backtest + live), services follow one of two patterns:
+
+| Pattern | Services | Rationale |
+|---------|----------|-----------|
+| **Per-Run** | GretaService, StrategyRunner, Clock | Each run has isolated positions, orders, equity curve, strategy state |
+| **Singleton** | EventLog, BarRepository, DomainRouter, SSEBroadcaster | Shared infrastructure; events tagged with `run_id` for isolation |
+
+```
+RunManager
+├── run_contexts: Dict[str, RunContext]
+│
+├── RunContext (run-001, backtest)
+│   ├── GretaService instance
+│   ├── StrategyRunner instance
+│   └── BacktestClock instance
+│
+├── RunContext (run-002, backtest)
+│   ├── GretaService instance
+│   ├── StrategyRunner instance
+│   └── BacktestClock instance
+│
+└── Shared Singletons
+    ├── EventLog (events tagged with run_id)
+    ├── BarRepository (immutable data)
+    ├── DomainRouter (stateless routing)
+    └── SSEBroadcaster (filters by run_id for clients)
+```
+
+**Key Isolation Mechanism**: Events carry `run_id` metadata. Consumers filter events by their `run_id` to prevent cross-run interference.
+
+---
+
+## 6. Key Design Decisions
 
 ### Dual Alpaca Credentials
 Live and Paper run **simultaneously** as separate trading runs, not time-based switching.
@@ -162,7 +200,7 @@ Ticks fire at bar boundaries (e.g., `:00` seconds for 1m bars).
 
 ---
 
-## 6. Terms & Quick Reference
+## 7. Terms & Quick Reference
 
 * **Modulith**: single‑process with multiple domain packages
 * **EventLog**: DB Outbox + LISTEN/NOTIFY; offsets for recovery

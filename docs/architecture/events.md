@@ -37,7 +37,17 @@
 
 ## 2. Namespaces
 
-`strategy.* / live.* / backtest.* / data.* / market.* / orders.* / run.* / clock.* / ui.*`
+| Namespace | Source | Handler | Events |
+|-----------|--------|---------|--------|
+| `strategy.*` | Marvin | DomainRouter → live/backtest | FetchWindow, PlaceRequest, DecisionMade |
+| `live.*` | DomainRouter | Veda | FetchWindow, PlaceOrder |
+| `backtest.*` | DomainRouter | Greta | FetchWindow, PlaceOrder |
+| `data.*` | Veda/Greta | Marvin | WindowReady, WindowChunk, WindowComplete |
+| `market.*` | Exchange | - | Quote, Trade, Bar |
+| `orders.*` | Veda/Greta | - | Created, PlaceRequest, Ack, Placed, Filled, Rejected |
+| `run.*` | RunManager | SSE | Created, Started, StopRequested, Stopped, Completed, Error |
+| `clock.*` | Clock | StrategyRunner | Tick |
+| `ui.*` | Frontend | - | (future) |
 
 ## 3. Payload & Size Policy
 
@@ -54,7 +64,32 @@
 
 * Write `outbox` in‑transaction; `NOTIFY` after commit; resume via `consumer_offsets`; deduplicate by `id/corr_id`.
 
-## 6. Consumer Offsets (At-Least-Once Delivery)
+## 6. Multi-Run Event Isolation
+
+When multiple runs execute concurrently (parallel backtests, backtest + live):
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Event Isolation via run_id                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  EventLog (singleton)                                               │
+│    │                                                                │
+│    │  event: { run_id: "run-001", type: "orders.Filled", ... }     │
+│    │  event: { run_id: "run-002", type: "orders.Filled", ... }     │
+│    │                                                                │
+│    ├──► GretaService (run-001) filters: run_id == "run-001"        │
+│    │                                                                │
+│    └──► GretaService (run-002) filters: run_id == "run-002"        │
+│                                                                     │
+│  Result: Each run only sees its own events                          │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Pattern**: Events are shared in one EventLog, but consumers filter by `run_id` to maintain isolation.
+
+## 7. Consumer Offsets (At-Least-Once Delivery)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐

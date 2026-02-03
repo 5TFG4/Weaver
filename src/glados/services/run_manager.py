@@ -2,7 +2,13 @@
 Run Manager Service
 
 Manages trading run lifecycle: create, get, list, stop.
-MVP-2: In-memory storage (persistence deferred to M3).
+
+Multi-Run Architecture (M4+):
+- Each run gets a unique run_id
+- Per-run instances: GretaService, StrategyRunner, Clock
+- Singletons (shared): EventLog, BarRepository, DomainRouter
+- RunManager maintains RunContext dict keyed by run_id
+- Events tagged with run_id for isolation
 """
 
 from __future__ import annotations
@@ -14,11 +20,17 @@ from uuid import uuid4
 
 from src.events.protocol import Envelope
 from src.events.types import RunEvents
+from src.glados.clock.backtest import BacktestClock
+from src.glados.clock.base import ClockTick
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
+from src.greta.greta_service import GretaService
+from src.marvin.strategy_runner import StrategyRunner
 
 if TYPE_CHECKING:
     from src.events.log import EventLog
+    from src.marvin.strategy_loader import StrategyLoader
+    from src.walle.repositories.bar_repository import BarRepository
 
 
 @dataclass
@@ -33,28 +45,59 @@ class Run:
     timeframe: str
     config: dict[str, Any] | None
     created_at: datetime
+    # Backtest time range (optional for live/paper)
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    # Lifecycle timestamps
     started_at: datetime | None = None
     stopped_at: datetime | None = None
+
+
+@dataclass
+class RunContext:
+    """
+    Per-run execution context.
+    
+    Holds all components that are instantiated per-run.
+    For backtest: greta, runner, clock all set.
+    For live/paper: greta is None (uses singleton VedaService).
+    """
+    
+    greta: GretaService | None
+    runner: StrategyRunner
+    clock: BacktestClock  # TODO: Union with RealtimeClock for live
 
 
 class RunManager:
     """
     Manages trading run lifecycle.
     
-    MVP-2 Implementation:
-    - In-memory storage (data lost on restart)
-    - No pagination (returns all)
-    - No filters (returns all)
-    
-    Future (M3+):
-    - PostgreSQL persistence
-    - Pagination and filtering
-    - Integration with Marvin (strategy loader)
+    Multi-Run Architecture (M4):
+    - Creates per-run instances (GretaService, StrategyRunner, Clock)
+    - Maintains _run_contexts: Dict[str, RunContext]
+    - Disposes per-run instances when run completes
+    - Singletons (EventLog, BarRepository) injected at construction
     """
 
-    def __init__(self, event_log: EventLog | None = None) -> None:
+    def __init__(
+        self,
+        event_log: "EventLog | None" = None,
+        bar_repository: "BarRepository | None" = None,
+        strategy_loader: "StrategyLoader | None" = None,
+    ) -> None:
+        """
+        Initialize RunManager.
+        
+        Args:
+            event_log: Event log for emitting run events
+            bar_repository: Bar repository for GretaService (backtest)
+            strategy_loader: Loader for strategy instances
+        """
         self._runs: dict[str, Run] = {}
         self._event_log = event_log
+        self._bar_repository = bar_repository
+        self._strategy_loader = strategy_loader
+        self._run_contexts: dict[str, RunContext] = {}
 
     async def _emit_event(self, event_type: str, run: Run) -> None:
         """Emit an event if event_log is configured."""
@@ -93,6 +136,8 @@ class RunManager:
             timeframe=request.timeframe,
             config=request.config,
             created_at=datetime.now(UTC),
+            start_time=request.start_time,
+            end_time=request.end_time,
         )
         self._runs[run.id] = run
         await self._emit_event(RunEvents.CREATED, run)
@@ -126,14 +171,25 @@ class RunManager:
         """
         Start a pending run.
         
+        For BACKTEST mode:
+        1. Create GretaService, StrategyRunner, BacktestClock
+        2. Initialize all components
+        3. Run clock to completion (synchronous)
+        4. Return completed run
+        
+        For LIVE/PAPER mode: (not yet implemented)
+        1. Create StrategyRunner, RealtimeClock
+        2. Start async execution
+        
         Args:
             run_id: The run ID to start
             
         Returns:
-            Updated Run with RUNNING status
+            Updated Run (COMPLETED for backtest, RUNNING for live)
             
         Raises:
             RunNotFoundError: If run doesn't exist
+            RunNotStartableError: If run is not in PENDING status
         """
         run = self._runs.get(run_id)
         if run is None:
@@ -142,15 +198,100 @@ class RunManager:
         # Only start if pending
         if run.status != RunStatus.PENDING:
             raise RunNotStartableError(run_id, run.status.value)
-        
+
         run.status = RunStatus.RUNNING
         run.started_at = datetime.now(UTC)
         await self._emit_event(RunEvents.STARTED, run)
+
+        if run.mode == RunMode.BACKTEST:
+            await self._start_backtest(run)
+        else:
+            # LIVE/PAPER not yet implemented
+            pass
+
         return run
+
+    async def _start_backtest(self, run: Run) -> None:
+        """
+        Execute backtest run to completion.
+        
+        Creates per-run components, runs clock, and completes.
+        
+        Args:
+            run: The run to execute
+        """
+        if self._event_log is None or self._bar_repository is None:
+            raise RuntimeError("EventLog and BarRepository required for backtest")
+        if self._strategy_loader is None:
+            raise RuntimeError("StrategyLoader required for backtest")
+        if run.start_time is None or run.end_time is None:
+            raise RuntimeError("start_time and end_time required for backtest")
+
+        # 1. Load strategy
+        strategy = self._strategy_loader.load(run.strategy_id)
+
+        # 2. Create per-run instances
+        greta = GretaService(
+            run_id=run.id,
+            bar_repository=self._bar_repository,
+            event_log=self._event_log,
+        )
+        runner = StrategyRunner(
+            strategy=strategy,
+            event_log=self._event_log,
+        )
+        clock = BacktestClock(
+            start_time=run.start_time,
+            end_time=run.end_time,
+            timeframe=run.timeframe,
+        )
+
+        # Store context
+        ctx = RunContext(greta=greta, runner=runner, clock=clock)
+        self._run_contexts[run.id] = ctx
+
+        # 3. Initialize components
+        await greta.initialize(
+            symbols=run.symbols,
+            timeframe=run.timeframe,
+            start=run.start_time,
+            end=run.end_time,
+        )
+        await runner.initialize(run_id=run.id, symbols=run.symbols)
+
+        # 4. Wire tick handler
+        async def on_tick(tick: ClockTick) -> None:
+            # a. Greta advances (processes orders, updates prices)
+            await greta.advance_to(tick.ts)
+            # b. Strategy processes tick (may emit events)
+            await runner.on_tick(tick)
+
+        clock.on_tick(on_tick)
+
+        # 5. Run to completion (backtest is synchronous)
+        try:
+            await clock.start(run.id)
+            run.status = RunStatus.COMPLETED
+        except Exception:
+            run.status = RunStatus.ERROR
+            raise
+        finally:
+            # Cleanup RunContext even if backtest fails
+            run.stopped_at = datetime.now(UTC)
+            if run.id in self._run_contexts:
+                del self._run_contexts[run.id]
+
+        # 6. Emit completion event
+        await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:
         """
         Stop a run.
+        
+        M4+ Multi-Run Implementation:
+        1. Stop the clock (halts tick generation)
+        2. Dispose per-run instances
+        3. Remove from self._run_contexts[run_id]
         
         Args:
             run_id: The run ID to stop
@@ -164,6 +305,12 @@ class RunManager:
         run = self._runs.get(run_id)
         if run is None:
             raise RunNotFoundError(run_id)
+
+        # Cleanup per-run context
+        if run_id in self._run_contexts:
+            ctx = self._run_contexts[run_id]
+            await ctx.clock.stop()
+            del self._run_contexts[run_id]
 
         # Idempotent: if already stopped, just return
         if run.status != RunStatus.STOPPED:

@@ -10,7 +10,10 @@ Manages strategy lifecycle and execution:
 Mode-agnostic: works identically for live and backtest runs.
 """
 
+from .base_strategy import BaseStrategy, StrategyAction
+from .sample_strategy import SampleStrategy
 from .strategy_loader import StrategyLoader
+from .strategy_runner import StrategyRunner
 
 
 class Marvin:
@@ -21,4 +24,11 @@ class Marvin:
         pass
 
 
-__all__ = ["Marvin", "StrategyLoader"]
+__all__ = [
+    "BaseStrategy",
+    "Marvin",
+    "SampleStrategy",
+    "StrategyAction",
+    "StrategyLoader",
+    "StrategyRunner",
+]
