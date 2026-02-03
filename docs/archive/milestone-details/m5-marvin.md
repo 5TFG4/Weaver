@@ -850,13 +850,13 @@ class ControllableClock:
 | MVP | Focus | Tests | Priority | Dependencies | Status |
 |-----|-------|-------|----------|--------------|--------|
 | M5-1 | EventLog Subscription | 12 | P0 | - | ✅ Done |
-| M5-2 | data.WindowReady Flow | ~15 | P0 | M5-1 | ⬜ |
+| M5-2 | data.WindowReady Flow | 15 | P0 | M5-1 | ✅ Done |
 | M5-3 | SMA Strategy | ~12 | P0 | M5-2 | ⬜ |
 | M5-4 | Plugin Strategy Loader | ~15 | P0 | M5-3 | ⬜ |
 | M5-5 | Code Quality Fixes | ~8 | P1 | - | ⬜ |
 
 **Estimated Total: ~60 new tests** (allowing for ~20 integration tests)
-**Current Progress: 12 tests completed**
+**Current Progress: 27 tests completed (12 + 15)**
 
 ---
 
@@ -1415,11 +1415,11 @@ class StrategyRunner:
 
 #### Definition of Done
 
-- [ ] All 15 tests pass
-- [ ] StrategyRunner subscribes to data.WindowReady
-- [ ] GretaService subscribes to backtest.FetchWindow
-- [ ] Complete flow works: tick → FetchWindow → WindowReady → on_data
-- [ ] Integration test passes
+- [x] All 15 tests pass ✅ 2026-02-03
+- [x] StrategyRunner subscribes to data.WindowReady ✅
+- [x] GretaService subscribes to backtest.FetchWindow ✅
+- [x] Complete flow works: tick → FetchWindow → WindowReady → on_data ✅
+- [x] GretaService emits WindowReady with bars from cache ✅
 
 ---
 

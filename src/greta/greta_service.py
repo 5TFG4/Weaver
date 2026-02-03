@@ -89,6 +89,7 @@ class GretaService:
         self._equity_curve: list[tuple[datetime, Decimal]] = []
         self._current_bars: dict[str, Bar] = {}
         self._cash: Decimal = initial_cash
+        self._subscription_id: str | None = None
 
     # =========================================================================
     # Properties
@@ -175,6 +176,13 @@ class GretaService:
             bars = await self._bar_repo.get_bars(symbol, timeframe, start, end)
             self._bar_cache[symbol] = {bar.timestamp: bar for bar in bars}
 
+        # Subscribe to backtest.FetchWindow events for this run
+        self._subscription_id = await self._event_log.subscribe_filtered(
+            event_types=["backtest.FetchWindow"],
+            callback=self._on_fetch_window,
+            filter_fn=lambda e: e.run_id == self._run_id,
+        )
+
     async def advance_to(self, timestamp: datetime) -> None:
         """
         Advance simulation to a specific timestamp.
@@ -203,6 +211,78 @@ class GretaService:
 
         # 4. Record equity curve point
         self._record_equity(timestamp)
+
+    def _on_fetch_window(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.FetchWindow event (sync callback wrapper).
+        
+        Fetches bars from cache and emits data.WindowReady.
+        Since EventLog callbacks are sync, we schedule the async work.
+        """
+        import asyncio
+
+        asyncio.create_task(self._handle_fetch_window(envelope))
+
+    async def _handle_fetch_window(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.FetchWindow event.
+        
+        Fetches bars from cache and emits data.WindowReady.
+        """
+        from datetime import datetime as dt
+        from dateutil.parser import isoparse
+
+        payload = envelope.payload
+        symbol = payload.get("symbol")
+        lookback = payload.get("lookback", 10)
+        as_of_str = payload.get("as_of")
+
+        if not symbol:
+            return
+
+        # Get bars from cache
+        bars: list[Bar] = []
+        if symbol in self._bar_cache:
+            symbol_bars = self._bar_cache[symbol]
+            
+            # Sort by timestamp and get last N bars up to as_of
+            if as_of_str:
+                as_of = isoparse(as_of_str)
+                # Filter bars up to as_of time
+                available_bars = sorted(
+                    [b for b in symbol_bars.values() if b.timestamp <= as_of],
+                    key=lambda b: b.timestamp,
+                )
+            else:
+                available_bars = sorted(symbol_bars.values(), key=lambda b: b.timestamp)
+            
+            # Take last N bars
+            bars = available_bars[-lookback:] if len(available_bars) >= lookback else available_bars
+
+        # Emit data.WindowReady
+        window_ready = Envelope(
+            type="data.WindowReady",
+            payload={
+                "symbol": symbol,
+                "bars": [
+                    {
+                        "timestamp": b.timestamp.isoformat(),
+                        "open": str(b.open),
+                        "high": str(b.high),
+                        "low": str(b.low),
+                        "close": str(b.close),
+                        "volume": str(b.volume),
+                    }
+                    for b in bars
+                ],
+                "lookback": lookback,
+            },
+            run_id=self._run_id,
+            producer="greta.service",
+            corr_id=envelope.corr_id,
+            causation_id=envelope.id,
+        )
+        await self._event_log.append(window_ready)
 
     def get_result(self) -> BacktestResult:
         """

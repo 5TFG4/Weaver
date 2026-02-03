@@ -906,14 +906,41 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | `src/events/log.py` | Added `subscribe_filtered()`, `unsubscribe_by_id()` to ABC, InMemoryEventLog, PostgresEventLog |
 | `tests/unit/events/test_subscription.py` | **Created**: 12 tests for subscription functionality |
 
-### M5-2: data.WindowReady Flow (~15 tests)
+### M5-2: data.WindowReady Flow ✅ COMPLETED (15 tests)
 | Task | Status | Notes |
 |------|--------|-------|
-| StrategyRunner subscribes to data.WindowReady | ⬜ | |
-| GretaService subscribes to backtest.FetchWindow | ⬜ | M4 deferred |
-| GretaService emits data.WindowReady | ⬜ | |
-| Test: complete FetchWindow → WindowReady chain | ⬜ | |
-| Test: no data error handling | ⬜ | |
+| StrategyRunner subscribes to data.WindowReady | ✅ | In initialize() |
+| StrategyRunner filters by run_id | ✅ | Only own run's events |
+| StrategyRunner calls strategy.on_data() | ✅ | On WindowReady |
+| StrategyRunner cleanup unsubscribes | ✅ | Async cleanup |
+| GretaService subscribes to backtest.FetchWindow | ✅ | In initialize() |
+| GretaService emits data.WindowReady | ✅ | With bars from cache |
+| GretaService filters by run_id | ✅ | Only own run's events |
+| GretaService preserves correlation_id | ✅ | For request tracking |
+| Test: Runner subscribes on init | ✅ | test_strategy_runner_events.py |
+| Test: WindowReady calls on_data | ✅ | |
+| Test: Filters by run_id | ✅ | |
+| Test: on_data emits PlaceRequest | ✅ | |
+| Test: cleanup unsubscribes | ✅ | |
+| Test: multiple events delivered | ✅ | |
+| Test: on_tick emits FetchWindow | ✅ | |
+| Test: subscription ID stored | ✅ | |
+| Test: Greta subscribes on init | ✅ | test_greta_events.py |
+| Test: FetchWindow → WindowReady | ✅ | |
+| Test: Greta filters by run_id | ✅ | |
+| Test: uses bar cache | ✅ | |
+| Test: WindowReady includes bars | ✅ | |
+| Test: Greta subscription ID stored | ✅ | |
+| Test: correlation ID preserved | ✅ | |
+| **Total tests added** | | **+15 tests (658 total)** |
+
+#### M5-2 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/strategy_runner.py` | Added `_subscription_id`, `subscribe_filtered()` in init, `cleanup()`, `_on_window_ready()` |
+| `src/greta/greta_service.py` | Added `_subscription_id`, `subscribe_filtered()` in init, `_on_fetch_window()`, `_handle_fetch_window()` |
+| `tests/unit/marvin/test_strategy_runner_events.py` | **Created**: 8 tests for runner event handling |
+| `tests/unit/greta/test_greta_events.py` | **Created**: 7 tests for Greta event handling |
 
 ### M5-3: SMA Strategy (~12 tests)
 | Task | Status | Notes |

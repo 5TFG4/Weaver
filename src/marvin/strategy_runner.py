@@ -43,6 +43,7 @@ class StrategyRunner:
         self._event_log = event_log
         self._run_id: str | None = None
         self._symbols: list[str] = []
+        self._subscription_id: str | None = None
 
     @property
     def run_id(self) -> str | None:
@@ -65,6 +66,34 @@ class StrategyRunner:
         self._run_id = run_id
         self._symbols = symbols
         await self._strategy.initialize(symbols)
+
+        # Subscribe to data.WindowReady events for this run
+        self._subscription_id = await self._event_log.subscribe_filtered(
+            event_types=["data.WindowReady"],
+            callback=self._on_window_ready,
+            filter_fn=lambda e: e.run_id == self._run_id,
+        )
+
+    async def cleanup(self) -> None:
+        """
+        Cleanup resources.
+        
+        Unsubscribes from event log.
+        """
+        if self._subscription_id:
+            await self._event_log.unsubscribe_by_id(self._subscription_id)
+            self._subscription_id = None
+
+    def _on_window_ready(self, envelope: Envelope) -> None:
+        """
+        Handle data.WindowReady event (sync callback wrapper).
+        
+        Since EventLog callbacks are sync, we need to schedule
+        the async handler.
+        """
+        import asyncio
+
+        asyncio.create_task(self.on_data_ready(envelope))
 
     async def on_tick(self, tick) -> None:
         """
