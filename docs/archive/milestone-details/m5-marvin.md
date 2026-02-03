@@ -48,25 +48,25 @@ M5 completes the Marvin strategy core system with plugin architecture. This mile
 - EventLog supports subscribe/unsubscribe pattern
 - SMA strategy runs complete backtest with trades
 - Strategy files can be deleted without breaking system
-- ~80 new tests added (total: ~711)
+- 74 new tests added (total: 705)
 
 ---
 
 ## 2. Goals & Non-Goals
 
-### Goals (In Scope)
+### Goals (In Scope) ✅ ALL COMPLETE
 
-| ID | Goal | Priority | MVP |
-|----|------|----------|-----|
-| G1 | EventLog subscription mechanism | P0 | M5-1 |
-| G2 | Complete data.WindowReady event flow | P0 | M5-2 |
-| G3 | Implement SMA crossover strategy | P0 | M5-3 |
-| G4 | Plugin architecture for strategies (sideload) | P0 | M5-4 |
-| G5 | SimulatedFill.side → OrderSide enum | P1 | M5-5 |
-| G6 | Unified test strategy fixtures (DummyStrategy, RecordingStrategy) | P1 | M5-5 |
-| G7 | Fix ClockTick duplicate definition | P1 | M5-5 |
-| G8 | Clock Union type (backtest + realtime) | P1 | M5-5 |
-| G9 | Consolidate inline test strategies to fixtures/strategies.py | P1 | M5-5 |
+| ID | Goal | Priority | MVP | Status |
+|----|------|----------|-----|--------|
+| G1 | EventLog subscription mechanism | P0 | M5-1 | ✅ |
+| G2 | Complete data.WindowReady event flow | P0 | M5-2 | ✅ |
+| G3 | Implement SMA crossover strategy | P0 | M5-3 | ✅ |
+| G4 | Plugin architecture for strategies (sideload) | P0 | M5-4 | ✅ |
+| G5 | SimulatedFill.side → OrderSide enum | P1 | M5-5 | ✅ (already worked) |
+| G6 | Unified test strategy fixtures (DummyStrategy, RecordingStrategy) | P1 | M5-5 | ✅ |
+| G7 | Fix ClockTick duplicate definition | P1 | M5-5 | ✅ |
+| G8 | Clock Union type (backtest + realtime) | P1 | M5-5 | ✅ (already existed) |
+| G9 | Consolidate inline test strategies to fixtures/strategies.py | P1 | M5-5 | ✅ |
 
 ### Non-Goals (Out of Scope - Moved to M6)
 

@@ -25,7 +25,7 @@
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Test Infrastructure | ✅ Complete | 692 |
+| Test Infrastructure | ✅ Complete | 705 |
 | Events Module | ✅ Subscription added | 57 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
@@ -43,8 +43,8 @@
 | M0–M3 | Foundation, API, Trading | ✅ DONE |
 | M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
 | M4 | [Greta backtest](../archive/milestone-details/m4-greta.md) | ✅ DONE |
-| **M5** | Marvin Core (Strategy + Plugin) | 🟨 IN PROGRESS (M5-1 ✅, M5-2 ✅, M5-3 ✅, M5-4 ✅) |
-| **M6** | Live Trading (Paper/Live Flow) | ⏳ |
+| **M5** | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin) | ✅ DONE (74 tests) |
+| **M6** | Live Trading (Paper/Live Flow) | ⏳ NEXT |
 | **M7** | Haro Frontend (React UI) | ⏳ |
 | **M8** | Polish & E2E (Quality + Tests) | ⏳ |
 

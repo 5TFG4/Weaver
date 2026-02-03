@@ -42,7 +42,8 @@
 | M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
-| **M5 Marvin Full** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ⏳ Next |
+| **M5 Marvin** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ✅ Done (74 tests) |
+| **M6 Live Trading** | TBD | ⏳ Next |
 
 ---
 
