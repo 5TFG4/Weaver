@@ -168,7 +168,7 @@ class SMAStrategy(BaseStrategy):
 
         # Use last 'period' values, or all if fewer available
         window = values[-period:] if len(values) >= period else values
-        return sum(window) / len(window)
+        return sum(window, Decimal("0")) / Decimal(len(window))
 
     def _check_crossover(
         self, fast_above_slow: bool, symbol: str

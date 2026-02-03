@@ -83,8 +83,8 @@ class SampleStrategy(BaseStrategy):
             return []
 
         # Calculate average close price
-        total = sum(bar.close for bar in bars)
-        avg = total / len(bars)
+        total: Decimal = sum((bar.close for bar in bars), Decimal("0"))
+        avg: Decimal = total / Decimal(len(bars))
 
         current = bars[-1].close
         symbol = bars[-1].symbol if hasattr(bars[-1], "symbol") else "BTC/USD"

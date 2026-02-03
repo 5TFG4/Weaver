@@ -7,7 +7,7 @@ TDD Phase: RED (Tests written before implementation)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from unittest.mock import AsyncMock
 
 import pytest
@@ -28,7 +28,7 @@ class TestEventLogSubscription:
         return InMemoryEventLog()
 
     @pytest.fixture
-    def make_envelope(self) -> callable:
+    def make_envelope(self) -> "Callable[..., Envelope]":
         """Factory for creating test envelopes."""
 
         def _make(
