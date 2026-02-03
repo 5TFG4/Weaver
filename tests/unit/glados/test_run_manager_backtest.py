@@ -6,6 +6,7 @@ Unit tests for backtest flow orchestration in RunManager.
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -114,6 +115,7 @@ class TestRunManagerBacktestStart:
 
         ctx = manager_with_deps._run_contexts[run.id]
         # Greta should be initialized (has run_id set)
+        assert ctx.greta is not None
         assert ctx.greta.run_id == run.id
 
     async def test_start_backtest_initializes_runner(
@@ -154,7 +156,7 @@ class TestRunManagerBacktestStart:
 
         await manager_with_deps.start(run.id)
 
-        manager_with_deps._strategy_loader.load.assert_called_once_with("test-strategy")
+        cast(MagicMock, manager_with_deps._strategy_loader).load.assert_called_once_with("test-strategy")
 
     async def test_start_backtest_runs_to_completion(
         self, manager_with_deps: RunManager
@@ -194,7 +196,8 @@ class TestRunManagerBacktestStart:
         await manager_with_deps.start(run.id)
 
         # Check for COMPLETED event
-        calls = manager_with_deps._event_log.append.call_args_list
+        event_log = cast(AsyncMock, manager_with_deps._event_log)
+        calls = event_log.append.call_args_list
         event_types = [c[0][0].type for c in calls]
         assert "run.Completed" in event_types
 
@@ -260,4 +263,4 @@ class TestRunManagerStopWithContext:
 
         await manager.stop(run_id)
 
-        ctx.clock.stop.assert_called_once()
+        cast(AsyncMock, ctx.clock.stop).assert_called_once()

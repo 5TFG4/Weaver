@@ -69,6 +69,10 @@ class DomainRouter:
         if not event.type.startswith("strategy."):
             return
 
+        # Need run_id to look up mode
+        if event.run_id is None:
+            return
+
         # Look up run to determine mode
         run = await self._run_manager.get(event.run_id)
         if run is None:

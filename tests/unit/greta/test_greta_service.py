@@ -6,6 +6,7 @@ Unit tests for the backtest execution service.
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -152,7 +153,7 @@ class TestGretaServiceInitialize:
         )
 
         # Should have called get_bars to preload
-        service._bar_repo.get_bars.assert_called()
+        cast(AsyncMock, service._bar_repo).get_bars.assert_called()
 
     async def test_initialize_resets_state(self, service: GretaService) -> None:
         """Initialize clears any previous state."""
@@ -215,7 +216,7 @@ class TestGretaServicePlaceOrder:
 
         await initialized_service.place_order(intent)
 
-        initialized_service._event_log.append.assert_called()
+        cast(AsyncMock, initialized_service._event_log).append.assert_called()
 
 
 class TestGretaServiceAdvanceTo:

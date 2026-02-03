@@ -378,8 +378,12 @@ class GretaService:
             stats.total_return_pct = (stats.total_return / initial) * 100
 
         # Calculate total costs
-        stats.total_commission = sum(f.commission for f in self._fills)
-        stats.total_slippage = sum(f.slippage for f in self._fills)
+        stats.total_commission = sum(
+            (f.commission for f in self._fills), Decimal("0")
+        )
+        stats.total_slippage = sum(
+            (f.slippage for f in self._fills), Decimal("0")
+        )
 
         # TODO: Calculate more advanced stats (Sharpe, drawdown, etc.)
 

@@ -6,6 +6,7 @@ Unit tests for the strategy execution runner.
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -124,7 +125,8 @@ class TestStrategyRunnerOnTick:
 
         await initialized_runner.on_tick(tick)
 
-        assert tick in initialized_runner._strategy.received_ticks
+        strategy = cast(DummyStrategy, initialized_runner._strategy)
+        assert tick in strategy.received_ticks
 
     async def test_emits_fetch_window_event(
         self, initialized_runner: StrategyRunner
@@ -135,8 +137,9 @@ class TestStrategyRunnerOnTick:
 
         await initialized_runner.on_tick(tick)
 
-        initialized_runner._event_log.append.assert_called()
-        call_args = initialized_runner._event_log.append.call_args[0][0]
+        event_log = cast(AsyncMock, initialized_runner._event_log)
+        event_log.append.assert_called()
+        call_args = event_log.append.call_args[0][0]
         assert call_args.type == "strategy.FetchWindow"
         assert call_args.run_id == "run-123"
 
@@ -207,7 +210,8 @@ class TestStrategyRunnerOnDataReady:
 
         await initialized_runner.on_data_ready(envelope)
 
-        assert {"bars": []} in initialized_runner._strategy.received_data
+        strategy = cast(DummyStrategy, initialized_runner._strategy)
+        assert {"bars": []} in strategy.received_data
 
     async def test_emits_events_from_strategy_response(self) -> None:
         """on_data_ready() emits events from strategy's response."""

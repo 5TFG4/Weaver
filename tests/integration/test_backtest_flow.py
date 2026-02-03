@@ -61,7 +61,7 @@ class SimpleTestStrategy(BaseStrategy):
         return []
 
 
-class MockStrategyLoader:
+class MockStrategyLoader(StrategyLoader):
     """Mock strategy loader that returns our test strategy."""
 
     def load(self, strategy_id: str) -> BaseStrategy:

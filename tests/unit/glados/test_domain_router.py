@@ -6,6 +6,7 @@ Unit tests for routing strategy events to domain-specific events.
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -94,16 +95,16 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        router._event_log.append.assert_not_called()
+        cast(AsyncMock, router._event_log).append.assert_not_called()
 
     async def test_ignores_unknown_run(self, router: DomainRouter) -> None:
         """route() ignores events with unknown run_id."""
-        router._run_manager.get = AsyncMock(return_value=None)
+        router._run_manager.get = AsyncMock(return_value=None)  # type: ignore[method-assign]
         event = make_envelope(type_="strategy.FetchWindow", run_id="unknown")
 
         await router.route(event)
 
-        router._event_log.append.assert_not_called()
+        cast(AsyncMock, router._event_log).append.assert_not_called()
 
     async def test_routes_fetch_window_to_backtest(self, router: DomainRouter) -> None:
         """strategy.FetchWindow → backtest.FetchWindow for backtest runs."""
@@ -114,8 +115,9 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        router._event_log.append.assert_called_once()
-        routed = router._event_log.append.call_args[0][0]
+        event_log = cast(AsyncMock, router._event_log)
+        event_log.append.assert_called_once()
+        routed = event_log.append.call_args[0][0]
         assert routed.type == "backtest.FetchWindow"
         assert routed.run_id == "run-123"
         assert routed.payload == {"symbol": "BTC/USD", "lookback": 10}
@@ -129,12 +131,12 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.type == "backtest.PlaceOrder"
 
     async def test_routes_to_live_for_paper_mode(self, router: DomainRouter) -> None:
         """strategy.* → live.* for paper trading runs."""
-        router._run_manager.get = AsyncMock(
+        router._run_manager.get = AsyncMock(  # type: ignore[method-assign]
             return_value=Run(
                 id="run-123",
                 strategy_id="test-strategy",
@@ -150,12 +152,12 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.type == "live.FetchWindow"
 
     async def test_routes_to_live_for_live_mode(self, router: DomainRouter) -> None:
         """strategy.* → live.* for live trading runs."""
-        router._run_manager.get = AsyncMock(
+        router._run_manager.get = AsyncMock(  # type: ignore[method-assign]
             return_value=Run(
                 id="run-123",
                 strategy_id="test-strategy",
@@ -171,7 +173,7 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.type == "live.PlaceOrder"
 
     async def test_preserves_causation_chain(self, router: DomainRouter) -> None:
@@ -180,7 +182,7 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.causation_id == event.id
 
     async def test_preserves_correlation_id(self, router: DomainRouter) -> None:
@@ -196,7 +198,7 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.corr_id == "corr-789"
 
     async def test_sets_producer_to_router(self, router: DomainRouter) -> None:
@@ -205,7 +207,7 @@ class TestDomainRouterRoute:
 
         await router.route(event)
 
-        routed = router._event_log.append.call_args[0][0]
+        routed = cast(AsyncMock, router._event_log).append.call_args[0][0]
         assert routed.producer == "glados.router"
 
 
@@ -250,5 +252,5 @@ class TestDomainRouterEventTypes:
             event = make_envelope(type_=source_type)
             await backtest_router.route(event)
 
-            routed = backtest_router._event_log.append.call_args[0][0]
+            routed = cast(AsyncMock, backtest_router._event_log).append.call_args[0][0]
             assert routed.type == expected_type, f"Failed for {source_type}"
