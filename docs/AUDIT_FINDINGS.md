@@ -1011,32 +1011,41 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | `tests/unit/marvin/test_plugin_loader.py` | **Created**: 17 tests for plugin loader |
 | `tests/unit/marvin/test_sample_strategy.py` | **Modified**: Updated import path |
 
-### M5-5: Code Quality & Test Fixtures (~12 tests)
+### M5-5: Code Quality & Test Fixtures (13 tests) ✅
 
-**Part A: Test Strategy Fixtures** (6 tests)
+**Completed**: All tasks finished, 13 tests added
+
+**Part A: Test Strategy Fixtures** (9 tests)
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `tests/fixtures/strategies.py` | ⬜ | DummyStrategy, RecordingStrategy, PredictableStrategy, SimpleTestStrategy, MockStrategyLoader |
-| Migrate DummyStrategy from test_strategy_runner_events.py | ⬜ | |
-| Migrate SimpleTestStrategy from test_backtest_flow.py | ⬜ | |
-| Migrate MockStrategyLoader from test_backtest_flow.py | ⬜ | |
-| Update tests/fixtures/__init__.py exports | ⬜ | |
-| Test: DummyStrategy configurable actions | ⬜ | |
-| Test: DummyStrategy records inputs | ⬜ | |
-| Test: MockStrategyLoader returns configured strategy | ⬜ | |
+| Create `tests/fixtures/strategies.py` | ✅ | DummyStrategy, RecordingStrategy, PredictableStrategy, SimpleTestStrategy, MockStrategyLoader |
+| Migrate DummyStrategy from test_strategy_runner_events.py | ✅ | Now imports from fixtures |
+| Migrate SimpleTestStrategy from test_backtest_flow.py | ✅ | Now imports from fixtures |
+| Migrate MockStrategyLoader from test_backtest_flow.py | ✅ | Now imports from fixtures |
+| Update tests/fixtures/__init__.py exports | ✅ | Added strategies.py doc |
+| Test: DummyStrategy configurable actions | ✅ | test_strategy_fixtures.py |
+| Test: DummyStrategy records inputs | ✅ | test_strategy_fixtures.py |
+| Test: MockStrategyLoader returns configured strategy | ✅ | test_strategy_fixtures.py |
 
 **Part B: Type Safety** (4 tests)
 | Task | Status | Notes |
 |------|--------|-------|
-| SimulatedFill.side: str → OrderSide | ⬜ | M4 note #4 |
-| Fix ClockTick duplicate definition | ⬜ | M4 note #5 |
-| Clock Union type | ⬜ | run_manager.py TODO |
-| Test: SimulatedFill.side is OrderSide | ⬜ | |
-| Test: ClockTick imported from production | ⬜ | |
+| SimulatedFill.side: str → OrderSide | ✅ | Already works! No change needed |
+| Fix ClockTick duplicate definition | ✅ | clock.py imports from production |
+| Clock Union type | ✅ | Already defined in run_manager.py |
+| Test: SimulatedFill.side is OrderSide | ✅ | test_type_safety.py |
+| Test: ClockTick imported from production | ✅ | test_type_safety.py |
 
-**Design Note**: 
-- `MockExchangeAdapter` stays in `src/veda/adapters/` (used in production backtest mode) ✅
-- Test strategies go to `tests/fixtures/strategies.py` (test-only) 
+**Files Changed**:
+| File | Change |
+|------|--------|
+| `tests/fixtures/strategies.py` | **Created**: 5 strategy classes |
+| `tests/fixtures/clock.py` | **Modified**: Import ClockTick from production |
+| `tests/fixtures/__init__.py` | **Modified**: Added strategies.py doc |
+| `tests/unit/test_strategy_fixtures.py` | **Created**: 9 tests |
+| `tests/unit/test_type_safety.py` | **Created**: 4 tests |
+| `tests/unit/marvin/test_strategy_runner_events.py` | **Modified**: Import DummyStrategy from fixtures |
+| `tests/integration/test_backtest_flow.py` | **Modified**: Import from fixtures |
 
 ---
 

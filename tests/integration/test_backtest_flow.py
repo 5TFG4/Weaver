@@ -22,51 +22,8 @@ from src.marvin.base_strategy import BaseStrategy, StrategyAction
 from src.marvin.strategy_loader import StrategyLoader
 from src.walle.repositories.bar_repository import Bar, BarRepository
 
-
-class SimpleTestStrategy(BaseStrategy):
-    """
-    Simple strategy that buys on first tick with data.
-    
-    Used for testing the backtest flow.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._bought = False
-
-    async def on_tick(self, tick) -> list[StrategyAction]:
-        """Request data on each tick."""
-        return [
-            StrategyAction(
-                type="fetch_window",
-                symbol=self._symbols[0] if self._symbols else "BTC/USD",
-                lookback=5,
-            )
-        ]
-
-    async def on_data(self, data: dict) -> list[StrategyAction]:
-        """Buy once when we have data."""
-        bars = data.get("bars", [])
-        if len(bars) >= 2 and not self._bought:
-            self._bought = True
-            return [
-                StrategyAction(
-                    type="place_order",
-                    symbol=bars[0].symbol if hasattr(bars[0], "symbol") else "BTC/USD",
-                    side="buy",
-                    qty=Decimal("0.1"),
-                    order_type="market",
-                )
-            ]
-        return []
-
-
-class MockStrategyLoader(StrategyLoader):
-    """Mock strategy loader that returns our test strategy."""
-
-    def load(self, strategy_id: str) -> BaseStrategy:
-        """Always return SimpleTestStrategy."""
-        return SimpleTestStrategy()
+# Import test strategies from fixtures instead of defining inline
+from tests.fixtures.strategies import MockStrategyLoader, SimpleTestStrategy
 
 
 @pytest.mark.integration

@@ -18,22 +18,8 @@ from src.glados.clock.base import ClockTick
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
 from src.marvin.strategy_runner import StrategyRunner
 
-
-class DummyStrategy(BaseStrategy):
-    """Test strategy for event flow tests."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.tick_actions: list[StrategyAction] = []
-        self.data_actions: list[StrategyAction] = []
-        self.received_data: list[dict] = []
-
-    async def on_tick(self, tick) -> list[StrategyAction]:
-        return self.tick_actions
-
-    async def on_data(self, data: dict) -> list[StrategyAction]:
-        self.received_data.append(data)
-        return self.data_actions
+# Import DummyStrategy from fixtures instead of defining inline
+from tests.fixtures.strategies import DummyStrategy
 
 
 def make_tick(run_id: str = "run-001") -> ClockTick:

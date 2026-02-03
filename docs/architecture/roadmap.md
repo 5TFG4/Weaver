@@ -53,7 +53,7 @@
 | Phase | Focus | Est. Tests | Status |
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
-| **5** | Marvin Core + Plugin Strategy | ~80 | 🟨 61/80 |
+| **5** | Marvin Core + Plugin Strategy | ~74 | ✅ 74/74 (705 total) |
 | **6** | Live Trading + Plugin Adapter | ~60 | ⏳ |
 | **7** | Haro Frontend + SSE | ~50 | ⏳ |
 | **8** | E2E + Polish | ~40 | ⏳ |
@@ -121,15 +121,15 @@
 
 ## 6. MVP Tables
 
-### M5: Marvin Core
+### M5: Marvin Core ✅ COMPLETE
 
-| MVP | Focus | Est. Tests |
-|-----|-------|------------|
-| M5-1 | EventLog Subscription | ~10 |
-| M5-2 | data.WindowReady Flow | ~15 |
-| M5-3 | SMA Strategy | ~12 |
-| M5-4 | Plugin Strategy Loader | ~15 |
-| M5-5 | Code Quality (Marvin) | ~8 |
+| MVP | Focus | Tests |
+|-----|-------|-------|
+| M5-1 | EventLog Subscription | 12 ✅ |
+| M5-2 | data.WindowReady Flow | 15 ✅ |
+| M5-3 | SMA Strategy | 17 ✅ |
+| M5-4 | Plugin Strategy Loader | 17 ✅ |
+| M5-5 | Code Quality (Marvin) | 13 ✅ |
 
 ### M6: Live Trading
 
