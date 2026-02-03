@@ -21,6 +21,7 @@ from uuid import uuid4
 from src.events.protocol import Envelope
 from src.events.types import RunEvents
 from src.glados.clock.backtest import BacktestClock
+from src.glados.clock.base import ClockTick
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.greta.greta_service import GretaService
@@ -259,7 +260,7 @@ class RunManager:
         await runner.initialize(run_id=run.id, symbols=run.symbols)
 
         # 4. Wire tick handler
-        async def on_tick(tick) -> None:
+        async def on_tick(tick: ClockTick) -> None:
             # a. Greta advances (processes orders, updates prices)
             await greta.advance_to(tick.ts)
             # b. Strategy processes tick (may emit events)

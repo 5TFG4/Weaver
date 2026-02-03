@@ -85,6 +85,9 @@ class BarRecord(Base):
     """
 
     __tablename__ = "bars"
+    
+    # Constraint names (referenced by repository for upsert)
+    UNIQUE_CONSTRAINT = "uq_bar"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -97,7 +100,7 @@ class BarRecord(Base):
     volume: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("symbol", "timeframe", "timestamp", name="uq_bar"),
+        UniqueConstraint("symbol", "timeframe", "timestamp", name=UNIQUE_CONSTRAINT),
         Index("ix_bars_lookup", "symbol", "timeframe", "timestamp"),
     )
 

@@ -37,16 +37,20 @@ class SimulatedFill:
     Record of a simulated fill during backtest.
     
     Immutable to preserve backtest audit trail.
+    
+    Attributes:
+        slippage: Total slippage cost (price_adjustment * qty), not per-unit.
+                  Represents the total dollar impact of slippage on this fill.
     """
 
     order_id: str
     client_order_id: str
     symbol: str
-    side: str  # "buy" | "sell"
+    side: str  # "buy" | "sell" - TODO(M5): Change to OrderSide enum
     qty: Decimal
-    fill_price: Decimal
-    commission: Decimal
-    slippage: Decimal
+    fill_price: Decimal  # Price after slippage applied
+    commission: Decimal  # Total commission for this fill
+    slippage: Decimal  # Total slippage cost (price_adj * qty)
     timestamp: datetime
     bar_index: int
 

@@ -7,7 +7,6 @@ whether to route to backtest or live handlers.
 """
 
 from typing import TYPE_CHECKING
-import uuid
 
 from src.events.protocol import Envelope
 from src.glados.schemas import RunMode
@@ -96,7 +95,6 @@ class DomainRouter:
 
         # Create routed event preserving chain
         routed = Envelope(
-            id=str(uuid.uuid4()),
             type=new_type,
             payload=event.payload,
             run_id=event.run_id,

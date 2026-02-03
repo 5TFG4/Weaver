@@ -7,7 +7,6 @@ Mode-agnostic: doesn't know if backtest or live.
 
 from decimal import Decimal
 from typing import TYPE_CHECKING
-import uuid
 
 from src.events.protocol import Envelope
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
@@ -116,7 +115,6 @@ class StrategyRunner:
             action: Fetch window action
         """
         envelope = Envelope(
-            id=str(uuid.uuid4()),
             type="strategy.FetchWindow",
             payload={
                 "symbol": action.symbol,
@@ -133,9 +131,12 @@ class StrategyRunner:
         
         Args:
             action: Place order action
+            
+        Note:
+            Decimal values are serialized as strings to preserve precision.
+            Consumers should use Decimal(str_value) to deserialize.
         """
         envelope = Envelope(
-            id=str(uuid.uuid4()),
             type="strategy.PlaceRequest",
             payload={
                 "symbol": action.symbol,

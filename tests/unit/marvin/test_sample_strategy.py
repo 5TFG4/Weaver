@@ -10,6 +10,7 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 
+from src.glados.clock.base import ClockTick
 from src.marvin.sample_strategy import SampleStrategy
 from src.marvin.base_strategy import StrategyAction
 from src.walle.repositories.bar_repository import Bar
@@ -29,6 +30,22 @@ def make_bar(
         low=close - Decimal("100"),
         close=close,
         volume=Decimal("100.00"),
+    )
+
+
+def make_tick(
+    timestamp: datetime | None = None,
+    run_id: str = "test-run",
+    timeframe: str = "1m",
+    bar_index: int = 0,
+) -> ClockTick:
+    """Factory for test clock ticks."""
+    return ClockTick(
+        run_id=run_id,
+        ts=timestamp or datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+        timeframe=timeframe,
+        bar_index=bar_index,
+        is_backtest=True,
     )
 
 
@@ -58,7 +75,7 @@ class TestSampleStrategyOnTick:
 
     async def test_requests_data_window(self, strategy: SampleStrategy) -> None:
         """on_tick() always requests data window."""
-        tick = type("Tick", (), {"timestamp": datetime(2024, 1, 1, 9, 30, tzinfo=UTC)})()
+        tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
         actions = await strategy.on_tick(tick)
 
@@ -68,7 +85,7 @@ class TestSampleStrategyOnTick:
 
     async def test_requests_configured_lookback(self, strategy: SampleStrategy) -> None:
         """on_tick() uses configured lookback."""
-        tick = type("Tick", (), {"timestamp": datetime(2024, 1, 1, 9, 30, tzinfo=UTC)})()
+        tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
         actions = await strategy.on_tick(tick)
 

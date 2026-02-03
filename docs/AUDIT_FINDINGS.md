@@ -804,6 +804,22 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
    - Uses injection (`event_log`, `strategy`) - no hardcoded dependencies
    - Integration test wires it with GretaService via RunManager
 
+4. **SimulatedFill.side Type**: Currently `str` ("buy"/"sell"), should be `OrderSide` enum
+   - Impact: Comparison uses `fill.side == OrderSide.BUY.value` instead of direct enum
+   - Fix: Change `SimulatedFill.side: str` → `side: OrderSide` in M5
+   - Files affected: `src/greta/models.py`, `src/greta/fill_simulator.py`, `src/greta/greta_service.py`
+
+5. **Duplicate ClockTick Definition**: `tests/fixtures/clock.py` duplicates `src/glados/clock/base.py`
+   - `ControllableClock` uses its own local `ClockTick` dataclass
+   - Should import from `src/glados/clock/base` to avoid drift
+   - Fix: Remove duplicate, update `ControllableClock` to use production `ClockTick`
+   - Files affected: `tests/fixtures/clock.py`, `tests/unit/test_infrastructure.py`
+
+6. **Missing veda_orders Table**: Test expects 4 tables but only 3 exist
+   - `veda_orders` table not yet implemented
+   - Fix: Add VedaOrder model in M5 when implementing order persistence
+   - Files affected: `src/walle/models.py`, `tests/unit/walle/test_models.py`
+
 ### M5: Marvin Full Implementation
 | Task | Status | Date | Notes |
 |------|--------|------|-------|

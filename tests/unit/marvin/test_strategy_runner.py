@@ -12,8 +12,25 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 
+from src.glados.clock.base import ClockTick
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
 from src.marvin.strategy_runner import StrategyRunner
+
+
+def make_tick(
+    timestamp: datetime | None = None,
+    run_id: str = "test-run",
+    timeframe: str = "1m",
+    bar_index: int = 0,
+) -> ClockTick:
+    """Factory for test clock ticks."""
+    return ClockTick(
+        run_id=run_id,
+        ts=timestamp or datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+        timeframe=timeframe,
+        bar_index=bar_index,
+        is_backtest=True,
+    )
 
 
 class DummyStrategy(BaseStrategy):
@@ -120,8 +137,7 @@ class TestStrategyRunnerOnTick:
         self, initialized_runner: StrategyRunner
     ) -> None:
         """on_tick() passes tick to strategy."""
-        tick = MagicMock()
-        tick.timestamp = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
+        tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
         await initialized_runner.on_tick(tick)
 
@@ -132,8 +148,7 @@ class TestStrategyRunnerOnTick:
         self, initialized_runner: StrategyRunner
     ) -> None:
         """on_tick() emits strategy.FetchWindow for fetch_window action."""
-        tick = MagicMock()
-        tick.timestamp = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
+        tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
         await initialized_runner.on_tick(tick)
 
@@ -158,7 +173,7 @@ class TestStrategyRunnerOnTick:
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
         await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
 
-        tick = MagicMock()
+        tick = make_tick()
         await runner.on_tick(tick)
 
         mock_event_log.append.assert_called()
@@ -181,7 +196,7 @@ class TestStrategyRunnerOnTick:
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
         await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
 
-        tick = MagicMock()
+        tick = make_tick()
         await runner.on_tick(tick)
 
         assert mock_event_log.append.call_count == 2

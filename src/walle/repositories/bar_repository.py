@@ -99,7 +99,7 @@ class BarRepository:
 
             # PostgreSQL upsert: ON CONFLICT DO NOTHING
             stmt = pg_insert(BarRecord).values(values)
-            stmt = stmt.on_conflict_do_nothing(constraint="uq_bar")
+            stmt = stmt.on_conflict_do_nothing(constraint=BarRecord.UNIQUE_CONSTRAINT)
 
             result = await session.execute(stmt)
             await session.commit()

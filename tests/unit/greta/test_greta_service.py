@@ -438,18 +438,19 @@ class TestGretaServicePositionTracking:
         self, service_with_bars: GretaService
     ) -> None:
         """Position unrealized P&L updates with price."""
-        # Buy at 42000 (bar open at 9:31)
+        # Buy at 42100 (bar open at 9:31) + slippage
         await service_with_bars.place_order(
             make_order_intent(side=OrderSide.BUY, qty=Decimal("1.0"))
         )
         await service_with_bars.advance_to(datetime(2024, 1, 1, 9, 31, tzinfo=UTC))
 
-        # Price moved to 42200 (bar open at 9:32)
+        # Price moved up at 9:32
         await service_with_bars.advance_to(datetime(2024, 1, 1, 9, 32, tzinfo=UTC))
 
         pos = service_with_bars.positions["BTC/USD"]
-        # Bought at ~42100 (9:31 open), now at 42200 open = ~100 profit
-        assert pos.unrealized_pnl > Decimal("0")
+        # Entry ~42100 (9:31 open), marked to 9:32 bar close
+        # Expected profit: ~200-250 depending on slippage config
+        assert Decimal("150") < pos.unrealized_pnl <= Decimal("300")
 
 
 class TestGretaServiceGetResult:

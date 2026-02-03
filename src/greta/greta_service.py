@@ -295,14 +295,41 @@ class GretaService:
         for order_id in filled_order_ids:
             del self._pending_orders[order_id]
 
+    # =========================================================================
+    # Position Helpers
+    # =========================================================================
+
+    @staticmethod
+    def _is_adding_to_position(old_qty: Decimal, qty_change: Decimal) -> bool:
+        """
+        Check if a trade adds to an existing position (same direction).
+        
+        Both quantities have the same sign means we're adding:
+        - Long position (old_qty > 0) + buy (qty_change > 0) = adding
+        - Short position (old_qty < 0) + sell (qty_change < 0) = adding
+        """
+        return old_qty * qty_change > 0
+
+    @staticmethod
+    def _is_position_reversal(old_qty: Decimal, new_qty: Decimal) -> bool:
+        """
+        Check if a trade reverses the position direction.
+        
+        Signs differ means we crossed zero:
+        - Long→Short: old_qty > 0, new_qty < 0
+        - Short→Long: old_qty < 0, new_qty > 0
+        """
+        return old_qty * new_qty < 0
+
     def _apply_fill(self, fill: SimulatedFill) -> None:
         """Apply a fill to update positions and cash."""
         symbol = fill.symbol
-        qty_change = fill.qty if fill.side == "buy" else -fill.qty
+        is_buy = fill.side == OrderSide.BUY.value
+        qty_change = fill.qty if is_buy else -fill.qty
         notional = fill.qty * fill.fill_price
 
         # Update cash
-        if fill.side == "buy":
+        if is_buy:
             self._cash -= notional + fill.commission
         else:
             self._cash += notional - fill.commission
@@ -317,11 +344,16 @@ class GretaService:
                 # Position closed
                 del self._positions[symbol]
             else:
-                # Update position
-                if (old_qty > 0 and qty_change > 0) or (old_qty < 0 and qty_change < 0):
-                    # Adding to position - update avg entry
+                # Update position with appropriate entry price handling
+                if self._is_adding_to_position(old_qty, qty_change):
+                    # Adding to existing position - weighted average entry price
                     total_cost = pos.avg_entry_price * abs(old_qty) + fill.fill_price * fill.qty
                     pos.avg_entry_price = total_cost / abs(new_qty)
+                elif self._is_position_reversal(old_qty, new_qty):
+                    # Position reversed (long→short or short→long)
+                    # The "excess" quantity forms new position at fill price
+                    pos.avg_entry_price = fill.fill_price
+                # else: Reducing position (partial close) - avg_entry_price unchanged
                 
                 pos.qty = new_qty
                 pos.market_value = new_qty * fill.fill_price
