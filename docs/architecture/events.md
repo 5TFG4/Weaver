@@ -124,19 +124,62 @@ When multiple runs execute concurrently (parallel backtests, backtest + live):
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## 7. Implementation
+## 8. Subscription API
+
+EventLog supports filtered subscriptions for real-time event delivery:
+
+```python
+from src.events.log import InMemoryEventLog
+from src.events.protocol import Envelope
+
+log = InMemoryEventLog()
+
+# Subscribe to specific event types
+def on_order_event(envelope: Envelope):
+    print(f"Order event: {envelope.type}")
+
+sub_id = log.subscribe_filtered(
+    event_types=["orders.Placed", "orders.Filled"],
+    callback=on_order_event
+)
+
+# Subscribe with custom filter (e.g., by run_id)
+sub_id = log.subscribe_filtered(
+    event_types=["orders.Placed"],
+    callback=on_order_event,
+    filter_fn=lambda e: e.run_id == "my-run-id"
+)
+
+# Subscribe to ALL events (wildcard)
+sub_id = log.subscribe_filtered(
+    event_types=["*"],
+    callback=on_all_events
+)
+
+# Unsubscribe by ID (safe for unknown IDs)
+log.unsubscribe_by_id(sub_id)
+```
+
+**Key Features:**
+- `subscribe_filtered()` returns a unique subscription ID
+- Filter by event types (list) + optional custom `filter_fn`
+- Wildcard `["*"]` subscribes to all events
+- Error in one subscriber doesn't break others (logged, continues)
+- `unsubscribe_by_id()` is safe for unknown IDs (no-op)
+
+## 9. Implementation
 
 **Files**: `src/events/`
 
 | File | Purpose |
 |------|---------|
-| `protocol.py` | Envelope dataclass, ErrorResponse |
+| `protocol.py` | Envelope dataclass, Subscription dataclass, ErrorResponse |
 | `types.py` | Event type constants by namespace |
 | `registry.py` | Type → Payload validation |
-| `log.py` | Outbox write + LISTEN/NOTIFY |
+| `log.py` | Outbox write + LISTEN/NOTIFY + Subscription management |
 | `offsets.py` | Consumer offset management |
 
-## 8. Data & Persistence
+## 10. Data & Persistence
 
 * **Business data (WallE)**: `orders / fills / candles / runs / backtests / strategy_results`, exposed via repositories.
 * **EventLog**: `outbox` (fact log) and `consumer_offsets` (progress).

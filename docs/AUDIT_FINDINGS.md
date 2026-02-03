@@ -872,19 +872,39 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-## M5: Marvin Core (Strategy System) ⏳ NEXT
+## M5: Marvin Core (Strategy System) 🟨 IN PROGRESS
 
 **Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)  
-**Full Plan**: [MILESTONE_PLAN.md](MILESTONE_PLAN.md)
+**Start Date**: 2026-02-03
 
-### M5-1: EventLog Subscription (~10 tests)
+### M5-1: EventLog Subscription ✅ COMPLETED (12 tests)
 | Task | Status | Notes |
 |------|--------|-------|
-| Add subscribe/unsubscribe to EventLog protocol | ⬜ | |
-| Implement in InMemoryEventLog | ⬜ | |
-| Implement in PostgresEventLog | ⬜ | |
-| Test: multi-subscriber receive | ⬜ | |
-| Test: unsubscribe stops receiving | ⬜ | |
+| Add `Subscription` dataclass to protocol.py | ✅ | With `matches()` method for filtering |
+| Add `subscribe_filtered()` to EventLog ABC | ✅ | Returns subscription ID |
+| Add `unsubscribe_by_id()` to EventLog ABC | ✅ | Safe no-op for unknown ID |
+| Implement in InMemoryEventLog | ✅ | Full filtering support |
+| Implement in PostgresEventLog | ✅ | Uses LISTEN/NOTIFY |
+| Test: subscribe returns unique ID | ✅ | test_subscription.py |
+| Test: subscriber receives matching events | ✅ | Type filtering works |
+| Test: subscriber ignores non-matching events | ✅ | |
+| Test: custom filter_fn works | ✅ | e.g., filter by run_id |
+| Test: unsubscribe stops delivery | ✅ | |
+| Test: multiple subscribers same event | ✅ | Both receive |
+| Test: subscriber error doesn't break others | ✅ | Logs error, continues |
+| Test: wildcard subscription ["*"] | ✅ | Receives all events |
+| Test: multiple event types | ✅ | ["type.A", "type.B"] |
+| Test: unsubscribe unknown ID is safe | ✅ | No error raised |
+| Test: each subscription unique ID | ✅ | |
+| Test: filter_fn with payload check | ✅ | |
+| **Total tests added** | | **+12 tests (643 total)** |
+
+#### M5-1 Files Changed
+| File | Change |
+|------|--------|
+| `src/events/protocol.py` | Added `Subscription` dataclass with `matches()` |
+| `src/events/log.py` | Added `subscribe_filtered()`, `unsubscribe_by_id()` to ABC, InMemoryEventLog, PostgresEventLog |
+| `tests/unit/events/test_subscription.py` | **Created**: 12 tests for subscription functionality |
 
 ### M5-2: data.WindowReady Flow (~15 tests)
 | Task | Status | Notes |

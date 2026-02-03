@@ -9,8 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    pass
 
 
 def _generate_id() -> str:
@@ -113,6 +116,34 @@ class Envelope:
             headers=self.headers,
             payload=self.payload,
         )
+
+
+@dataclass
+class Subscription:
+    """
+    Represents an event subscription with optional filtering.
+
+    Attributes:
+        id: Unique subscription identifier
+        event_types: List of event types to receive (use ['*'] for all)
+        callback: Async function to call for each matching event
+        filter_fn: Optional function to further filter events
+    """
+
+    id: str
+    event_types: list[str]
+    callback: "Callable[[Envelope], Any]"
+    filter_fn: "Callable[[Envelope], bool] | None" = None
+
+    def matches(self, envelope: Envelope) -> bool:
+        """Check if envelope matches this subscription's filters."""
+        # Check event type filter
+        if "*" not in self.event_types and envelope.type not in self.event_types:
+            return False
+        # Check custom filter function
+        if self.filter_fn is not None and not self.filter_fn(envelope):
+            return False
+        return True
 
 
 @dataclass(frozen=True)
