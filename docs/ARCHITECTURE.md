@@ -42,12 +42,11 @@
 | M3 Veda Trading | [m3-veda.md](archive/milestone-details/m3-veda.md) | ✅ Done |
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
-| **M5 Marvin Full** | TBD | ⏳ Next |
+| **M5 Marvin Full** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ⏳ Next |
 
 ---
 
 ## 1. System Goals
-
 * A 24/7 automated trading system on a local server
 * **Live trading and backtesting** with the same strategy code
 * **Multi‑strategy concurrency** (parallel runs isolated by `run_id`)

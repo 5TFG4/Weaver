@@ -678,46 +678,55 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-## 5. Milestone-Based Fix Schedule
+## 5. Milestone-Based Fix Schedule (Revised 2026-02-03)
 
-> Issues are now scheduled into milestones per [roadmap.md](architecture/roadmap.md).
-> See Section 4 of roadmap for M3.5 full design.
+> Issues scheduled per [MILESTONE_PLAN.md](MILESTONE_PLAN.md) and [roadmap.md](architecture/roadmap.md).
 
-### M3.5: Integration Fixes (Before M4)
+### M5: Marvin Core (Strategy System)
 
-| Issue | Task | Complexity |
-|-------|------|------------|
-| 1.1 | Routes use module singletons → Use Depends() | Medium |
-| 1.3 | VedaService unused → Wire to routes | Medium |
-| 1.6 | `orders.Created` undefined → Add to types.py | Trivial |
-| 1.11 | OrderRepository session leak → Use context managers | Trivial |
-| 2.7 | Unused exceptions → Use or remove | Trivial |
-| 2.8 | Routes don't emit events → Add EventLog calls | Medium |
+| Issue | Task | MVP |
+|-------|------|-----|
+| 1.7 | EventLog subscription | M5-1 |
+| 2.1 | EventConsumer (subscribe pattern) | M5-1 |
+| - | data.WindowReady flow | M5-2 |
+| - | SMA Strategy implementation | M5-3 |
+| - | PluginStrategyLoader | M5-4 |
+| 2.2 | Unused event types (strategy.*) | M5-3 |
+| M4 #4 | SimulatedFill.side enum | M5-5 |
+| M4 #5 | ClockTick duplicate | M5-5 |
 
-### M4: With Greta (Backtest)
+### M6: Live Trading (Paper/Live Flow)
 
-| Issue | Task | Notes |
-|-------|------|-------|
-| 1.7 | LISTEN/NOTIFY not activated | Real-time for live runs |
-| 1.8 | Clock not integrated | Greta needs clock |
-| 2.1 | EventConsumer unused | Useful for replay |
+| Issue | Task | MVP |
+|-------|------|-----|
+| - | PluginAdapterLoader | M6-1 |
+| 1.4 | AlpacaAdapter clients init | M6-2 |
+| 1.3 | VedaService routing | M6-3 |
+| - | Live order flow | M6-4 |
+| - | Run mode integration | M6-5 |
 
-### M5: With Marvin (Strategy)
+### M7: Haro Frontend
 
-| Issue | Task | Notes |
-|-------|------|-------|
-| 1.4 | AlpacaAdapter clients null | Live trading needs this |
-| 2.2 | 75% event types unused | Strategy events |
+| Issue | Task | MVP |
+|-------|------|-----|
+| - | React scaffold | M7-1 |
+| - | Dashboard page | M7-2 |
+| - | Runs page | M7-3 |
+| - | Orders page | M7-4 |
+| - | SSE integration | M7-5 |
 
-### M7: Polish
+### M8: Polish & E2E
 
-| Issue | Task |
-|-------|------|
-| 2.3 | Registry not pre-populated |
-| 2.4 | Unused config classes |
-| 2.6 | Credentials repr security |
-| 2.9-2.14 | Test improvements |
-| 3.x | Low priority items |
+| Issue | Task | MVP |
+|-------|------|-----|
+| 2.3 | Registry not pre-populated | M8-4 |
+| 2.4 | Unused config classes | M8-4 |
+| 2.6 | Credentials repr security | M8-4 |
+| 2.9-2.14 | Test improvements | M8-4 |
+| 3.x | Low priority items | M8-4 |
+| - | Sharpe ratio, max drawdown | M8-4 |
+| - | E2E tests (Playwright) | M8-1~3 |
+| - | Documentation | M8-5 |
 
 ---
 
@@ -861,23 +870,155 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
    - Conversion functions (`veda_order_to_order_state`, `order_state_to_veda_order`) stay in veda/
    - Files changed: `src/walle/models.py`, `src/veda/persistence.py`, `tests/unit/veda/test_persistence.py`
 
-### M5: Marvin Full Implementation
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Complete Marvin strategy loading | ⬜ | | |
-| Initialize AlpacaAdapter clients | ⬜ | | Live trading needs this |
-| Wire VedaService to order routes | ⬜ | | Deferred from M3.5 |
-| Implement SMA strategy | ⬜ | | |
-| Live order flow (paper mode) | ⬜ | | |
+---
 
-### M7: Polish
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Fix test cleanup consistency | ⬜ | | |
-| Add behavioral assertions | ⬜ | | |
-| Remove unused config/event types | ⬜ | | |
-| Security: credentials repr | ⬜ | | |
+## M5: Marvin Core (Strategy System) ⏳ NEXT
+
+**Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)  
+**Full Plan**: [MILESTONE_PLAN.md](MILESTONE_PLAN.md)
+
+### M5-1: EventLog Subscription (~10 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add subscribe/unsubscribe to EventLog protocol | ⬜ | |
+| Implement in InMemoryEventLog | ⬜ | |
+| Implement in PostgresEventLog | ⬜ | |
+| Test: multi-subscriber receive | ⬜ | |
+| Test: unsubscribe stops receiving | ⬜ | |
+
+### M5-2: data.WindowReady Flow (~15 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| StrategyRunner subscribes to data.WindowReady | ⬜ | |
+| GretaService subscribes to backtest.FetchWindow | ⬜ | M4 deferred |
+| GretaService emits data.WindowReady | ⬜ | |
+| Test: complete FetchWindow → WindowReady chain | ⬜ | |
+| Test: no data error handling | ⬜ | |
+
+### M5-3: SMA Strategy (~12 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create src/marvin/strategies/ package | ⬜ | |
+| Implement SMAStrategy with crossover logic | ⬜ | |
+| Configurable fast_period, slow_period | ⬜ | |
+| Test: SMA calculation | ⬜ | |
+| Test: crossover signal generation | ⬜ | |
+| Integration: SMA backtest with trades | ⬜ | |
+
+### M5-4: Plugin Strategy Loader (~15 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create StrategyMeta dataclass | ⬜ | Plugin metadata |
+| Create @strategy decorator (optional) | ⬜ | |
+| Implement PluginStrategyLoader | ⬜ | Auto-discovery |
+| Dependency resolution (topological sort) | ⬜ | |
+| Move sample_strategy.py to strategies/ | ⬜ | Add STRATEGY_META |
+| Remove hardcoded imports from __init__.py | ⬜ | Delete safety |
+| Test: discover strategies | ⬜ | |
+| Test: load by ID | ⬜ | |
+| Test: dependency resolution | ⬜ | |
+| Test: deleted strategy = system works | ⬜ | |
+| Test: missing dependency error | ⬜ | |
+
+### M5-5: Code Quality - Marvin (~8 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| SimulatedFill.side: str → OrderSide | ⬜ | M4 note #4 |
+| Extract SimpleTestStrategy to fixtures | ⬜ | M4 note #2 |
+| Extract MockStrategyLoader to fixtures | ⬜ | M4 note #2 |
+| Fix ClockTick duplicate definition | ⬜ | M4 note #5 |
+| Clock Union type | ⬜ | run_manager.py TODO |
 
 ---
 
-*Last Updated: 2026-02-03 (greta_update branch complete, PR #9)*
+## M6: Live Trading (Paper/Live Flow)
+
+### M6-1: Plugin Adapter Loader (~10 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create AdapterMeta dataclass | ⬜ | Plugin metadata |
+| Implement PluginAdapterLoader | ⬜ | Auto-discovery |
+| Add ADAPTER_META to alpaca_adapter.py | ⬜ | |
+| Add ADAPTER_META to mock_adapter.py | ⬜ | |
+| Remove hardcoded imports from adapters/__init__.py | ⬜ | Delete safety |
+| Test: discover adapters | ⬜ | |
+| Test: load by ID | ⬜ | |
+| Test: deleted adapter = system works | ⬜ | |
+| Test: feature support query | ⬜ | |
+
+### M6-2: AlpacaAdapter Init (~12 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add connect() method to AlpacaAdapter | ⬜ | Issue 1.4 |
+| Initialize TradingClient | ⬜ | |
+| Initialize CryptoHistoricalDataClient | ⬜ | |
+| Add connection verification | ⬜ | |
+| Error handling: invalid credentials | ⬜ | |
+| Error handling: network timeout | ⬜ | |
+| Test: connection success | ⬜ | |
+| Test: Paper vs Live mode | ⬜ | |
+
+### M6-3: VedaService Routing (~10 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add get_veda_service to dependencies.py | ⬜ | Issue 1.3 |
+| Update order routes to use VedaService | ⬜ | |
+| Remove/deprecate MockOrderService | ⬜ | |
+| Test: route injection | ⬜ | |
+| Test: order creation via VedaService | ⬜ | |
+
+### M6-4: Live Order Flow (~15 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| VedaService subscribes to live.PlaceOrder | ⬜ | |
+| DomainRouter routes to live.* for live mode | ⬜ | |
+| Order status sync (submitted → filled) | ⬜ | |
+| Test: paper order submit | ⬜ | |
+| Test: paper order fill | ⬜ | |
+| Test: order cancel | ⬜ | |
+| Test: partial fill | ⬜ | |
+
+### M6-5: Run Mode Integration (~8 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| RunManager supports live runs (RealtimeClock) | ⬜ | |
+| Live Run uses real market time | ⬜ | |
+| Backtest/Live switch correctly | ⬜ | |
+| Test: create live run | ⬜ | |
+| Test: live run uses RealtimeClock | ⬜ | |
+| Test: stop live run | ⬜ | |
+
+---
+
+## M7: Haro Frontend
+
+| Task | Status | Notes |
+|------|--------|-------|
+| React scaffold + Vite + TypeScript | ⬜ | M7-1 |
+| Docker build configuration | ⬜ | M7-1 |
+| Dashboard page | ⬜ | M7-2 |
+| Runs page (list + detail) | ⬜ | M7-3 |
+| Orders page | ⬜ | M7-4 |
+| SSE client integration | ⬜ | M7-5 |
+
+---
+
+## M8: Polish & E2E
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Playwright E2E setup | ⬜ | M8-1 |
+| E2E: backtest flow | ⬜ | M8-2 |
+| E2E: live flow | ⬜ | M8-3 |
+| Clean all TODO/FIXME | ⬜ | M8-4 |
+| Sharpe ratio calculation | ⬜ | M8-4 |
+| Max drawdown calculation | ⬜ | M8-4 |
+| Credentials repr security | ⬜ | M8-4 |
+| Remove unused config/event types | ⬜ | M8-4 |
+| Documentation update | ⬜ | M8-5 |
+| Strategy development guide | ⬜ | M8-5 |
+| Adapter development guide | ⬜ | M8-5 |
+
+---
+
+*Last Updated: 2026-02-03 (Milestone plan reorganized: M5-M8)*
