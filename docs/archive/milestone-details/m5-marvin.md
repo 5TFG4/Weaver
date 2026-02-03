@@ -63,9 +63,10 @@ M5 completes the Marvin strategy core system with plugin architecture. This mile
 | G3 | Implement SMA crossover strategy | P0 | M5-3 |
 | G4 | Plugin architecture for strategies (sideload) | P0 | M5-4 |
 | G5 | SimulatedFill.side → OrderSide enum | P1 | M5-5 |
-| G6 | Extract test fixtures to tests/fixtures/ | P1 | M5-5 |
+| G6 | Unified test strategy fixtures (DummyStrategy, RecordingStrategy) | P1 | M5-5 |
 | G7 | Fix ClockTick duplicate definition | P1 | M5-5 |
 | G8 | Clock Union type (backtest + realtime) | P1 | M5-5 |
+| G9 | Consolidate inline test strategies to fixtures/strategies.py | P1 | M5-5 |
 
 ### Non-Goals (Out of Scope - Moved to M6)
 
@@ -328,6 +329,188 @@ class EnsembleStrategy(BaseStrategy):
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 2.2 Test Fixtures Architecture (G6, G9)
+
+### Problem Statement
+
+Test strategies are scattered across multiple files with duplicate implementations:
+
+| Location | Class | Problem |
+|----------|-------|---------|
+| `tests/unit/marvin/test_strategy_runner_events.py` | `DummyStrategy` | Inline definition, not reusable |
+| `tests/integration/test_backtest_flow.py` | `SimpleTestStrategy` | Inline definition |
+| `tests/integration/test_backtest_flow.py` | `MockStrategyLoader` | Inline definition |
+
+### Solution: Unified Test Fixtures
+
+```
+tests/fixtures/
+├── __init__.py           # Exports all fixtures
+├── clock.py              # Controllable clock (exists)
+├── database.py           # Mock database (exists)
+├── event_log.py          # In-memory event log (exists)
+├── http.py               # HTTP mocking (exists)
+└── strategies.py         # NEW: Unified test strategies
+```
+
+### Test Strategy Classes
+
+```python
+# tests/fixtures/strategies.py
+
+from dataclasses import dataclass, field
+from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.strategy_loader import StrategyLoader
+from src.glados.clock.base import ClockTick
+
+
+class DummyStrategy(BaseStrategy):
+    """
+    No-op strategy with configurable return actions.
+    
+    Use for unit tests where you need to control what the strategy returns.
+    """
+    
+    def __init__(self) -> None:
+        super().__init__()
+        # Configure these before running tests
+        self.tick_actions: list[StrategyAction] = []
+        self.data_actions: list[StrategyAction] = []
+        # Records all inputs for assertions
+        self.received_ticks: list[ClockTick] = []
+        self.received_data: list[dict] = []
+    
+    async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
+        self.received_ticks.append(tick)
+        return self.tick_actions
+    
+    async def on_data(self, data: dict) -> list[StrategyAction]:
+        self.received_data.append(data)
+        return self.data_actions
+
+
+class RecordingStrategy(BaseStrategy):
+    """
+    Strategy that records all inputs without producing actions.
+    
+    Use for integration tests where you need to verify what data
+    the strategy received.
+    """
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.tick_history: list[ClockTick] = []
+        self.data_history: list[dict] = []
+    
+    async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
+        self.tick_history.append(tick)
+        return []
+    
+    async def on_data(self, data: dict) -> list[StrategyAction]:
+        self.data_history.append(data)
+        return []
+
+
+class PredictableStrategy(BaseStrategy):
+    """
+    Strategy that returns pre-configured sequence of actions.
+    
+    Use when you need to test specific action sequences.
+    """
+    
+    def __init__(
+        self,
+        tick_actions: list[list[StrategyAction]] | None = None,
+        data_actions: list[list[StrategyAction]] | None = None
+    ) -> None:
+        super().__init__()
+        self._tick_actions = tick_actions or []
+        self._data_actions = data_actions or []
+        self._tick_index = 0
+        self._data_index = 0
+    
+    async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
+        if self._tick_index < len(self._tick_actions):
+            actions = self._tick_actions[self._tick_index]
+            self._tick_index += 1
+            return actions
+        return []
+    
+    async def on_data(self, data: dict) -> list[StrategyAction]:
+        if self._data_index < len(self._data_actions):
+            actions = self._data_actions[self._data_index]
+            self._data_index += 1
+            return actions
+        return []
+
+
+class SimpleTestStrategy(BaseStrategy):
+    """
+    Simple strategy that buys once when data is available.
+    
+    Use for end-to-end integration tests that need a working strategy.
+    Migrated from test_backtest_flow.py.
+    """
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self._bought = False
+    
+    async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
+        return [
+            StrategyAction(
+                type="fetch_window",
+                symbol=self._symbols[0] if self._symbols else "BTC/USD",
+                lookback=5,
+            )
+        ]
+    
+    async def on_data(self, data: dict) -> list[StrategyAction]:
+        bars = data.get("bars", [])
+        if len(bars) >= 2 and not self._bought:
+            self._bought = True
+            return [
+                StrategyAction(
+                    type="place_order",
+                    symbol="BTC/USD",
+                    side="buy",
+                    qty=Decimal("0.1"),
+                    order_type="market",
+                )
+            ]
+        return []
+
+
+class MockStrategyLoader(StrategyLoader):
+    """
+    Mock strategy loader for testing.
+    
+    Returns a pre-configured strategy instead of loading from file.
+    Migrated from test_backtest_flow.py.
+    """
+    
+    def __init__(self, strategy: BaseStrategy | None = None) -> None:
+        self._strategy = strategy or SimpleTestStrategy()
+    
+    def load(self, strategy_id: str) -> BaseStrategy:
+        return self._strategy
+```
+
+### Comparison: Veda vs Marvin Testing Pattern
+
+| Aspect | Veda (Good ✅) | Marvin (Before) | Marvin (After) |
+|--------|---------------|-----------------|----------------|
+| Mock Location | `src/veda/adapters/mock_adapter.py` | Inline in test files | `tests/fixtures/strategies.py` |
+| Production Use | Yes (backtest mode) | No | No (test-only) |
+| Reusable | Yes | No | Yes |
+| Configurable | `set_mock_price()`, `set_reject_next_order()` | Ad-hoc per test | `tick_actions`, `data_actions` properties |
+| Type Safety | Real class | Real class | Real class |
+
+**Note**: `MockExchangeAdapter` is in `src/` because it's used in production backtest mode.
+Test strategies go in `tests/fixtures/` because they're test-only.
 
 ---
 
@@ -851,12 +1034,12 @@ class ControllableClock:
 |-----|-------|-------|----------|--------------|--------|
 | M5-1 | EventLog Subscription | 12 | P0 | - | ✅ Done |
 | M5-2 | data.WindowReady Flow | 15 | P0 | M5-1 | ✅ Done |
-| M5-3 | SMA Strategy | ~12 | P0 | M5-2 | ⬜ |
+| M5-3 | SMA Strategy | 17 | P0 | M5-2 | ✅ Done |
 | M5-4 | Plugin Strategy Loader | ~15 | P0 | M5-3 | ⬜ |
-| M5-5 | Code Quality Fixes | ~8 | P1 | - | ⬜ |
+| M5-5 | Code Quality & Test Fixtures | ~12 | P1 | - | ⬜ |
 
-**Estimated Total: ~60 new tests** (allowing for ~20 integration tests)
-**Current Progress: 27 tests completed (12 + 15)**
+**Estimated Total: ~71 new tests** (44 completed + ~27 remaining)
+**Current Progress: 44 tests completed (12 + 15 + 17)**
 
 ---
 
@@ -1603,10 +1786,13 @@ class TestSMABacktestIntegration:
 
 #### Definition of Done
 
-- [ ] All 12 tests pass
-- [ ] SMA strategy produces correct buy/sell signals
-- [ ] Backtest produces actual trades
-- [ ] Strategy is configurable (periods, qty)
+- [x] All 17 tests pass ✅ 2026-02-03
+- [x] SMAConfig with validation ✅
+- [x] SMA calculation correct ✅
+- [x] SMA strategy produces correct buy/sell signals ✅
+- [x] Crossover detection works ✅
+- [x] Position tracking works ✅
+- [x] Strategy is configurable (periods, qty) ✅
 
 ---
 
@@ -1869,24 +2055,101 @@ class Lazy(BaseStrategy):
 
 ---
 
-### M5-5: Code Quality Fixes (~8 tests)
+### M5-5: Code Quality & Test Fixtures (~12 tests)
 
-**Goal**: Fix M4 deferred items - type safety and test fixtures.
+**Goal**: Fix M4 deferred items + consolidate test strategy fixtures.
 
-**Why Last**: These are P1 improvements that don't block functionality.
+**Why Last**: These are P1 improvements that don't block functionality, but improve maintainability.
 
-#### Files to Modify
+#### Files to Create/Modify
 
 | File | Action | Description |
 |------|--------|-------------|
+| `tests/fixtures/strategies.py` | Create | Unified test strategies (DummyStrategy, RecordingStrategy, etc.) |
+| `tests/fixtures/__init__.py` | Modify | Export new strategy fixtures |
+| `tests/unit/marvin/test_strategy_runner_events.py` | Modify | Use fixtures/strategies.py instead of inline |
+| `tests/integration/test_backtest_flow.py` | Modify | Use fixtures/strategies.py instead of inline |
 | `src/greta/models.py` | Modify | SimulatedFill.side: str → OrderSide |
 | `src/greta/fill_simulator.py` | Modify | Update to use OrderSide |
-| `src/greta/greta_service.py` | Modify | Update comparisons |
-| `tests/fixtures/clock.py` | Modify | Remove ClockTick duplicate |
-| `tests/fixtures/strategy.py` | Create | Extract SimpleTestStrategy |
+| `tests/fixtures/clock.py` | Modify | Remove ClockTick duplicate, import from production |
 | `src/glados/services/run_manager.py` | Modify | Add Clock union type |
 
-#### Test Cases
+#### Part A: Test Strategy Fixtures (4 tests)
+
+```python
+# tests/unit/test_strategy_fixtures.py
+
+class TestDummyStrategy:
+    """Tests for DummyStrategy fixture."""
+    
+    async def test_returns_configured_tick_actions(self):
+        """DummyStrategy returns tick_actions when set."""
+        from tests.fixtures.strategies import DummyStrategy
+        
+        strategy = DummyStrategy()
+        strategy.tick_actions = [StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=5)]
+        
+        actions = await strategy.on_tick(make_tick())
+        assert len(actions) == 1
+        assert actions[0].type == "fetch_window"
+    
+    async def test_returns_configured_data_actions(self):
+        """DummyStrategy returns data_actions when set."""
+        from tests.fixtures.strategies import DummyStrategy
+        
+        strategy = DummyStrategy()
+        strategy.data_actions = [StrategyAction(type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("1.0"))]
+        
+        actions = await strategy.on_data({"bars": []})
+        assert len(actions) == 1
+    
+    async def test_records_received_ticks(self):
+        """DummyStrategy records ticks for assertions."""
+        from tests.fixtures.strategies import DummyStrategy
+        
+        strategy = DummyStrategy()
+        tick = make_tick()
+        await strategy.on_tick(tick)
+        
+        assert len(strategy.received_ticks) == 1
+        assert strategy.received_ticks[0] == tick
+    
+    async def test_records_received_data(self):
+        """DummyStrategy records data for assertions."""
+        from tests.fixtures.strategies import DummyStrategy
+        
+        strategy = DummyStrategy()
+        data = {"bars": [{"close": Decimal("100")}]}
+        await strategy.on_data(data)
+        
+        assert len(strategy.received_data) == 1
+        assert strategy.received_data[0] == data
+
+
+class TestMockStrategyLoader:
+    """Tests for MockStrategyLoader fixture."""
+    
+    def test_returns_configured_strategy(self):
+        """MockStrategyLoader returns the strategy it was given."""
+        from tests.fixtures.strategies import MockStrategyLoader, DummyStrategy
+        
+        dummy = DummyStrategy()
+        loader = MockStrategyLoader(strategy=dummy)
+        
+        loaded = loader.load("any-id")
+        assert loaded is dummy
+    
+    def test_default_returns_simple_test_strategy(self):
+        """MockStrategyLoader defaults to SimpleTestStrategy."""
+        from tests.fixtures.strategies import MockStrategyLoader, SimpleTestStrategy
+        
+        loader = MockStrategyLoader()
+        loaded = loader.load("any-id")
+        
+        assert isinstance(loaded, SimpleTestStrategy)
+```
+
+#### Part B: Type Safety (4 tests)
 
 ```python
 # tests/unit/greta/test_type_safety.py
@@ -1898,14 +2161,17 @@ class TestSimulatedFillTypeSafety:
         """SimulatedFill.side is OrderSide, not str."""
         fill = SimulatedFill(
             order_id="123",
+            symbol="BTC/USD",
             side=OrderSide.BUY,  # Should be enum
-            ...
+            qty=Decimal("1.0"),
+            price=Decimal("100.0"),
+            timestamp=datetime.now(UTC)
         )
         assert isinstance(fill.side, OrderSide)
     
-    def test_fill_simulator_returns_order_side(self):
-        """FillSimulator returns fills with OrderSide."""
-        ...
+    def test_fill_simulator_returns_order_side_enum(self):
+        """FillSimulator returns fills with OrderSide enum."""
+        # ... test implementation
 
 
 # tests/unit/test_clock_fixture.py
@@ -1919,32 +2185,52 @@ class TestClockFixture:
         from src.glados.clock.base import ClockTick
         
         clock = ControllableClock()
-        tick = clock.make_tick(datetime.now())
+        tick = clock.make_tick(datetime.now(UTC))
         
         assert isinstance(tick, ClockTick)
-
-
-# tests/unit/test_strategy_fixtures.py
-
-class TestStrategyFixtures:
-    """Tests for strategy test fixtures."""
     
-    def test_simple_test_strategy_available(self):
-        """SimpleTestStrategy is importable from fixtures."""
-        from tests.fixtures.strategy import SimpleTestStrategy
-        
-        strategy = SimpleTestStrategy()
-        assert hasattr(strategy, "on_tick")
-        assert hasattr(strategy, "on_data")
+    def test_no_duplicate_clock_tick_definition(self):
+        """There is only one ClockTick definition in codebase."""
+        # This test verifies we import from production, not define locally
+        from tests.fixtures.clock import ControllableClock
+        import inspect
+        source = inspect.getsourcefile(ControllableClock)
+        # Should not contain 'class ClockTick' or '@dataclass\\nclass ClockTick'
 ```
+
+#### Part C: Migration Tasks (4 tests via refactoring)
+
+These tests verify that existing tests still pass after migration:
+
+```python
+# Run existing test files to verify migration:
+# - tests/unit/marvin/test_strategy_runner_events.py (uses fixtures.DummyStrategy)
+# - tests/integration/test_backtest_flow.py (uses fixtures.SimpleTestStrategy, MockStrategyLoader)
+```
+
+#### Migration Checklist
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `tests/fixtures/strategies.py` with all classes | ⬜ | DummyStrategy, RecordingStrategy, PredictableStrategy, SimpleTestStrategy, MockStrategyLoader |
+| Update `tests/fixtures/__init__.py` | ⬜ | Add strategies module documentation |
+| Migrate DummyStrategy from test_strategy_runner_events.py | ⬜ | Import from fixtures instead |
+| Migrate SimpleTestStrategy from test_backtest_flow.py | ⬜ | Import from fixtures instead |
+| Migrate MockStrategyLoader from test_backtest_flow.py | ⬜ | Import from fixtures instead |
+| SimulatedFill.side → OrderSide | ⬜ | Update models.py, fill_simulator.py |
+| ClockTick import fix | ⬜ | Remove duplicate in fixtures/clock.py |
+| Run full test suite | ⬜ | Verify no regressions |
 
 #### Definition of Done
 
-- [ ] All 8 tests pass
+- [ ] `tests/fixtures/strategies.py` exists with 5 classes
+- [ ] All 12 tests pass
+- [ ] test_strategy_runner_events.py uses `from tests.fixtures.strategies import DummyStrategy`
+- [ ] test_backtest_flow.py uses `from tests.fixtures.strategies import SimpleTestStrategy, MockStrategyLoader`
 - [ ] SimulatedFill.side is OrderSide enum
-- [ ] ClockTick imported from production code
-- [ ] SimpleTestStrategy in tests/fixtures/strategy.py
-- [ ] Clock type hint is Union[BacktestClock, RealtimeClock]
+- [ ] ClockTick imported from `src/glados/clock/base.py`
+- [ ] No duplicate class definitions
+- [ ] Full test suite passes (675+ tests)
 
 ---
 

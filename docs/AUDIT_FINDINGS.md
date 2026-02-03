@@ -942,15 +942,43 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | `tests/unit/marvin/test_strategy_runner_events.py` | **Created**: 8 tests for runner event handling |
 | `tests/unit/greta/test_greta_events.py` | **Created**: 7 tests for Greta event handling |
 
-### M5-3: SMA Strategy (~12 tests)
+### M5-3: SMA Strategy ✅ COMPLETED (17 tests)
 | Task | Status | Notes |
 |------|--------|-------|
-| Create src/marvin/strategies/ package | ⬜ | |
-| Implement SMAStrategy with crossover logic | ⬜ | |
-| Configurable fast_period, slow_period | ⬜ | |
-| Test: SMA calculation | ⬜ | |
-| Test: crossover signal generation | ⬜ | |
-| Integration: SMA backtest with trades | ⬜ | |
+| Create src/marvin/strategies/ package | ✅ | Empty __init__.py |
+| Create SMAConfig dataclass | ✅ | fast_period, slow_period, qty |
+| Config validation (fast < slow) | ✅ | Raises ValueError |
+| Implement SMAStrategy with crossover logic | ✅ | Extends BaseStrategy |
+| on_tick requests data window | ✅ | lookback = slow_period + 1 |
+| Calculate SMA correctly | ✅ | Uses last N closes |
+| Detect bullish crossover → buy | ✅ | fast crosses above slow |
+| Detect bearish crossover → sell | ✅ | fast crosses below slow |
+| Track position state | ✅ | _has_position updated |
+| Test: SMAConfig defaults | ✅ | test_sma_strategy.py |
+| Test: SMAConfig custom values | ✅ | |
+| Test: SMAConfig validation | ✅ | |
+| Test: on_tick fetch_window | ✅ | |
+| Test: SMA calculation | ✅ | |
+| Test: SMA partial data | ✅ | |
+| Test: bullish crossover buy | ✅ | |
+| Test: bearish crossover sell | ✅ | |
+| Test: no signal without crossover | ✅ | |
+| Test: insufficient data no signal | ✅ | |
+| Test: custom parameters | ✅ | |
+| Test: only buys when no position | ✅ | |
+| Test: only sells when has position | ✅ | |
+| Test: first data no signal | ✅ | |
+| Test: empty bars no error | ✅ | |
+| Test: position updated after buy | ✅ | |
+| Test: position updated after sell | ✅ | |
+| **Total tests added** | | **+17 tests (675 total)** |
+
+#### M5-3 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/strategies/__init__.py` | **Created**: Empty package |
+| `src/marvin/strategies/sma_strategy.py` | **Created**: SMAConfig + SMAStrategy |
+| `tests/unit/marvin/test_sma_strategy.py` | **Created**: 17 tests for SMA strategy |
 
 ### M5-4: Plugin Strategy Loader (~15 tests)
 | Task | Status | Notes |
@@ -967,14 +995,32 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | Test: deleted strategy = system works | ⬜ | |
 | Test: missing dependency error | ⬜ | |
 
-### M5-5: Code Quality - Marvin (~8 tests)
+### M5-5: Code Quality & Test Fixtures (~12 tests)
+
+**Part A: Test Strategy Fixtures** (6 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `tests/fixtures/strategies.py` | ⬜ | DummyStrategy, RecordingStrategy, PredictableStrategy, SimpleTestStrategy, MockStrategyLoader |
+| Migrate DummyStrategy from test_strategy_runner_events.py | ⬜ | |
+| Migrate SimpleTestStrategy from test_backtest_flow.py | ⬜ | |
+| Migrate MockStrategyLoader from test_backtest_flow.py | ⬜ | |
+| Update tests/fixtures/__init__.py exports | ⬜ | |
+| Test: DummyStrategy configurable actions | ⬜ | |
+| Test: DummyStrategy records inputs | ⬜ | |
+| Test: MockStrategyLoader returns configured strategy | ⬜ | |
+
+**Part B: Type Safety** (4 tests)
 | Task | Status | Notes |
 |------|--------|-------|
 | SimulatedFill.side: str → OrderSide | ⬜ | M4 note #4 |
-| Extract SimpleTestStrategy to fixtures | ⬜ | M4 note #2 |
-| Extract MockStrategyLoader to fixtures | ⬜ | M4 note #2 |
 | Fix ClockTick duplicate definition | ⬜ | M4 note #5 |
 | Clock Union type | ⬜ | run_manager.py TODO |
+| Test: SimulatedFill.side is OrderSide | ⬜ | |
+| Test: ClockTick imported from production | ⬜ | |
+
+**Design Note**: 
+- `MockExchangeAdapter` stays in `src/veda/adapters/` (used in production backtest mode) ✅
+- Test strategies go to `tests/fixtures/strategies.py` (test-only) 
 
 ---
 
