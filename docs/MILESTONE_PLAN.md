@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M7-1 Complete, 808 backend + 8 frontend tests  
-> **Remaining Work**: M7-2 → M8  
-> **Estimated Total**: ~82 new tests remaining, ~1.5 weeks
+> **Current State**: M7-2 Complete, 808 backend + 17 frontend tests  
+> **Remaining Work**: M7-3 → M8  
+> **Estimated Total**: ~73 new tests remaining, ~1 week
 
 ---
 
@@ -10,12 +10,12 @@
 
 All pending tasks have been consolidated and reorganized into 4 milestones:
 
-| Milestone | Name          | Core Objective                        | Est. Tests | Status                 |
-| --------- | ------------- | ------------------------------------- | ---------- | ---------------------- |
-| **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE                |
-| **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total)    |
-| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-1 done (8 tests) |
-| **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                     |
+| Milestone | Name          | Core Objective                        | Est. Tests | Status                  |
+| --------- | ------------- | ------------------------------------- | ---------- | ----------------------- |
+| **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE                 |
+| **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total)     |
+| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-2 done (17 tests) |
+| **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                      |
 
 **M6 Complete** (101 tests added):
 
@@ -30,7 +30,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 - M7-0: Dev Environment Setup ✅
 - M7-1: React App Scaffold ✅ (8 tests)
-- M7-2: API Client Layer ⏳ (next)
+- M7-2: API Client Layer ✅ (9 tests)
+- M7-3: Dashboard Page ⏳ (next)
 
 ---
 
@@ -279,8 +280,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | ---- | --------------------- | ----- | ------------ |
 | M7-0 | Dev Environment Setup | 0     | ✅           |
 | M7-1 | React App Scaffold    | 8 ✅  | M7-0 ✅      |
-| M7-2 | API Client Layer      | ~10   | M7-1 ✅      |
-| M7-3 | Dashboard Page        | ~8    | M7-2         |
+| M7-2 | API Client Layer      | 9 ✅  | M7-1 ✅      |
+| M7-3 | Dashboard Page        | ~8    | M7-2 ✅      |
 | M7-4 | Runs Page             | ~12   | M7-3         |
 | M7-5 | Orders Page           | ~8    | M7-4         |
 | M7-6 | SSE Integration       | ~8    | M7-5         |
