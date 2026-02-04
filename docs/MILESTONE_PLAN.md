@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M6-2 Complete, 768 tests passing  
-> **Remaining Work**: M6-3 → M6-5 → M7 → M8  
-> **Estimated Total**: ~90 new tests remaining, 3-4 weeks
+> **Current State**: M6-3 Complete, 781 tests passing  
+> **Remaining Work**: M6-4 → M6-5 → M7 → M8  
+> **Estimated Total**: ~75 new tests remaining, 3-4 weeks
 
 ---
 
@@ -124,7 +124,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 - [x] PluginAdapterLoader with auto-discovery (mirrors strategy pattern) ✅ 2026-02-04
 - [x] AlpacaAdapter `connect()` initializes real clients ✅ 2026-02-04
-- [ ] VedaService wired to order routes (replaces MockOrderService)
+- [x] VedaService wired to order routes (replaces MockOrderService) ✅ 2026-02-04
 - [ ] Paper Trading orders persist + emit events
 - [ ] Live Run uses RealtimeClock
 - [ ] ~65 new tests (target: 770+)
@@ -135,8 +135,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 |-----|-------|-------|--------------|
 | M6-1 | PluginAdapterLoader | 40 ✅ | - |
 | M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
-| M6-3 | VedaService Routing | ~12 | M6-2 ✅ |
-| M6-4 | Live Order Flow | ~15 | M6-3 |
+| M6-3 | VedaService Routing | 13 ✅ | M6-2 ✅ |
+| M6-4 | Live Order Flow | ~15 | M6-3 ✅ |
 | M6-5 | Run Mode Integration | ~9 | M6-4 |
 
 ### 2.3 Detailed Tasks
@@ -182,23 +182,24 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - [ ] Test: paper/live mode flag passed correctly
 ```
 
-#### M6-3: VedaService Routing (~12 tests)
+#### M6-3: VedaService Routing ✅ COMPLETE (13 tests)
 
-**Files**: `routes/orders.py` (MODIFY), `schemas.py` (ADD OrderCreate)
+**Files**: `routes/orders.py` (MODIFIED), `schemas.py` (MODIFIED)
 
 ```
-- [ ] Rewrite POST /orders to use VedaService
-- [ ] Add OrderCreate schema to schemas.py
-- [ ] Handle 503 when VedaService not configured
-- [ ] Implement GET /orders/{id}
-- [ ] Implement GET /orders with run_id filter
-- [ ] Test: create_order calls VedaService.place_order
-- [ ] Test: intent fields mapped correctly
-- [ ] Test: returns OrderResponse
-- [ ] Test: 422 for invalid input
-- [ ] Test: 503 when no VedaService
-- [ ] Test: get_order_by_id
-- [ ] Test: list_orders with filter
+- [x] Add OrderCreate schema to schemas.py
+- [x] Add POST /orders endpoint using VedaService
+- [x] Add DELETE /orders/{id} endpoint for cancel
+- [x] Handle 503 when VedaService not configured
+- [x] _state_to_response() converter
+- [x] _require_veda_service() dependency
+- [x] Test: create_order calls VedaService.place_order
+- [x] Test: intent fields mapped correctly
+- [x] Test: returns OrderResponse
+- [x] Test: 422 for invalid input
+- [x] Test: 503 when no VedaService
+- [x] Test: cancel_order calls VedaService
+- [x] Test: cancel nonexistent returns 404
 ```
 
 #### M6-4: Live Order Flow (~15 tests)

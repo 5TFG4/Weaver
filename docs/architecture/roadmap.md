@@ -29,7 +29,7 @@
 | Events Module | ✅ Subscription added | 57 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
-| GLaDOS API | ✅ DI complete | 201 |
+| GLaDOS API | ✅ Order routing | 214 |
 | Veda Trading | ✅ Complete | 197 |
 | Greta (backtest) | ✅ Events wired | 56 |
 | Marvin (strategy) | ✅ Plugin complete | 74 |
@@ -54,7 +54,7 @@
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
 | **5** | Marvin Core + Plugin Strategy | ~74 | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65 | ⏳ 63/65 (768 total) |
+| **6** | Live Trading + Plugin Adapter | ~65 | ⏳ 76/~100 (781 total) |
 | **7** | Haro Frontend + SSE | ~50 | ⏳ |
 | **8** | E2E + Polish | ~40 | ⏳ |
 
@@ -95,12 +95,12 @@
 
 ### Before M7 (M6 Exit Gate)
 
-- [ ] **PluginAdapterLoader with auto-discovery** (M6-1)
-- [ ] **AlpacaAdapter connect() implemented** (M6-2)
-- [ ] **VedaService wired to order routes** (M6-3)
+- [x] **PluginAdapterLoader with auto-discovery** (M6-1) ✅ 40 tests
+- [x] **AlpacaAdapter connect() implemented** (M6-2) ✅ 23 tests
+- [x] **VedaService wired to order routes** (M6-3) ✅ 13 tests
 - [ ] **Live order flow with events & persistence** (M6-4)
 - [ ] **RealtimeClock for live runs** (M6-5)
-- [ ] ~65 new tests (target: 770+)
+- [ ] ~100 new tests (target: 805+)
 
 ### Before M8 (M7 Exit Gate)
 
@@ -137,7 +137,7 @@
 |-----|-------|------------|--------|
 | M6-1 | PluginAdapterLoader | ~15 | ✅ 40 |
 | M6-2 | AlpacaAdapter Connection | ~14 | ✅ 23 |
-| M6-3 | VedaService Routing | ~12 | ⏳ |
+| M6-3 | VedaService Routing | ~12 | ✅ 13 |
 | M6-4 | Live Order Flow | ~15 | ⏳ |
 | M6-5 | Run Mode Integration | ~9 | ⏳ |
 
@@ -177,4 +177,4 @@
 
 ---
 
-*Last updated: 2026-02-04 (M6 design complete)*
+*Last updated: 2026-02-04 (M6-3 complete, 781 tests)*
