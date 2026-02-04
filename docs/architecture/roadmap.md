@@ -54,7 +54,7 @@
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
 | **5** | Marvin Core + Plugin Strategy | ~74 | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65 | ⏳ |
+| **6** | Live Trading + Plugin Adapter | ~65 | ⏳ 40/65 (745 total) |
 | **7** | Haro Frontend + SSE | ~50 | ⏳ |
 | **8** | E2E + Polish | ~40 | ⏳ |
 
@@ -135,7 +135,7 @@
 
 | MVP | Focus | Est. Tests | Status |
 |-----|-------|------------|--------|
-| M6-1 | PluginAdapterLoader | ~15 | ⏳ |
+| M6-1 | PluginAdapterLoader | ~15 | ✅ 40 |
 | M6-2 | AlpacaAdapter Connection | ~14 | ⏳ |
 | M6-3 | VedaService Routing | ~12 | ⏳ |
 | M6-4 | Live Order Flow | ~15 | ⏳ |

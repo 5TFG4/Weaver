@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M5 Complete, 705 tests passing  
-> **Remaining Work**: M6 → M7 → M8  
-> **Estimated Total**: ~155 new tests, 5-6 weeks
+> **Current State**: M6-1 Complete, 745 tests passing  
+> **Remaining Work**: M6-2 → M6-5 → M7 → M8  
+> **Estimated Total**: ~115 new tests remaining, 4-5 weeks
 
 ---
 
@@ -13,16 +13,21 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | Milestone | Name | Core Objective | Est. Tests | Status |
 |-----------|------|----------------|------------|--------|
 | **M5** | Marvin Core | Strategy system + Plugin architecture | 74 | ✅ DONE |
-| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ NEXT |
+| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-1 done (40 tests) |
 | **M7** | Haro Frontend | React UI + SSE | ~50 | ⏳ |
 | **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 | ⏳ |
 
-**M6 Key Focus**:
-1. PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
-2. AlpacaAdapter connect() with real clients
-3. VedaService wired to order routes
-4. Live order flow with events + persistence
-5. RealtimeClock for live runs
+**M6-1 Complete**:
+1. ✅ PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
+2. ✅ AdapterMeta dataclass with features support
+3. ✅ ADAPTER_META added to AlpacaAdapter and MockExchangeAdapter
+4. ✅ AST-based discovery without importing
+
+**M6 Remaining**:
+- M6-2: AlpacaAdapter connect() with real clients
+- M6-3: VedaService wired to order routes
+- M6-4: Live order flow with events + persistence
+- M6-5: RealtimeClock for live runs
 
 ---
 
@@ -116,7 +121,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 2.1 Exit Gate (Definition of Done)
 
-- [ ] PluginAdapterLoader with auto-discovery (mirrors strategy pattern)
+- [x] PluginAdapterLoader with auto-discovery (mirrors strategy pattern) ✅ 2026-02-04
 - [ ] AlpacaAdapter `connect()` initializes real clients
 - [ ] VedaService wired to order routes (replaces MockOrderService)
 - [ ] Paper Trading orders persist + emit events
@@ -127,32 +132,31 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 | MVP | Focus | Tests | Dependencies |
 |-----|-------|-------|--------------|
-| M6-1 | PluginAdapterLoader | ~15 | - |
-| M6-2 | AlpacaAdapter Connection | ~14 | M6-1 |
+| M6-1 | PluginAdapterLoader | 40 ✅ | - |
+| M6-2 | AlpacaAdapter Connection | ~14 | M6-1 ✅ |
 | M6-3 | VedaService Routing | ~12 | M6-2 |
 | M6-4 | Live Order Flow | ~15 | M6-3 |
 | M6-5 | Run Mode Integration | ~9 | M6-4 |
 
 ### 2.3 Detailed Tasks
 
-#### M6-1: PluginAdapterLoader (~15 tests)
+#### M6-1: PluginAdapterLoader ✅ COMPLETE (40 tests)
 
-**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATE), adapters/*.py (MODIFY)
+**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/*.py (MODIFIED)
 
 ```
-- [ ] Create AdapterMeta dataclass (id, name, version, class_name, features)
-- [ ] Implement PluginAdapterLoader with AST-based metadata extraction
-- [ ] Add ADAPTER_META to alpaca_adapter.py
-- [ ] Add ADAPTER_META to mock_adapter.py
-- [ ] Clear hardcoded imports from adapters/__init__.py
-- [ ] Test: discover adapters in directory
-- [ ] Test: load adapter by ID
-- [ ] Test: pass credentials to adapter constructor
-- [ ] Test: unknown adapter raises AdapterNotFoundError
-- [ ] Test: extracts metadata without importing (AST)
-- [ ] Test: get_metadata(), supports_feature()
-- [ ] Test: empty directory returns empty list
-- [ ] Test: skip private files (_*)
+- [x] Create AdapterMeta dataclass (id, name, version, class_name, features)
+- [x] Implement PluginAdapterLoader with AST-based metadata extraction
+- [x] Add ADAPTER_META to alpaca_adapter.py
+- [x] Add ADAPTER_META to mock_adapter.py
+- [x] Test: discover adapters in directory
+- [x] Test: load adapter by ID
+- [x] Test: pass credentials to adapter constructor
+- [x] Test: unknown adapter raises AdapterNotFoundError
+- [x] Test: extracts metadata without importing (AST)
+- [x] Test: get_metadata(), supports_feature()
+- [x] Test: empty directory returns empty list
+- [x] Test: skip private files (_*)
 ```
 
 #### M6-2: AlpacaAdapter Connection (~14 tests)

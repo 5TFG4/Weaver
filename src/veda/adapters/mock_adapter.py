@@ -6,7 +6,15 @@ Simulates exchange behavior without making real API calls.
 """
 
 from __future__ import annotations
-
+ADAPTER_META = {
+    "id": "mock",
+    "name": "Mock Exchange",
+    "version": "1.0.0",
+    "description": "Mock exchange adapter for testing",
+    "author": "Weaver Team",
+    "class": "MockExchangeAdapter",
+    "features": ["paper_trading", "testing"],
+}
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import AsyncIterator

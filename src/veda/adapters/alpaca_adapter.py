@@ -6,7 +6,15 @@ Supports both paper and live trading.
 """
 
 from __future__ import annotations
-
+ADAPTER_META = {
+    "id": "alpaca",
+    "name": "Alpaca Markets",
+    "version": "1.0.0",
+    "description": "Alpaca Markets exchange adapter for paper and live trading",
+    "author": "Weaver Team",
+    "class": "AlpacaAdapter",
+    "features": ["paper_trading", "live_trading", "crypto", "stocks"],
+}
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, AsyncIterator
