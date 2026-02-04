@@ -268,6 +268,60 @@ class TestConnect:
             call_kwargs = mock_trading.call_args[1]
             assert call_kwargs.get("paper") is False
 
+    def test_connect_passes_credentials_to_stock_data_client(
+        self,
+        adapter: AlpacaAdapter,
+    ) -> None:
+        """connect() should pass API key to StockHistoricalDataClient."""
+        with (
+            patch(
+                "src.veda.adapters.alpaca_adapter.TradingClient"
+            ) as mock_trading,
+            patch(
+                "src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"
+            ) as mock_stock,
+        ):
+            mock_client = MagicMock()
+            mock_account = MagicMock()
+            mock_account.status = "ACTIVE"
+            mock_client.get_account.return_value = mock_account
+            mock_trading.return_value = mock_client
+
+            adapter.connect()
+
+            # Verify StockHistoricalDataClient was called with correct credentials
+            mock_stock.assert_called_once()
+            call_kwargs = mock_stock.call_args[1]
+            assert call_kwargs["api_key"] == "test-api-key"
+            assert call_kwargs["secret_key"] == "test-api-secret"
+
+    def test_connect_passes_credentials_to_crypto_data_client(
+        self,
+        adapter: AlpacaAdapter,
+    ) -> None:
+        """connect() should pass API key to CryptoHistoricalDataClient."""
+        with (
+            patch(
+                "src.veda.adapters.alpaca_adapter.TradingClient"
+            ) as mock_trading,
+            patch(
+                "src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"
+            ) as mock_crypto,
+        ):
+            mock_client = MagicMock()
+            mock_account = MagicMock()
+            mock_account.status = "ACTIVE"
+            mock_client.get_account.return_value = mock_account
+            mock_trading.return_value = mock_client
+
+            adapter.connect()
+
+            # Verify CryptoHistoricalDataClient was called with correct credentials
+            mock_crypto.assert_called_once()
+            call_kwargs = mock_crypto.call_args[1]
+            assert call_kwargs["api_key"] == "test-api-key"
+            assert call_kwargs["secret_key"] == "test-api-secret"
+
 
 # =============================================================================
 # Disconnect Tests
