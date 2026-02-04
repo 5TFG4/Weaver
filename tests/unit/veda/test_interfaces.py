@@ -178,6 +178,19 @@ class TestExchangeAdapterInterface:
 class ConcreteAdapter(ExchangeAdapter):
     """Concrete implementation for testing interface compliance."""
 
+    def __init__(self) -> None:
+        self._connected = False
+
+    async def connect(self) -> None:
+        self._connected = True
+
+    async def disconnect(self) -> None:
+        self._connected = False
+
+    @property
+    def is_connected(self) -> bool:
+        return self._connected
+
     async def submit_order(self, intent):
         return OrderSubmitResult(True, "test", OrderStatus.SUBMITTED)
 

@@ -76,6 +76,23 @@ class ExchangeAdapter(ABC):
     """
 
     # =========================================================================
+    # Connection Management
+    # =========================================================================
+
+    @abstractmethod
+    async def connect(self) -> None:
+        """Connect to the exchange."""
+
+    @abstractmethod
+    async def disconnect(self) -> None:
+        """Disconnect from the exchange."""
+
+    @property
+    @abstractmethod
+    def is_connected(self) -> bool:
+        """Check if connected to the exchange."""
+
+    # =========================================================================
     # Order Management
     # =========================================================================
 

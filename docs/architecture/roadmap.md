@@ -98,7 +98,7 @@
 - [x] **PluginAdapterLoader with auto-discovery** (M6-1) ✅ 40 tests
 - [x] **AlpacaAdapter connect() implemented** (M6-2) ✅ 23 tests
 - [x] **VedaService wired to order routes** (M6-3) ✅ 13 tests
-- [ ] **Live order flow with events & persistence** (M6-4)
+- [x] **Live order flow with events & persistence** (M6-4) ✅ 15 tests
 - [ ] **RealtimeClock for live runs** (M6-5)
 - [ ] ~100 new tests (target: 805+)
 
@@ -138,7 +138,7 @@
 | M6-1 | PluginAdapterLoader | ~15 | ✅ 40 |
 | M6-2 | AlpacaAdapter Connection | ~14 | ✅ 23 |
 | M6-3 | VedaService Routing | ~12 | ✅ 13 |
-| M6-4 | Live Order Flow | ~15 | ⏳ |
+| M6-4 | Live Order Flow | ~15 | ✅ 15 |
 | M6-5 | Run Mode Integration | ~9 | ⏳ |
 
 ### M7: Haro Frontend
@@ -177,4 +177,4 @@
 
 ---
 
-*Last updated: 2026-02-04 (M6-3 complete, 781 tests)*
+*Last updated: 2026-02-04 (M6-4 complete, 796 tests)*

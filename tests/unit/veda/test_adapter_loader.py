@@ -40,7 +40,15 @@ class TestAdapter(ExchangeAdapter):
     def __init__(self, api_key: str = "", api_secret: str = "") -> None:
         self._api_key = api_key
         self._api_secret = api_secret
+        self._connected = False
 
+    async def connect(self):
+        self._connected = True
+    async def disconnect(self):
+        self._connected = False
+    @property
+    def is_connected(self):
+        return self._connected
     async def submit_order(self, intent):
         pass
     async def get_order(self, order_id):
@@ -321,6 +329,11 @@ ADAPTER_META = {"id": "lazy", "class": "Lazy", "features": []}
 print("LAZY_ADAPTER_IMPORTED_MARKER")
 from src.veda.interfaces import ExchangeAdapter
 class Lazy(ExchangeAdapter):
+    _connected = False
+    async def connect(self): self._connected = True
+    async def disconnect(self): self._connected = False
+    @property
+    def is_connected(self): return self._connected
     async def submit_order(self, intent): pass
     async def get_order(self, order_id): pass
     async def cancel_order(self, order_id): pass
@@ -369,6 +382,11 @@ class TestDeleteSafety:
 ADAPTER_META = {"id": "to-delete", "class": "ToDelete", "features": []}
 from src.veda.interfaces import ExchangeAdapter
 class ToDelete(ExchangeAdapter):
+    _connected = False
+    async def connect(self): self._connected = True
+    async def disconnect(self): self._connected = False
+    @property
+    def is_connected(self): return self._connected
     async def submit_order(self, intent): pass
     async def get_order(self, order_id): pass
     async def cancel_order(self, order_id): pass

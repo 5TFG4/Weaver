@@ -69,6 +69,31 @@ class VedaService:
         self._position_tracker = PositionTracker()
 
     # =========================================================================
+    # Connection Management
+    # =========================================================================
+
+    async def connect(self) -> None:
+        """
+        Connect to the exchange.
+
+        Delegates to the adapter's connect() method.
+        """
+        await self._adapter.connect()
+
+    async def disconnect(self) -> None:
+        """
+        Disconnect from the exchange.
+
+        Delegates to the adapter's disconnect() method.
+        """
+        await self._adapter.disconnect()
+
+    @property
+    def is_connected(self) -> bool:
+        """Check if connected to the exchange."""
+        return self._adapter.is_connected
+
+    # =========================================================================
     # Order Operations
     # =========================================================================
 
@@ -78,8 +103,8 @@ class VedaService:
 
         This is the main entry point for order placement:
         1. Submit via OrderManager (includes idempotency check)
-        2. Persist to database via OrderRepository
-        3. Emit orders.Created or orders.Rejected event
+        2. Persist to database via OrderRepository (only for new orders)
+        3. Emit orders.Created or orders.Rejected event (only for new orders)
 
         Args:
             intent: The order intent
@@ -87,7 +112,12 @@ class VedaService:
         Returns:
             OrderState tracking the order
         """
-        # 1. Submit order (idempotent)
+        # Check if order already exists (idempotency)
+        existing = self._order_manager.get_order(intent.client_order_id)
+        if existing is not None:
+            return existing
+
+        # 1. Submit order to exchange
         state = await self._order_manager.submit_order(intent)
 
         # 2. Persist to database

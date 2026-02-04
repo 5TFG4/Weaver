@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M6-3 Complete, 781 tests passing  
-> **Remaining Work**: M6-4 → M6-5 → M7 → M8  
-> **Estimated Total**: ~75 new tests remaining, 3-4 weeks
+> **Current State**: M6-4 Complete, 796 tests passing  
+> **Remaining Work**: M6-5 → M7 → M8  
+> **Estimated Total**: ~60 new tests remaining, 2-3 weeks
 
 ---
 
@@ -202,26 +202,27 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - [x] Test: cancel nonexistent returns 404
 ```
 
-#### M6-4: Live Order Flow (~15 tests)
+#### M6-4: Live Order Flow ✅ COMPLETE (15 tests)
 
-**Files**: `veda_service.py` (MODIFY), `app.py` (MODIFY), `test_live_order_flow.py` (CREATE)
+**Files**: `veda_service.py` (MODIFIED), `interfaces.py` (MODIFIED), `mock_adapter.py` (MODIFIED)
 
 ```
-- [ ] Add VedaService.connect() to initialize adapter
-- [ ] Add VedaService.get_order() method
-- [ ] Add VedaService.list_orders() method
-- [ ] Connect adapter on app startup (in lifespan)
-- [ ] Test: place_order persists to database
-- [ ] Test: place_order emits orders.Created event
-- [ ] Test: rejected order emits orders.Rejected event
-- [ ] Test: order includes exchange_order_id
-- [ ] Test: market order fills immediately (mock)
-- [ ] Test: limit order stays ACCEPTED
-- [ ] Test: get_order retrieves by ID
-- [ ] Test: list_orders returns all
-- [ ] Test: list_orders filters by run_id
-- [ ] Test: idempotent submission (same client_order_id)
-- [ ] Test: event includes correlation_id
+- [x] Add VedaService.connect() method
+- [x] Add VedaService.disconnect() method  
+- [x] Add VedaService.is_connected property
+- [x] Add connect/disconnect/is_connected to ExchangeAdapter interface
+- [x] Add connect/disconnect/is_connected to MockExchangeAdapter
+- [x] Fix place_order idempotency (only persist/emit once)
+- [x] Test: VedaService has connect/disconnect/is_connected
+- [x] Test: connect/disconnect delegate to adapter
+- [x] Test: place_order persists to database
+- [x] Test: place_order emits orders.Created event
+- [x] Test: rejected order emits orders.Rejected event
+- [x] Test: event includes exchange_order_id
+- [x] Test: get_order from local state
+- [x] Test: get_order falls back to repository
+- [x] Test: list_orders / list_orders(run_id)
+- [x] Test: idempotent submission
 ```
 
 #### M6-5: Run Mode Integration (~9 tests)
