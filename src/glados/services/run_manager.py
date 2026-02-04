@@ -21,7 +21,8 @@ from uuid import uuid4
 from src.events.protocol import Envelope
 from src.events.types import RunEvents
 from src.glados.clock.backtest import BacktestClock
-from src.glados.clock.base import ClockTick
+from src.glados.clock.base import BaseClock, ClockTick
+from src.glados.clock.realtime import RealtimeClock
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.greta.greta_service import GretaService
@@ -65,7 +66,7 @@ class RunContext:
     
     greta: GretaService | None
     runner: StrategyRunner
-    clock: BacktestClock  # TODO: Union with RealtimeClock for live
+    clock: BaseClock  # BacktestClock or RealtimeClock
 
 
 class RunManager:
@@ -206,10 +207,50 @@ class RunManager:
         if run.mode == RunMode.BACKTEST:
             await self._start_backtest(run)
         else:
-            # LIVE/PAPER not yet implemented
-            pass
+            # LIVE/PAPER use RealtimeClock
+            await self._start_live(run)
 
         return run
+
+    async def _start_live(self, run: Run) -> None:
+        """
+        Start a live or paper trading run.
+        
+        Creates RealtimeClock and StrategyRunner, starts async execution.
+        Unlike backtest, this returns immediately while clock runs in background.
+        
+        Args:
+            run: The run to execute
+        """
+        if self._strategy_loader is None:
+            raise RuntimeError("StrategyLoader required for live/paper run")
+        
+        # 1. Load strategy
+        strategy = self._strategy_loader.load(run.strategy_id)
+        
+        # 2. Create per-run instances (no GretaService for live - uses VedaService)
+        runner = StrategyRunner(
+            strategy=strategy,
+            event_log=self._event_log,
+        )
+        clock = RealtimeClock(timeframe=run.timeframe)
+        
+        # Store context
+        ctx = RunContext(greta=None, runner=runner, clock=clock)
+        self._run_contexts[run.id] = ctx
+        
+        # 3. Initialize runner
+        await runner.initialize(run_id=run.id, symbols=run.symbols)
+        
+        # 4. Wire tick handler
+        async def on_tick(tick: ClockTick) -> None:
+            # Strategy processes tick (may emit order intents)
+            await runner.on_tick(tick)
+        
+        clock.on_tick(on_tick)
+        
+        # 5. Start clock (runs in background, doesn't block)
+        await clock.start(run.id)
 
     async def _start_backtest(self, run: Run) -> None:
         """

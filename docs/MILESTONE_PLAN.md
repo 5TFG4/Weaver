@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M6-4 Complete, 796 tests passing  
-> **Remaining Work**: M6-5 → M7 → M8  
-> **Estimated Total**: ~60 new tests remaining, 2-3 weeks
+> **Current State**: M6 Complete, 806 tests passing  
+> **Remaining Work**: M7 → M8  
+> **Estimated Total**: ~50 new tests remaining, 2 weeks
 
 ---
 
@@ -125,9 +125,9 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - [x] PluginAdapterLoader with auto-discovery (mirrors strategy pattern) ✅ 2026-02-04
 - [x] AlpacaAdapter `connect()` initializes real clients ✅ 2026-02-04
 - [x] VedaService wired to order routes (replaces MockOrderService) ✅ 2026-02-04
-- [ ] Paper Trading orders persist + emit events
-- [ ] Live Run uses RealtimeClock
-- [ ] ~65 new tests (target: 770+)
+- [x] Paper Trading orders persist + emit events ✅ 2026-02-04
+- [x] Live Run uses RealtimeClock ✅ 2026-02-04
+- [x] ~91 new tests (target: 770+) → actual: 806 ✅
 
 ### 2.2 MVP Breakdown
 
@@ -136,8 +136,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | M6-1 | PluginAdapterLoader | 40 ✅ | - |
 | M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
 | M6-3 | VedaService Routing | 13 ✅ | M6-2 ✅ |
-| M6-4 | Live Order Flow | ~15 | M6-3 ✅ |
-| M6-5 | Run Mode Integration | ~9 | M6-4 |
+| M6-4 | Live Order Flow | 15 ✅ | M6-3 ✅ |
+| M6-5 | Run Mode Integration | 10 ✅ | M6-4 ✅ |
 
 ### 2.3 Detailed Tasks
 
@@ -225,22 +225,26 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - [x] Test: idempotent submission
 ```
 
-#### M6-5: Run Mode Integration (~9 tests)
+#### M6-5: Run Mode Integration ✅ COMPLETE (10 tests)
 
-**Files**: `services/run_manager.py` (MODIFY)
+**Files**: `run_manager.py` (MODIFIED)
 
 ```
-- [ ] Create RealtimeClock for live runs
-- [ ] Create BacktestClock for backtest runs
-- [ ] RunManager.start() selects clock by mode
-- [ ] Test: live run uses RealtimeClock
-- [ ] Test: backtest run uses BacktestClock
-- [ ] Test: realtime clock uses current time
-- [ ] Test: backtest clock uses config times
-- [ ] Test: stop run stops clock
-- [ ] Test: run mode persisted
-- [ ] Test: cannot start already running
-- [ ] Test: live run emits run.Started with mode
+- [x] Update RunContext.clock type to BaseClock (Union)
+- [x] Import RealtimeClock in run_manager.py
+- [x] Implement _start_live() method for live/paper runs
+- [x] Live/paper runs use RealtimeClock
+- [x] Live runs stay RUNNING (context preserved)
+- [x] Test: backtest uses BacktestClock
+- [x] Test: live mode uses RealtimeClock
+- [x] Test: paper mode uses RealtimeClock
+- [x] Test: realtime clock uses current time
+- [x] Test: backtest clock uses simulated time
+- [x] Test: run.Started event includes mode
+- [x] Test: stop live run stops clock
+- [x] Test: cannot start already running
+- [x] Test: run mode persisted on create
+- [x] Test: run mode retrievable after get
 ```
 
 ---

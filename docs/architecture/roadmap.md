@@ -99,8 +99,8 @@
 - [x] **AlpacaAdapter connect() implemented** (M6-2) ✅ 23 tests
 - [x] **VedaService wired to order routes** (M6-3) ✅ 13 tests
 - [x] **Live order flow with events & persistence** (M6-4) ✅ 15 tests
-- [ ] **RealtimeClock for live runs** (M6-5)
-- [ ] ~100 new tests (target: 805+)
+- [x] **RealtimeClock for live runs** (M6-5) ✅ 10 tests
+- [x] ~100 new tests (target: 805+) → actual: 806 ✅
 
 ### Before M8 (M7 Exit Gate)
 
@@ -131,7 +131,7 @@
 | M5-4 | Plugin Strategy Loader | 17 ✅ |
 | M5-5 | Code Quality (Marvin) | 13 ✅ |
 
-### M6: Live Trading ⏳ IN PROGRESS
+### M6: Live Trading ✅ COMPLETE
 
 | MVP | Focus | Est. Tests | Status |
 |-----|-------|------------|--------|
@@ -139,7 +139,7 @@
 | M6-2 | AlpacaAdapter Connection | ~14 | ✅ 23 |
 | M6-3 | VedaService Routing | ~12 | ✅ 13 |
 | M6-4 | Live Order Flow | ~15 | ✅ 15 |
-| M6-5 | Run Mode Integration | ~9 | ⏳ |
+| M6-5 | Run Mode Integration | ~9 | ✅ 10 |
 
 ### M7: Haro Frontend
 
@@ -177,4 +177,4 @@
 
 ---
 
-*Last updated: 2026-02-04 (M6-4 complete, 796 tests)*
+*Last updated: 2026-02-04 (M6 complete, 806 tests)*
