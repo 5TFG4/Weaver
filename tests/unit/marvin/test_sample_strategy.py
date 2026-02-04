@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest_asyncio
 
 from src.glados.clock.base import ClockTick
-from src.marvin.sample_strategy import SampleStrategy
+from src.marvin.strategies.sample_strategy import SampleStrategy
 from src.marvin.base_strategy import StrategyAction
 from src.walle.repositories.bar_repository import Bar
 

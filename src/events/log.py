@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import sqlalchemy as sa
 
-from .protocol import Envelope
+from .protocol import Envelope, Subscription
 
 if TYPE_CHECKING:
     from .types import AsyncConnectionPool
@@ -87,6 +87,39 @@ class EventLog(ABC):
         pass
 
     @abstractmethod
+    async def subscribe_filtered(
+        self,
+        event_types: list[str],
+        callback: Callable[[Envelope], Any],
+        filter_fn: Callable[[Envelope], bool] | None = None,
+    ) -> str:
+        """
+        Subscribe to events with type filtering.
+
+        Args:
+            event_types: List of event types to receive (use ['*'] for all)
+            callback: Async function to call for each matching event
+            filter_fn: Optional function to further filter events
+
+        Returns:
+            Subscription ID for unsubscribing
+        """
+        pass
+
+    @abstractmethod
+    async def unsubscribe_by_id(self, subscription_id: str) -> None:
+        """
+        Unsubscribe by subscription ID.
+
+        Args:
+            subscription_id: The ID returned from subscribe_filtered()
+
+        Note:
+            Safe to call with unknown ID (no-op).
+        """
+        pass
+
+    @abstractmethod
     async def get_latest_offset(self) -> int:
         """Get the latest event offset in the log."""
         pass
@@ -102,6 +135,7 @@ class InMemoryEventLog(EventLog):
     def __init__(self) -> None:
         self._events: list[Envelope] = []
         self._subscribers: list[Callable[[Envelope], Any]] = []
+        self._filtered_subscriptions: dict[str, Subscription] = {}
         self._lock = asyncio.Lock()
 
     async def append(
@@ -115,7 +149,7 @@ class InMemoryEventLog(EventLog):
             offset = len(self._events)
             self._events.append(envelope)
 
-        # Notify subscribers (outside lock to prevent deadlock)
+        # Notify legacy subscribers (outside lock to prevent deadlock)
         for callback in self._subscribers:
             try:
                 result = callback(envelope)
@@ -123,6 +157,19 @@ class InMemoryEventLog(EventLog):
                     await result
             except Exception:
                 logger.exception("Subscriber callback failed in InMemoryEventLog")
+
+        # Notify filtered subscriptions
+        for sub in self._filtered_subscriptions.values():
+            if sub.matches(envelope):
+                try:
+                    result = sub.callback(envelope)
+                    if asyncio.iscoroutine(result):
+                        await result
+                except Exception:
+                    logger.exception(
+                        "Filtered subscriber callback failed",
+                        extra={"subscription_id": sub.id},
+                    )
 
         return offset
 
@@ -169,6 +216,47 @@ class InMemoryEventLog(EventLog):
         """Clear all events (for testing)."""
         self._events.clear()
 
+    async def subscribe_filtered(
+        self,
+        event_types: list[str],
+        callback: Callable[[Envelope], Any],
+        filter_fn: Callable[[Envelope], bool] | None = None,
+    ) -> str:
+        """
+        Subscribe to events with type filtering.
+
+        Args:
+            event_types: List of event types to receive (use ['*'] for all)
+            callback: Async function to call for each matching event
+            filter_fn: Optional function to further filter events
+
+        Returns:
+            Subscription ID for unsubscribing
+        """
+        from uuid import uuid4
+
+        sub_id = str(uuid4())
+        subscription = Subscription(
+            id=sub_id,
+            event_types=event_types,
+            callback=callback,
+            filter_fn=filter_fn,
+        )
+        self._filtered_subscriptions[sub_id] = subscription
+        return sub_id
+
+    async def unsubscribe_by_id(self, subscription_id: str) -> None:
+        """
+        Unsubscribe by subscription ID.
+
+        Args:
+            subscription_id: The ID returned from subscribe_filtered()
+
+        Note:
+            Safe to call with unknown ID (no-op).
+        """
+        self._filtered_subscriptions.pop(subscription_id, None)
+
 
 class PostgresEventLog(EventLog):
     """
@@ -199,6 +287,7 @@ class PostgresEventLog(EventLog):
         self._session_factory = session_factory
         self._pool = pool
         self._subscribers: list[Callable[[Envelope], Any]] = []
+        self._filtered_subscriptions: dict[str, Subscription] = {}
         self._listener_task: asyncio.Task[None] | None = None
 
     async def append(
@@ -327,6 +416,7 @@ class PostgresEventLog(EventLog):
         events = await self.read_from(offset - 1, limit=1)
         if events:
             _, envelope = events[0]
+            # Notify legacy subscribers
             for callback in self._subscribers:
                 try:
                     result = callback(envelope)
@@ -334,6 +424,65 @@ class PostgresEventLog(EventLog):
                         await result
                 except Exception:
                     logger.exception("Subscriber callback failed in PostgresEventLog")
+
+            # Notify filtered subscriptions
+            for sub in self._filtered_subscriptions.values():
+                if sub.matches(envelope):
+                    try:
+                        result = sub.callback(envelope)
+                        if asyncio.iscoroutine(result):
+                            await result
+                    except Exception:
+                        logger.exception(
+                            "Filtered subscriber callback failed",
+                            extra={"subscription_id": sub.id},
+                        )
+
+    async def subscribe_filtered(
+        self,
+        event_types: list[str],
+        callback: Callable[[Envelope], Any],
+        filter_fn: Callable[[Envelope], bool] | None = None,
+    ) -> str:
+        """
+        Subscribe to events with type filtering via LISTEN/NOTIFY.
+
+        Args:
+            event_types: List of event types to receive (use ['*'] for all)
+            callback: Async function to call for each matching event
+            filter_fn: Optional function to further filter events
+
+        Returns:
+            Subscription ID for unsubscribing
+        """
+        from uuid import uuid4
+
+        sub_id = str(uuid4())
+        subscription = Subscription(
+            id=sub_id,
+            event_types=event_types,
+            callback=callback,
+            filter_fn=filter_fn,
+        )
+        self._filtered_subscriptions[sub_id] = subscription
+
+        # Start listener if not running and pool is available
+        if self._listener_task is None and self._pool is not None:
+            self._listener_task = asyncio.create_task(self._listen_loop())
+
+        return sub_id
+
+    async def unsubscribe_by_id(self, subscription_id: str) -> None:
+        """
+        Unsubscribe by subscription ID.
+
+        Args:
+            subscription_id: The ID returned from subscribe_filtered()
+
+        Note:
+            Safe to call with unknown ID (no-op).
+        """
+        self._filtered_subscriptions.pop(subscription_id, None)
 
     async def get_latest_offset(self) -> int:
         """Get the latest event offset from the outbox."""

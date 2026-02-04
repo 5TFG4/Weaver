@@ -8,12 +8,27 @@ Manages strategy lifecycle and execution:
 - Produces strategy decisions
 
 Mode-agnostic: works identically for live and backtest runs.
+
+Plugin Architecture:
+- Strategies are auto-discovered from strategies/ directory
+- No hardcoded imports - use PluginStrategyLoader.load(strategy_id)
+- Delete safety - removing strategy files doesn't break system
 """
 
 from .base_strategy import BaseStrategy, StrategyAction
-from .sample_strategy import SampleStrategy
-from .strategy_loader import StrategyLoader
+from .exceptions import (
+    CircularDependencyError,
+    DependencyError,
+    MarvinError,
+    StrategyNotFoundError,
+)
+from .strategy_loader import PluginStrategyLoader, SimpleStrategyLoader, StrategyLoader
+from .strategy_meta import StrategyMeta
 from .strategy_runner import StrategyRunner
+
+# For backwards compatibility, import SampleStrategy from new location
+# This can be removed once all usages migrate to PluginStrategyLoader
+from .strategies.sample_strategy import SampleStrategy
 
 
 class Marvin:
@@ -25,10 +40,21 @@ class Marvin:
 
 
 __all__ = [
+    # Core
     "BaseStrategy",
     "Marvin",
-    "SampleStrategy",
     "StrategyAction",
-    "StrategyLoader",
     "StrategyRunner",
+    # Loaders
+    "PluginStrategyLoader",
+    "SimpleStrategyLoader",
+    "StrategyLoader",
+    "StrategyMeta",
+    # Exceptions
+    "CircularDependencyError",
+    "DependencyError",
+    "MarvinError",
+    "StrategyNotFoundError",
+    # Backwards compatibility
+    "SampleStrategy",
 ]

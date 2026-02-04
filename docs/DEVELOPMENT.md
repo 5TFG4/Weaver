@@ -88,6 +88,32 @@ Before starting implementation:
 | Integration | `tests/integration/` | Cross-component with real DB |
 | E2E | `tests/e2e/` | Full system via HTTP |
 
+### Test Doubles & Sideloadable Modules
+
+We use **sideloadable modules** instead of inline mocks for better reusability:
+
+| Module | Location | Purpose |
+|--------|----------|---------|
+| `MockExchangeAdapter` | `src/veda/adapters/mock_adapter.py` | Controllable exchange for backtest/tests |
+| Test Strategies | `tests/fixtures/strategies.py` | Reusable test strategy implementations |
+
+**MockExchangeAdapter** (Production sideloadable):
+- Used in backtest mode, no real API calls
+- `set_mock_price(symbol, price)` - Control price data
+- `set_reject_next_order(bool, reason)` - Simulate failures
+- `reset()` - Clear state between tests
+
+**Test Strategy Fixtures** (Test-only):
+- `DummyStrategy` - No-op, returns configurable actions
+- `RecordingStrategy` - Records all inputs for assertions
+- `PredictableStrategy` - Returns pre-configured action sequences
+
+**Why sideloadable instead of inline mocks?**
+- ✅ Reusable across test files
+- ✅ Single source of truth for mock behavior
+- ✅ Better type safety (real classes, not MagicMock)
+- ✅ MockExchangeAdapter also used in actual backtest mode
+
 ### Testing Tools
 
 - **pytest** + pytest-asyncio

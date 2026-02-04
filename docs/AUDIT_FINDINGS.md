@@ -1,7 +1,7 @@
 # Architecture Audit Findings
 
-> **Audit Date**: 2026-02-03 (Post-M4)  
-> **Status**: ✅ M4 Complete — 631 tests passing  
+> **Audit Date**: 2026-02-03 (Post-M5)  
+> **Status**: ✅ M5 Complete — 705 tests passing  
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution
 
 ---
@@ -678,46 +678,55 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-## 5. Milestone-Based Fix Schedule
+## 5. Milestone-Based Fix Schedule (Revised 2026-02-03)
 
-> Issues are now scheduled into milestones per [roadmap.md](architecture/roadmap.md).
-> See Section 4 of roadmap for M3.5 full design.
+> Issues scheduled per [MILESTONE_PLAN.md](MILESTONE_PLAN.md) and [roadmap.md](architecture/roadmap.md).
 
-### M3.5: Integration Fixes (Before M4)
+### M5: Marvin Core (Strategy System)
 
-| Issue | Task | Complexity |
-|-------|------|------------|
-| 1.1 | Routes use module singletons → Use Depends() | Medium |
-| 1.3 | VedaService unused → Wire to routes | Medium |
-| 1.6 | `orders.Created` undefined → Add to types.py | Trivial |
-| 1.11 | OrderRepository session leak → Use context managers | Trivial |
-| 2.7 | Unused exceptions → Use or remove | Trivial |
-| 2.8 | Routes don't emit events → Add EventLog calls | Medium |
+| Issue | Task | MVP |
+|-------|------|-----|
+| 1.7 | EventLog subscription | M5-1 |
+| 2.1 | EventConsumer (subscribe pattern) | M5-1 |
+| - | data.WindowReady flow | M5-2 |
+| - | SMA Strategy implementation | M5-3 |
+| - | PluginStrategyLoader | M5-4 |
+| 2.2 | Unused event types (strategy.*) | M5-3 |
+| M4 #4 | SimulatedFill.side enum | M5-5 |
+| M4 #5 | ClockTick duplicate | M5-5 |
 
-### M4: With Greta (Backtest)
+### M6: Live Trading (Paper/Live Flow)
 
-| Issue | Task | Notes |
-|-------|------|-------|
-| 1.7 | LISTEN/NOTIFY not activated | Real-time for live runs |
-| 1.8 | Clock not integrated | Greta needs clock |
-| 2.1 | EventConsumer unused | Useful for replay |
+| Issue | Task | MVP |
+|-------|------|-----|
+| - | PluginAdapterLoader | M6-1 |
+| 1.4 | AlpacaAdapter clients init | M6-2 |
+| 1.3 | VedaService routing | M6-3 |
+| - | Live order flow | M6-4 |
+| - | Run mode integration | M6-5 |
 
-### M5: With Marvin (Strategy)
+### M7: Haro Frontend
 
-| Issue | Task | Notes |
-|-------|------|-------|
-| 1.4 | AlpacaAdapter clients null | Live trading needs this |
-| 2.2 | 75% event types unused | Strategy events |
+| Issue | Task | MVP |
+|-------|------|-----|
+| - | React scaffold | M7-1 |
+| - | Dashboard page | M7-2 |
+| - | Runs page | M7-3 |
+| - | Orders page | M7-4 |
+| - | SSE integration | M7-5 |
 
-### M7: Polish
+### M8: Polish & E2E
 
-| Issue | Task |
-|-------|------|
-| 2.3 | Registry not pre-populated |
-| 2.4 | Unused config classes |
-| 2.6 | Credentials repr security |
-| 2.9-2.14 | Test improvements |
-| 3.x | Low priority items |
+| Issue | Task | MVP |
+|-------|------|-----|
+| 2.3 | Registry not pre-populated | M8-4 |
+| 2.4 | Unused config classes | M8-4 |
+| 2.6 | Credentials repr security | M8-4 |
+| 2.9-2.14 | Test improvements | M8-4 |
+| 3.x | Low priority items | M8-4 |
+| - | Sharpe ratio, max drawdown | M8-4 |
+| - | E2E tests (Playwright) | M8-1~3 |
+| - | Documentation | M8-5 |
 
 ---
 
@@ -861,23 +870,339 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
    - Conversion functions (`veda_order_to_order_state`, `order_state_to_veda_order`) stay in veda/
    - Files changed: `src/walle/models.py`, `src/veda/persistence.py`, `tests/unit/veda/test_persistence.py`
 
-### M5: Marvin Full Implementation
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Complete Marvin strategy loading | ⬜ | | |
-| Initialize AlpacaAdapter clients | ⬜ | | Live trading needs this |
-| Wire VedaService to order routes | ⬜ | | Deferred from M3.5 |
-| Implement SMA strategy | ⬜ | | |
-| Live order flow (paper mode) | ⬜ | | |
+---
 
-### M7: Polish
-| Task | Status | Date | Notes |
-|------|--------|------|-------|
-| Fix test cleanup consistency | ⬜ | | |
-| Add behavioral assertions | ⬜ | | |
-| Remove unused config/event types | ⬜ | | |
-| Security: credentials repr | ⬜ | | |
+## M5: Marvin Core (Strategy System) ✅ COMPLETE
+
+**Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)  
+**Completed**: 2026-02-04  
+**Total Tests**: 74 new (705 total)
+
+### M5 Design Notes & Future Considerations
+
+#### Async Callback Pattern in StrategyRunner
+
+**Issue**: The `_on_window_ready()` callback uses `asyncio.create_task()` without tracking:
+
+```python
+def _on_window_ready(self, envelope: Envelope) -> None:
+    """Sync callback wrapper for async handler."""
+    import asyncio
+    asyncio.create_task(self.on_data_ready(envelope))
+```
+
+**Why This Pattern Exists**:
+- EventLog callbacks are synchronous (design decision for simplicity)
+- StrategyRunner.on_data_ready() is async (needs to emit events)
+- `asyncio.create_task()` bridges sync→async
+
+**Known Limitations**:
+1. Task not awaited or tracked - fire-and-forget
+2. Exceptions in task won't propagate to caller
+3. No guarantee task completes before cleanup
+
+**Current Mitigation**:
+- Cleanup calls `unsubscribe_by_id()` which is safe
+- Event handlers log errors internally
+- Backtest runs synchronously in practice (clock controls timing)
+
+**Future Options** (evaluate in M6+ if needed):
+1. **Track tasks**: Store task refs in `_pending_tasks`, await in cleanup
+2. **Async callbacks**: Make EventLog support async callbacks via `asyncio.Queue`
+3. **Event loop integration**: Use `loop.call_soon_threadsafe()` for cross-thread safety
+4. **Structured concurrency**: Use TaskGroup (Python 3.11+) for lifecycle management
+
+**Decision**: Keep current pattern for M5. It works for backtest where timing is controlled.
+Revisit if live trading shows issues with untracked tasks or lost exceptions.
 
 ---
 
-*Last Updated: 2026-02-03 (greta_update branch complete, PR #9)*
+### M5-1: EventLog Subscription ✅ COMPLETED (12 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add `Subscription` dataclass to protocol.py | ✅ | With `matches()` method for filtering |
+| Add `subscribe_filtered()` to EventLog ABC | ✅ | Returns subscription ID |
+| Add `unsubscribe_by_id()` to EventLog ABC | ✅ | Safe no-op for unknown ID |
+| Implement in InMemoryEventLog | ✅ | Full filtering support |
+| Implement in PostgresEventLog | ✅ | Uses LISTEN/NOTIFY |
+| Test: subscribe returns unique ID | ✅ | test_subscription.py |
+| Test: subscriber receives matching events | ✅ | Type filtering works |
+| Test: subscriber ignores non-matching events | ✅ | |
+| Test: custom filter_fn works | ✅ | e.g., filter by run_id |
+| Test: unsubscribe stops delivery | ✅ | |
+| Test: multiple subscribers same event | ✅ | Both receive |
+| Test: subscriber error doesn't break others | ✅ | Logs error, continues |
+| Test: wildcard subscription ["*"] | ✅ | Receives all events |
+| Test: multiple event types | ✅ | ["type.A", "type.B"] |
+| Test: unsubscribe unknown ID is safe | ✅ | No error raised |
+| Test: each subscription unique ID | ✅ | |
+| Test: filter_fn with payload check | ✅ | |
+| **Total tests added** | | **+12 tests (643 total)** |
+
+#### M5-1 Files Changed
+| File | Change |
+|------|--------|
+| `src/events/protocol.py` | Added `Subscription` dataclass with `matches()` |
+| `src/events/log.py` | Added `subscribe_filtered()`, `unsubscribe_by_id()` to ABC, InMemoryEventLog, PostgresEventLog |
+| `tests/unit/events/test_subscription.py` | **Created**: 12 tests for subscription functionality |
+
+### M5-2: data.WindowReady Flow ✅ COMPLETED (15 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| StrategyRunner subscribes to data.WindowReady | ✅ | In initialize() |
+| StrategyRunner filters by run_id | ✅ | Only own run's events |
+| StrategyRunner calls strategy.on_data() | ✅ | On WindowReady |
+| StrategyRunner cleanup unsubscribes | ✅ | Async cleanup |
+| GretaService subscribes to backtest.FetchWindow | ✅ | In initialize() |
+| GretaService emits data.WindowReady | ✅ | With bars from cache |
+| GretaService filters by run_id | ✅ | Only own run's events |
+| GretaService preserves correlation_id | ✅ | For request tracking |
+| Test: Runner subscribes on init | ✅ | test_strategy_runner_events.py |
+| Test: WindowReady calls on_data | ✅ | |
+| Test: Filters by run_id | ✅ | |
+| Test: on_data emits PlaceRequest | ✅ | |
+| Test: cleanup unsubscribes | ✅ | |
+| Test: multiple events delivered | ✅ | |
+| Test: on_tick emits FetchWindow | ✅ | |
+| Test: subscription ID stored | ✅ | |
+| Test: Greta subscribes on init | ✅ | test_greta_events.py |
+| Test: FetchWindow → WindowReady | ✅ | |
+| Test: Greta filters by run_id | ✅ | |
+| Test: uses bar cache | ✅ | |
+| Test: WindowReady includes bars | ✅ | |
+| Test: Greta subscription ID stored | ✅ | |
+| Test: correlation ID preserved | ✅ | |
+| **Total tests added** | | **+15 tests (658 total)** |
+
+#### M5-2 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/strategy_runner.py` | Added `_subscription_id`, `subscribe_filtered()` in init, `cleanup()`, `_on_window_ready()` |
+| `src/greta/greta_service.py` | Added `_subscription_id`, `subscribe_filtered()` in init, `_on_fetch_window()`, `_handle_fetch_window()` |
+| `tests/unit/marvin/test_strategy_runner_events.py` | **Created**: 8 tests for runner event handling |
+| `tests/unit/greta/test_greta_events.py` | **Created**: 7 tests for Greta event handling |
+
+### M5-3: SMA Strategy ✅ COMPLETED (17 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create src/marvin/strategies/ package | ✅ | Empty __init__.py |
+| Create SMAConfig dataclass | ✅ | fast_period, slow_period, qty |
+| Config validation (fast < slow) | ✅ | Raises ValueError |
+| Implement SMAStrategy with crossover logic | ✅ | Extends BaseStrategy |
+| on_tick requests data window | ✅ | lookback = slow_period + 1 |
+| Calculate SMA correctly | ✅ | Uses last N closes |
+| Detect bullish crossover → buy | ✅ | fast crosses above slow |
+| Detect bearish crossover → sell | ✅ | fast crosses below slow |
+| Track position state | ✅ | _has_position updated |
+| Test: SMAConfig defaults | ✅ | test_sma_strategy.py |
+| Test: SMAConfig custom values | ✅ | |
+| Test: SMAConfig validation | ✅ | |
+| Test: on_tick fetch_window | ✅ | |
+| Test: SMA calculation | ✅ | |
+| Test: SMA partial data | ✅ | |
+| Test: bullish crossover buy | ✅ | |
+| Test: bearish crossover sell | ✅ | |
+| Test: no signal without crossover | ✅ | |
+| Test: insufficient data no signal | ✅ | |
+| Test: custom parameters | ✅ | |
+| Test: only buys when no position | ✅ | |
+| Test: only sells when has position | ✅ | |
+| Test: first data no signal | ✅ | |
+| Test: empty bars no error | ✅ | |
+| Test: position updated after buy | ✅ | |
+| Test: position updated after sell | ✅ | |
+| **Total tests added** | | **+17 tests (675 total)** |
+
+#### M5-3 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/strategies/__init__.py` | **Created**: Empty package |
+| `src/marvin/strategies/sma_strategy.py` | **Created**: SMAConfig + SMAStrategy |
+| `tests/unit/marvin/test_sma_strategy.py` | **Created**: 17 tests for SMA strategy |
+
+### M5-4: Plugin Strategy Loader (~17 tests) ✅ COMPLETE
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create StrategyMeta dataclass | ✅ | strategy_meta.py |
+| Create Marvin exceptions | ✅ | exceptions.py |
+| Implement PluginStrategyLoader | ✅ | Auto-discovery via AST |
+| Dependency resolution | ✅ | With cycle detection |
+| Add STRATEGY_META to sma_strategy.py | ✅ | |
+| Move sample_strategy.py to strategies/ | ✅ | With STRATEGY_META |
+| Update __init__.py exports | ✅ | No hardcoded strategy imports |
+| Test: interface compliance | ✅ | 3 tests |
+| Test: discovery | ✅ | 6 tests |
+| Test: loading | ✅ | 3 tests |
+| Test: dependency resolution | ✅ | 3 tests |
+| Test: delete safety | ✅ | 2 tests |
+| **Total tests added** | | **+17 tests (692 total)** |
+
+#### M5-4 Files Changed
+| File | Change |
+|------|--------|
+| `src/marvin/exceptions.py` | **Created**: StrategyNotFoundError, DependencyError, CircularDependencyError |
+| `src/marvin/strategy_meta.py` | **Created**: StrategyMeta dataclass |
+| `src/marvin/strategy_loader.py` | **Modified**: Added PluginStrategyLoader with AST parsing |
+| `src/marvin/strategies/sample_strategy.py` | **Created**: Moved from src/marvin/, added STRATEGY_META |
+| `src/marvin/strategies/sma_strategy.py` | **Modified**: Added STRATEGY_META |
+| `src/marvin/__init__.py` | **Modified**: Export new classes, backwards-compatible SampleStrategy |
+| `src/marvin/sample_strategy.py` | **Deleted**: Moved to strategies/ |
+| `tests/unit/marvin/test_plugin_loader.py` | **Created**: 17 tests for plugin loader |
+| `tests/unit/marvin/test_sample_strategy.py` | **Modified**: Updated import path |
+
+### M5-5: Code Quality & Test Fixtures (13 tests) ✅
+
+**Completed**: All tasks finished, 13 tests added
+
+**Part A: Test Strategy Fixtures** (9 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `tests/fixtures/strategies.py` | ✅ | DummyStrategy, RecordingStrategy, PredictableStrategy, SimpleTestStrategy, MockStrategyLoader |
+| Migrate DummyStrategy from test_strategy_runner_events.py | ✅ | Now imports from fixtures |
+| Migrate SimpleTestStrategy from test_backtest_flow.py | ✅ | Now imports from fixtures |
+| Migrate MockStrategyLoader from test_backtest_flow.py | ✅ | Now imports from fixtures |
+| Update tests/fixtures/__init__.py exports | ✅ | Added strategies.py doc |
+| Test: DummyStrategy configurable actions | ✅ | test_strategy_fixtures.py |
+| Test: DummyStrategy records inputs | ✅ | test_strategy_fixtures.py |
+| Test: MockStrategyLoader returns configured strategy | ✅ | test_strategy_fixtures.py |
+
+**Part B: Type Safety** (4 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| SimulatedFill.side: str → OrderSide | ✅ | Already works! No change needed |
+| Fix ClockTick duplicate definition | ✅ | clock.py imports from production |
+| Clock Union type | ✅ | Already defined in run_manager.py |
+| Test: SimulatedFill.side is OrderSide | ✅ | test_type_safety.py |
+| Test: ClockTick imported from production | ✅ | test_type_safety.py |
+
+**Files Changed**:
+| File | Change |
+|------|--------|
+| `tests/fixtures/strategies.py` | **Created**: 5 strategy classes |
+| `tests/fixtures/clock.py` | **Modified**: Import ClockTick from production |
+| `tests/fixtures/__init__.py` | **Modified**: Added strategies.py doc |
+| `tests/unit/test_strategy_fixtures.py` | **Created**: 9 tests |
+| `tests/unit/test_type_safety.py` | **Created**: 4 tests |
+| `tests/unit/marvin/test_strategy_runner_events.py` | **Modified**: Import DummyStrategy from fixtures |
+| `tests/integration/test_backtest_flow.py` | **Modified**: Import from fixtures |
+
+### M5 Code Review Fixes (2026-02-04)
+
+GitHub Copilot code review addressed 7 comments:
+
+| Category | Issue | Fix | Files |
+|----------|-------|-----|-------|
+| **Unused** | `events_before` variable not used | Removed unused variable | test_greta_events.py |
+| **Unused** | `SimpleTestStrategy` import not used | Removed (used internally by MockStrategyLoader) | test_backtest_flow.py |
+| **Unused** | `OrderEvents` import not used | Removed unused import | test_greta_events.py |
+| **Unused** | `AsyncMock` import not used | Removed unused import | test_strategy_runner_events.py |
+| **Unused** | `BaseStrategy` import not used | Removed unused import | test_strategy_runner_events.py |
+| **Unused** | `pytest` import not used | Removed unused import | test_type_safety.py |
+| **Design** | `asyncio.create_task()` untracked | Documented in Design Notes (acceptable for backtest) | strategy_runner.py |
+
+### M5 Additional Improvements
+
+| File | Change | Notes |
+|------|--------|-------|
+| `src/marvin/strategies/sample_strategy.py` | Type fix: `sum()` with `Decimal(0)` start | Pylance error fix |
+| `src/marvin/strategies/sma_strategy.py` | Type fix: `sum()` with `Decimal(0)` start | Pylance error fix |
+| `tests/unit/events/test_subscription.py` | Type fix: `callable` → `Callable[..., Envelope]` | Pylance error fix |
+| `tests/unit/test_type_safety.py` | Logic fix: correct assertion for ClockTick check | Code review fix |
+| `src/marvin/strategy_loader.py` | Better error messages with available strategies | Code review suggestion |
+| `src/marvin/strategy_loader.py` | Wrap `exec_module()` with try/except | Code review suggestion |
+| `tests/fixtures/clock.py` | Docstring: note ClockTick from production | Code review suggestion |
+
+---
+
+## M6: Live Trading (Paper/Live Flow)
+
+### M6-1: Plugin Adapter Loader (~10 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Create AdapterMeta dataclass | ⬜ | Plugin metadata |
+| Implement PluginAdapterLoader | ⬜ | Auto-discovery |
+| Add ADAPTER_META to alpaca_adapter.py | ⬜ | |
+| Add ADAPTER_META to mock_adapter.py | ⬜ | |
+| Remove hardcoded imports from adapters/__init__.py | ⬜ | Delete safety |
+| Test: discover adapters | ⬜ | |
+| Test: load by ID | ⬜ | |
+| Test: deleted adapter = system works | ⬜ | |
+| Test: feature support query | ⬜ | |
+
+### M6-2: AlpacaAdapter Init (~12 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add connect() method to AlpacaAdapter | ⬜ | Issue 1.4 |
+| Initialize TradingClient | ⬜ | |
+| Initialize CryptoHistoricalDataClient | ⬜ | |
+| Add connection verification | ⬜ | |
+| Error handling: invalid credentials | ⬜ | |
+| Error handling: network timeout | ⬜ | |
+| Test: connection success | ⬜ | |
+| Test: Paper vs Live mode | ⬜ | |
+
+### M6-3: VedaService Routing (~10 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| Add get_veda_service to dependencies.py | ⬜ | Issue 1.3 |
+| Update order routes to use VedaService | ⬜ | |
+| Remove/deprecate MockOrderService | ⬜ | |
+| Test: route injection | ⬜ | |
+| Test: order creation via VedaService | ⬜ | |
+
+### M6-4: Live Order Flow (~15 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| VedaService subscribes to live.PlaceOrder | ⬜ | |
+| DomainRouter routes to live.* for live mode | ⬜ | |
+| Order status sync (submitted → filled) | ⬜ | |
+| Test: paper order submit | ⬜ | |
+| Test: paper order fill | ⬜ | |
+| Test: order cancel | ⬜ | |
+| Test: partial fill | ⬜ | |
+
+### M6-5: Run Mode Integration (~8 tests)
+| Task | Status | Notes |
+|------|--------|-------|
+| RunManager supports live runs (RealtimeClock) | ⬜ | |
+| Live Run uses real market time | ⬜ | |
+| Backtest/Live switch correctly | ⬜ | |
+| Test: create live run | ⬜ | |
+| Test: live run uses RealtimeClock | ⬜ | |
+| Test: stop live run | ⬜ | |
+
+---
+
+## M7: Haro Frontend
+
+| Task | Status | Notes |
+|------|--------|-------|
+| React scaffold + Vite + TypeScript | ⬜ | M7-1 |
+| Docker build configuration | ⬜ | M7-1 |
+| Dashboard page | ⬜ | M7-2 |
+| Runs page (list + detail) | ⬜ | M7-3 |
+| Orders page | ⬜ | M7-4 |
+| SSE client integration | ⬜ | M7-5 |
+
+---
+
+## M8: Polish & E2E
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Playwright E2E setup | ⬜ | M8-1 |
+| E2E: backtest flow | ⬜ | M8-2 |
+| E2E: live flow | ⬜ | M8-3 |
+| Clean all TODO/FIXME | ⬜ | M8-4 |
+| Sharpe ratio calculation | ⬜ | M8-4 |
+| Max drawdown calculation | ⬜ | M8-4 |
+| Credentials repr security | ⬜ | M8-4 |
+| Remove unused config/event types | ⬜ | M8-4 |
+| Documentation update | ⬜ | M8-5 |
+| Strategy development guide | ⬜ | M8-5 |
+| Adapter development guide | ⬜ | M8-5 |
+
+---
+
+*Last Updated: 2026-02-03 (Milestone plan reorganized: M5-M8)*

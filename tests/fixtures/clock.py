@@ -5,20 +5,13 @@ Provides test clocks that can be precisely controlled for deterministic testing.
 This is critical for testing the clock system without real time delays.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-
-@dataclass
-class ClockTick:
-    """Represents a single clock tick for testing."""
-    
-    run_id: str
-    ts: datetime
-    timeframe: str
-    bar_index: int
-    is_backtest: bool = False
+# Import ClockTick from production code - do NOT redefine it here
+from src.glados.clock.base import ClockTick
 
 
 @dataclass
@@ -81,7 +74,28 @@ class ControllableClock:
     def stop(self) -> None:
         """Mark clock as stopped."""
         self._running = False
-    
+
+    def make_tick(self, ts: datetime | None = None) -> ClockTick:
+        """
+        Create a ClockTick without advancing the clock.
+        
+        Useful for creating test ticks without modifying clock state.
+        Uses the production ClockTick class from src.glados.clock.base.
+        
+        Args:
+            ts: Timestamp for the tick (default: current_time)
+            
+        Returns:
+            A new ClockTick instance
+        """
+        return ClockTick(
+            run_id=self.run_id,
+            ts=ts or self._current_time,
+            timeframe=self.timeframe,
+            bar_index=self._bar_index,
+            is_backtest=True,
+        )
+
     def on_tick(self, callback: Callable[[ClockTick], None]) -> None:
         """Register a callback to be called on each tick."""
         self._tick_callbacks.append(callback)

@@ -10,6 +10,18 @@ from decimal import Decimal
 from src.marvin.base_strategy import BaseStrategy, StrategyAction
 
 
+# Plugin metadata for auto-discovery
+STRATEGY_META = {
+    "id": "sample",
+    "name": "Sample Mean-Reversion Strategy",
+    "version": "1.0.0",
+    "description": "Simple mean-reversion strategy for testing",
+    "author": "weaver",
+    "dependencies": [],
+    "class": "SampleStrategy",
+}
+
+
 class SampleStrategy(BaseStrategy):
     """
     Simple strategy for testing backtest flow.
@@ -71,8 +83,8 @@ class SampleStrategy(BaseStrategy):
             return []
 
         # Calculate average close price
-        total = sum(bar.close for bar in bars)
-        avg = total / len(bars)
+        total: Decimal = sum((bar.close for bar in bars), Decimal("0"))
+        avg: Decimal = total / Decimal(len(bars))
 
         current = bars[-1].close
         symbol = bars[-1].symbol if hasattr(bars[-1], "symbol") else "BTC/USD"
