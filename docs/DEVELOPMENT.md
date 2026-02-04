@@ -116,10 +116,18 @@ We use **sideloadable modules** instead of inline mocks for better reusability:
 
 ### Testing Tools
 
+#### Backend (Python)
 - **pytest** + pytest-asyncio
 - **httpx** for async HTTP client testing
 - **respx** for mocking external HTTP calls
 - **pytest-cov** for coverage
+
+#### Frontend (React/TypeScript)
+- **Vitest** - Vite-native test runner
+- **React Testing Library** - Component testing
+- **MSW (Mock Service Worker)** - API mocking
+- **@testing-library/user-event** - User interaction simulation
+- **Playwright** (M8) - E2E testing
 
 ## 6. Code Standards
 

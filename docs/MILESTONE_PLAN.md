@@ -253,69 +253,60 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 > **Goal**: React frontend to display trading status and data  
 > **Prerequisite**: M6 ✅  
-> **Estimated Effort**: 1.5-2 weeks
+> **Estimated Effort**: 1.5-2 weeks  
+> **Design Document**: [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md)
 
 ### 3.1 Exit Gate (Definition of Done)
 
-- [ ] React app running in standalone container
-- [ ] Dashboard page displays system status
-- [ ] Runs page with list and details
-- [ ] Orders page displays order status
-- [ ] SSE real-time updates
+- [ ] React app builds and runs in Docker container
+- [ ] Dashboard displays system status and active runs
+- [ ] Can create, view, and stop runs via UI
+- [ ] Orders page shows order list with status
+- [ ] SSE delivers real-time updates to UI
+- [ ] ~50 tests passing (unit + integration)
+- [ ] TypeScript strict mode, no `any` types
 
 ### 3.2 MVP Breakdown
 
 | MVP | Focus | Tests | Dependencies |
 |-----|-------|-------|--------------|
-| M7-1 | React App Scaffold | ~10 | - |
-| M7-2 | Dashboard Page | ~10 | M7-1 |
-| M7-3 | Runs Page | ~12 | M7-2 |
-| M7-4 | Orders Page | ~10 | M7-3 |
-| M7-5 | SSE Integration | ~8 | M7-4 |
+| M7-0 | Dev Environment Setup | 0 | - |
+| M7-1 | React App Scaffold | ~8 | M7-0 |
+| M7-2 | API Client Layer | ~10 | M7-1 |
+| M7-3 | Dashboard Page | ~8 | M7-2 |
+| M7-4 | Runs Page | ~12 | M7-3 |
+| M7-5 | Orders Page | ~8 | M7-4 |
+| M7-6 | SSE Integration | ~8 | M7-5 |
 
-### 3.3 Detailed Tasks
+### 3.3 Technology Stack
 
-#### M7-1: React App Scaffold (~10 tests)
-```
-- [ ] Create src/haro/ React project
-- [ ] Configure Vite + TypeScript
-- [ ] Setup Docker build
-- [ ] API client configuration
-- [ ] Routing setup (React Router)
-```
+| Category | Technology |
+|----------|------------|
+| Framework | React 18 + TypeScript |
+| Build | Vite 5 |
+| Routing | React Router 6 |
+| State | TanStack Query + Zustand |
+| Styling | Tailwind CSS + shadcn/ui |
+| Testing | Vitest + RTL + MSW |
 
-#### M7-2: Dashboard Page (~10 tests)
-```
-- [ ] System health status display
-- [ ] Active run count
-- [ ] Recent orders summary
-- [ ] API connection status indicator
-```
+### 3.4 Dev Environment (Option 3: Hybrid)
 
-#### M7-3: Runs Page (~12 tests)
 ```
-- [ ] Run list (paginated)
-- [ ] Run detail page
-- [ ] Create new run form
-- [ ] Start/Stop actions
-- [ ] Run status badges
-```
-
-#### M7-4: Orders Page (~10 tests)
-```
-- [ ] Order list (filter by run)
-- [ ] Order details
-- [ ] Status filter
-- [ ] Time range filter
+┌─────────────────────────────────────────────────────────────┐
+│  VS Code (backend_dev container)                            │
+│  - Edit Python (src/) + React (haro/) in one window         │
+│  - Python 3.13 + Node.js 20 (for IDE support)               │
+└─────────────────────────────────────────────────────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────┐          ┌─────────────────┐
+│ backend_dev     │◀─────────│ frontend_dev    │
+│ uvicorn :8000   │  proxy   │ vite :3000      │
+│ (runs backend)  │          │ (runs frontend) │
+└─────────────────┘          └─────────────────┘
 ```
 
-#### M7-5: SSE Integration (~8 tests)
-```
-- [ ] SSE client wrapper
-- [ ] Auto-reconnection mechanism
-- [ ] Event dispatch to components
-- [ ] Optimistic updates + rollback
-```
+See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development-environment-setup) for full details.
 
 ---
 
