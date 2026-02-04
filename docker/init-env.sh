@@ -56,8 +56,8 @@ sync_env_file() {
 
 echo "Starting Environment Initialization..."
 
-# Generate .env in project root (Compose reads from working directory)
-sync_env_file ".env" "docker/example.env"
+# Generate .env in docker/ folder (Compose reads from its directory)
+sync_env_file "docker/.env" "docker/example.env"
 
 echo "----------------------------------------------------------------"
 echo "Initialization Complete."
