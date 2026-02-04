@@ -31,8 +31,8 @@
 | What | Where |
 |------|-------|
 | Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
-| Current milestone design | [M5 Marvin (Complete)](docs/archive/milestone-details/m5-marvin.md) |
-| Next milestone | M6: Live Trading |
+| Current milestone design | [M6 Live Trading (Complete)](docs/archive/milestone-details/m6-live-trading.md) |
+| Next milestone | M7: Haro Frontend |
 
 
 
@@ -93,20 +93,31 @@ npm run dev   # http://localhost:3000
 | M1: Foundation (DB/Events) | ✅ Complete | +124 |
 | M2: API Live | ✅ Complete | +85 |
 | M3: Veda Trading | ✅ Complete | +196 |
-| M4-M7 | ⏳ Pending | — |
+| M4: Greta Backtesting | ✅ Complete | +56 |
+| M5: Marvin Core | ✅ Complete | +74 |
+| M6: Live Trading | ✅ Complete | +101 |
+| **M7: Haro Frontend** | ⏳ **Next** | ~50 |
+| M8: Polish & E2E | ⏳ Pending | ~40 |
 
-**Current**: 493 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 808 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
-### Recent Changes (2026-02-02)
+### Recent Changes (2026-02-04)
 
-- ✅ **M3 Complete**: Veda Trading module with full exchange adapter pattern (493 total tests)
-- ✅ Core models: OrderIntent, OrderState, Position, Bar, Quote, Trade, AccountInfo
-- ✅ ExchangeAdapter ABC: Unified interface for all exchange integrations
-- ✅ MockExchangeAdapter: Full-featured mock for testing and backtesting
-- ✅ AlpacaAdapter: Paper trading support with Alpaca Markets API
-- ✅ OrderManager: Order lifecycle with idempotency via client_order_id
-- ✅ PositionTracker: Real-time position and P&L tracking
-- ✅ OrderRepository: Database persistence layer for order state
+- ✅ **M6 Complete**: Live trading system with plugin adapter architecture (808 total tests)
+- ✅ PluginAdapterLoader with AST-based discovery (40 tests)
+- ✅ AlpacaAdapter connection management with connect/disconnect/is_connected (23 tests)
+- ✅ VedaService wired to order routes for live order creation (13 tests)
+- ✅ Live order flow with persistence and event emission (15 tests)
+- ✅ RealtimeClock integration for live/paper runs (10 tests)
+- ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
+
+### Next: M7 Haro Frontend (~50 tests)
+
+- React app scaffold with Vite + TypeScript
+- Dashboard page (system status, active runs)
+- Runs page (list + detail view)
+- Orders page
+- SSE client integration for real-time updates
 
 
 ## Endpoints (essentials)

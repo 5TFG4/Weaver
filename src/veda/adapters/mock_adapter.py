@@ -6,7 +6,15 @@ Simulates exchange behavior without making real API calls.
 """
 
 from __future__ import annotations
-
+ADAPTER_META = {
+    "id": "mock",
+    "name": "Mock Exchange",
+    "version": "1.0.0",
+    "description": "Mock exchange adapter for testing",
+    "author": "Weaver Team",
+    "class": "MockExchangeAdapter",
+    "features": ["paper_trading", "testing"],
+}
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import AsyncIterator
@@ -66,6 +74,25 @@ class MockExchangeAdapter(ExchangeAdapter):
         # Rejection configuration
         self._reject_next_order = False
         self._reject_reason: str | None = None
+        # Connection state
+        self._connected = False
+
+    # =========================================================================
+    # Connection Management
+    # =========================================================================
+
+    async def connect(self) -> None:
+        """Connect to mock exchange (always succeeds)."""
+        self._connected = True
+
+    async def disconnect(self) -> None:
+        """Disconnect from mock exchange."""
+        self._connected = False
+
+    @property
+    def is_connected(self) -> bool:
+        """Check if connected."""
+        return self._connected
 
     # =========================================================================
     # Configuration Methods (for testing)

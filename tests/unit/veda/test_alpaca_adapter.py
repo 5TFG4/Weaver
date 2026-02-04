@@ -122,6 +122,7 @@ class TestAlpacaAdapterSubmitOrder:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         await adapter.submit_order(sample_intent)
         
@@ -140,6 +141,7 @@ class TestAlpacaAdapterSubmitOrder:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.submit_order(sample_intent)
         
@@ -158,6 +160,7 @@ class TestAlpacaAdapterSubmitOrder:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         await adapter.submit_order(sample_intent)
         
@@ -212,6 +215,7 @@ class TestAlpacaAdapterOrderManagement:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.get_order("alpaca-order-123")
         
@@ -231,6 +235,7 @@ class TestAlpacaAdapterOrderManagement:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.cancel_order("alpaca-order-123")
         
@@ -250,6 +255,7 @@ class TestAlpacaAdapterOrderManagement:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.list_orders()
         
@@ -308,6 +314,7 @@ class TestAlpacaAdapterAccount:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.get_account()
         
@@ -327,6 +334,7 @@ class TestAlpacaAdapterAccount:
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
+        adapter._connected = True  # Simulate connected state
         
         result = await adapter.get_positions()
         
@@ -415,7 +423,7 @@ class TestAlpacaAdapterMarketData:
             api_secret="test-secret",
             paper=True,
         )
-        adapter._data_client = mock_data_client
+        adapter._stock_data_client = mock_data_client
         
         start = datetime.now(UTC) - timedelta(days=1)
         result = await adapter.get_bars("AAPL", "1h", start)
@@ -436,7 +444,7 @@ class TestAlpacaAdapterMarketData:
             api_secret="test-secret",
             paper=True,
         )
-        adapter._data_client = mock_data_client
+        adapter._stock_data_client = mock_data_client
         
         result = await adapter.get_latest_bar("AAPL")
         
@@ -455,7 +463,7 @@ class TestAlpacaAdapterMarketData:
             api_secret="test-secret",
             paper=True,
         )
-        adapter._data_client = mock_data_client
+        adapter._stock_data_client = mock_data_client
         
         result = await adapter.get_latest_quote("AAPL")
         
@@ -474,7 +482,7 @@ class TestAlpacaAdapterMarketData:
             api_secret="test-secret",
             paper=True,
         )
-        adapter._data_client = mock_data_client
+        adapter._stock_data_client = mock_data_client
         
         result = await adapter.get_latest_trade("AAPL")
         
@@ -513,6 +521,7 @@ class TestAlpacaAdapterErrorHandling:
             side_effect=Exception("Insufficient buying power")
         )
         adapter._trading_client = mock_client
+        adapter._connected = True  # Simulate connected state
         
         intent = OrderIntent(
             run_id="test-run",

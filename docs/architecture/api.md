@@ -4,7 +4,7 @@
 
 ## 1. REST API
 
-### Implemented Endpoints (M2)
+### Implemented Endpoints (M6)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -14,8 +14,34 @@
 | GET | `/api/v1/runs/{id}` | Get run details |
 | POST | `/api/v1/runs/{id}/stop` | Stop a running run |
 | GET | `/api/v1/orders` | List orders (optional `run_id` filter) |
+| **POST** | `/api/v1/orders` | **Create order via VedaService** |
 | GET | `/api/v1/orders/{id}` | Get order details |
+| **DELETE** | `/api/v1/orders/{id}` | **Cancel order via VedaService** |
 | GET | `/api/v1/candles` | Get OHLCV candles (`symbol`, `timeframe` required) |
+
+### Order Creation (M6-3)
+
+```json
+// POST /api/v1/orders
+{
+  "run_id": "run-123",
+  "client_order_id": "order-abc",
+  "symbol": "BTC/USD",
+  "side": "buy",           // "buy" | "sell"
+  "order_type": "market",  // "market" | "limit" | "stop" | "stop_limit"
+  "qty": "1.5",
+  "limit_price": "50000.00",  // required for limit orders
+  "stop_price": null,         // required for stop orders
+  "time_in_force": "day",     // "day" | "gtc" | "ioc" | "fok"
+  "extended_hours": false
+}
+```
+
+**Response**: `201 Created` with `OrderResponse`
+
+**Errors**:
+- `422 Unprocessable Entity`: Invalid input
+- `503 Service Unavailable`: VedaService not configured (no trading credentials)
 
 ### API Documentation
 

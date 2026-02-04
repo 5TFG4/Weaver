@@ -29,7 +29,7 @@
 | Events Module | ✅ Subscription added | 57 |
 | Clock Module | ✅ Complete | 93 |
 | Config Module | ✅ Complete | 24 |
-| GLaDOS API | ✅ DI complete | 201 |
+| GLaDOS API | ✅ Order routing | 214 |
 | Veda Trading | ✅ Complete | 197 |
 | Greta (backtest) | ✅ Events wired | 56 |
 | Marvin (strategy) | ✅ Plugin complete | 74 |
@@ -44,8 +44,8 @@
 | M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
 | M4 | [Greta backtest](../archive/milestone-details/m4-greta.md) | ✅ DONE |
 | **M5** | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin) | ✅ DONE (74 tests) |
-| **M6** | Live Trading (Paper/Live Flow) | ⏳ NEXT |
-| **M7** | Haro Frontend (React UI) | ⏳ |
+| **M6** | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
+| **M7** | Haro Frontend (React UI) | ⏳ NEXT |
 | **M8** | Polish & E2E (Quality + Tests) | ⏳ |
 
 ## 3. Phase Timeline
@@ -54,8 +54,8 @@
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
 | **5** | Marvin Core + Plugin Strategy | ~74 | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~60 | ⏳ |
-| **7** | Haro Frontend + SSE | ~50 | ⏳ |
+| **6** | Live Trading + Plugin Adapter | ~65 | ✅ 101 (808 total) |
+| **7** | Haro Frontend + SSE | ~50 | ⏳ NEXT |
 | **8** | E2E + Polish | ~40 | ⏳ |
 
 ## 4. Architecture Invariants
@@ -95,12 +95,12 @@
 
 ### Before M7 (M6 Exit Gate)
 
-- [ ] **PluginAdapterLoader with auto-discovery**
-- [ ] AlpacaAdapter initialized with real clients
-- [ ] VedaService wired to order routes
-- [ ] Live order flow works (paper mode)
-- [ ] RealtimeClock integrated for live runs
-- [ ] ~60 new tests (target: 771+)
+- [x] **PluginAdapterLoader with auto-discovery** (M6-1) ✅ 40 tests
+- [x] **AlpacaAdapter connect() implemented** (M6-2) ✅ 23 tests
+- [x] **VedaService wired to order routes** (M6-3) ✅ 13 tests
+- [x] **Live order flow with events & persistence** (M6-4) ✅ 15 tests
+- [x] **RealtimeClock for live runs** (M6-5) ✅ 10 tests
+- [x] ~100 new tests (target: 805+) → actual: 806 ✅
 
 ### Before M8 (M7 Exit Gate)
 
@@ -131,15 +131,15 @@
 | M5-4 | Plugin Strategy Loader | 17 ✅ |
 | M5-5 | Code Quality (Marvin) | 13 ✅ |
 
-### M6: Live Trading
+### M6: Live Trading ✅ COMPLETE
 
-| MVP | Focus | Est. Tests |
-|-----|-------|------------|
-| M6-1 | Plugin Adapter Loader | ~10 |
-| M6-2 | AlpacaAdapter Init | ~12 |
-| M6-3 | VedaService Routing | ~10 |
-| M6-4 | Live Order Flow | ~15 |
-| M6-5 | Run Mode Integration | ~8 |
+| MVP | Focus | Est. Tests | Status |
+|-----|-------|------------|--------|
+| M6-1 | PluginAdapterLoader | ~15 | ✅ 40 |
+| M6-2 | AlpacaAdapter Connection | ~14 | ✅ 23 |
+| M6-3 | VedaService Routing | ~12 | ✅ 13 |
+| M6-4 | Live Order Flow | ~15 | ✅ 15 |
+| M6-5 | Run Mode Integration | ~9 | ✅ 10 |
 
 ### M7: Haro Frontend
 
@@ -173,7 +173,8 @@
 | M3.5 | [Integration](../archive/milestone-details/m3.5-integration.md) |
 | M4 | [Greta Backtest](../archive/milestone-details/m4-greta.md) |
 | M5 | [Marvin Full](../archive/milestone-details/m5-marvin.md) |
+| M6 | [Live Trading](../archive/milestone-details/m6-live-trading.md) |
 
 ---
 
-*Last updated: 2026-02-03 (Milestone plan reorganized)*
+*Last updated: 2026-02-04 (M6 complete, 806 tests)*

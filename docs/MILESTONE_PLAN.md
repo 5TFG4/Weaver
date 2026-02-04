@@ -1,8 +1,8 @@
-# Weaver Milestone Plan (2026-02-03)
+# Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M4 Complete, 631 tests passing  
-> **Remaining Work**: M5 → M6 → M7 → M8  
-> **Estimated Total**: ~230 new tests, 7-8 weeks
+> **Current State**: M6 Complete, 806 tests passing  
+> **Remaining Work**: M7 → M8  
+> **Estimated Total**: ~50 new tests remaining, 2 weeks
 
 ---
 
@@ -10,24 +10,32 @@
 
 All pending tasks have been consolidated and reorganized into 4 milestones:
 
-| Milestone | Name | Core Objective | Est. Tests |
-|-----------|------|----------------|------------|
-| **M5** | Marvin Core | Strategy system + Plugin architecture | ~80 |
-| **M6** | Live Trading | Paper/Live trading flow | ~60 |
-| **M7** | Haro Frontend | React UI + SSE | ~50 |
-| **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 |
+| Milestone | Name | Core Objective | Est. Tests | Status |
+|-----------|------|----------------|------------|--------|
+| **M5** | Marvin Core | Strategy system + Plugin architecture | 74 | ✅ DONE |
+| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-2 done (63 tests) |
+| **M7** | Haro Frontend | React UI + SSE | ~50 | ⏳ |
+| **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 | ⏳ |
 
-**Key Changes**:
-1. M5 focuses on Marvin strategy system (excludes Live Trading)
-2. New M6 dedicated to Live Trading flow
-3. M7 changed to Frontend development
-4. M8 for Polish + E2E testing
+**M6-1 & M6-2 Complete**:
+1. ✅ PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
+2. ✅ AdapterMeta dataclass with features support
+3. ✅ ADAPTER_META added to AlpacaAdapter and MockExchangeAdapter
+4. ✅ AST-based discovery without importing
+5. ✅ AlpacaAdapter connect()/disconnect()/is_connected
+6. ✅ _require_connection() guard on all methods
+
+**M6 Remaining**:
+- M6-3: VedaService wired to order routes
+- M6-4: Live order flow with events + persistence
+- M6-5: RealtimeClock for live runs
 
 ---
 
-## 1. M5: Marvin Core (Strategy System)
+## 1. M5: Marvin Core (Strategy System) ✅ COMPLETE
 
 > **Goal**: Complete strategy loading, execution, and backtest core flow  
+> **Status**: ✅ COMPLETE (74 tests, 705 total)
 > **Prerequisite**: M4 ✅  
 > **Estimated Effort**: 2-3 weeks
 
@@ -109,81 +117,134 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 > **Goal**: Complete paper/live trading full flow  
 > **Prerequisite**: M5 ✅  
-> **Estimated Effort**: 1.5-2 weeks
+> **Estimated Effort**: 1.5-2 weeks  
+> **Design Doc**: [m6-live-trading.md](archive/milestone-details/m6-live-trading.md)
 
 ### 2.1 Exit Gate (Definition of Done)
 
-- [ ] PluginAdapterLoader implemented (exchange adapter plugins)
-- [ ] AlpacaAdapter initialized with real clients
-- [ ] VedaService routed to order endpoints
-- [ ] Paper Trading orders can be submitted and filled
-- [ ] Live Run uses RealtimeClock
+- [x] PluginAdapterLoader with auto-discovery (mirrors strategy pattern) ✅ 2026-02-04
+- [x] AlpacaAdapter `connect()` initializes real clients ✅ 2026-02-04
+- [x] VedaService wired to order routes (replaces MockOrderService) ✅ 2026-02-04
+- [x] Paper Trading orders persist + emit events ✅ 2026-02-04
+- [x] Live Run uses RealtimeClock ✅ 2026-02-04
+- [x] ~91 new tests (target: 770+) → actual: 806 ✅
 
 ### 2.2 MVP Breakdown
 
 | MVP | Focus | Tests | Dependencies |
 |-----|-------|-------|--------------|
-| M6-1 | Plugin Adapter Loader | ~10 | - |
-| M6-2 | AlpacaAdapter Init | ~12 | M6-1 |
-| M6-3 | VedaService Routing | ~10 | - |
-| M6-4 | Live Order Flow | ~15 | M6-2, M6-3 |
-| M6-5 | Run Mode Integration | ~8 | M6-4 |
+| M6-1 | PluginAdapterLoader | 40 ✅ | - |
+| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
+| M6-3 | VedaService Routing | 13 ✅ | M6-2 ✅ |
+| M6-4 | Live Order Flow | 15 ✅ | M6-3 ✅ |
+| M6-5 | Run Mode Integration | 10 ✅ | M6-4 ✅ |
 
 ### 2.3 Detailed Tasks
 
-#### M6-1: Plugin Adapter Loader (~10 tests)
+#### M6-1: PluginAdapterLoader ✅ COMPLETE (40 tests)
+
+**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/*.py (MODIFIED)
+
 ```
-- [ ] Create AdapterMeta dataclass
-- [ ] Implement PluginAdapterLoader
-- [ ] Add ADAPTER_META to alpaca_adapter.py
-- [ ] Add ADAPTER_META to mock_adapter.py
-- [ ] Remove hardcoded imports from adapters/__init__.py
-- [ ] Test: discover adapters in directory
-- [ ] Test: load by ID
-- [ ] Test: deleted adapter = system works
-- [ ] Test: feature support query
+- [x] Create AdapterMeta dataclass (id, name, version, class_name, features)
+- [x] Implement PluginAdapterLoader with AST-based metadata extraction
+- [x] Add ADAPTER_META to alpaca_adapter.py
+- [x] Add ADAPTER_META to mock_adapter.py
+- [x] Test: discover adapters in directory
+- [x] Test: load adapter by ID
+- [x] Test: pass credentials to adapter constructor
+- [x] Test: unknown adapter raises AdapterNotFoundError
+- [x] Test: extracts metadata without importing (AST)
+- [x] Test: get_metadata(), supports_feature()
+- [x] Test: empty directory returns empty list
+- [x] Test: skip private files (_*)
 ```
 
-#### M6-2: AlpacaAdapter Init (~12 tests)
+#### M6-2: AlpacaAdapter Connection ✅ COMPLETE (23 tests)
+
+**Files**: `adapters/alpaca_adapter.py` (MODIFIED)
+
 ```
-- [ ] Add connect() method
-- [ ] Initialize TradingClient (stocks)
-- [ ] Initialize CryptoHistoricalDataClient (crypto)
-- [ ] Connection verification (ping/account query)
-- [ ] Error handling: invalid credentials
-- [ ] Error handling: network timeout
-- [ ] Test: connection success
-- [ ] Test: Paper vs Live mode
+- [x] Add connect() method
+- [x] Initialize TradingClient with api_key, secret_key, paper
+- [x] Initialize CryptoHistoricalDataClient
+- [x] Initialize StockHistoricalDataClient
+- [x] Verify connection via account status check
+- [x] Add is_connected property
+- [x] Add disconnect() method
+- [x] Add _require_connection() guard
+- [x] Test: connect creates all clients
+- [x] Test: connect verifies account ACTIVE
+- [x] Test: inactive account raises ConnectionError
+- [x] Test: connect idempotent
+- [x] Test: disconnect clears clients
+- [x] Test: submit_order requires connection
+- [ ] Test: paper/live mode flag passed correctly
 ```
 
-#### M6-3: VedaService Routing (~10 tests)
+#### M6-3: VedaService Routing ✅ COMPLETE (13 tests)
+
+**Files**: `routes/orders.py` (MODIFIED), `schemas.py` (MODIFIED)
+
 ```
-- [ ] Add get_veda_service to dependencies.py
-- [ ] Order routes use VedaService
-- [ ] Remove/deprecate MockOrderService
-- [ ] Test: route correctly injects VedaService
-- [ ] Test: order creation via VedaService
+- [x] Add OrderCreate schema to schemas.py
+- [x] Add POST /orders endpoint using VedaService
+- [x] Add DELETE /orders/{id} endpoint for cancel
+- [x] Handle 503 when VedaService not configured
+- [x] _state_to_response() converter
+- [x] _require_veda_service() dependency
+- [x] Test: create_order calls VedaService.place_order
+- [x] Test: intent fields mapped correctly
+- [x] Test: returns OrderResponse
+- [x] Test: 422 for invalid input
+- [x] Test: 503 when no VedaService
+- [x] Test: cancel_order calls VedaService
+- [x] Test: cancel nonexistent returns 404
 ```
 
-#### M6-4: Live Order Flow (~15 tests)
+#### M6-4: Live Order Flow ✅ COMPLETE (15 tests)
+
+**Files**: `veda_service.py` (MODIFIED), `interfaces.py` (MODIFIED), `mock_adapter.py` (MODIFIED)
+
 ```
-- [ ] VedaService subscribes to live.PlaceOrder
-- [ ] DomainRouter routes to live.* in live mode
-- [ ] Order status sync (submitted → filled)
-- [ ] Test: paper order submit
-- [ ] Test: paper order fill
-- [ ] Test: order cancel
-- [ ] Test: partial fill
+- [x] Add VedaService.connect() method
+- [x] Add VedaService.disconnect() method  
+- [x] Add VedaService.is_connected property
+- [x] Add connect/disconnect/is_connected to ExchangeAdapter interface
+- [x] Add connect/disconnect/is_connected to MockExchangeAdapter
+- [x] Fix place_order idempotency (only persist/emit once)
+- [x] Test: VedaService has connect/disconnect/is_connected
+- [x] Test: connect/disconnect delegate to adapter
+- [x] Test: place_order persists to database
+- [x] Test: place_order emits orders.Created event
+- [x] Test: rejected order emits orders.Rejected event
+- [x] Test: event includes exchange_order_id
+- [x] Test: get_order from local state
+- [x] Test: get_order falls back to repository
+- [x] Test: list_orders / list_orders(run_id)
+- [x] Test: idempotent submission
 ```
 
-#### M6-5: Run Mode Integration (~8 tests)
+#### M6-5: Run Mode Integration ✅ COMPLETE (10 tests)
+
+**Files**: `run_manager.py` (MODIFIED)
+
 ```
-- [ ] RunManager supports Live Run (RealtimeClock)
-- [ ] Live Run uses real market time
-- [ ] Correct switch between Backtest/Live
-- [ ] Test: create live run
-- [ ] Test: live run uses RealtimeClock
-- [ ] Test: stop live run
+- [x] Update RunContext.clock type to BaseClock (Union)
+- [x] Import RealtimeClock in run_manager.py
+- [x] Implement _start_live() method for live/paper runs
+- [x] Live/paper runs use RealtimeClock
+- [x] Live runs stay RUNNING (context preserved)
+- [x] Test: backtest uses BacktestClock
+- [x] Test: live mode uses RealtimeClock
+- [x] Test: paper mode uses RealtimeClock
+- [x] Test: realtime clock uses current time
+- [x] Test: backtest clock uses simulated time
+- [x] Test: run.Started event includes mode
+- [x] Test: stop live run stops clock
+- [x] Test: cannot start already running
+- [x] Test: run mode persisted on create
+- [x] Test: run mode retrievable after get
 ```
 
 ---

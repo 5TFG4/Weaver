@@ -152,9 +152,9 @@ class TestRunManagerStop:
 
     async def test_transitions_running_to_stopped(self) -> None:
         """stop() should change status from RUNNING to STOPPED."""
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
-        run_manager = RunManager()
+        run_manager = create_run_manager_with_deps()
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -170,9 +170,9 @@ class TestRunManagerStop:
 
     async def test_already_stopped_is_idempotent(self) -> None:
         """stop() on stopped run should not raise."""
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
-        run_manager = RunManager()
+        run_manager = create_run_manager_with_deps()
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -201,9 +201,9 @@ class TestRunManagerStop:
 
     async def test_sets_stopped_at_timestamp(self) -> None:
         """stop() should set stopped_at timestamp."""
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
-        run_manager = RunManager()
+        run_manager = create_run_manager_with_deps()
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -247,10 +247,10 @@ class TestRunManagerEventEmission:
         """start() should emit runs.Started event when event_log provided."""
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
-        run_manager = RunManager(event_log=event_log)
+        run_manager = create_run_manager_with_deps(event_log=event_log)
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -267,14 +267,17 @@ class TestRunManagerEventEmission:
         assert envelope.payload["run_id"] == run.id
         assert envelope.payload["status"] == "running"
 
+        # Cleanup
+        await run_manager.stop(run.id)
+
     async def test_stop_emits_runs_stopped_event(self) -> None:
         """stop() should emit runs.Stopped event when event_log provided."""
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
-        run_manager = RunManager(event_log=event_log)
+        run_manager = create_run_manager_with_deps(event_log=event_log)
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -294,9 +297,9 @@ class TestRunManagerEventEmission:
 
     async def test_no_event_when_event_log_none(self) -> None:
         """No error when event_log is None."""
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
-        run_manager = RunManager(event_log=None)
+        run_manager = create_run_manager_with_deps(event_log=None)
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
@@ -314,10 +317,10 @@ class TestRunManagerEventEmission:
         """stop() called twice should only emit one Stopped event."""
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from src.glados.services.run_manager import RunManager
+        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
-        run_manager = RunManager(event_log=event_log)
+        run_manager = create_run_manager_with_deps(event_log=event_log)
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,

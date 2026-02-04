@@ -126,6 +126,21 @@ class OrderStatus(str, Enum):
     EXPIRED = "expired"
 
 
+class OrderCreate(BaseModel):
+    """Request body for creating an order."""
+
+    run_id: str = Field(..., min_length=1)
+    client_order_id: str = Field(..., min_length=1)
+    symbol: str = Field(..., min_length=1)
+    side: OrderSide
+    order_type: OrderType
+    qty: str = Field(..., description="Quantity as decimal string")
+    limit_price: str | None = Field(default=None, description="Limit price for LIMIT orders")
+    stop_price: str | None = Field(default=None, description="Stop price for STOP orders")
+    time_in_force: str = Field(default="day")
+    extended_hours: bool = Field(default=False)
+
+
 class OrderResponse(BaseModel):
     """Full order details response."""
 

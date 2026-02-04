@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-03 · **Tests**: 631 passing · **M4**: ✅ Complete
+**Last Updated**: 2026-02-04 · **Tests**: 808 passing · **M6**: ✅ Complete
 
 ---
 
@@ -14,8 +14,9 @@
 |---------------|------------------|
 | **Issue backlog & milestone schedule** | [AUDIT_FINDINGS.md §5](AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
 | **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
+| **Test coverage analysis** | [TEST_COVERAGE.md](TEST_COVERAGE.md) |
 | **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
-| **Next milestone design** | [M4 Greta](archive/milestone-details/m4-greta.md) |
+| **Next milestone design** | [M7 Haro Frontend](archive/milestone-details/m7-haro.md) |
 | **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
 
 ---
@@ -26,10 +27,12 @@
 |----------|-------------|
 | [Development](DEVELOPMENT.md) | Methodology, TDD, coding standards, **doc structure rules (§8)** |
 | [Audit Findings](AUDIT_FINDINGS.md) | Issues to fix, **milestone schedule (§5)**, **progress (§6)** |
+| [Test Coverage](TEST_COVERAGE.md) | Test depth, business logic coverage, gaps analysis |
 | [Roadmap](architecture/roadmap.md) | Milestones, phases, **entry checklists (§5)** |
 | [Events](architecture/events.md) | Event model, envelope, namespaces, delivery |
 | [API](architecture/api.md) | REST, SSE, auth, thin events pattern |
 | [Clock](architecture/clock.md) | RealtimeClock, BacktestClock, bar alignment |
+| [Veda](architecture/veda.md) | Trading subsystem, ExchangeAdapter protocol, adapters |
 | [Config](architecture/config.md) | Dual credentials, security, testing |
 | [Deployment](architecture/deployment.md) | Docker, env vars, operations |
 
@@ -43,7 +46,7 @@
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
 | **M5 Marvin** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ✅ Done (74 tests) |
-| **M6 Live Trading** | TBD | ⏳ Next |
+| **M6 Live Trading** | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md) | ✅ Done (101 tests) |
 
 ---
 

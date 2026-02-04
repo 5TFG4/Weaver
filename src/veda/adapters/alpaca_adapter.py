@@ -7,9 +7,32 @@ Supports both paper and live trading.
 
 from __future__ import annotations
 
+ADAPTER_META = {
+    "id": "alpaca",
+    "name": "Alpaca Markets",
+    "version": "1.0.0",
+    "description": "Alpaca Markets exchange adapter for paper and live trading",
+    "author": "Weaver Team",
+    "class": "AlpacaAdapter",
+    "features": ["paper_trading", "live_trading", "crypto", "stocks"],
+}
+
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, AsyncIterator
+
+# Alpaca SDK imports (lazy imported in connect())
+try:
+    from alpaca.trading.client import TradingClient
+    from alpaca.data.historical import (
+        CryptoHistoricalDataClient,
+        StockHistoricalDataClient,
+    )
+except ImportError:
+    # SDK not installed - will fail at connect() time
+    TradingClient = None  # type: ignore
+    CryptoHistoricalDataClient = None  # type: ignore
+    StockHistoricalDataClient = None  # type: ignore
 
 from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
 from src.veda.models import (
@@ -67,14 +90,107 @@ class AlpacaAdapter(ExchangeAdapter):
         self._api_secret = api_secret
         self._paper = paper
 
-        # Initialize clients (lazy - set directly in tests)
+        # Initialize clients (lazy - created on connect())
         self._trading_client: Any = None
-        self._data_client: Any = None
+        self._stock_data_client: Any = None
+        self._crypto_data_client: Any = None
+        self._connected: bool = False
 
     @property
     def paper(self) -> bool:
         """Whether adapter is in paper trading mode."""
         return self._paper
+
+    @property
+    def is_connected(self) -> bool:
+        """Whether adapter is connected to Alpaca."""
+        return self._connected
+
+    # =========================================================================
+    # Connection Management
+    # =========================================================================
+
+    async def connect(self) -> None:
+        """
+        Connect to Alpaca APIs.
+
+        Initializes trading client and data clients, then verifies
+        connection by checking account status.
+
+        Raises:
+            ConnectionError: If account status is not ACTIVE
+            ImportError: If alpaca-py SDK is not installed
+        """
+        if self._connected:
+            return  # Already connected (idempotent)
+
+        if TradingClient is None:
+            raise ImportError(
+                "alpaca-py SDK is not installed. "
+                "Install with: pip install alpaca-py"
+            )
+
+        # Verify all SDK classes are available (they're imported together,
+        # but explicit check is safer than assert which can be disabled with -O)
+        if StockHistoricalDataClient is None or CryptoHistoricalDataClient is None:
+            raise ImportError(
+                "alpaca-py SDK is incomplete. "
+                "Reinstall with: pip install --force-reinstall alpaca-py"
+            )
+
+        # Create trading client
+        self._trading_client = TradingClient(
+            api_key=self._api_key,
+            secret_key=self._api_secret,
+            paper=self._paper,
+        )
+
+        # Create data clients (SDK availability already verified above)
+        self._stock_data_client = StockHistoricalDataClient(
+            api_key=self._api_key,
+            secret_key=self._api_secret,
+        )
+        self._crypto_data_client = CryptoHistoricalDataClient(
+            api_key=self._api_key,
+            secret_key=self._api_secret,
+        )
+
+        # Verify connection by checking account status
+        account = self._trading_client.get_account()
+        if account.status != "ACTIVE":
+            # Clean up on failure
+            self._trading_client = None
+            self._stock_data_client = None
+            self._crypto_data_client = None
+            raise ConnectionError(
+                f"Account status is {account.status}, expected ACTIVE"
+            )
+
+        self._connected = True
+
+    async def disconnect(self) -> None:
+        """
+        Disconnect from Alpaca APIs.
+
+        Clears all clients and resets connection state.
+        Safe to call even if not connected (idempotent).
+        """
+        self._trading_client = None
+        self._stock_data_client = None
+        self._crypto_data_client = None
+        self._connected = False
+
+    def _require_connection(self) -> None:
+        """
+        Guard that raises if not connected.
+
+        Raises:
+            ConnectionError: If adapter is not connected
+        """
+        if not self._connected:
+            raise ConnectionError(
+                "Adapter is not connected. Call connect() first."
+            )
 
     # =========================================================================
     # Order Management
@@ -89,7 +205,11 @@ class AlpacaAdapter(ExchangeAdapter):
 
         Returns:
             OrderSubmitResult with exchange response
+
+        Raises:
+            ConnectionError: If adapter is not connected
         """
+        self._require_connection()
         try:
             # Map order parameters
             side = "buy" if intent.side == OrderSide.BUY else "sell"
@@ -140,7 +260,11 @@ class AlpacaAdapter(ExchangeAdapter):
 
         Returns:
             True if cancel succeeded
+
+        Raises:
+            ConnectionError: If adapter is not connected
         """
+        self._require_connection()
         try:
             await self._trading_client.cancel_order_by_id(exchange_order_id)
             return True
@@ -156,7 +280,11 @@ class AlpacaAdapter(ExchangeAdapter):
 
         Returns:
             ExchangeOrder if found
+
+        Raises:
+            ConnectionError: If adapter is not connected
         """
+        self._require_connection()
         try:
             response = await self._trading_client.get_order_by_id(exchange_order_id)
             return self._map_alpaca_order(response)
@@ -179,7 +307,11 @@ class AlpacaAdapter(ExchangeAdapter):
 
         Returns:
             List of ExchangeOrder
+
+        Raises:
+            ConnectionError: If adapter is not connected
         """
+        self._require_connection()
         try:
             params: dict[str, Any] = {"limit": limit}
             if status is not None:
@@ -197,7 +329,13 @@ class AlpacaAdapter(ExchangeAdapter):
     # =========================================================================
 
     async def get_account(self) -> AccountInfo:
-        """Get Alpaca account info."""
+        """
+        Get Alpaca account info.
+
+        Raises:
+            ConnectionError: If adapter is not connected
+        """
+        self._require_connection()
         response = await self._trading_client.get_account()
         return AccountInfo(
             account_id=response.id,
@@ -209,7 +347,13 @@ class AlpacaAdapter(ExchangeAdapter):
         )
 
     async def get_positions(self) -> list[Position]:
-        """Get all positions from Alpaca."""
+        """
+        Get all positions from Alpaca.
+
+        Raises:
+            ConnectionError: If adapter is not connected
+        """
+        self._require_connection()
         response = await self._trading_client.get_all_positions()
         return [self._map_alpaca_position(p) for p in response]
 
@@ -244,14 +388,14 @@ class AlpacaAdapter(ExchangeAdapter):
         if limit is not None:
             params["limit"] = limit
 
-        response = await self._data_client.get_stock_bars(**params)
+        response = await self._stock_data_client.get_stock_bars(**params)
         bars_data = response.get(symbol, [])
         return [self._map_alpaca_bar(symbol, b) for b in bars_data]
 
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get latest bar for a symbol."""
         try:
-            response = await self._data_client.get_stock_latest_bar(symbol)
+            response = await self._stock_data_client.get_stock_latest_bar(symbol)
             bar_data = response.get(symbol)
             if bar_data:
                 return self._map_alpaca_bar(symbol, bar_data)
@@ -262,7 +406,7 @@ class AlpacaAdapter(ExchangeAdapter):
     async def get_latest_quote(self, symbol: str) -> Quote | None:
         """Get latest quote for a symbol."""
         try:
-            response = await self._data_client.get_stock_latest_quote(symbol)
+            response = await self._stock_data_client.get_stock_latest_quote(symbol)
             quote_data = response.get(symbol)
             if quote_data:
                 return Quote(
@@ -280,7 +424,7 @@ class AlpacaAdapter(ExchangeAdapter):
     async def get_latest_trade(self, symbol: str) -> Trade | None:
         """Get latest trade for a symbol."""
         try:
-            response = await self._data_client.get_stock_latest_trade(symbol)
+            response = await self._stock_data_client.get_stock_latest_trade(symbol)
             trade_data = response.get(symbol)
             if trade_data:
                 return Trade(

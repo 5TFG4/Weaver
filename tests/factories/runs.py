@@ -265,3 +265,51 @@ def create_sma_cross_backtest(
             slow_period=slow_period,
         ),
     )
+
+
+# =============================================================================
+# RunManager Factory with Dependencies
+# =============================================================================
+
+def create_run_manager_with_deps(
+    event_log: Any | None = None,
+    bar_repository: Any | None = None,
+    strategy_loader: Any | None = None,
+) -> "RunManager":
+    """
+    Create a RunManager with all mocked dependencies for testing.
+    
+    Args:
+        event_log: Optional event log (will create mock if None)
+        bar_repository: Optional bar repository (will create mock if None)
+        strategy_loader: Optional strategy loader (will create mock if None)
+        
+    Returns:
+        RunManager with all dependencies configured
+    """
+    from unittest.mock import AsyncMock, MagicMock
+    from src.glados.services.run_manager import RunManager
+    
+    # Create event log if not provided
+    if event_log is None:
+        event_log = AsyncMock()
+        event_log.append = AsyncMock()
+    
+    # Create bar repository if not provided
+    if bar_repository is None:
+        bar_repository = AsyncMock()
+        bar_repository.get_bars = AsyncMock(return_value=[])
+    
+    # Create strategy loader with mock strategy if not provided
+    if strategy_loader is None:
+        strategy_loader = MagicMock()
+        mock_strategy = MagicMock()
+        mock_strategy.initialize = AsyncMock()
+        mock_strategy.on_tick = AsyncMock(return_value=[])
+        strategy_loader.load = MagicMock(return_value=mock_strategy)
+    
+    return RunManager(
+        event_log=event_log,
+        bar_repository=bar_repository,
+        strategy_loader=strategy_loader,
+    )
