@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M6 Complete, 806 tests passing  
-> **Remaining Work**: M7 → M8  
-> **Estimated Total**: ~50 new tests remaining, 2 weeks
+> **Current State**: M7-1 Complete, 808 backend + 8 frontend tests  
+> **Remaining Work**: M7-2 → M8  
+> **Estimated Total**: ~82 new tests remaining, ~1.5 weeks
 
 ---
 
@@ -10,25 +10,27 @@
 
 All pending tasks have been consolidated and reorganized into 4 milestones:
 
-| Milestone | Name | Core Objective | Est. Tests | Status |
-|-----------|------|----------------|------------|--------|
-| **M5** | Marvin Core | Strategy system + Plugin architecture | 74 | ✅ DONE |
-| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-2 done (63 tests) |
-| **M7** | Haro Frontend | React UI + SSE | ~50 | ⏳ |
-| **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 | ⏳ |
+| Milestone | Name          | Core Objective                        | Est. Tests | Status                 |
+| --------- | ------------- | ------------------------------------- | ---------- | ---------------------- |
+| **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE                |
+| **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total)    |
+| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-1 done (8 tests) |
+| **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                     |
 
-**M6-1 & M6-2 Complete**:
+**M6 Complete** (101 tests added):
+
 1. ✅ PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
 2. ✅ AdapterMeta dataclass with features support
-3. ✅ ADAPTER_META added to AlpacaAdapter and MockExchangeAdapter
-4. ✅ AST-based discovery without importing
-5. ✅ AlpacaAdapter connect()/disconnect()/is_connected
-6. ✅ _require_connection() guard on all methods
+3. ✅ AlpacaAdapter connect()/disconnect()/is_connected
+4. ✅ VedaService wired to order routes
+5. ✅ Live order flow with events + persistence
+6. ✅ RealtimeClock for live runs
 
-**M6 Remaining**:
-- M6-3: VedaService wired to order routes
-- M6-4: Live order flow with events + persistence
-- M6-5: RealtimeClock for live runs
+**M7 In Progress**:
+
+- M7-0: Dev Environment Setup ✅
+- M7-1: React App Scaffold ✅ (8 tests)
+- M7-2: API Client Layer ⏳ (next)
 
 ---
 
@@ -49,17 +51,18 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 1.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M5-1 | EventLog Subscription | ~10 | - |
-| M5-2 | data.WindowReady Flow | ~15 | M5-1 |
-| M5-3 | SMA Strategy | ~12 | M5-2 |
-| M5-4 | Plugin Strategy Loader | ~15 | M5-3 |
-| M5-5 | Code Quality (Marvin) | ~8 | - |
+| MVP  | Focus                  | Tests | Dependencies |
+| ---- | ---------------------- | ----- | ------------ |
+| M5-1 | EventLog Subscription  | ~10   | -            |
+| M5-2 | data.WindowReady Flow  | ~15   | M5-1         |
+| M5-3 | SMA Strategy           | ~12   | M5-2         |
+| M5-4 | Plugin Strategy Loader | ~15   | M5-3         |
+| M5-5 | Code Quality (Marvin)  | ~8    | -            |
 
 ### 1.3 Detailed Tasks
 
 #### M5-1: EventLog Subscription (~10 tests)
+
 ```
 - [ ] Add subscribe()/unsubscribe() to EventLog protocol
 - [ ] Implement subscription in InMemoryEventLog
@@ -69,6 +72,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-2: data.WindowReady Flow (~15 tests)
+
 ```
 - [ ] StrategyRunner subscribes to data.WindowReady
 - [ ] GretaService subscribes to backtest.FetchWindow (M4 deferred)
@@ -78,6 +82,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-3: SMA Strategy (~12 tests)
+
 ```
 - [ ] Create src/marvin/strategies/ directory
 - [ ] Implement SMAStrategy (dual moving average crossover)
@@ -88,6 +93,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-4: Plugin Strategy Loader (~15 tests)
+
 ```
 - [ ] Create StrategyMeta dataclass
 - [ ] Create @strategy decorator (optional)
@@ -103,6 +109,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-5: Code Quality - Marvin (~8 tests)
+
 ```
 - [ ] SimulatedFill.side: str → OrderSide enum
 - [ ] Extract SimpleTestStrategy to fixtures
@@ -131,19 +138,19 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 2.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M6-1 | PluginAdapterLoader | 40 ✅ | - |
-| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
-| M6-3 | VedaService Routing | 13 ✅ | M6-2 ✅ |
-| M6-4 | Live Order Flow | 15 ✅ | M6-3 ✅ |
-| M6-5 | Run Mode Integration | 10 ✅ | M6-4 ✅ |
+| MVP  | Focus                    | Tests | Dependencies |
+| ---- | ------------------------ | ----- | ------------ |
+| M6-1 | PluginAdapterLoader      | 40 ✅ | -            |
+| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅      |
+| M6-3 | VedaService Routing      | 13 ✅ | M6-2 ✅      |
+| M6-4 | Live Order Flow          | 15 ✅ | M6-3 ✅      |
+| M6-5 | Run Mode Integration     | 10 ✅ | M6-4 ✅      |
 
 ### 2.3 Detailed Tasks
 
 #### M6-1: PluginAdapterLoader ✅ COMPLETE (40 tests)
 
-**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/*.py (MODIFIED)
+**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/\*.py (MODIFIED)
 
 ```
 - [x] Create AdapterMeta dataclass (id, name, version, class_name, features)
@@ -208,7 +215,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ```
 - [x] Add VedaService.connect() method
-- [x] Add VedaService.disconnect() method  
+- [x] Add VedaService.disconnect() method
 - [x] Add VedaService.is_connected property
 - [x] Add connect/disconnect/is_connected to ExchangeAdapter interface
 - [x] Add connect/disconnect/is_connected to MockExchangeAdapter
@@ -268,26 +275,26 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 3.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M7-0 | Dev Environment Setup | 0 | - |
-| M7-1 | React App Scaffold | ~8 | M7-0 |
-| M7-2 | API Client Layer | ~10 | M7-1 |
-| M7-3 | Dashboard Page | ~8 | M7-2 |
-| M7-4 | Runs Page | ~12 | M7-3 |
-| M7-5 | Orders Page | ~8 | M7-4 |
-| M7-6 | SSE Integration | ~8 | M7-5 |
+| MVP  | Focus                 | Tests | Dependencies |
+| ---- | --------------------- | ----- | ------------ |
+| M7-0 | Dev Environment Setup | 0     | ✅           |
+| M7-1 | React App Scaffold    | 8 ✅  | M7-0 ✅      |
+| M7-2 | API Client Layer      | ~10   | M7-1 ✅      |
+| M7-3 | Dashboard Page        | ~8    | M7-2         |
+| M7-4 | Runs Page             | ~12   | M7-3         |
+| M7-5 | Orders Page           | ~8    | M7-4         |
+| M7-6 | SSE Integration       | ~8    | M7-5         |
 
 ### 3.3 Technology Stack
 
-| Category | Technology |
-|----------|------------|
-| Framework | React 18 + TypeScript |
-| Build | Vite 5 |
-| Routing | React Router 6 |
-| State | TanStack Query + Zustand |
-| Styling | Tailwind CSS + shadcn/ui |
-| Testing | Vitest + RTL + MSW |
+| Category  | Technology               |
+| --------- | ------------------------ |
+| Framework | React 18 + TypeScript    |
+| Build     | Vite 5                   |
+| Routing   | React Router 6           |
+| State     | TanStack Query + Zustand |
+| Styling   | Tailwind CSS + shadcn/ui |
+| Testing   | Vitest + RTL + MSW       |
 
 ### 3.4 Dev Environment (Option 3: Hybrid)
 
@@ -325,17 +332,18 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 4.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M8-1 | E2E Test Setup | ~5 | - |
-| M8-2 | E2E Backtest Flow | ~8 | M8-1 |
-| M8-3 | E2E Live Flow | ~8 | M8-2 |
-| M8-4 | Code Quality | ~10 | - |
-| M8-5 | Documentation | - | M8-4 |
+| MVP  | Focus             | Tests | Dependencies |
+| ---- | ----------------- | ----- | ------------ |
+| M8-1 | E2E Test Setup    | ~5    | -            |
+| M8-2 | E2E Backtest Flow | ~8    | M8-1         |
+| M8-3 | E2E Live Flow     | ~8    | M8-2         |
+| M8-4 | Code Quality      | ~10   | -            |
+| M8-5 | Documentation     | -     | M8-4         |
 
 ### 4.3 Detailed Tasks
 
 #### M8-1: E2E Test Setup (~5 tests)
+
 ```
 - [ ] Configure Playwright
 - [ ] Setup test database
@@ -344,6 +352,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 ```
 
 #### M8-2: E2E Backtest Flow (~8 tests)
+
 ```
 - [ ] Create backtest run
 - [ ] View backtest progress
@@ -352,6 +361,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 ```
 
 #### M8-3: E2E Live Flow (~8 tests)
+
 ```
 - [ ] Create paper run
 - [ ] Monitor real-time status
@@ -360,6 +370,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 ```
 
 #### M8-4: Code Quality (~10 tests)
+
 ```
 - [ ] Clean all TODO/FIXME
 - [ ] Fix Pylance/mypy warnings
@@ -371,6 +382,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 ```
 
 #### M8-5: Documentation
+
 ```
 - [ ] Update README with usage instructions
 - [ ] Complete API documentation
@@ -387,26 +399,26 @@ The following tasks have been incorporated into milestones or deferred:
 
 ### Incorporated into Milestones
 
-| Task | Source | Assigned To |
-|------|--------|-------------|
-| EventLog subscription | AUDIT 1.7 | M5-1 |
-| GretaService subscribe FetchWindow | M4 defer | M5-2 |
-| SimulatedFill.side enum | M4 note #4 | M5-5 |
-| ClockTick duplicate | M4 note #5 | M5-5 |
-| AlpacaAdapter init | AUDIT 1.4 | M6-2 |
-| VedaService routing | AUDIT 1.3 | M6-3 |
-| Sharpe ratio | greta TODO | M8-4 |
-| Max drawdown | greta TODO | M8-4 |
+| Task                               | Source     | Assigned To |
+| ---------------------------------- | ---------- | ----------- |
+| EventLog subscription              | AUDIT 1.7  | M5-1        |
+| GretaService subscribe FetchWindow | M4 defer   | M5-2        |
+| SimulatedFill.side enum            | M4 note #4 | M5-5        |
+| ClockTick duplicate                | M4 note #5 | M5-5        |
+| AlpacaAdapter init                 | AUDIT 1.4  | M6-2        |
+| VedaService routing                | AUDIT 1.3  | M6-3        |
+| Sharpe ratio                       | greta TODO | M8-4        |
+| Max drawdown                       | greta TODO | M8-4        |
 
 ### Deferred (M9+)
 
-| Task | Reason |
-|------|--------|
+| Task                             | Reason                              |
+| -------------------------------- | ----------------------------------- |
 | Multiple simultaneous strategies | High complexity, future enhancement |
-| Strategy optimization | Requires more infrastructure |
-| Real money trading | Requires more security measures |
-| WebSocket streaming | Polling sufficient for MVP |
-| Multi-exchange support | Complete Alpaca first |
+| Strategy optimization            | Requires more infrastructure        |
+| Real money trading               | Requires more security measures     |
+| WebSocket streaming              | Polling sufficient for MVP          |
+| Multi-exchange support           | Complete Alpaca first               |
 
 ---
 
@@ -441,12 +453,12 @@ M8: Polish & E2E
 
 ## 7. Risks & Mitigations
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Alpaca API changes | Low | High | Abstraction layer isolation, quick adaptation |
-| Frontend development delay | Medium | Medium | Backend can complete first, CLI as fallback |
-| Flaky E2E tests | Medium | Low | Retry mechanism, isolated test environment |
-| Plugin architecture complexity | Low | Medium | AST parsing has mature solutions |
+| Risk                           | Probability | Impact | Mitigation                                    |
+| ------------------------------ | ----------- | ------ | --------------------------------------------- |
+| Alpaca API changes             | Low         | High   | Abstraction layer isolation, quick adaptation |
+| Frontend development delay     | Medium      | Medium | Backend can complete first, CLI as fallback   |
+| Flaky E2E tests                | Medium      | Low    | Retry mechanism, isolated test environment    |
+| Plugin architecture complexity | Low         | Medium | AST parsing has mature solutions              |
 
 ---
 
@@ -455,27 +467,27 @@ M8: Polish & E2E
 ### Test Count
 
 | Milestone | New Tests | Cumulative |
-|-----------|-----------|------------|
-| M4 (Done) | - | 631 |
-| M5 | ~80 | ~711 |
-| M6 | ~60 | ~771 |
-| M7 | ~50 | ~821 |
-| M8 | ~40 | ~861 |
+| --------- | --------- | ---------- |
+| M4 (Done) | -         | 631        |
+| M5        | ~80       | ~711       |
+| M6        | ~60       | ~771       |
+| M7        | ~50       | ~821       |
+| M8        | ~40       | ~861       |
 
 ### Coverage Targets
 
-| Module | Target |
-|--------|--------|
-| events/ | 90% |
-| glados/ | 85% |
-| veda/ | 85% |
-| greta/ | 90% |
-| marvin/ | 85% |
-| walle/ | 80% |
-| haro/ | 75% |
+| Module  | Target |
+| ------- | ------ |
+| events/ | 90%    |
+| glados/ | 85%    |
+| veda/   | 85%    |
+| greta/  | 90%    |
+| marvin/ | 85%    |
+| walle/  | 80%    |
+| haro/   | 75%    |
 
 ---
 
-*Last Updated: 2026-02-03*
-*Total Estimated New Tests: ~230*
-*Total Estimated Timeline: 7-8 weeks*
+_Last Updated: 2026-02-03_
+_Total Estimated New Tests: ~230_
+_Total Estimated Timeline: 7-8 weeks_
