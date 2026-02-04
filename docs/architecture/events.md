@@ -44,10 +44,19 @@
 | `backtest.*` | DomainRouter | Greta | FetchWindow, PlaceOrder |
 | `data.*` | Veda/Greta | Marvin | WindowReady, WindowChunk, WindowComplete |
 | `market.*` | Exchange | - | Quote, Trade, Bar |
-| `orders.*` | Veda/Greta | - | Created, PlaceRequest, Ack, Placed, Filled, Rejected |
+| `orders.*` | Veda/Greta | - | **Created**, PlaceRequest, Ack, Placed, Filled, **Rejected** |
 | `run.*` | RunManager | SSE | Created, Started, StopRequested, Stopped, Completed, Error |
 | `clock.*` | Clock | StrategyRunner | Tick |
 | `ui.*` | Frontend | - | (future) |
+
+### 2.1 Order Events (M6)
+
+| Event | Emitter | Trigger | Payload |
+|-------|---------|---------|---------|
+| `orders.Created` | VedaService | Order accepted by exchange | `{order_id, client_order_id, exchange_order_id, symbol, side, qty, status}` |
+| `orders.Rejected` | VedaService | Order rejected by exchange | `{order_id, client_order_id, symbol, error_code, error_message}` |
+| `orders.Filled` | VedaService | Order fully filled | `{order_id, exchange_order_id, filled_qty, filled_avg_price}` |
+| `orders.Cancelled` | VedaService | Order cancelled | `{order_id, exchange_order_id}` |
 
 ## 3. Payload & Size Policy
 

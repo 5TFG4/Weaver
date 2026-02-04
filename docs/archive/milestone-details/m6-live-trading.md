@@ -1,9 +1,22 @@
 # M6: Live Trading (Paper/Live Flow)
 
-> **Status**: ⏳ Planning Complete  
+> **Status**: ✅ COMPLETE (2026-02-04)  
 > **Prerequisite**: M5 (Marvin Core) ✅  
-> **Estimated Effort**: 1.5-2 weeks  
-> **Target Tests**: ~65 new tests (total: ~770)
+> **Actual Effort**: ~1.5 weeks  
+> **Tests Added**: 101 (M6-1: 40, M6-2: 23, M6-3: 13, M6-4: 15, M6-5: 10)  
+> **Total Tests**: 806
+
+---
+
+## Implementation Summary
+
+| MVP | Focus | Tests | Key Files |
+|-----|-------|-------|-----------|
+| M6-1 | PluginAdapterLoader | 40 | `adapter_loader.py`, `adapter_meta.py` |
+| M6-2 | AlpacaAdapter Connection | 23 | `alpaca_adapter.py` |
+| M6-3 | VedaService Routing | 13 | `routes/orders.py`, `schemas.py` |
+| M6-4 | Live Order Flow | 15 | `veda_service.py`, `interfaces.py` |
+| M6-5 | Run Mode Integration | 10 | `run_manager.py` |
 
 ---
 
@@ -15,6 +28,187 @@
 4. [Detailed Design](#4-detailed-design)
 5. [MVP Implementation Plan](#5-mvp-implementation-plan)
 6. [Test Strategy](#6-test-strategy)
+7. [Entry & Exit Gates](#7-entry--exit-gates)
+8. [Risk & Mitigations](#8-risk--mitigations)
+9. [Appendix](#9-appendix)
+10. [**Implementation Notes (Post-Completion)**](#10-implementation-notes-post-completion)
+
+---
+
+## 10. Implementation Notes (Post-Completion)
+
+> Added 2026-02-04 after M6 completion
+
+### 10.1 ExchangeAdapter Interface (Final)
+
+The `ExchangeAdapter` protocol defines how adapters communicate with exchanges:
+
+```python
+class ExchangeAdapter(ABC):
+    """Abstract interface for exchange communication."""
+    
+    # Connection Management (added M6-4)
+    async def connect(self) -> None: ...
+    async def disconnect(self) -> None: ...
+    @property
+    def is_connected(self) -> bool: ...
+    
+    # Order Management
+    async def submit_order(self, intent: OrderIntent) -> OrderSubmitResult: ...
+    async def cancel_order(self, exchange_order_id: str) -> bool: ...
+    async def get_order(self, exchange_order_id: str) -> ExchangeOrder | None: ...
+    async def list_orders(...) -> list[ExchangeOrder]: ...
+    
+    # Account & Positions
+    async def get_account(self) -> AccountInfo: ...
+    async def get_positions(self) -> list[Position]: ...
+    async def get_position(self, symbol: str) -> Position | None: ...
+    
+    # Market Data
+    async def get_bars(symbol, timeframe, start, end, limit) -> list[Bar]: ...
+    async def get_latest_bar(self, symbol: str) -> Bar | None: ...
+    async def get_latest_quote(self, symbol: str) -> Quote | None: ...
+    async def get_latest_trade(self, symbol: str) -> Trade | None: ...
+    
+    # Streaming (Future)
+    async def stream_bars(self, symbols: list[str]) -> AsyncIterator[Bar]: ...
+    async def stream_quotes(self, symbols: list[str]) -> AsyncIterator[Quote]: ...
+```
+
+### 10.2 AdapterMeta Schema
+
+Each adapter exports `ADAPTER_META` for plugin discovery:
+
+```python
+ADAPTER_META = {
+    "id": "alpaca",                          # Unique identifier
+    "name": "Alpaca Markets",                # Human-readable name
+    "version": "1.0.0",                      # Semantic version
+    "class": "AlpacaAdapter",                # Class to instantiate
+    "features": ["stocks", "crypto", "paper", "live"],  # Capabilities
+}
+```
+
+### 10.3 VedaService Order Flow
+
+```
+┌─────────────┐    ┌─────────────┐    ┌──────────────┐    ┌───────────────┐
+│ POST /orders│───►│ VedaService │───►│ OrderManager │───►│ExchangeAdapter│
+└─────────────┘    │ place_order │    │              │    │ submit_order  │
+                   └──────┬──────┘    └──────────────┘    └───────────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │ Idempotency Check     │
+              │ (check existing by    │
+              │  client_order_id)     │
+              └───────────┬───────────┘
+                          │
+              ┌───────────▼───────────┐
+              │ Persist to DB         │
+              │ (OrderRepository)     │
+              └───────────┬───────────┘
+                          │
+              ┌───────────▼───────────┐
+              │ Emit Event            │
+              │ orders.Created or     │
+              │ orders.Rejected       │
+              └───────────────────────┘
+```
+
+**Idempotency**: If `client_order_id` already exists, returns existing order without re-submitting.
+
+### 10.4 Run Mode Clock Selection
+
+```python
+# In RunManager.start()
+if run.mode == RunMode.BACKTEST:
+    await self._start_backtest(run)    # Uses BacktestClock
+else:
+    await self._start_live(run)        # Uses RealtimeClock
+```
+
+| Mode | Clock Type | Behavior |
+|------|-----------|----------|
+| BACKTEST | BacktestClock | Fast-forward, no sleep, runs to completion |
+| PAPER | RealtimeClock | Wall-clock aligned, ticks at bar boundaries |
+| LIVE | RealtimeClock | Same as PAPER (safety first) |
+
+### 10.5 Connection Management Pattern
+
+AlpacaAdapter follows connect-on-demand pattern:
+
+```python
+class AlpacaAdapter:
+    async def connect(self) -> None:
+        """Initialize API clients and verify connection."""
+        if self._connected:
+            return  # Idempotent
+        
+        self._trading_client = TradingClient(...)
+        self._stock_data_client = StockHistoricalDataClient(...)
+        self._crypto_data_client = CryptoHistoricalDataClient(...)
+        
+        # Verify connection via account check
+        account = self._trading_client.get_account()
+        if account.status != AccountStatus.ACTIVE:
+            raise ExchangeConnectionError("Account not active")
+        
+        self._connected = True
+    
+    def _require_connection(self) -> None:
+        """Guard: raise if not connected."""
+        if not self._connected:
+            raise ExchangeConnectionError("Not connected")
+```
+
+### 10.6 Event Types Added (M6-4)
+
+| Event | Emitter | Trigger |
+|-------|---------|---------|
+| `orders.Created` | VedaService | Order accepted by exchange |
+| `orders.Rejected` | VedaService | Order rejected by exchange |
+
+Event payload:
+```python
+{
+    "order_id": "uuid",
+    "client_order_id": "user-provided-id",
+    "exchange_order_id": "alpaca-order-id",
+    "symbol": "BTC/USD",
+    "side": "buy",
+    "qty": "1.5",
+    "status": "accepted"
+}
+```
+
+### 10.7 RunContext Type Update
+
+```python
+@dataclass
+class RunContext:
+    """Per-run execution context."""
+    greta: GretaService | None  # None for live/paper (uses VedaService)
+    runner: StrategyRunner
+    clock: BaseClock  # BacktestClock | RealtimeClock (was: BacktestClock only)
+```
+
+### 10.8 Files Changed Summary
+
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/veda/adapter_meta.py` | NEW | AdapterMeta dataclass |
+| `src/veda/adapter_loader.py` | NEW | PluginAdapterLoader (AST-based discovery) |
+| `src/veda/interfaces.py` | MODIFIED | Added connect/disconnect/is_connected |
+| `src/veda/adapters/alpaca_adapter.py` | MODIFIED | Connection management, require guards |
+| `src/veda/adapters/mock_adapter.py` | MODIFIED | ADAPTER_META, connection stubs |
+| `src/veda/veda_service.py` | MODIFIED | connect/disconnect, idempotent place_order |
+| `src/glados/routes/orders.py` | MODIFIED | VedaService integration |
+| `src/glados/schemas.py` | MODIFIED | OrderCreate schema |
+| `src/glados/services/run_manager.py` | MODIFIED | _start_live(), RealtimeClock import |
+| `tests/factories/runs.py` | MODIFIED | create_run_manager_with_deps() |
+
+---
 7. [Entry & Exit Gates](#7-entry--exit-gates)
 8. [Risk & Mitigations](#8-risk--mitigations)
 9. [Appendix](#9-appendix)
