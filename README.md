@@ -93,20 +93,29 @@ npm run dev   # http://localhost:3000
 | M1: Foundation (DB/Events) | ✅ Complete | +124 |
 | M2: API Live | ✅ Complete | +85 |
 | M3: Veda Trading | ✅ Complete | +196 |
-| M4-M7 | ⏳ Pending | — |
+| M4: Greta Backtesting | ✅ Complete | +56 |
+| M5: Marvin Core | ✅ Complete | +74 |
+| **M6: Live Trading** | ⏳ **Next** | ~65 |
+| M7-M8 | ⏳ Pending | — |
 
-**Current**: 493 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 705 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
-### Recent Changes (2026-02-02)
+### Recent Changes (2026-02-04)
 
-- ✅ **M3 Complete**: Veda Trading module with full exchange adapter pattern (493 total tests)
-- ✅ Core models: OrderIntent, OrderState, Position, Bar, Quote, Trade, AccountInfo
-- ✅ ExchangeAdapter ABC: Unified interface for all exchange integrations
-- ✅ MockExchangeAdapter: Full-featured mock for testing and backtesting
-- ✅ AlpacaAdapter: Paper trading support with Alpaca Markets API
-- ✅ OrderManager: Order lifecycle with idempotency via client_order_id
-- ✅ PositionTracker: Real-time position and P&L tracking
-- ✅ OrderRepository: Database persistence layer for order state
+- ✅ **M5 Complete**: Marvin strategy system with plugin architecture (705 total tests)
+- ✅ EventLog subscription mechanism for pub/sub
+- ✅ PluginStrategyLoader with auto-discovery (AST-based, no hardcoded imports)
+- ✅ SMA crossover strategy with configurable indicators
+- ✅ data.WindowReady flow for event-driven data fetching
+- ✅ Test fixture consolidation (DummyStrategy, RecordingStrategy)
+
+### Next: M6 Live Trading (~65 tests)
+
+- PluginAdapterLoader (mirrors strategy pattern)
+- AlpacaAdapter connect() with real clients
+- VedaService wired to order routes
+- Live order flow with persistence + events
+- RealtimeClock for live runs
 
 
 ## Endpoints (essentials)

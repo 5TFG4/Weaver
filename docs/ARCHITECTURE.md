@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-03 · **Tests**: 631 passing · **M4**: ✅ Complete
+**Last Updated**: 2026-02-04 · **Tests**: 705 passing · **M5**: ✅ Complete
 
 ---
 
@@ -15,7 +15,7 @@
 | **Issue backlog & milestone schedule** | [AUDIT_FINDINGS.md §5](AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
 | **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
 | **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
-| **Next milestone design** | [M4 Greta](archive/milestone-details/m4-greta.md) |
+| **Next milestone design** | [M6 Live Trading](archive/milestone-details/m6-live-trading.md) |
 | **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
 
 ---
@@ -43,7 +43,7 @@
 | M3.5 Integration | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done |
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
 | **M5 Marvin** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ✅ Done (74 tests) |
-| **M6 Live Trading** | TBD | ⏳ Next |
+| **M6 Live Trading** | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md) | ⏳ Next |
 
 ---
 
