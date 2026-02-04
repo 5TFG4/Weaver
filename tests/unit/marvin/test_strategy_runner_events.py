@@ -7,7 +7,6 @@ TDD tests for M5-2: data.WindowReady event handling.
 import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -15,7 +14,7 @@ from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
 from src.events.types import DataEvents, StrategyEvents
 from src.glados.clock.base import ClockTick
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import StrategyAction
 from src.marvin.strategy_runner import StrategyRunner
 
 # Import DummyStrategy from fixtures instead of defining inline

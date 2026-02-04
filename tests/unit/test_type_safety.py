@@ -7,8 +7,6 @@ TDD tests for M5-5: SimulatedFill.side and ClockTick fixes.
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import pytest
-
 from src.veda.models import OrderSide
 
 

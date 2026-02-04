@@ -13,7 +13,7 @@ import pytest
 
 from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
-from src.events.types import BacktestEvents, DataEvents, OrderEvents
+from src.events.types import BacktestEvents, DataEvents
 from src.greta.greta_service import GretaService
 from src.walle.repositories.bar_repository import Bar
 
@@ -144,8 +144,6 @@ class TestGretaServiceEventSubscription:
             start=datetime(2024, 1, 1, tzinfo=UTC),
             end=datetime(2024, 1, 2, tzinfo=UTC),
         )
-
-        events_before = len(await event_log.read_from(-1))
 
         # Event for different run
         await event_log.append(

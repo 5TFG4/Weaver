@@ -23,7 +23,7 @@ from src.marvin.strategy_loader import StrategyLoader
 from src.walle.repositories.bar_repository import Bar, BarRepository
 
 # Import test strategies from fixtures instead of defining inline
-from tests.fixtures.strategies import MockStrategyLoader, SimpleTestStrategy
+from tests.fixtures.strategies import MockStrategyLoader
 
 
 @pytest.mark.integration
