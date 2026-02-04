@@ -25,15 +25,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "${FRONTEND_PORT}:3000"           # Frontend development server
+      - "${FRONTEND_PORT}:5173"           # Vite dev server
     volumes:
-      - ../:/weaver
+      - ../:/weaver                        # Share entire project for code editing
+      - frontend_node_modules:/weaver/haro/node_modules  # Persist node_modules in named volume
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - REACT_APP_API_BASE_URL=http://backend_dev:${HOST_PORT}
+      - VITE_API_BASE_URL=http://localhost:${HOST_PORT}
     depends_on:
       - backend_dev
+    working_dir: /weaver/haro
 
   db_dev:
     image: postgres:16-alpine
@@ -53,3 +55,4 @@ services:
 
 volumes:
   weaver_dev_postgres_data:
+  frontend_node_modules:

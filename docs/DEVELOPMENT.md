@@ -3,6 +3,68 @@
 > **IMPORTANT**: This methodology applies to ALL development in this project.
 > Every new milestone, feature, or module MUST follow this framework.
 
+## 0. Development Environment
+
+### Backend + Frontend (Recommended)
+
+The dev environment uses a **hybrid container approach**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  VS Code (Dev Container → backend_dev)                      │
+│  - Edit Python (src/) + React (haro/) in one window         │
+│  - Python 3.13 + Node.js 20 installed                       │
+└─────────────────────────────────────────────────────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────┐          ┌─────────────────┐
+│ backend_dev     │◀─ API ───│ frontend_dev    │
+│ Python/FastAPI  │          │ Node.js/Vite    │
+│ :8000           │          │ :3000           │
+└─────────────────┘          └─────────────────┘
+```
+
+### Starting the Environment
+
+```bash
+# 1. First time setup
+cp docker/example.env.dev docker/.env.dev
+
+# 2. Open in VS Code with Dev Containers extension
+# VS Code will prompt to "Reopen in Container"
+
+# 3. After container rebuild, verify Node.js is available
+node --version   # Should show v20.x
+npm --version    # Should show v10.x
+```
+
+### Port Mapping
+
+| Service | Container Port | Host Port | URL |
+|---------|---------------|-----------|-----|
+| Backend API | 8000 | 8000 | http://localhost:8000 |
+| Frontend Dev | 5173 | 3000 | http://localhost:3000 |
+| PostgreSQL | 5432 | 5432 | - |
+| Debug (Python) | 5678 | 5678 | - |
+
+### Frontend Development
+
+The frontend runs in a **separate container** (`frontend_dev`) with hot reload:
+
+```bash
+# Frontend starts automatically when docker-compose runs
+# If you need to restart:
+docker compose -f docker/docker-compose.dev.yml restart frontend_dev
+
+# View frontend logs:
+docker compose -f docker/docker-compose.dev.yml logs -f frontend_dev
+```
+
+**Note**: The `node_modules` folder is in a named Docker volume (`frontend_node_modules`) 
+to avoid sync issues with the host filesystem.
+
+---
+
 ## 1. Design-Complete, Execute-MVP
 
 This project follows a **Design-Complete, Execute-MVP** approach combined with **TDD**.
