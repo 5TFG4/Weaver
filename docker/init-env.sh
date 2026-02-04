@@ -2,38 +2,15 @@
 set -euo pipefail
 
 # ==============================================================================
-# CONFIGURATION
+# Environment Initialization Script
 # ==============================================================================
-
-# 1. Define the list of variables to inject from GitHub Secrets/Env
-#    Add any new API keys or Endpoints here.
-#
-#    Naming convention:
-#      ALPACA_LIVE_*  -> Real money trading
-#      ALPACA_PAPER_* -> Simulation / backtest
-#
-VARS_TO_INJECT=(
-  # Live Trading (Real Money)
-  "ALPACA_LIVE_API_KEY"
-  "ALPACA_LIVE_API_SECRET"
-  "ALPACA_LIVE_BASE_URL"
-  # Paper Trading (Simulation / Backtest)
-  "ALPACA_PAPER_API_KEY"
-  "ALPACA_PAPER_API_SECRET"
-  "ALPACA_PAPER_BASE_URL"
-  # Database
-  "POSTGRES_USER"
-  "POSTGRES_PASSWORD"
-)
-
-# ==============================================================================
-# FUNCTION DEFINITION
-# ==============================================================================
+# Creates .env from example.env and injects secrets from environment.
+# Variables are auto-detected from the example file (no hardcoded list).
 
 # Function: sync_env_file
 # Arguments:
-#   $1: The target .env file path (e.g., docker/.env.dev)
-#   $2: The source example file path (e.g., docker/example.env.dev)
+#   $1: The target .env file path
+#   $2: The source example file path
 sync_env_file() {
   local TARGET_FILE="$1"
   local EXAMPLE_FILE="$2"
@@ -51,28 +28,26 @@ sync_env_file() {
       return
     fi
   else
-    echo " -> File already exists. checking for updates..."
+    echo " -> File already exists. Checking for updates..."
   fi
 
-  # Step B: Inject secrets
-  for VAR_NAME in "${VARS_TO_INJECT[@]}"; do
+  # Step B: Inject secrets from environment (auto-detect vars from example)
+  while IFS='=' read -r VAR_NAME _; do
+    # Skip comments and empty lines
+    [[ -z "$VAR_NAME" || "$VAR_NAME" =~ ^[[:space:]]*# ]] && continue
+    
+    # Trim whitespace
+    VAR_NAME=$(echo "$VAR_NAME" | xargs)
+    
     # Get value from environment (GitHub Secret or Codespace Env)
     local CURRENT_VALUE="${!VAR_NAME:-}"
-
+    
     if [[ -n "$CURRENT_VALUE" ]]; then
-      # Check if variable exists in file to decide replace or append
-      if grep -q "^${VAR_NAME}=" "${TARGET_FILE}"; then
-        # Replace existing value (using | as delimiter for URLs)
-        sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${TARGET_FILE}"
-        echo "    - Injected: ${VAR_NAME}"
-      else
-        # Append new value if missing
-        echo "" >> "${TARGET_FILE}"
-        echo "${VAR_NAME}=${CURRENT_VALUE}" >> "${TARGET_FILE}"
-        echo "    - Appended: ${VAR_NAME}"
-      fi
+      # Replace existing value (using | as delimiter for URLs)
+      sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${TARGET_FILE}"
+      echo "    - Injected: ${VAR_NAME}"
     fi
-  done
+  done < "${EXAMPLE_FILE}"
 }
 
 # ==============================================================================
@@ -81,12 +56,7 @@ sync_env_file() {
 
 echo "Starting Environment Initialization..."
 
-# 1. Configure the DEV environment
-#    Usage: sync_env_file "TARGET_PATH" "EXAMPLE_PATH"
-sync_env_file "docker/.env.dev" "docker/example.env.dev"
-
-# 2. Configure the PRODUCTION environment (or main .env)
-#    Adjust the paths below if your prod .env is in the root folder (e.g., ".env")
+# Single unified env file for all environments
 sync_env_file "docker/.env" "docker/example.env"
 
 echo "----------------------------------------------------------------"
