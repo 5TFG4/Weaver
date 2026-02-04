@@ -27,25 +27,31 @@ The dev environment uses a **hybrid container approach**:
 ### Starting the Environment
 
 ```bash
-# 1. First time setup
-cp docker/example.env.dev docker/.env.dev
-
-# 2. Open in VS Code with Dev Containers extension
+# 1. Open in VS Code with Dev Containers extension
 # VS Code will prompt to "Reopen in Container"
 
-# 3. After container rebuild, verify Node.js is available
+# 2. Environment initialization is automatic:
+#    - docker/init-env.sh runs as initializeCommand
+#    - Creates docker/.env from docker/example.env
+#    - Injects any secrets from Codespaces/GitHub environment
+
+# 3. After container rebuild, verify environment
 node --version   # Should show v20.x
-npm --version    # Should show v10.x
+npm --version    # Should show v10.x+
+
+# Manual setup (if needed):
+cp docker/example.env docker/.env
+# Edit docker/.env with your API keys
 ```
 
 ### Port Mapping
 
-| Service | Container Port | Host Port | URL |
-|---------|---------------|-----------|-----|
-| Backend API | 8000 | 8000 | http://localhost:8000 |
-| Frontend Dev | 5173 | 3000 | http://localhost:3000 |
-| PostgreSQL | 5432 | 5432 | - |
-| Debug (Python) | 5678 | 5678 | - |
+| Service        | Container Port | Host Port | URL                   |
+| -------------- | -------------- | --------- | --------------------- |
+| Backend API    | 8000           | 8000      | http://localhost:8000 |
+| Frontend Dev   | 5173           | 3000      | http://localhost:3000 |
+| PostgreSQL     | 5432           | 5432      | -                     |
+| Debug (Python) | 5678           | 5678      | -                     |
 
 ### Frontend Development
 
@@ -60,7 +66,7 @@ docker compose -f docker/docker-compose.dev.yml restart frontend_dev
 docker compose -f docker/docker-compose.dev.yml logs -f frontend_dev
 ```
 
-**Note**: The `node_modules` folder is in a named Docker volume (`frontend_node_modules`) 
+**Note**: The `node_modules` folder is in a named Docker volume (`frontend_node_modules`)
 to avoid sync issues with the host filesystem.
 
 ---
@@ -71,18 +77,18 @@ This project follows a **Design-Complete, Execute-MVP** approach combined with *
 
 ```
 PHASE 1: COMPLETE DESIGN   →  "Think big, plan everything"
-PHASE 2: MVP EXECUTION     →  "Start small, deliver incrementally"  
+PHASE 2: MVP EXECUTION     →  "Start small, deliver incrementally"
 PHASE 3: TDD IMPLEMENTATION →  "Test first, code second"
 ```
 
 **Key Insight**: MVP is about **HOW** we implement, not **WHAT** we design.
 
-| Traditional MVP | Our Approach |
-|-----------------|--------------|
-| Design only what MVP needs | Design everything, implement MVP first |
-| May miss edge cases until later | Edge cases considered upfront |
-| Frequent design changes | Stable interfaces from day one |
-| Risk of technical debt | Architecture-first, less rework |
+| Traditional MVP                 | Our Approach                           |
+| ------------------------------- | -------------------------------------- |
+| Design only what MVP needs      | Design everything, implement MVP first |
+| May miss edge cases until later | Edge cases considered upfront          |
+| Frequent design changes         | Stable interfaces from day one         |
+| Risk of technical debt          | Architecture-first, less rework        |
 
 ## 2. TDD Cycle
 
@@ -144,33 +150,36 @@ Before starting implementation:
 
 ### Test Categories
 
-| Type | Location | Purpose |
-|------|----------|---------|
-| Unit | `tests/unit/` | Isolated component testing |
+| Type        | Location             | Purpose                      |
+| ----------- | -------------------- | ---------------------------- |
+| Unit        | `tests/unit/`        | Isolated component testing   |
 | Integration | `tests/integration/` | Cross-component with real DB |
-| E2E | `tests/e2e/` | Full system via HTTP |
+| E2E         | `tests/e2e/`         | Full system via HTTP         |
 
 ### Test Doubles & Sideloadable Modules
 
 We use **sideloadable modules** instead of inline mocks for better reusability:
 
-| Module | Location | Purpose |
-|--------|----------|---------|
+| Module                | Location                            | Purpose                                  |
+| --------------------- | ----------------------------------- | ---------------------------------------- |
 | `MockExchangeAdapter` | `src/veda/adapters/mock_adapter.py` | Controllable exchange for backtest/tests |
-| Test Strategies | `tests/fixtures/strategies.py` | Reusable test strategy implementations |
+| Test Strategies       | `tests/fixtures/strategies.py`      | Reusable test strategy implementations   |
 
 **MockExchangeAdapter** (Production sideloadable):
+
 - Used in backtest mode, no real API calls
 - `set_mock_price(symbol, price)` - Control price data
 - `set_reject_next_order(bool, reason)` - Simulate failures
 - `reset()` - Clear state between tests
 
 **Test Strategy Fixtures** (Test-only):
+
 - `DummyStrategy` - No-op, returns configurable actions
 - `RecordingStrategy` - Records all inputs for assertions
 - `PredictableStrategy` - Returns pre-configured action sequences
 
 **Why sideloadable instead of inline mocks?**
+
 - ✅ Reusable across test files
 - ✅ Single source of truth for mock behavior
 - ✅ Better type safety (real classes, not MagicMock)
@@ -179,12 +188,14 @@ We use **sideloadable modules** instead of inline mocks for better reusability:
 ### Testing Tools
 
 #### Backend (Python)
+
 - **pytest** + pytest-asyncio
 - **httpx** for async HTTP client testing
 - **respx** for mocking external HTTP calls
 - **pytest-cov** for coverage
 
 #### Frontend (React/TypeScript)
+
 - **Vitest** - Vite-native test runner
 - **React Testing Library** - Component testing
 - **MSW (Mock Service Worker)** - API mocking
@@ -201,31 +212,32 @@ We use **sideloadable modules** instead of inline mocks for better reusability:
 
 ## 7. Anti-Patterns to Avoid
 
-| Don't | Do |
-|-------|-----|
-| Design only current MVP | Design complete, implement incrementally |
-| Skip tests to "save time" | TDD always |
-| Hardcode config values | Use `src/config.py` |
-| Use `print()` for debugging | Use `logging` module |
-| Catch generic `Exception` | Catch specific exceptions |
-| Store secrets in code | Use environment variables |
+| Don't                       | Do                                       |
+| --------------------------- | ---------------------------------------- |
+| Design only current MVP     | Design complete, implement incrementally |
+| Skip tests to "save time"   | TDD always                               |
+| Hardcode config values      | Use `src/config.py`                      |
+| Use `print()` for debugging | Use `logging` module                     |
+| Catch generic `Exception`   | Catch specific exceptions                |
+| Store secrets in code       | Use environment variables                |
 
 ## 8. Documentation Structure
 
 ### File Purposes
 
-| File | Contains | Max Lines |
-|------|----------|-----------|
-| `ARCHITECTURE.md` | System overview, quick links | ~150 |
-| `DEVELOPMENT.md` | Methodology, standards | ~150 |
-| `AUDIT_FINDINGS.md` | Issue tracking, progress | No limit |
-| `architecture/roadmap.md` | Status, milestones, checklists | ~150 |
-| `architecture/*.md` | Module-specific docs | ~200 each |
-| `archive/milestone-details/` | Full designs per milestone | No limit |
+| File                         | Contains                       | Max Lines |
+| ---------------------------- | ------------------------------ | --------- |
+| `ARCHITECTURE.md`            | System overview, quick links   | ~150      |
+| `DEVELOPMENT.md`             | Methodology, standards         | ~150      |
+| `AUDIT_FINDINGS.md`          | Issue tracking, progress       | No limit  |
+| `architecture/roadmap.md`    | Status, milestones, checklists | ~150      |
+| `architecture/*.md`          | Module-specific docs           | ~200 each |
+| `archive/milestone-details/` | Full designs per milestone     | No limit  |
 
 ### Roadmap Rules
 
 **roadmap.md contains ONLY**:
+
 - Current state table
 - Milestone list with status
 - Phase timeline
@@ -233,6 +245,7 @@ We use **sideloadable modules** instead of inline mocks for better reusability:
 - Entry gate checklists
 
 **roadmap.md does NOT contain**:
+
 - Full design specs (→ `archive/milestone-details/mX-name.md`)
 - Issue details (→ `AUDIT_FINDINGS.md`)
 - Code examples longer than 5 lines
