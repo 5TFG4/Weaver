@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-04)
 
-> **Current State**: M6-1 Complete, 745 tests passing  
-> **Remaining Work**: M6-2 → M6-5 → M7 → M8  
-> **Estimated Total**: ~115 new tests remaining, 4-5 weeks
+> **Current State**: M6-2 Complete, 768 tests passing  
+> **Remaining Work**: M6-3 → M6-5 → M7 → M8  
+> **Estimated Total**: ~90 new tests remaining, 3-4 weeks
 
 ---
 
@@ -13,18 +13,19 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | Milestone | Name | Core Objective | Est. Tests | Status |
 |-----------|------|----------------|------------|--------|
 | **M5** | Marvin Core | Strategy system + Plugin architecture | 74 | ✅ DONE |
-| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-1 done (40 tests) |
+| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-2 done (63 tests) |
 | **M7** | Haro Frontend | React UI + SSE | ~50 | ⏳ |
 | **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 | ⏳ |
 
-**M6-1 Complete**:
+**M6-1 & M6-2 Complete**:
 1. ✅ PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
 2. ✅ AdapterMeta dataclass with features support
 3. ✅ ADAPTER_META added to AlpacaAdapter and MockExchangeAdapter
 4. ✅ AST-based discovery without importing
+5. ✅ AlpacaAdapter connect()/disconnect()/is_connected
+6. ✅ _require_connection() guard on all methods
 
 **M6 Remaining**:
-- M6-2: AlpacaAdapter connect() with real clients
 - M6-3: VedaService wired to order routes
 - M6-4: Live order flow with events + persistence
 - M6-5: RealtimeClock for live runs
@@ -122,7 +123,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ### 2.1 Exit Gate (Definition of Done)
 
 - [x] PluginAdapterLoader with auto-discovery (mirrors strategy pattern) ✅ 2026-02-04
-- [ ] AlpacaAdapter `connect()` initializes real clients
+- [x] AlpacaAdapter `connect()` initializes real clients ✅ 2026-02-04
 - [ ] VedaService wired to order routes (replaces MockOrderService)
 - [ ] Paper Trading orders persist + emit events
 - [ ] Live Run uses RealtimeClock
@@ -133,8 +134,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | MVP | Focus | Tests | Dependencies |
 |-----|-------|-------|--------------|
 | M6-1 | PluginAdapterLoader | 40 ✅ | - |
-| M6-2 | AlpacaAdapter Connection | ~14 | M6-1 ✅ |
-| M6-3 | VedaService Routing | ~12 | M6-2 |
+| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
+| M6-3 | VedaService Routing | ~12 | M6-2 ✅ |
 | M6-4 | Live Order Flow | ~15 | M6-3 |
 | M6-5 | Run Mode Integration | ~9 | M6-4 |
 
@@ -159,25 +160,25 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - [x] Test: skip private files (_*)
 ```
 
-#### M6-2: AlpacaAdapter Connection (~14 tests)
+#### M6-2: AlpacaAdapter Connection ✅ COMPLETE (23 tests)
 
-**Files**: `adapters/alpaca_adapter.py` (MODIFY), `tests/fixtures/http.py` (ADD fixture)
+**Files**: `adapters/alpaca_adapter.py` (MODIFIED)
 
 ```
-- [ ] Add connect() method
-- [ ] Initialize TradingClient with api_key, secret_key, paper
-- [ ] Initialize CryptoHistoricalDataClient
-- [ ] Initialize StockHistoricalDataClient
-- [ ] Verify connection via account status check
-- [ ] Add is_connected property
-- [ ] Add disconnect() method
-- [ ] Add _require_connection() guard
-- [ ] Test: connect creates all clients
-- [ ] Test: connect verifies account ACTIVE
-- [ ] Test: inactive account raises ConnectionError
-- [ ] Test: connect idempotent
-- [ ] Test: disconnect clears clients
-- [ ] Test: submit_order requires connection
+- [x] Add connect() method
+- [x] Initialize TradingClient with api_key, secret_key, paper
+- [x] Initialize CryptoHistoricalDataClient
+- [x] Initialize StockHistoricalDataClient
+- [x] Verify connection via account status check
+- [x] Add is_connected property
+- [x] Add disconnect() method
+- [x] Add _require_connection() guard
+- [x] Test: connect creates all clients
+- [x] Test: connect verifies account ACTIVE
+- [x] Test: inactive account raises ConnectionError
+- [x] Test: connect idempotent
+- [x] Test: disconnect clears clients
+- [x] Test: submit_order requires connection
 - [ ] Test: paper/live mode flag passed correctly
 ```
 

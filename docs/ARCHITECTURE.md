@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-04 · **Tests**: 745 passing · **M6-1**: ✅ Complete
+**Last Updated**: 2026-02-04 · **Tests**: 768 passing · **M6-2**: ✅ Complete
 
 ---
 
