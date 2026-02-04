@@ -1043,6 +1043,36 @@ class ControllableClock:
 
 ---
 
+### M5 Design Notes & Future Considerations
+
+#### Async Callback Pattern in StrategyRunner
+
+The `_on_window_ready()` callback uses `asyncio.create_task()` to bridge sync→async:
+
+```python
+def _on_window_ready(self, envelope: Envelope) -> None:
+    """Sync callback wrapper for async handler."""
+    asyncio.create_task(self.on_data_ready(envelope))
+```
+
+**Known Limitations**:
+1. Task not awaited or tracked (fire-and-forget)
+2. Exceptions won't propagate to caller
+3. No guarantee task completes before cleanup
+
+**Why Acceptable for M5**:
+- Backtest runs synchronously (clock controls timing)
+- Event handlers log errors internally
+- Cleanup is safe (unsubscribe is idempotent)
+
+**Future Options** (evaluate in M6+ if live trading needs it):
+1. Track tasks in `_pending_tasks`, await in cleanup
+2. Make EventLog support async callbacks via `asyncio.Queue`
+3. Use `loop.call_soon_threadsafe()` for cross-thread safety
+4. Use TaskGroup (Python 3.11+) for structured concurrency
+
+---
+
 ### M5-1: EventLog Subscription (~10 tests)
 
 **Goal**: Add subscription capability to EventLog for event-driven communication.

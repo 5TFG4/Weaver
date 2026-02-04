@@ -872,10 +872,50 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ---
 
-## M5: Marvin Core (Strategy System) 🟨 IN PROGRESS
+## M5: Marvin Core (Strategy System) ✅ COMPLETE
 
 **Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)  
-**Start Date**: 2026-02-03
+**Completed**: 2026-02-04  
+**Total Tests**: 74 new (705 total)
+
+### M5 Design Notes & Future Considerations
+
+#### Async Callback Pattern in StrategyRunner
+
+**Issue**: The `_on_window_ready()` callback uses `asyncio.create_task()` without tracking:
+
+```python
+def _on_window_ready(self, envelope: Envelope) -> None:
+    """Sync callback wrapper for async handler."""
+    import asyncio
+    asyncio.create_task(self.on_data_ready(envelope))
+```
+
+**Why This Pattern Exists**:
+- EventLog callbacks are synchronous (design decision for simplicity)
+- StrategyRunner.on_data_ready() is async (needs to emit events)
+- `asyncio.create_task()` bridges sync→async
+
+**Known Limitations**:
+1. Task not awaited or tracked - fire-and-forget
+2. Exceptions in task won't propagate to caller
+3. No guarantee task completes before cleanup
+
+**Current Mitigation**:
+- Cleanup calls `unsubscribe_by_id()` which is safe
+- Event handlers log errors internally
+- Backtest runs synchronously in practice (clock controls timing)
+
+**Future Options** (evaluate in M6+ if needed):
+1. **Track tasks**: Store task refs in `_pending_tasks`, await in cleanup
+2. **Async callbacks**: Make EventLog support async callbacks via `asyncio.Queue`
+3. **Event loop integration**: Use `loop.call_soon_threadsafe()` for cross-thread safety
+4. **Structured concurrency**: Use TaskGroup (Python 3.11+) for lifecycle management
+
+**Decision**: Keep current pattern for M5. It works for backtest where timing is controlled.
+Revisit if live trading shows issues with untracked tasks or lost exceptions.
+
+---
 
 ### M5-1: EventLog Subscription ✅ COMPLETED (12 tests)
 | Task | Status | Notes |
@@ -1046,6 +1086,32 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 | `tests/unit/test_type_safety.py` | **Created**: 4 tests |
 | `tests/unit/marvin/test_strategy_runner_events.py` | **Modified**: Import DummyStrategy from fixtures |
 | `tests/integration/test_backtest_flow.py` | **Modified**: Import from fixtures |
+
+### M5 Code Review Fixes (2026-02-04)
+
+GitHub Copilot code review addressed 7 comments:
+
+| Category | Issue | Fix | Files |
+|----------|-------|-----|-------|
+| **Unused** | `events_before` variable not used | Removed unused variable | test_greta_events.py |
+| **Unused** | `SimpleTestStrategy` import not used | Removed (used internally by MockStrategyLoader) | test_backtest_flow.py |
+| **Unused** | `OrderEvents` import not used | Removed unused import | test_greta_events.py |
+| **Unused** | `AsyncMock` import not used | Removed unused import | test_strategy_runner_events.py |
+| **Unused** | `BaseStrategy` import not used | Removed unused import | test_strategy_runner_events.py |
+| **Unused** | `pytest` import not used | Removed unused import | test_type_safety.py |
+| **Design** | `asyncio.create_task()` untracked | Documented in Design Notes (acceptable for backtest) | strategy_runner.py |
+
+### M5 Additional Improvements
+
+| File | Change | Notes |
+|------|--------|-------|
+| `src/marvin/strategies/sample_strategy.py` | Type fix: `sum()` with `Decimal(0)` start | Pylance error fix |
+| `src/marvin/strategies/sma_strategy.py` | Type fix: `sum()` with `Decimal(0)` start | Pylance error fix |
+| `tests/unit/events/test_subscription.py` | Type fix: `callable` → `Callable[..., Envelope]` | Pylance error fix |
+| `tests/unit/test_type_safety.py` | Logic fix: correct assertion for ClockTick check | Code review fix |
+| `src/marvin/strategy_loader.py` | Better error messages with available strategies | Code review suggestion |
+| `src/marvin/strategy_loader.py` | Wrap `exec_module()` with try/except | Code review suggestion |
+| `tests/fixtures/clock.py` | Docstring: note ClockTick from production | Code review suggestion |
 
 ---
 

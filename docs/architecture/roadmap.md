@@ -84,14 +84,14 @@
 - [x] All events emitted correctly (run.*, strategy.*)
 - [x] 631 tests passing
 
-### Before M6 (M5 Exit Gate)
+### Before M6 (M5 Exit Gate) ✅ COMPLETE
 
 - [x] EventLog subscription mechanism added ✅ 2026-02-03
 - [x] data.WindowReady flow implemented ✅ 2026-02-03
 - [x] SMA strategy with indicators implemented ✅ 2026-02-03
-- [x] **PluginStrategyLoader with auto-discovery** ✅ 2026-02-03
-- [ ] Code quality fixes (ClockTick, SimulatedFill.side, test fixtures)
-- [ ] ~80 new tests (target: 711+)
+- [x] PluginStrategyLoader with auto-discovery ✅ 2026-02-03
+- [x] Code quality fixes (ClockTick, test fixtures) ✅ 2026-02-04
+- [x] 74 new tests (705 total) ✅ 2026-02-04
 
 ### Before M7 (M6 Exit Gate)
 

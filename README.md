@@ -31,7 +31,8 @@
 | What | Where |
 |------|-------|
 | Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
-| Current milestone design | [M3.5 Integration](docs/archive/milestone-details/m3.5-integration.md) |
+| Current milestone design | [M5 Marvin (Complete)](docs/archive/milestone-details/m5-marvin.md) |
+| Next milestone | M6: Live Trading |
 
 
 
