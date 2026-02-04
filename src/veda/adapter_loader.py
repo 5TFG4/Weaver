@@ -107,11 +107,21 @@ class PluginAdapterLoader(AdapterLoader):
                         # Evaluate the dictionary literal
                         try:
                             meta_dict = ast.literal_eval(node.value)
-                            if isinstance(meta_dict, dict):
-                                return AdapterMeta.from_dict(meta_dict, path)
-                        except (ValueError, TypeError) as e:
-                            logger.warning(f"Invalid ADAPTER_META in {path}: {e}")
+                        except (ValueError, TypeError, SyntaxError) as e:
+                            logger.warning(
+                                f"Invalid ADAPTER_META in {path}: "
+                                f"expected dict literal, got {type(node.value).__name__} ({e})"
+                            )
                             return None
+
+                        if not isinstance(meta_dict, dict):
+                            logger.warning(
+                                f"Invalid ADAPTER_META in {path}: "
+                                f"expected dict, got {type(meta_dict).__name__}"
+                            )
+                            return None
+
+                        return AdapterMeta.from_dict(meta_dict, path)
         return None
 
     def list_available(self) -> list[AdapterMeta]:

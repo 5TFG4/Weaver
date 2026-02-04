@@ -113,6 +113,9 @@ class VedaService:
             OrderState tracking the order
         """
         # Check if order already exists (idempotency)
+        # This is an O(1) in-memory lookup, not a DB call.
+        # OrderManager also has its own idempotency check, but checking here
+        # allows us to skip persistence and event emission for duplicates.
         existing = self._order_manager.get_order(intent.client_order_id)
         if existing is not None:
             return existing

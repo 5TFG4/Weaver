@@ -110,7 +110,7 @@ class AlpacaAdapter(ExchangeAdapter):
     # Connection Management
     # =========================================================================
 
-    def connect(self) -> None:
+    async def connect(self) -> None:
         """
         Connect to Alpaca APIs.
 
@@ -130,6 +130,14 @@ class AlpacaAdapter(ExchangeAdapter):
                 "Install with: pip install alpaca-py"
             )
 
+        # Verify all SDK classes are available (they're imported together,
+        # but explicit check is safer than assert which can be disabled with -O)
+        if StockHistoricalDataClient is None or CryptoHistoricalDataClient is None:
+            raise ImportError(
+                "alpaca-py SDK is incomplete. "
+                "Reinstall with: pip install --force-reinstall alpaca-py"
+            )
+
         # Create trading client
         self._trading_client = TradingClient(
             api_key=self._api_key,
@@ -137,7 +145,7 @@ class AlpacaAdapter(ExchangeAdapter):
             paper=self._paper,
         )
 
-        # Create data clients
+        # Create data clients (SDK availability already verified above)
         self._stock_data_client = StockHistoricalDataClient(
             api_key=self._api_key,
             secret_key=self._api_secret,
@@ -160,7 +168,7 @@ class AlpacaAdapter(ExchangeAdapter):
 
         self._connected = True
 
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         """
         Disconnect from Alpaca APIs.
 

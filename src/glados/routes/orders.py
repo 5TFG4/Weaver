@@ -12,7 +12,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.glados.dependencies import get_order_service, get_veda_service
-from src.glados.schemas import OrderCreate, OrderListResponse, OrderResponse
+from src.glados.schemas import (
+    OrderCreate,
+    OrderListResponse,
+    OrderResponse,
+    OrderSide as SchemaSide,
+    OrderStatus as SchemaStatus,
+    OrderType as SchemaType,
+)
 from src.glados.services.order_service import MockOrderService, Order
 from src.veda import VedaService
 from src.veda.models import (
@@ -53,20 +60,20 @@ def _order_to_response(order: Order) -> OrderResponse:
 def _state_to_response(state: OrderState) -> OrderResponse:
     """Convert Veda OrderState to OrderResponse."""
     return OrderResponse(
-        id=state.intent.client_order_id,
-        run_id=state.intent.run_id,
-        client_order_id=state.intent.client_order_id,
+        id=state.client_order_id,
+        run_id=state.run_id,
+        client_order_id=state.client_order_id,
         exchange_order_id=state.exchange_order_id,
-        symbol=state.intent.symbol,
-        side=state.intent.side.value,
-        order_type=state.intent.order_type.value,
-        qty=str(state.intent.qty),
-        price=str(state.intent.limit_price) if state.intent.limit_price else None,
-        stop_price=str(state.intent.stop_price) if state.intent.stop_price else None,
-        time_in_force=state.intent.time_in_force.value,
+        symbol=state.symbol,
+        side=SchemaSide(state.side.value),
+        order_type=SchemaType(state.order_type.value),
+        qty=str(state.qty),
+        price=str(state.limit_price) if state.limit_price else None,
+        stop_price=str(state.stop_price) if state.stop_price else None,
+        time_in_force=state.time_in_force.value,
         filled_qty=str(state.filled_qty),
         filled_avg_price=str(state.filled_avg_price) if state.filled_avg_price else None,
-        status=state.status.value,
+        status=SchemaStatus(state.status.value),
         created_at=state.created_at,
         submitted_at=state.submitted_at,
         filled_at=state.filled_at,

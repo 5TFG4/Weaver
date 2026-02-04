@@ -86,7 +86,7 @@ class TestConnectionState:
 class TestConnect:
     """Tests for connect() method."""
 
-    def test_connect_creates_trading_client(
+    async def test_connect_creates_trading_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -100,12 +100,12 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             mock_trading.assert_called_once()
             assert adapter._trading_client is not None
 
-    def test_connect_creates_stock_data_client(
+    async def test_connect_creates_stock_data_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -124,12 +124,12 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             mock_stock.assert_called_once()
             assert adapter._stock_data_client is not None
 
-    def test_connect_creates_crypto_data_client(
+    async def test_connect_creates_crypto_data_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -148,12 +148,12 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             mock_crypto.assert_called_once()
             assert adapter._crypto_data_client is not None
 
-    def test_connect_verifies_account_active(
+    async def test_connect_verifies_account_active(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -167,11 +167,11 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             mock_client.get_account.assert_called_once()
 
-    def test_connect_raises_on_inactive_account(
+    async def test_connect_raises_on_inactive_account(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -186,11 +186,11 @@ class TestConnect:
             mock_trading.return_value = mock_client
 
             with pytest.raises(ConnectionError) as exc:
-                adapter.connect()
+                await adapter.connect()
 
             assert "ACCOUNT_BLOCKED" in str(exc.value)
 
-    def test_connect_sets_is_connected_true(
+    async def test_connect_sets_is_connected_true(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -204,11 +204,11 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             assert adapter.is_connected is True
 
-    def test_connect_idempotent(
+    async def test_connect_idempotent(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -222,13 +222,13 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
-            adapter.connect()  # Should not raise
+            await adapter.connect()
+            await adapter.connect()  # Should not raise
 
             # Should only create client once
             assert mock_trading.call_count == 1
 
-    def test_connect_passes_paper_mode(
+    async def test_connect_passes_paper_mode(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -242,12 +242,12 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             call_kwargs = mock_trading.call_args[1]
             assert call_kwargs.get("paper") is True
 
-    def test_connect_live_mode_passes_paper_false(self) -> None:
+    async def test_connect_live_mode_passes_paper_false(self) -> None:
         """connect() should pass paper=False for live adapter."""
         adapter = AlpacaAdapter(
             api_key="test-key",
@@ -263,12 +263,12 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             call_kwargs = mock_trading.call_args[1]
             assert call_kwargs.get("paper") is False
 
-    def test_connect_passes_credentials_to_stock_data_client(
+    async def test_connect_passes_credentials_to_stock_data_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -287,7 +287,7 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             # Verify StockHistoricalDataClient was called with correct credentials
             mock_stock.assert_called_once()
@@ -295,7 +295,7 @@ class TestConnect:
             assert call_kwargs["api_key"] == "test-api-key"
             assert call_kwargs["secret_key"] == "test-api-secret"
 
-    def test_connect_passes_credentials_to_crypto_data_client(
+    async def test_connect_passes_credentials_to_crypto_data_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -314,7 +314,7 @@ class TestConnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
 
             # Verify CryptoHistoricalDataClient was called with correct credentials
             mock_crypto.assert_called_once()
@@ -331,7 +331,7 @@ class TestConnect:
 class TestDisconnect:
     """Tests for disconnect() method."""
 
-    def test_disconnect_clears_trading_client(
+    async def test_disconnect_clears_trading_client(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -345,13 +345,13 @@ class TestDisconnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
             assert adapter._trading_client is not None
 
-            adapter.disconnect()
+            await adapter.disconnect()
             assert adapter._trading_client is None
 
-    def test_disconnect_clears_data_clients(
+    async def test_disconnect_clears_data_clients(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -373,13 +373,13 @@ class TestDisconnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
-            adapter.disconnect()
+            await adapter.connect()
+            await adapter.disconnect()
 
             assert adapter._stock_data_client is None
             assert adapter._crypto_data_client is None
 
-    def test_disconnect_sets_is_connected_false(
+    async def test_disconnect_sets_is_connected_false(
         self,
         adapter: AlpacaAdapter,
     ) -> None:
@@ -393,15 +393,15 @@ class TestDisconnect:
             mock_client.get_account.return_value = mock_account
             mock_trading.return_value = mock_client
 
-            adapter.connect()
+            await adapter.connect()
             assert adapter.is_connected is True
 
-            adapter.disconnect()
+            await adapter.disconnect()
             assert adapter.is_connected is False
 
-    def test_disconnect_idempotent(self, adapter: AlpacaAdapter) -> None:
+    async def test_disconnect_idempotent(self, adapter: AlpacaAdapter) -> None:
         """disconnect() should be safe to call when not connected."""
-        adapter.disconnect()  # Should not raise
+        await adapter.disconnect()  # Should not raise
         assert adapter.is_connected is False
 
 

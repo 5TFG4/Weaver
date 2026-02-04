@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.glados.routes.orders import router
-from src.glados.schemas import OrderCreate
+from src.glados.schemas import OrderCreate, OrderSide, OrderType
 
 
 # =============================================================================
@@ -93,8 +93,8 @@ class TestOrderCreateSchema:
             run_id="run-123",
             client_order_id="order-abc",
             symbol="BTC/USD",
-            side="buy",
-            order_type="market",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             qty="1.5",
         )
         assert order.run_id == "run-123"
@@ -107,8 +107,8 @@ class TestOrderCreateSchema:
             run_id="run-123",
             client_order_id="order-abc",
             symbol="BTC/USD",
-            side="sell",
-            order_type="limit",
+            side=OrderSide.SELL,
+            order_type=OrderType.LIMIT,
             qty="2.0",
             limit_price="50000.00",
         )
@@ -118,12 +118,12 @@ class TestOrderCreateSchema:
         """Missing required field should raise ValidationError."""
         from pydantic import ValidationError
         with pytest.raises(ValidationError):
-            OrderCreate(
+            OrderCreate(  # type: ignore[call-arg]  # Intentionally missing client_order_id
                 run_id="run-123",
                 # Missing client_order_id
                 symbol="BTC/USD",
-                side="buy",
-                order_type="market",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
                 qty="1.0",
             )
 
@@ -135,8 +135,8 @@ class TestOrderCreateSchema:
                 run_id="",  # Empty not allowed
                 client_order_id="order-abc",
                 symbol="BTC/USD",
-                side="buy",
-                order_type="market",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
                 qty="1.0",
             )
 
@@ -155,20 +155,19 @@ class TestCreateOrder:
         mock_veda_service: MagicMock,
     ) -> None:
         """POST /orders should call VedaService.place_order."""
-        from src.veda.models import OrderState, OrderStatus
+        from src.veda.models import OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
         
-        # Setup mock response
+        # Setup mock response - OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
-        mock_state.intent = MagicMock()
-        mock_state.intent.run_id = "run-123"
-        mock_state.intent.client_order_id = "order-abc"
-        mock_state.intent.symbol = "BTC/USD"
-        mock_state.intent.side.value = "buy"
-        mock_state.intent.order_type.value = "market"
-        mock_state.intent.qty = Decimal("1.5")
-        mock_state.intent.limit_price = None
-        mock_state.intent.stop_price = None
-        mock_state.intent.time_in_force.value = "day"
+        mock_state.run_id = "run-123"
+        mock_state.client_order_id = "order-abc"
+        mock_state.symbol = "BTC/USD"
+        mock_state.side = OrderSide.BUY
+        mock_state.order_type = OrderType.MARKET
+        mock_state.qty = Decimal("1.5")
+        mock_state.limit_price = None
+        mock_state.stop_price = None
+        mock_state.time_in_force = TimeInForce.DAY
         mock_state.exchange_order_id = "exch-123"
         mock_state.filled_qty = Decimal("0")
         mock_state.filled_avg_price = None
@@ -202,18 +201,17 @@ class TestCreateOrder:
         """POST /orders should map request fields to OrderIntent correctly."""
         from src.veda.models import OrderIntent, OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
         
-        # Setup mock
+        # Setup mock - OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
-        mock_state.intent = MagicMock()
-        mock_state.intent.run_id = "run-123"
-        mock_state.intent.client_order_id = "order-abc"
-        mock_state.intent.symbol = "AAPL"
-        mock_state.intent.side.value = "sell"
-        mock_state.intent.order_type.value = "limit"
-        mock_state.intent.qty = Decimal("10")
-        mock_state.intent.limit_price = Decimal("150.00")
-        mock_state.intent.stop_price = None
-        mock_state.intent.time_in_force.value = "gtc"
+        mock_state.run_id = "run-123"
+        mock_state.client_order_id = "order-abc"
+        mock_state.symbol = "AAPL"
+        mock_state.side = OrderSide.SELL
+        mock_state.order_type = OrderType.LIMIT
+        mock_state.qty = Decimal("10")
+        mock_state.limit_price = Decimal("150.00")
+        mock_state.stop_price = None
+        mock_state.time_in_force = TimeInForce.GTC
         mock_state.exchange_order_id = None
         mock_state.filled_qty = Decimal("0")
         mock_state.filled_avg_price = None
@@ -258,19 +256,19 @@ class TestCreateOrder:
         mock_veda_service: MagicMock,
     ) -> None:
         """POST /orders should return OrderResponse."""
-        from src.veda.models import OrderState, OrderStatus
+        from src.veda.models import OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
         
+        # OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
-        mock_state.intent = MagicMock()
-        mock_state.intent.run_id = "run-123"
-        mock_state.intent.client_order_id = "order-abc"
-        mock_state.intent.symbol = "BTC/USD"
-        mock_state.intent.side.value = "buy"
-        mock_state.intent.order_type.value = "market"
-        mock_state.intent.qty = Decimal("1.5")
-        mock_state.intent.limit_price = None
-        mock_state.intent.stop_price = None
-        mock_state.intent.time_in_force.value = "day"
+        mock_state.run_id = "run-123"
+        mock_state.client_order_id = "order-abc"
+        mock_state.symbol = "BTC/USD"
+        mock_state.side = OrderSide.BUY
+        mock_state.order_type = OrderType.MARKET
+        mock_state.qty = Decimal("1.5")
+        mock_state.limit_price = None
+        mock_state.stop_price = None
+        mock_state.time_in_force = TimeInForce.DAY
         mock_state.exchange_order_id = "exch-123"
         mock_state.filled_qty = Decimal("0")
         mock_state.filled_avg_price = None
@@ -299,6 +297,7 @@ class TestCreateOrder:
         assert data["run_id"] == "run-123"
         assert data["symbol"] == "BTC/USD"
         assert data["status"] == "submitted"
+        assert data["exchange_order_id"] == "exch-123"  # Verify passed through
 
     def test_create_order_invalid_input_returns_422(
         self,
