@@ -44,8 +44,8 @@
 | M3.5 | [Integration fixes](../archive/milestone-details/m3.5-integration.md) | ✅ DONE |
 | M4 | [Greta backtest](../archive/milestone-details/m4-greta.md) | ✅ DONE |
 | **M5** | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin) | ✅ DONE (74 tests) |
-| **M6** | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ⏳ NEXT |
-| **M7** | Haro Frontend (React UI) | ⏳ |
+| **M6** | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
+| **M7** | Haro Frontend (React UI) | ⏳ NEXT |
 | **M8** | Polish & E2E (Quality + Tests) | ⏳ |
 
 ## 3. Phase Timeline
@@ -54,8 +54,8 @@
 |-------|-------|------------|--------|
 | 1–4 | Foundation → Greta | 631 | ✅ DONE |
 | **5** | Marvin Core + Plugin Strategy | ~74 | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65 | ⏳ 76/~100 (781 total) |
-| **7** | Haro Frontend + SSE | ~50 | ⏳ |
+| **6** | Live Trading + Plugin Adapter | ~65 | ✅ 101 (808 total) |
+| **7** | Haro Frontend + SSE | ~50 | ⏳ NEXT |
 | **8** | E2E + Polish | ~40 | ⏳ |
 
 ## 4. Architecture Invariants

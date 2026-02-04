@@ -31,8 +31,8 @@
 | What | Where |
 |------|-------|
 | Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
-| Current milestone design | [M5 Marvin (Complete)](docs/archive/milestone-details/m5-marvin.md) |
-| Next milestone | M6: Live Trading |
+| Current milestone design | [M6 Live Trading (Complete)](docs/archive/milestone-details/m6-live-trading.md) |
+| Next milestone | M7: Haro Frontend |
 
 
 
@@ -95,27 +95,29 @@ npm run dev   # http://localhost:3000
 | M3: Veda Trading | ✅ Complete | +196 |
 | M4: Greta Backtesting | ✅ Complete | +56 |
 | M5: Marvin Core | ✅ Complete | +74 |
-| **M6: Live Trading** | ⏳ **Next** | ~65 |
-| M7-M8 | ⏳ Pending | — |
+| M6: Live Trading | ✅ Complete | +101 |
+| **M7: Haro Frontend** | ⏳ **Next** | ~50 |
+| M8: Polish & E2E | ⏳ Pending | ~40 |
 
-**Current**: 705 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current**: 808 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
 
 ### Recent Changes (2026-02-04)
 
-- ✅ **M5 Complete**: Marvin strategy system with plugin architecture (705 total tests)
-- ✅ EventLog subscription mechanism for pub/sub
-- ✅ PluginStrategyLoader with auto-discovery (AST-based, no hardcoded imports)
-- ✅ SMA crossover strategy with configurable indicators
-- ✅ data.WindowReady flow for event-driven data fetching
-- ✅ Test fixture consolidation (DummyStrategy, RecordingStrategy)
+- ✅ **M6 Complete**: Live trading system with plugin adapter architecture (808 total tests)
+- ✅ PluginAdapterLoader with AST-based discovery (40 tests)
+- ✅ AlpacaAdapter connection management with connect/disconnect/is_connected (23 tests)
+- ✅ VedaService wired to order routes for live order creation (13 tests)
+- ✅ Live order flow with persistence and event emission (15 tests)
+- ✅ RealtimeClock integration for live/paper runs (10 tests)
+- ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
 
-### Next: M6 Live Trading (~65 tests)
+### Next: M7 Haro Frontend (~50 tests)
 
-- PluginAdapterLoader (mirrors strategy pattern)
-- AlpacaAdapter connect() with real clients
-- VedaService wired to order routes
-- Live order flow with persistence + events
-- RealtimeClock for live runs
+- React app scaffold with Vite + TypeScript
+- Dashboard page (system status, active runs)
+- Runs page (list + detail view)
+- Orders page
+- SSE client integration for real-time updates
 
 
 ## Endpoints (essentials)
