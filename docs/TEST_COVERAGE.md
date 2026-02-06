@@ -2,7 +2,7 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 32 frontend · **Test Files**: 58 backend + 8 frontend
+**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 46 frontend · **Test Files**: 58 backend + 9 frontend
 
 ---
 
@@ -10,8 +10,8 @@
 
 | Metric            | Value          | Status        |
 | ----------------- | -------------- | ------------- |
-| Total Tests       | 840 (808 + 32) | ✅            |
-| Test Files        | 66 (58 + 8)    | ✅            |
+| Total Tests       | 854 (808 + 46) | ✅            |
+| Test Files        | 67 (58 + 9)    | ✅            |
 | Total Assertions  | 1,406          | ✅            |
 | Unit Tests        | 762 (95%)      | ✅            |
 | Integration Tests | 44 (5%)        | ✅            |
@@ -41,7 +41,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 8     | 32    | 8       | 3.8%       |
+| **Haro (Frontend)**    | 9     | 46    | 10      | 5.4%       |
 
 ### 2.2 Top Test Files by Count
 
