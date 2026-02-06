@@ -10,6 +10,7 @@ import type {
   Order,
   RunListResponse,
   OrderListResponse,
+  HealthResponse,
 } from "../../src/api/types";
 
 // =============================================================================
@@ -79,6 +80,15 @@ export const mockOrders: Order[] = [
 // =============================================================================
 
 export const handlers = [
+  // GET /api/v1/healthz - Health check
+  http.get("/api/v1/healthz", () => {
+    const response: HealthResponse = {
+      status: "ok",
+      version: "0.1.0",
+    };
+    return HttpResponse.json(response);
+  }),
+
   // GET /api/v1/runs - List runs
   http.get("/api/v1/runs", () => {
     const response: RunListResponse = {

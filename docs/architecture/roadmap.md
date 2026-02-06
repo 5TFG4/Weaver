@@ -35,29 +35,29 @@
 | Greta (backtest)    | ✅ Events wired       | 56    |
 | Marvin (strategy)   | ✅ Plugin complete    | 74    |
 | WallE (bars)        | ✅ Complete           | 16    |
-| Haro (frontend)     | ❌ Not started        | 0     |
+| Haro (frontend)     | ⏳ M7-3 done          | 32    |
 
 ## 2. Milestones (Revised 2026-02-03)
 
-| Milestone | Definition of Done                                                                | Status                 |
-| --------- | --------------------------------------------------------------------------------- | ---------------------- |
-| M0–M3     | Foundation, API, Trading                                                          | ✅ DONE                |
-| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)             | ✅ DONE                |
-| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE                |
-| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)     |
-| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests)    |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ⏳ M7-1 done (8 tests) |
-| **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                     |
+| Milestone | Definition of Done                                                                | Status                  |
+| --------- | --------------------------------------------------------------------------------- | ----------------------- |
+| M0–M3     | Foundation, API, Trading                                                          | ✅ DONE                 |
+| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)             | ✅ DONE                 |
+| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE                 |
+| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)      |
+| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests)     |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ⏳ M7-3 done (32 tests) |
+| **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                      |
 
 ## 3. Phase Timeline
 
-| Phase | Focus                         | Est. Tests | Status               |
-| ----- | ----------------------------- | ---------- | -------------------- |
-| 1–4   | Foundation → Greta            | 631        | ✅ DONE              |
-| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
-| **7** | Haro Frontend + SSE           | ~50        | ⏳ NEXT              |
-| **8** | E2E + Polish                  | ~40        | ⏳                   |
+| Phase | Focus                         | Est. Tests | Status                  |
+| ----- | ----------------------------- | ---------- | ----------------------- |
+| 1–4   | Foundation → Greta            | 631        | ✅ DONE                 |
+| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total)    |
+| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)      |
+| **7** | Haro Frontend + SSE           | ~50        | ⏳ M7-3 done (32 tests) |
+| **8** | E2E + Polish                  | ~40        | ⏳                      |
 
 ## 4. Architecture Invariants
 
@@ -144,13 +144,15 @@
 
 ### M7: Haro Frontend
 
-| MVP  | Focus              | Est. Tests |
-| ---- | ------------------ | ---------- |
-| M7-1 | React App Scaffold | ~10        |
-| M7-2 | Dashboard Page     | ~10        |
-| M7-3 | Runs Page          | ~12        |
-| M7-4 | Orders Page        | ~10        |
-| M7-5 | SSE Integration    | ~8         |
+| MVP  | Focus                 | Est. Tests | Status |
+| ---- | --------------------- | ---------- | ------ |
+| M7-0 | Dev Environment Setup | 0          | ✅     |
+| M7-1 | React App Scaffold    | ~10        | ✅ 8   |
+| M7-2 | API Client Layer      | ~10        | ✅ 9   |
+| M7-3 | Dashboard Page        | ~8         | ✅ 15  |
+| M7-4 | Runs Page             | ~12        | ⏳     |
+| M7-5 | Orders Page           | ~8         | ⏳     |
+| M7-6 | SSE Integration       | ~8         | ⏳     |
 
 ### M8: Polish & E2E
 
@@ -178,4 +180,4 @@
 
 ---
 
-_Last updated: 2026-02-04 (M6 complete, 806 tests)_
+_Last updated: 2026-02-06 (M7-3 complete, 808 backend + 32 frontend tests)_
