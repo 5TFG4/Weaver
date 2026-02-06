@@ -1,9 +1,10 @@
 # M7: Haro Frontend - Design Document
 
-> **Status**: Planning  
+> **Status**: In Progress (M7-5 complete, M7-6 remaining)  
 > **Estimated Duration**: 1.5-2 weeks  
 > **Prerequisites**: M6 ✅ (Live Trading complete, 808 tests)  
-> **Target Tests**: ~50 new tests (frontend + integration)
+> **Target Tests**: ~50 new tests (frontend + integration)  
+> **Current Tests**: 63 (M7-0 through M7-5 complete)
 
 ---
 

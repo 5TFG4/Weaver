@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-06 · **Tests**: 854 passing (808 backend + 46 frontend) · **M7-4**: ✅ Complete
+**Last Updated**: 2026-02-06 · **Tests**: 871 passing (808 backend + 63 frontend) · **M7-5**: ✅ Complete
 
 ---
 
@@ -47,7 +47,7 @@
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
 | **M5 Marvin** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ✅ Done (74 tests) |
 | **M6 Live Trading** | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md) | ✅ Done (101 tests) |
-| **M7 Haro Frontend** | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md) | ⏳ M7-4 done (46 tests) |
+| **M7 Haro Frontend** | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md) | ⏳ M7-5 done (63 tests) |
 
 ---
 

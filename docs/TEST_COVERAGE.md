@@ -2,7 +2,7 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 46 frontend · **Test Files**: 58 backend + 9 frontend
+**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 63 frontend · **Test Files**: 58 backend + 12 frontend
 
 ---
 
@@ -10,9 +10,9 @@
 
 | Metric            | Value          | Status        |
 | ----------------- | -------------- | ------------- |
-| Total Tests       | 854 (808 + 46) | ✅            |
-| Test Files        | 67 (58 + 9)    | ✅            |
-| Total Assertions  | 1,406          | ✅            |
+| Total Tests       | 871 (808 + 63) | ✅            |
+| Test Files        | 70 (58 + 12)   | ✅            |
+| Total Assertions  | ~1,450         | ✅            |
 | Unit Tests        | 762 (95%)      | ✅            |
 | Integration Tests | 44 (5%)        | ✅            |
 | E2E Tests         | 0 (0%)         | ❌ Planned M8 |
@@ -41,7 +41,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 9     | 46    | 10      | 5.4%       |
+| **Haro (Frontend)**    | 12    | 63    | 15      | 7.2%       |
 
 ### 2.2 Top Test Files by Count
 
@@ -284,16 +284,17 @@ testpaths = ["tests"]
 
 ## 9. Historical Progress
 
-| Milestone        | Tests Added | Total | Date    |
-| ---------------- | ----------- | ----- | ------- |
-| M1 Foundation    | ~50         | 50    | 2026-01 |
-| M2 GLaDOS API    | ~80         | 130   | 2026-01 |
-| M3 Veda          | ~150        | 280   | 2026-01 |
-| M3.5 Integration | ~100        | 380   | 2026-01 |
-| M4 Greta         | ~200        | 580   | 2026-01 |
-| M5 Marvin        | ~74         | 654   | 2026-02 |
-| M5 Quality       | ~51         | 705   | 2026-02 |
-| M6 Live Trading  | ~101        | 806   | 2026-02 |
+| Milestone            | Tests Added | Total | Date    |
+| -------------------- | ----------- | ----- | ------- |
+| M1 Foundation        | ~50         | 50    | 2026-01 |
+| M2 GLaDOS API        | ~80         | 130   | 2026-01 |
+| M3 Veda              | ~150        | 280   | 2026-01 |
+| M3.5 Integration     | ~100        | 380   | 2026-01 |
+| M4 Greta             | ~200        | 580   | 2026-01 |
+| M5 Marvin            | ~74         | 654   | 2026-02 |
+| M5 Quality           | ~51         | 705   | 2026-02 |
+| M6 Live Trading      | ~101        | 806   | 2026-02 |
+| M7 Frontend (M7-0→5) | ~63         | 871\* | 2026-02 |
 
 ---
 
@@ -301,8 +302,11 @@ testpaths = ["tests"]
 
 ### M7 (Frontend)
 
-- [ ] Add API contract tests
-- [ ] Add SSE integration tests with real frontend
+- [x] Add API client tests (runs, orders, health)
+- [x] Add component tests (Layout, StatCard, StatusBadge, ActivityFeed, OrderStatusBadge, OrderTable)
+- [x] Add page tests (Dashboard, RunsPage, OrdersPage)
+- [x] Add hook tests (useRuns)
+- [ ] Add SSE integration tests with real frontend (M7-6)
 
 ### M8 (Polish & E2E)
 
