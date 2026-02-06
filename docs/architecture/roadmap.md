@@ -35,7 +35,7 @@
 | Greta (backtest)    | ✅ Events wired       | 56    |
 | Marvin (strategy)   | ✅ Plugin complete    | 74    |
 | WallE (bars)        | ✅ Complete           | 16    |
-| Haro (frontend)     | ⏳ M7-4 done          | 46    |
+| Haro (frontend)     | ⏳ M7-5 done          | 63    |
 
 ## 2. Milestones (Revised 2026-02-03)
 
@@ -46,7 +46,7 @@
 | M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE                 |
 | **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)      |
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests)     |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ⏳ M7-4 done (46 tests) |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ⏳ M7-5 done (63 tests) |
 | **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                      |
 
 ## 3. Phase Timeline
@@ -56,7 +56,7 @@
 | 1–4   | Foundation → Greta            | 631        | ✅ DONE                 |
 | **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total)    |
 | **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)      |
-| **7** | Haro Frontend + SSE           | ~50        | ⏳ M7-4 done (46 tests) |
+| **7** | Haro Frontend + SSE           | ~50        | ⏳ M7-5 done (63 tests) |
 | **8** | E2E + Polish                  | ~40        | ⏳                      |
 
 ## 4. Architecture Invariants
@@ -151,7 +151,7 @@
 | M7-2 | API Client Layer      | ~10        | ✅ 9   |
 | M7-3 | Dashboard Page        | ~8         | ✅ 15  |
 | M7-4 | Runs Page             | ~12        | ✅ 14  |
-| M7-5 | Orders Page           | ~8         | ⏳     |
+| M7-5 | Orders Page           | ~8         | ✅ 17  |
 | M7-6 | SSE Integration       | ~8         | ⏳     |
 
 ### M8: Polish & E2E
@@ -180,4 +180,4 @@
 
 ---
 
-_Last updated: 2026-02-06 (M7-4 complete, 808 backend + 46 frontend tests)_
+_Last updated: 2026-02-06 (M7-5 complete, 808 backend + 63 frontend tests)_

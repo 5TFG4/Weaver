@@ -154,10 +154,14 @@ export const handlers = [
   http.get("/api/v1/orders", ({ request }) => {
     const url = new URL(request.url);
     const runId = url.searchParams.get("run_id");
+    const status = url.searchParams.get("status");
 
     let orders = mockOrders;
     if (runId) {
       orders = orders.filter((o) => o.run_id === runId);
+    }
+    if (status) {
+      orders = orders.filter((o) => o.status === status);
     }
 
     const response: OrderListResponse = {

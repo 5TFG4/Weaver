@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-06)
 
-> **Current State**: M7-4 Complete, 808 backend + 46 frontend tests  
-> **Remaining Work**: M7-5 → M8  
-> **Estimated Total**: ~44 new tests remaining, ~1 week
+> **Current State**: M7-5 Complete, 808 backend + 63 frontend tests  
+> **Remaining Work**: M7-6 → M8  
+> **Estimated Total**: ~27 new tests remaining, ~1 week
 
 ---
 
@@ -14,7 +14,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | --------- | ------------- | ------------------------------------- | ---------- | ----------------------- |
 | **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE                 |
 | **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total)     |
-| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-4 done (46 tests) |
+| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-5 done (63 tests) |
 | **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                      |
 
 **M6 Complete** (101 tests added):
@@ -33,7 +33,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - M7-2: API Client Layer ✅ (9 tests)
 - M7-3: Dashboard Page ✅ (15 tests)
 - M7-4: Runs Page ✅ (14 tests)
-- M7-5: Orders Page ⏳ (next)
+- M7-5: Orders Page ✅ (17 tests)
 
 ---
 
@@ -285,8 +285,8 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | M7-2 | API Client Layer      | 9 ✅  | M7-1 ✅      |
 | M7-3 | Dashboard Page        | 15 ✅ | M7-2 ✅      |
 | M7-4 | Runs Page             | 14 ✅ | M7-3 ✅      |
-| M7-5 | Orders Page           | ~8    | M7-4 ✅      |
-| M7-6 | SSE Integration       | ~8    | M7-5         |
+| M7-5 | Orders Page           | 17 ✅ | M7-4 ✅      |
+| M7-6 | SSE Integration       | ~8    | M7-5 ✅      |
 
 ### 3.3 Technology Stack
 
