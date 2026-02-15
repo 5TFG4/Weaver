@@ -1,5 +1,10 @@
 # Weaver Milestone Plan (2026-02-06)
 
+> **Document Charter**  
+> **Primary role**: authoritative milestone execution plan and current status.  
+> **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
+> **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
+
 > **Current State**: M7 Complete, 808 backend + 86 frontend tests  
 > **Remaining Work**: M8  
 > **Estimated Total**: ~40 new tests remaining, ~1 week

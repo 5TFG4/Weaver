@@ -1,5 +1,10 @@
 # Design Review Plan (Weaver)
 
+> **Document Charter**  
+> **Primary role**: review methodology and process governance.  
+> **Authoritative for**: review rubric, segment flow, and review output protocol.  
+> **Not authoritative for**: active defect backlog details (use `DESIGN_AUDIT.md`).
+
 > **Purpose**: Provide a repeatable, context-resilient review process for validating Weaver’s architecture and implementation against the documented design.
 >
 > **Primary Goal**: The system can run reliably long-term on a local machine (ops-ready), while each milestone is delivered via MVP-style iterations.

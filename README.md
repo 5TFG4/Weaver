@@ -11,41 +11,37 @@
   <strong>Ha[R]o&ensp;</strong>
 </p>
 
-
-
 ## Architecture
 
-* **[Architecture Overview](docs/ARCHITECTURE.md)** — Start here (includes planning doc index)
+- **[Documentation Index](docs/DOCS_INDEX.md)** — Start here (document responsibilities + ownership)
+- **[Architecture Overview](docs/ARCHITECTURE.md)** — System boundary, invariants, module map
 
-| Detail Docs | |
-|-------------|---|
-| [Events](docs/architecture/events.md) | Event model, envelope, delivery |
-| [API](docs/architecture/api.md) | REST, SSE, thin events |
-| [Clock](docs/architecture/clock.md) | Realtime & backtest clocks |
-| [Config](docs/architecture/config.md) | Credentials, security |
-| [Deployment](docs/architecture/deployment.md) | Docker, env vars |
-| [Roadmap](docs/architecture/roadmap.md) | Milestones, entry checklists |
+| Detail Docs                                   |                                     |
+| --------------------------------------------- | ----------------------------------- |
+| [Events](docs/architecture/events.md)         | Event model, envelope, delivery     |
+| [API](docs/architecture/api.md)               | REST, SSE, thin events              |
+| [Clock](docs/architecture/clock.md)           | Realtime & backtest clocks          |
+| [Config](docs/architecture/config.md)         | Credentials, security               |
+| [Deployment](docs/architecture/deployment.md) | Docker, env vars                    |
+| [Roadmap](docs/architecture/roadmap.md)       | High-level phases, entry checklists |
 
 ### ⚠️ Planning & Issue Tracking
 
-| What | Where |
-|------|-------|
-| Issue backlog & milestone schedule | [AUDIT_FINDINGS.md §5-6](docs/AUDIT_FINDINGS.md#5-milestone-based-fix-schedule) |
-| Current milestone design | [M6 Live Trading (Complete)](docs/archive/milestone-details/m6-live-trading.md) |
-| Next milestone | M7: Haro Frontend |
-
-
+| What                                              | Where                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| Current milestone plan & progress (authoritative) | [MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)                  |
+| Active quality findings (authoritative)           | [DESIGN_AUDIT.md](docs/DESIGN_AUDIT.md)                      |
+| Historical audit trail                            | [AUDIT_FINDINGS.md](docs/AUDIT_FINDINGS.md)                  |
+| Historical detailed milestone docs                | [archive/milestone-details](docs/archive/milestone-details/) |
 
 ## Modules (brief)
 
-* **GLaDOS** — Control plane & API (REST + SSE), domain routing, self‑clock.
-* **Veda** — Live data & trading (exchange adapters, orders, caching).
-* **Greta** — Backtesting (historical windows, fill/slippage/fees simulation).
-* **Marvin** — Strategy execution (strategy intents & decisions).
-* **WallE** — Persistence layer (centralized writes, repositories).
-* **Haro** — React web UI (SSE for thin events, details via REST).
-
-
+- **GLaDOS** — Control plane & API (REST + SSE), domain routing, self‑clock.
+- **Veda** — Live data & trading (exchange adapters, orders, caching).
+- **Greta** — Backtesting (historical windows, fill/slippage/fees simulation).
+- **Marvin** — Strategy execution (strategy intents & decisions).
+- **WallE** — Persistence layer (centralized writes, repositories).
+- **Haro** — React web UI (SSE for thin events, details via REST).
 
 ## Quickstart
 
@@ -83,23 +79,23 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-
 ## Development Status
 
-| Milestone | Status | Tests |
-|-----------|--------|-------|
-| M0: Test Infrastructure | ✅ Complete | 14 |
-| M0.5: Project Restructure | ✅ Complete | +74 |
-| M1: Foundation (DB/Events) | ✅ Complete | +124 |
-| M2: API Live | ✅ Complete | +85 |
-| M3: Veda Trading | ✅ Complete | +196 |
-| M4: Greta Backtesting | ✅ Complete | +56 |
-| M5: Marvin Core | ✅ Complete | +74 |
-| M6: Live Trading | ✅ Complete | +101 |
-| **M7: Haro Frontend** | ⏳ **Next** | ~50 |
-| M8: Polish & E2E | ⏳ Pending | ~40 |
+| Milestone                  | Status      | Tests |
+| -------------------------- | ----------- | ----- |
+| M0: Test Infrastructure    | ✅ Complete | 14    |
+| M0.5: Project Restructure  | ✅ Complete | +74   |
+| M1: Foundation (DB/Events) | ✅ Complete | +124  |
+| M2: API Live               | ✅ Complete | +85   |
+| M3: Veda Trading           | ✅ Complete | +196  |
+| M4: Greta Backtesting      | ✅ Complete | +56   |
+| M5: Marvin Core            | ✅ Complete | +74   |
+| M6: Live Trading           | ✅ Complete | +101  |
+| **M7: Haro Frontend**      | ✅ Complete | +86   |
+| M8: Polish & E2E           | ⏳ Pending  | ~40   |
 
-**Current**: 808 tests passing · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current Snapshot**: 894 tests (808 backend + 86 frontend) · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Authoritative milestone status**: [docs/MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)
 
 ### Recent Changes (2026-02-04)
 
@@ -111,7 +107,7 @@ npm run dev   # http://localhost:3000
 - ✅ RealtimeClock integration for live/paper runs (10 tests)
 - ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
 
-### Next: M7 Haro Frontend (~50 tests)
+### Next: M8 Polish & E2E (~40 tests)
 
 - React app scaffold with Vite + TypeScript
 - Dashboard page (system status, active runs)
@@ -119,9 +115,7 @@ npm run dev   # http://localhost:3000
 - Orders page
 - SSE client integration for real-time updates
 
-
 ## Endpoints (essentials)
 
-* REST: `GET /healthz`, `GET/POST /runs`, `GET /orders`, `GET /candles`
-* Realtime: `GET /events/stream` (SSE)  ·  Alternative: `/events/tail` (REST incremental)
-
+- REST: `GET /healthz`, `GET/POST /runs`, `GET /orders`, `GET /candles`
+- Realtime: `GET /events/stream` (SSE) · Alternative: `/events/tail` (REST incremental)

@@ -1,5 +1,10 @@
 # Design Audit Report & Pre-M8 Quality Gate
 
+> **Document Charter**  
+> **Primary role**: active design-code-test quality gate and open findings.  
+> **Authoritative for**: current unresolved audit items and pre-milestone release criteria.  
+> **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
+
 > **Audit Date**: 2026-02-15  
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
 > **Branch**: `haro_update` (uncommitted M7-6 SSE work included)  

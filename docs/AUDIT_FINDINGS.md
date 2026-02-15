@@ -1,5 +1,10 @@
 # Architecture Audit Findings
 
+> **Document Charter**  
+> **Primary role**: historical audit ledger and root-cause traceability.  
+> **Authoritative for**: historical issues and remediation trail.  
+> **Not authoritative for**: current milestone execution status (use `MILESTONE_PLAN.md`) or active quality gate (use `DESIGN_AUDIT.md`).
+
 > **Audit Date**: 2026-02-03 (Post-M5)  
 > **Status**: ✅ M6 Complete — 808 tests passing  
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution

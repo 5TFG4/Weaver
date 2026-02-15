@@ -1,6 +1,11 @@
 # Implementation Roadmap
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
+>
+> **Document Charter**  
+> **Primary role**: high-level phase roadmap and architecture entry-gate framing.  
+> **Authoritative for**: roadmap phases and gate checklist framing only.  
+> **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`).
 
 ---
 
@@ -18,7 +23,8 @@
 
 **Detailed designs go in**: `docs/archive/milestone-details/mX-name.md`
 
-**Issue tracking goes in**: `docs/AUDIT_FINDINGS.md`
+**Active issue tracking goes in**: `docs/DESIGN_AUDIT.md`  
+**Historical issue trail remains in**: `docs/AUDIT_FINDINGS.md`
 
 ---
 
@@ -39,25 +45,25 @@
 
 ## 2. Milestones (Revised 2026-02-03)
 
-| Milestone | Definition of Done                                                                | Status                  |
-| --------- | --------------------------------------------------------------------------------- | ----------------------- |
-| M0–M3     | Foundation, API, Trading                                                          | ✅ DONE                 |
-| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)             | ✅ DONE                 |
-| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE                 |
-| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)      |
-| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests)     |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)      |
-| **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                      |
+| Milestone | Definition of Done                                                                | Status              |
+| --------- | --------------------------------------------------------------------------------- | ------------------- |
+| M0–M3     | Foundation, API, Trading                                                          | ✅ DONE             |
+| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)             | ✅ DONE             |
+| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE             |
+| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)  |
+| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
+| **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                  |
 
 ## 3. Phase Timeline
 
-| Phase | Focus                         | Est. Tests | Status                  |
-| ----- | ----------------------------- | ---------- | ----------------------- |
-| 1–4   | Foundation → Greta            | 631        | ✅ DONE                 |
-| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total)    |
-| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)      |
-| **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)      |
-| **8** | E2E + Polish                  | ~40        | ⏳                      |
+| Phase | Focus                         | Est. Tests | Status               |
+| ----- | ----------------------------- | ---------- | -------------------- |
+| 1–4   | Foundation → Greta            | 631        | ✅ DONE              |
+| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
+| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
+| **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
+| **8** | E2E + Polish                  | ~40        | ⏳                   |
 
 ## 4. Architecture Invariants
 
@@ -168,15 +174,15 @@
 
 ## Appendix: Design Documents
 
-| Milestone | Design Doc                                                      |
-| --------- | --------------------------------------------------------------- |
-| M1        | [Foundation](../archive/milestone-details/m1-foundation.md)     |
-| M2        | [GLaDOS API](../archive/milestone-details/m2-glados-api.md)     |
-| M3        | [Veda Trading](../archive/milestone-details/m3-veda.md)         |
-| M3.5      | [Integration](../archive/milestone-details/m3.5-integration.md) |
-| M4        | [Greta Backtest](../archive/milestone-details/m4-greta.md)      |
-| M5        | [Marvin Full](../archive/milestone-details/m5-marvin.md)        |
-| M6        | [Live Trading](../archive/milestone-details/m6-live-trading.md) |
+| Milestone | Design Doc                                                        |
+| --------- | ----------------------------------------------------------------- |
+| M1        | [Foundation](../archive/milestone-details/m1-foundation.md)       |
+| M2        | [GLaDOS API](../archive/milestone-details/m2-glados-api.md)       |
+| M3        | [Veda Trading](../archive/milestone-details/m3-veda.md)           |
+| M3.5      | [Integration](../archive/milestone-details/m3.5-integration.md)   |
+| M4        | [Greta Backtest](../archive/milestone-details/m4-greta.md)        |
+| M5        | [Marvin Full](../archive/milestone-details/m5-marvin.md)          |
+| M6        | [Live Trading](../archive/milestone-details/m6-live-trading.md)   |
 | M7        | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) |
 
 ---

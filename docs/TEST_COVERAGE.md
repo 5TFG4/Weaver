@@ -1,5 +1,10 @@
 # Weaver Test Coverage Report
 
+> **Document Charter**  
+> **Primary role**: current test coverage snapshot and gap analysis.  
+> **Authoritative for**: latest test counts and coverage trend statements (with snapshot date).  
+> **Not authoritative for**: milestone planning details (use `MILESTONE_PLAN.md`).
+
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
 **Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 86 frontend · **Test Files**: 58 backend + 15 frontend
@@ -333,13 +338,13 @@ _This document is auto-generated and should be updated after each milestone comp
 
 ### 11.1 Test Stack
 
-| Tool              | Purpose                    | Version |
-|-------------------|----------------------------|---------|
-| Vitest            | Test runner & assertions   | 4.0.18  |
-| React Testing Library | Component rendering    | 16.3.0  |
-| MSW               | API mocking (service worker) | 2.12.8 |
-| jsdom             | Browser environment        | via Vitest |
-| @vitest/coverage-v8 | Coverage reporting      | 4.0.18  |
+| Tool                  | Purpose                      | Version    |
+| --------------------- | ---------------------------- | ---------- |
+| Vitest                | Test runner & assertions     | 4.0.18     |
+| React Testing Library | Component rendering          | 16.3.0     |
+| MSW                   | API mocking (service worker) | 2.12.8     |
+| jsdom                 | Browser environment          | via Vitest |
+| @vitest/coverage-v8   | Coverage reporting           | 4.0.18     |
 
 ### 11.2 MSW (Mock Service Worker)
 
@@ -348,6 +353,7 @@ without patching `fetch` manually. All 10 API endpoints have default happy-path 
 in `tests/mocks/handlers.ts`.
 
 **Default handlers** (always active):
+
 ```
 GET  /api/v1/runs          → { runs: [...], total: N }
 GET  /api/v1/runs/:id      → single run
@@ -376,7 +382,9 @@ JSDOM doesn't provide `EventSource`. Two-tier approach:
 
 ```tsx
 function render(ui: ReactElement, options?: RenderOptions) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return rtlRender(ui, {
     wrapper: ({ children }) => (
       <QueryClientProvider client={queryClient}>
@@ -404,21 +412,21 @@ Use `vi.useFakeTimers()` to test auto-dismiss behavior (5s timeout).
 
 ### 11.6 Frontend Test File Map
 
-| Test File                        | Count | What It Tests                              |
-|----------------------------------|-------|--------------------------------------------|
-| `App.test.tsx`                   | 4     | Route rendering, 404, navigation           |
-| `api/runs.test.ts`              | 4     | fetchRuns, fetchRun, createRun, startRun   |
-| `api/orders.test.ts`            | 3     | fetchOrders, fetchOrder, cancelOrder       |
-| `hooks/useRuns.test.tsx`         | 2     | useRuns query, useCreateRun mutation       |
-| `hooks/useSSE.test.tsx`         | 9     | Connection, reconnection, 7 event types   |
-| `components/Layout.test.tsx`     | 4     | Header, sidebar, nav links, active state  |
-| `components/StatCard.test.tsx`   | 4     | Label, value, icon, trend display         |
-| `components/ActivityFeed.test.tsx` | 4   | Rendering, time-ago, empty state, linking |
-| `components/OrderTable.test.tsx` | 6     | Row rendering, click handler, empty state |
-| `components/OrderStatusBadge.test.tsx` | 4 | Status colors, side badges              |
-| `components/Toast.test.tsx`      | 8     | Notifications, dismiss, auto-remove, connection status |
-| `pages/Dashboard.test.tsx`       | 7     | Stat cards, activity feed, loading, error |
-| `pages/RunsPage.test.tsx`        | 14    | CRUD operations, create form, stop action |
-| `pages/OrdersPage.test.tsx`      | 7     | Filter, table, detail modal, run_id param |
-| `stores/notificationStore.test.ts` | 6   | Add, remove, clearAll, auto-dismiss, IDs |
-| **Total**                        | **86**|                                            |
+| Test File                              | Count  | What It Tests                                          |
+| -------------------------------------- | ------ | ------------------------------------------------------ |
+| `App.test.tsx`                         | 4      | Route rendering, 404, navigation                       |
+| `api/runs.test.ts`                     | 4      | fetchRuns, fetchRun, createRun, startRun               |
+| `api/orders.test.ts`                   | 3      | fetchOrders, fetchOrder, cancelOrder                   |
+| `hooks/useRuns.test.tsx`               | 2      | useRuns query, useCreateRun mutation                   |
+| `hooks/useSSE.test.tsx`                | 9      | Connection, reconnection, 7 event types                |
+| `components/Layout.test.tsx`           | 4      | Header, sidebar, nav links, active state               |
+| `components/StatCard.test.tsx`         | 4      | Label, value, icon, trend display                      |
+| `components/ActivityFeed.test.tsx`     | 4      | Rendering, time-ago, empty state, linking              |
+| `components/OrderTable.test.tsx`       | 6      | Row rendering, click handler, empty state              |
+| `components/OrderStatusBadge.test.tsx` | 4      | Status colors, side badges                             |
+| `components/Toast.test.tsx`            | 8      | Notifications, dismiss, auto-remove, connection status |
+| `pages/Dashboard.test.tsx`             | 7      | Stat cards, activity feed, loading, error              |
+| `pages/RunsPage.test.tsx`              | 14     | CRUD operations, create form, stop action              |
+| `pages/OrdersPage.test.tsx`            | 7      | Filter, table, detail modal, run_id param              |
+| `stores/notificationStore.test.ts`     | 6      | Add, remove, clearAll, auto-dismiss, IDs               |
+| **Total**                              | **86** |                                                        |

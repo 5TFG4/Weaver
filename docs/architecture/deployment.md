@@ -1,6 +1,11 @@
 # Deployment & Operations
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
+>
+> **Document Charter**  
+> **Primary role**: deployment topology and operational procedures.  
+> **Authoritative for**: container setup, environment/secrets delivery, migration operations.  
+> **Not authoritative for**: API/event schema or milestone status.
 
 ## 1. Container Topology
 
