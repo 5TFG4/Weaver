@@ -1,8 +1,8 @@
 # Weaver Milestone Plan (2026-02-06)
 
-> **Current State**: M7-5 Complete, 808 backend + 63 frontend tests  
-> **Remaining Work**: M7-6 → M8  
-> **Estimated Total**: ~27 new tests remaining, ~1 week
+> **Current State**: M7 Complete, 808 backend + 86 frontend tests  
+> **Remaining Work**: M8  
+> **Estimated Total**: ~40 new tests remaining, ~1 week
 
 ---
 
@@ -10,12 +10,12 @@
 
 All pending tasks have been consolidated and reorganized into 4 milestones:
 
-| Milestone | Name          | Core Objective                        | Est. Tests | Status                  |
-| --------- | ------------- | ------------------------------------- | ---------- | ----------------------- |
-| **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE                 |
-| **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total)     |
-| **M7**    | Haro Frontend | React UI + SSE                        | ~50        | ⏳ M7-5 done (63 tests) |
-| **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                      |
+| Milestone | Name          | Core Objective                        | Est. Tests | Status              |
+| --------- | ------------- | ------------------------------------- | ---------- | ------------------- |
+| **M5**    | Marvin Core   | Strategy system + Plugin architecture | 74         | ✅ DONE             |
+| **M6**    | Live Trading  | Paper/Live trading flow               | 101        | ✅ DONE (808 total) |
+| **M7**    | Haro Frontend | React UI + SSE                        | 86         | ✅ DONE (86 tests)  |
+| **M8**    | Polish & E2E  | Code quality + End-to-end tests       | ~40        | ⏳                  |
 
 **M6 Complete** (101 tests added):
 
@@ -26,7 +26,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 5. ✅ Live order flow with events + persistence
 6. ✅ RealtimeClock for live runs
 
-**M7 In Progress**:
+**M7 Complete** (86 tests):
 
 - M7-0: Dev Environment Setup ✅
 - M7-1: React App Scaffold ✅ (8 tests)
@@ -34,6 +34,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 - M7-3: Dashboard Page ✅ (15 tests)
 - M7-4: Runs Page ✅ (14 tests)
 - M7-5: Orders Page ✅ (17 tests)
+- M7-6: SSE Integration ✅ (23 tests)
 
 ---
 
@@ -268,13 +269,13 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 3.1 Exit Gate (Definition of Done)
 
-- [ ] React app builds and runs in Docker container
-- [ ] Dashboard displays system status and active runs
-- [ ] Can create, view, and stop runs via UI
-- [ ] Orders page shows order list with status
-- [ ] SSE delivers real-time updates to UI
-- [ ] ~50 tests passing (unit + integration)
-- [ ] TypeScript strict mode, no `any` types
+- [x] React app builds and runs in Docker container ✅
+- [x] Dashboard displays system status and active runs ✅
+- [x] Can create, view, and stop runs via UI ✅
+- [x] Orders page shows order list with status ✅
+- [x] SSE delivers real-time updates to UI ✅ 2026-02-06
+- [x] 86 tests passing (unit + integration) ✅
+- [x] TypeScript strict mode, no `any` types ✅
 
 ### 3.2 MVP Breakdown
 
@@ -286,18 +287,18 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 | M7-3 | Dashboard Page        | 15 ✅ | M7-2 ✅      |
 | M7-4 | Runs Page             | 14 ✅ | M7-3 ✅      |
 | M7-5 | Orders Page           | 17 ✅ | M7-4 ✅      |
-| M7-6 | SSE Integration       | ~8    | M7-5 ✅      |
+| M7-6 | SSE Integration       | 23 ✅ | M7-5 ✅      |
 
-### 3.3 Technology Stack
+### 3.3 Technology Stack (Actual)
 
-| Category  | Technology               |
-| --------- | ------------------------ |
-| Framework | React 18 + TypeScript    |
-| Build     | Vite 5                   |
-| Routing   | React Router 6           |
-| State     | TanStack Query + Zustand |
-| Styling   | Tailwind CSS + shadcn/ui |
-| Testing   | Vitest + RTL + MSW       |
+| Category  | Designed                 | Actual                          |
+| --------- | ------------------------ | ------------------------------- |
+| Framework | React 18 + TypeScript    | React 19.2 + TypeScript 5.9     |
+| Build     | Vite 5                   | Vite 7.2                        |
+| Routing   | React Router 6           | React Router 7.13               |
+| State     | TanStack Query + Zustand | TanStack Query 5.90 + Zustand 5 |
+| Styling   | Tailwind CSS + shadcn/ui | Tailwind CSS 4.1 (no shadcn/ui) |
+| Testing   | Vitest + RTL + MSW       | Vitest 4 + RTL 16 + MSW 2.12    |
 
 ### 3.4 Dev Environment (Option 3: Hybrid)
 

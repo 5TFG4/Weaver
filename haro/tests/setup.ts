@@ -19,6 +19,33 @@ afterAll(() => {
   server.close();
 });
 
+// Mock EventSource globally for SSE tests
+class MockEventSourceGlobal {
+  url: string;
+  readyState = 0;
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  static CONNECTING = 0;
+  static OPEN = 1;
+  static CLOSED = 2;
+
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  addEventListener() {}
+  removeEventListener() {}
+  close() {
+    this.readyState = MockEventSourceGlobal.CLOSED;
+  }
+}
+
+if (!globalThis.EventSource) {
+  globalThis.EventSource =
+    MockEventSourceGlobal as unknown as typeof EventSource;
+}
+
 // Mock window.matchMedia
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {

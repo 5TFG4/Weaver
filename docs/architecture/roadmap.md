@@ -35,7 +35,7 @@
 | Greta (backtest)    | ✅ Events wired       | 56    |
 | Marvin (strategy)   | ✅ Plugin complete    | 74    |
 | WallE (bars)        | ✅ Complete           | 16    |
-| Haro (frontend)     | ⏳ M7-5 done          | 63    |
+| Haro (frontend)     | ✅ Complete           | 86    |
 
 ## 2. Milestones (Revised 2026-02-03)
 
@@ -46,7 +46,7 @@
 | M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE                 |
 | **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)      |
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests)     |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ⏳ M7-5 done (63 tests) |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)      |
 | **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                      |
 
 ## 3. Phase Timeline
@@ -56,7 +56,7 @@
 | 1–4   | Foundation → Greta            | 631        | ✅ DONE                 |
 | **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total)    |
 | **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)      |
-| **7** | Haro Frontend + SSE           | ~50        | ⏳ M7-5 done (63 tests) |
+| **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)      |
 | **8** | E2E + Polish                  | ~40        | ⏳                      |
 
 ## 4. Architecture Invariants
@@ -103,12 +103,12 @@
 - [x] **RealtimeClock for live runs** (M6-5) ✅ 10 tests
 - [x] ~100 new tests (target: 805+) → actual: 806 ✅
 
-### Before M8 (M7 Exit Gate)
+### Before M8 (M7 Exit Gate) ✅ COMPLETE
 
-- [ ] React app running in Docker
-- [ ] Dashboard, Runs, Orders pages functional
-- [ ] SSE real-time updates working
-- [ ] ~50 new tests (target: 821+)
+- [x] React app running in Docker ✅
+- [x] Dashboard, Runs, Orders pages functional ✅
+- [x] SSE real-time updates working ✅ 2026-02-06
+- [x] 86 new tests (target: 821+) → actual: 894 ✅
 
 ### M8 Exit Gate (MVP Complete)
 
@@ -152,7 +152,7 @@
 | M7-3 | Dashboard Page        | ~8         | ✅ 15  |
 | M7-4 | Runs Page             | ~12        | ✅ 14  |
 | M7-5 | Orders Page           | ~8         | ✅ 17  |
-| M7-6 | SSE Integration       | ~8         | ⏳     |
+| M7-6 | SSE Integration       | ~8         | 23 ✅  |
 
 ### M8: Polish & E2E
 
@@ -177,7 +177,8 @@
 | M4        | [Greta Backtest](../archive/milestone-details/m4-greta.md)      |
 | M5        | [Marvin Full](../archive/milestone-details/m5-marvin.md)        |
 | M6        | [Live Trading](../archive/milestone-details/m6-live-trading.md) |
+| M7        | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) |
 
 ---
 
-_Last updated: 2026-02-06 (M7-5 complete, 808 backend + 63 frontend tests)_
+_Last updated: 2026-02-06 (M7 complete, 808 backend + 86 frontend = 894 total tests)_

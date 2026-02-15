@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom";
+import { ConnectionStatus } from "../common/ConnectionStatus";
 
-export function Header() {
+interface HeaderProps {
+  isConnected?: boolean;
+}
+
+export function Header({ isConnected = false }: HeaderProps) {
   return (
     <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -11,10 +16,7 @@ export function Header() {
           <span className="text-xl font-semibold text-white">Weaver</span>
         </Link>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-slate-400">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            Connected
-          </div>
+          <ConnectionStatus isConnected={isConnected} />
         </div>
       </div>
     </header>

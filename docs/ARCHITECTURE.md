@@ -2,7 +2,7 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-**Last Updated**: 2026-02-06 · **Tests**: 871 passing (808 backend + 63 frontend) · **M7-5**: ✅ Complete
+**Last Updated**: 2026-02-06 · **Tests**: 894 passing (808 backend + 86 frontend) · **M7**: ✅ Complete
 
 ---
 
@@ -16,7 +16,7 @@
 | **Implementation progress** | [AUDIT_FINDINGS.md §6](AUDIT_FINDINGS.md#6-progress-tracking) |
 | **Test coverage analysis** | [TEST_COVERAGE.md](TEST_COVERAGE.md) |
 | **Entry gate checklists** | [roadmap.md §5](architecture/roadmap.md#5-entry-gate-checklists) |
-| **Next milestone design** | [M7 Haro Frontend](archive/milestone-details/m7-haro.md) |
+| **Next milestone design** | [M8 Polish & E2E](MILESTONE_PLAN.md#4-m8-polish--e2e) |
 | **Documentation rules** | [DEVELOPMENT.md §8](DEVELOPMENT.md#8-documentation-structure) |
 
 ---
@@ -47,7 +47,7 @@
 | M4 Greta | [m4-greta.md](archive/milestone-details/m4-greta.md) | ✅ Done |
 | **M5 Marvin** | [m5-marvin.md](archive/milestone-details/m5-marvin.md) | ✅ Done (74 tests) |
 | **M6 Live Trading** | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md) | ✅ Done (101 tests) |
-| **M7 Haro Frontend** | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md) | ⏳ M7-5 done (63 tests) |
+| **M7 Haro Frontend** | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md) | ✅ Done (86 tests) |
 
 ---
 
@@ -129,7 +129,7 @@
 | **Greta** | Handle `backtest.*` requests; simulate fills/slippage/fees | Make real API calls |
 | **Marvin** | Maintain run context; tick by clock; emit strategy intents | Know if live or backtest |
 | **WallE** | Centralized writes; repository reads | Expose APIs |
-| **Haro** | Show UI; consume SSE; fetch details via REST | Process events directly |
+| **Haro** | Show UI; consume SSE; invalidate React Query cache; fetch details via REST | Process events directly; store server state locally |
 | **Events** | Envelope/registry; Outbox + LISTEN/NOTIFY; offsets | Store business data |
 
 ---
@@ -214,3 +214,6 @@ Ticks fire at bar boundaries (e.g., `:00` seconds for 1m bars).
 * **BacktestClock**: fast‑forward simulation, no sleeping
 * **Bar Alignment**: ticks at bar start (e.g., minute boundary)
 * **Dual Credentials**: Live + Paper configured separately for parallel runs
+* **Haro**: React 19 SPA with TanStack Query (server state) + Zustand (client state)
+* **SSE invalidates, REST fetches**: Thin SSE events trigger React Query cache invalidation, which refetches via REST
+* **Query Key Factory**: Hierarchical key pattern (`["runs", "list", params]`) for targeted invalidation

@@ -2,7 +2,7 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 63 frontend · **Test Files**: 58 backend + 12 frontend
+**Last Updated**: 2026-02-06 · **Total Tests**: 808 backend + 86 frontend · **Test Files**: 58 backend + 15 frontend
 
 ---
 
@@ -10,8 +10,8 @@
 
 | Metric            | Value          | Status        |
 | ----------------- | -------------- | ------------- |
-| Total Tests       | 871 (808 + 63) | ✅            |
-| Test Files        | 70 (58 + 12)   | ✅            |
+| Total Tests       | 894 (808 + 86) | ✅            |
+| Test Files        | 73 (58 + 15)   | ✅            |
 | Total Assertions  | ~1,450         | ✅            |
 | Unit Tests        | 762 (95%)      | ✅            |
 | Integration Tests | 44 (5%)        | ✅            |
@@ -41,7 +41,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 12    | 63    | 15      | 7.2%       |
+| **Haro (Frontend)**    | 15    | 86    | 21      | 9.6%       |
 
 ### 2.2 Top Test Files by Count
 
@@ -294,19 +294,23 @@ testpaths = ["tests"]
 | M5 Marvin            | ~74         | 654   | 2026-02 |
 | M5 Quality           | ~51         | 705   | 2026-02 |
 | M6 Live Trading      | ~101        | 806   | 2026-02 |
-| M7 Frontend (M7-0→5) | ~63         | 871\* | 2026-02 |
+| M7 Frontend (M7-0→5) | ~63         | 871   | 2026-02 |
+| M7 SSE (M7-6)        | ~23         | 894   | 2026-02 |
 
 ---
 
 ## 10. Next Steps
 
-### M7 (Frontend)
+### M7 (Frontend) ✅ COMPLETE
 
 - [x] Add API client tests (runs, orders, health)
 - [x] Add component tests (Layout, StatCard, StatusBadge, ActivityFeed, OrderStatusBadge, OrderTable)
 - [x] Add page tests (Dashboard, RunsPage, OrdersPage)
 - [x] Add hook tests (useRuns)
-- [ ] Add SSE integration tests with real frontend (M7-6)
+- [x] Add SSE integration tests with real frontend (M7-6) ✅ 23 tests
+- [x] Add notification store tests (M7-6) ✅ 6 tests
+- [x] Add Toast + ConnectionStatus component tests (M7-6) ✅ 8 tests
+- [x] Add useSSE hook tests (M7-6) ✅ 9 tests
 
 ### M8 (Polish & E2E)
 
@@ -319,3 +323,102 @@ testpaths = ["tests"]
 ---
 
 _This document is auto-generated and should be updated after each milestone completion._
+
+---
+
+## 11. Frontend Testing Patterns (M7)
+
+> Added after M7 completion. Documents frontend-specific testing strategies,
+> infrastructure, and patterns for future reference.
+
+### 11.1 Test Stack
+
+| Tool              | Purpose                    | Version |
+|-------------------|----------------------------|---------|
+| Vitest            | Test runner & assertions   | 4.0.18  |
+| React Testing Library | Component rendering    | 16.3.0  |
+| MSW               | API mocking (service worker) | 2.12.8 |
+| jsdom             | Browser environment        | via Vitest |
+| @vitest/coverage-v8 | Coverage reporting      | 4.0.18  |
+
+### 11.2 MSW (Mock Service Worker)
+
+MSW intercepts `fetch()` calls at the network level, providing realistic API mocking
+without patching `fetch` manually. All 10 API endpoints have default happy-path handlers
+in `tests/mocks/handlers.ts`.
+
+**Default handlers** (always active):
+```
+GET  /api/v1/runs          → { runs: [...], total: N }
+GET  /api/v1/runs/:id      → single run
+POST /api/v1/runs          → created run
+POST /api/v1/runs/:id/stop → stopped run
+GET  /api/v1/orders        → { orders: [...], total: N }
+GET  /api/v1/orders/:id    → single order
+DELETE /api/v1/orders/:id  → 204 No Content
+GET  /healthz              → { status: "ok", ... }
+```
+
+**Per-test overrides**: Use `server.use(http.get(...))` to override for
+error scenarios. MSW resets after each test via `server.resetHandlers()`.
+
+### 11.3 EventSource Mocking
+
+JSDOM doesn't provide `EventSource`. Two-tier approach:
+
+1. **Global no-op** (`tests/setup.ts`): Prevents crash when components render `useSSE()`.
+2. **Rich mock** (`tests/unit/hooks/useSSE.test.tsx`): Full `MockEventSource` class with
+   `simulateOpen()`, `simulateError()`, `simulateEvent(type, data)` for controlled SSE testing.
+
+### 11.4 Custom Render
+
+`tests/utils.tsx` exports a `render()` that wraps every component in required providers:
+
+```tsx
+function render(ui: ReactElement, options?: RenderOptions) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rtlRender(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>{children}</BrowserRouter>
+      </QueryClientProvider>
+    ),
+    ...options,
+  });
+}
+```
+
+This ensures all tests get TanStack Query + Router context without boilerplate.
+
+### 11.5 Zustand Store Testing
+
+Zustand stores are plain JS objects — no React rendering needed:
+
+```typescript
+const { addNotification, removeNotification } = useNotificationStore.getState();
+act(() => addNotification({ type: "success", message: "Test" }));
+expect(useNotificationStore.getState().notifications).toHaveLength(1);
+```
+
+Use `vi.useFakeTimers()` to test auto-dismiss behavior (5s timeout).
+
+### 11.6 Frontend Test File Map
+
+| Test File                        | Count | What It Tests                              |
+|----------------------------------|-------|--------------------------------------------|
+| `App.test.tsx`                   | 4     | Route rendering, 404, navigation           |
+| `api/runs.test.ts`              | 4     | fetchRuns, fetchRun, createRun, startRun   |
+| `api/orders.test.ts`            | 3     | fetchOrders, fetchOrder, cancelOrder       |
+| `hooks/useRuns.test.tsx`         | 2     | useRuns query, useCreateRun mutation       |
+| `hooks/useSSE.test.tsx`         | 9     | Connection, reconnection, 7 event types   |
+| `components/Layout.test.tsx`     | 4     | Header, sidebar, nav links, active state  |
+| `components/StatCard.test.tsx`   | 4     | Label, value, icon, trend display         |
+| `components/ActivityFeed.test.tsx` | 4   | Rendering, time-ago, empty state, linking |
+| `components/OrderTable.test.tsx` | 6     | Row rendering, click handler, empty state |
+| `components/OrderStatusBadge.test.tsx` | 4 | Status colors, side badges              |
+| `components/Toast.test.tsx`      | 8     | Notifications, dismiss, auto-remove, connection status |
+| `pages/Dashboard.test.tsx`       | 7     | Stat cards, activity feed, loading, error |
+| `pages/RunsPage.test.tsx`        | 14    | CRUD operations, create form, stop action |
+| `pages/OrdersPage.test.tsx`      | 7     | Filter, table, detail modal, run_id param |
+| `stores/notificationStore.test.ts` | 6   | Add, remove, clearAll, auto-dismiss, IDs |
+| **Total**                        | **86**|                                            |

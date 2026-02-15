@@ -112,12 +112,108 @@ SSE sends **minimal notification events**; the frontend fetches full details via
 - Frontend always has fresh data from REST
 - No need to version SSE payload schemas aggressively
 
-## 3. Auth
+## 3. Frontend API Client (Haro)
+
+> Added M7. Documents how the React frontend consumes the backend API.
+
+### 3.1 Three-Layer Architecture
+
+```
+Layer 1: client.ts        → Thin fetch wrapper (get/post/del + error handling)
+Layer 2: runs.ts etc.     → Domain API functions (no React dependency)
+Layer 3: useRuns.ts etc.  → React Query hooks (cache, loading, mutations)
+```
+
+**Layer 1 — `haro/src/api/client.ts`**: Generic `get<T>`, `post<T>`, `del<T>` methods.
+Handles JSON parsing, `204 No Content` (returns `undefined as T`), error extraction
+into `ApiClientError` with status/message/details. All requests include
+`Content-Type: application/json`.
+
+**Layer 2 — Domain modules** (`runs.ts`, `orders.ts`, `health.ts`): Pure TypeScript
+functions that call Layer 1. Handle query parameter construction (e.g., `?run_id=X&status=Y`
+in `fetchOrders`). No React imports — can be tested without rendering.
+
+**Layer 3 — React Query hooks** (`useRuns.ts`, `useOrders.ts`, `useHealth.ts`):
+Bind Layer 2 functions to TanStack Query. Provide `{ data, isLoading, error }`
+states, automatic cache invalidation on mutations, and polling intervals.
+
+### 3.2 Query Key Convention
+
+All hooks use a hierarchical factory pattern for cache key management:
+
+```typescript
+// Example: runKeys
+const runKeys = {
+  all:     ["runs"] as const,
+  lists:   () => [...runKeys.all, "list"] as const,
+  list:    (params?) => [...runKeys.lists(), params] as const,
+  details: () => [...runKeys.all, "detail"] as const,
+  detail:  (id: string) => [...runKeys.details(), id] as const,
+};
+```
+
+- **SSE invalidation** targets the broadest key (`runKeys.all` → `["runs"]`)
+  to invalidate all list and detail queries at once.
+- **Mutations** invalidate more specifically (e.g., `runKeys.lists()` on create).
+
+### 3.3 SSE Consumption Pattern
+
+The frontend connects to SSE once at the app root (`useSSE()` in `App.tsx`):
+
+```
+EventSource("/api/v1/events/stream")
+  │
+  ├── onopen → isConnected = true
+  ├── onerror → isConnected = false, reconnect after 3s
+  │
+  └── addEventListener("run.started", ...) → {
+        queryClient.invalidateQueries({ queryKey: ["runs"] })
+        addNotification({ type: "success", message: "Run started" })
+      }
+```
+
+**Event mapping** (7 event types):
+
+| SSE Event         | Query Invalidated | Notification Type |
+|-------------------|-------------------|-------------------|
+| `run.started`     | `["runs"]`        | success           |
+| `run.stopped`     | `["runs"]`        | info              |
+| `run.completed`   | `["runs"]`        | success           |
+| `run.error`       | `["runs"]`        | error             |
+| `orders.Created`  | `["orders"]`      | info              |
+| `orders.Filled`   | `["orders"]`      | success           |
+| `orders.Rejected` | `["orders"]`      | error             |
+
+### 3.4 Vite Proxy
+
+In development, Vite proxies `/api` requests to the backend:
+
+```typescript
+// vite.config.ts
+server: {
+  proxy: { "/api": { target: "http://backend_dev:8000" } }
+}
+```
+
+In production, Nginx serves the built files and proxies `/api` to the backend container.
+
+### 3.5 TypeScript Types
+
+`haro/src/api/types.ts` mirrors the backend Pydantic schemas exactly:
+- `Run`, `RunCreate`, `RunListResponse` (paginated with `total`)
+- `Order`, `OrderCreate`, `OrderListResponse`
+- `HealthResponse`
+- Enums: `RunMode`, `RunStatus`, `OrderSide`, `OrderType`, `OrderStatus`
+
+These types are manually maintained. When backend schemas change, the corresponding
+frontend types must be updated.
+
+## 4. Auth
 
 * **Local/private**: can run without auth.
 * **When exposed**: use a **single API Key** (header), optionally with IP allow‑list.
 
-## 4. Time Semantics
+## 5. Time Semantics
 
 * If no timezone specified in inputs, fall back to system default.
 * Responses are UTC or include timezone explicitly.

@@ -1,6 +1,6 @@
 # M7: Haro Frontend - Design Document
 
-> **Status**: In Progress (M7-5 complete, M7-6 remaining)  
+> **Status**: ✅ COMPLETE (M7-6 done, 86 tests)  
 > **Estimated Duration**: 1.5-2 weeks  
 > **Prerequisites**: M6 ✅ (Live Trading complete, 808 tests)  
 > **Target Tests**: ~50 new tests (frontend + integration)  
@@ -1268,5 +1268,343 @@ haro/
 ---
 
 _Document Created: 2026-02-04_  
-_Last Updated: 2026-02-04_  
+_Last Updated: 2026-02-06_  
 _Author: Weaver Team_
+
+---
+
+## 14. Implementation Retrospective (Post-Completion)
+
+> Added 2026-02-06 after M7 completion. Captures actual implementation decisions,
+> deviations from design, patterns discovered, and knowledge for future milestones.
+
+### 14.1 Final Metrics
+
+| Metric                | Designed | Actual | Notes                                |
+| --------------------- | -------- | ------ | ------------------------------------ |
+| Total tests           | ~50      | 86     | Exceeded target by 72%               |
+| Test files            | ~12      | 15     | 3 extra from store + SSE tests       |
+| MVPs                  | 7        | 7      | All completed as planned             |
+| TypeScript strict      | Yes      | Yes    | No `any` types in production code    |
+| Build passes          | Yes      | Yes    | `tsc -b && vite build` green         |
+| Dependencies (prod)   | 5        | 4      | Dropped shadcn/ui, kept plain TW     |
+| Dependencies (dev)    | 10       | 14     | Added MSW, RTL, coverage tools       |
+
+### 14.2 Design Deviations
+
+| Area                    | Designed                              | Actual                          | Reason                             |
+| ----------------------- | ------------------------------------- | ------------------------------- | ---------------------------------- |
+| **UI Framework**        | shadcn/ui component library           | Plain Tailwind CSS              | Simpler, fewer deps, sufficient UI |
+| **React Version**       | React 18                              | React 19                        | Latest stable at time of install   |
+| **Router**              | React Router 6                        | React Router 7                  | Latest at time of install          |
+| **Vite Version**        | Vite 5                                | Vite 7                          | Latest at time of install          |
+| **SSE Tests**           | ~8 planned                            | 23 actual                       | Better coverage of edge cases      |
+| **Notification Store**  | Optional (React Context fallback)     | Zustand store (production)      | Clean separation, testable         |
+| **RunDetailPage**       | Separate page                         | Route param on RunsPage         | Simpler; `/runs/:runId` handled    |
+| **Mock Data**           | Separate `data.ts`                    | Co-located in `handlers.ts`     | Fewer files, MSW handlers are data |
+
+### 14.3 Architecture Patterns Established
+
+#### 14.3.1 Data Flow Pattern
+
+```
+Backend Event → SSE → useSSE hook → {
+  1. queryClient.invalidateQueries()  → React Query refetches REST
+  2. addNotification()                → Zustand → Toast renders
+}
+```
+
+This is the **"SSE invalidates, REST fetches"** pattern (thin events). SSE never
+carries the full payload. The hook invalidates the relevant React Query cache key,
+which triggers a refetch of the REST endpoint for fresh data.
+
+#### 14.3.2 State Management Strategy
+
+| State Type        | Technology     | Scope         | Examples                                |
+| ----------------- | -------------- | ------------- | --------------------------------------- |
+| Server state      | TanStack Query | Global cache  | Runs, Orders, Health                    |
+| Client-only state | Zustand        | Global store  | Notifications                           |
+| UI state          | React useState | Component     | Form visibility, selected order, filters|
+| URL state         | React Router   | URL params    | Run ID, order run_id filter             |
+
+**Key Decision**: No Redux. TanStack Query handles 90% of state (server data caching,
+refetch, loading/error states). Zustand handles ephemeral client state (notifications).
+`useState` for purely local UI concerns.
+
+#### 14.3.3 Query Key Convention
+
+All React Query keys follow a hierarchical factory pattern:
+
+```typescript
+export const runKeys = {
+  all:     ["runs"] as const,              // Broadest invalidation
+  lists:   () => [...runKeys.all, "list"],  // All list variations
+  list:    (params?) => [...runKeys.lists(), params],
+  details: () => [...runKeys.all, "detail"],
+  detail:  (id) => [...runKeys.details(), id],
+};
+```
+
+SSE invalidates at the `all` level (`["runs"]`) to catch all list/detail queries.
+Mutations invalidate more specifically (e.g., `runKeys.lists()`).
+
+#### 14.3.4 Component Hierarchy
+
+```
+App
+├── useSSE()                            ← Global SSE connection
+├── Layout { isConnected }
+│   ├── Header { isConnected }
+│   │   └── ConnectionStatus            ← Green/red dot
+│   ├── Sidebar
+│   │   └── NavItem × 3 (NavLink)       ← Active route highlighting
+│   └── <main>{children}</main>
+│       ├── Dashboard
+│       │   ├── StatCard × 4
+│       │   └── ActivityFeed
+│       ├── RunsPage
+│       │   ├── CreateRunForm (toggle)
+│       │   └── Run rows (table)
+│       ├── OrdersPage
+│       │   ├── Status filter (select)
+│       │   ├── OrderTable
+│       │   │   └── OrderStatusBadge
+│       │   └── OrderDetailModal
+│       └── NotFound
+└── Toast                               ← Fixed position, outside Layout
+    └── Notification × N
+```
+
+**Note**: `Toast` is rendered _outside_ `<Layout>` in `App.tsx` so it uses
+`position: fixed` without being constrained by the layout's overflow.
+
+#### 14.3.5 API Client Design
+
+```
+client.ts  →  runs.ts / orders.ts / health.ts  →  useRuns.ts / useOrders.ts / useHealth.ts
+  (fetch)        (API functions)                     (React Query hooks)
+```
+
+- **Layer 1 — `client.ts`**: Thin fetch wrapper with `get<T>`, `post<T>`, `del<T>`.
+  Handles JSON parsing, error extraction, 204 No Content. Returns typed results.
+- **Layer 2 — API modules**: Domain-specific functions (`fetchRuns`, `createRun`).
+  Handle query param construction. No React dependency.
+- **Layer 3 — Hooks**: Bind API functions to React Query. Provide loading/error/data
+  states, cache invalidation on mutations, and polling intervals.
+
+This 3-layer separation means API functions can be tested without React (pure TS),
+and hooks can be tested with mock API via MSW.
+
+### 14.4 Testing Patterns Discovered
+
+#### 14.4.1 MSW as the Testing Backbone
+
+All frontend tests use Mock Service Worker (MSW) for API mocking. The `handlers.ts`
+file defines default happy-path responses for all endpoints. Individual tests
+override handlers via `server.use()` for error/edge cases.
+
+```
+tests/
+├── setup.ts            ← MSW server.listen(), cleanup, EventSource polyfill
+├── utils.tsx           ← customRender() with QueryClient + BrowserRouter
+├── mocks/
+│   ├── server.ts       ← setupServer(...handlers)
+│   ├── handlers.ts     ← Default API mock responses + mock data
+│   └── index.ts        ← Re-exports
+└── unit/
+    ├── api/            ← Tests that call API functions directly (no React)
+    ├── hooks/          ← Tests that render hooks (renderHook + wrapper)
+    ├── components/     ← Tests that render components (render + screen)
+    ├── pages/          ← Tests that render full pages (render + waitFor)
+    └── stores/         ← Tests that call Zustand store directly (no React)
+```
+
+#### 14.4.2 EventSource Mocking Strategy
+
+JSDOM doesn't provide `EventSource`. Two levels of mocking:
+
+1. **Global polyfill** in `setup.ts`: No-op `MockEventSourceGlobal` so that
+   components using `useSSE()` don't crash during render.
+2. **Rich mock** in `useSSE.test.tsx`: Full `MockEventSource` class with
+   `simulateOpen()`, `simulateError()`, `simulateEvent()` methods.
+   Tests replace `globalThis.EventSource` before each test.
+
+#### 14.4.3 Custom Render Wrapper
+
+`tests/utils.tsx` exports a `render()` that wraps components in:
+- `QueryClientProvider` (new client per test, `retry: false`)
+- `BrowserRouter` (for `<Link>`, `<NavLink>`, `useSearchParams`)
+
+Hook tests use `renderHook()` with a similar wrapper that provides `QueryClientProvider`.
+
+#### 14.4.4 Zustand Testing Without React
+
+Zustand stores are plain objects. Tests call `useNotificationStore.getState()`
+directly — no `renderHook` needed. State changes via `act()` for React
+consistency, `vi.useFakeTimers()` for auto-dismiss testing.
+
+### 14.5 File Structure (Final)
+
+```
+haro/                                   # Frontend root
+├── public/                             # Static assets
+├── src/
+│   ├── main.tsx                        # Entry: StrictMode + QueryClient + BrowserRouter
+│   ├── App.tsx                         # Routes + useSSE() + Toast
+│   ├── index.css                       # Tailwind @import
+│   ├── api/
+│   │   ├── index.ts                    # Barrel export
+│   │   ├── client.ts                   # get/post/del + ApiClientError
+│   │   ├── types.ts                    # TS types matching backend schemas
+│   │   ├── runs.ts                     # fetchRuns, fetchRun, createRun, startRun, stopRun
+│   │   ├── orders.ts                   # fetchOrders, fetchOrder, cancelOrder
+│   │   └── health.ts                   # fetchHealth
+│   ├── hooks/
+│   │   ├── index.ts                    # Barrel export
+│   │   ├── useRuns.ts                  # useRuns, useRun, useCreateRun, useStartRun, useStopRun
+│   │   ├── useOrders.ts               # useOrders, useOrder, useCancelOrder
+│   │   ├── useHealth.ts               # useHealth (30s poll)
+│   │   └── useSSE.ts                  # SSE connection, reconnect, invalidation
+│   ├── stores/
+│   │   └── notificationStore.ts       # Zustand: notifications with auto-dismiss
+│   ├── pages/
+│   │   ├── index.ts
+│   │   ├── Dashboard.tsx              # StatCards + ActivityFeed
+│   │   ├── RunsPage.tsx               # CRUD table + CreateRunForm + optimistic stop
+│   │   ├── OrdersPage.tsx             # Filtered table + OrderDetailModal
+│   │   └── NotFound.tsx               # 404 page
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── Layout.tsx             # Shell: Header + Sidebar + main
+│   │   │   ├── Header.tsx             # Logo + ConnectionStatus
+│   │   │   ├── Sidebar.tsx            # NavLink items with active highlighting
+│   │   │   └── index.ts
+│   │   ├── common/
+│   │   │   ├── StatCard.tsx           # Stat display with icon + trend
+│   │   │   ├── StatusBadge.tsx        # Colored pill badge (runs/modes)
+│   │   │   ├── Toast.tsx              # Notification list (fixed bottom-right)
+│   │   │   ├── ConnectionStatus.tsx   # Green/red dot + text
+│   │   │   └── index.ts
+│   │   ├── dashboard/
+│   │   │   ├── ActivityFeed.tsx        # Recent runs with time-ago
+│   │   │   └── index.ts
+│   │   ├── runs/
+│   │   │   ├── CreateRunForm.tsx       # Run creation form
+│   │   │   └── index.ts
+│   │   └── orders/
+│   │       ├── OrderTable.tsx          # Sortable order table
+│   │       ├── OrderStatusBadge.tsx    # Status + side badges
+│   │       ├── OrderDetailModal.tsx    # Full order detail overlay
+│   │       └── index.ts
+│   └── utils/                         # (empty, for future formatters)
+├── tests/
+│   ├── setup.ts                       # MSW + EventSource polyfill + matchMedia
+│   ├── utils.tsx                      # customRender with providers
+│   ├── mocks/
+│   │   ├── server.ts                  # setupServer
+│   │   ├── handlers.ts               # 10 API handlers + mock data
+│   │   └── index.ts
+│   └── unit/
+│       ├── App.test.tsx               # 4 tests: routing
+│       ├── api/
+│       │   ├── runs.test.ts           # 4 tests: run API functions
+│       │   └── orders.test.ts         # 3 tests: order API functions
+│       ├── hooks/
+│       │   ├── useRuns.test.tsx        # 2 tests: run hooks
+│       │   └── useSSE.test.tsx        # 9 tests: SSE connection/events
+│       ├── components/
+│       │   ├── Layout.test.tsx         # 4 tests: shell rendering
+│       │   ├── StatCard.test.tsx       # 4 tests: stat display
+│       │   ├── ActivityFeed.test.tsx   # 4 tests: activity list
+│       │   ├── OrderTable.test.tsx     # 6 tests: order table
+│       │   ├── OrderStatusBadge.test.tsx # 4 tests: status badges
+│       │   └── Toast.test.tsx         # 8 tests: toast + connection status
+│       ├── pages/
+│       │   ├── Dashboard.test.tsx      # 7 tests: dashboard page
+│       │   ├── RunsPage.test.tsx       # 14 tests: runs CRUD
+│       │   └── OrdersPage.test.tsx     # 7 tests: orders page
+│       └── stores/
+│           └── notificationStore.test.ts # 6 tests: notification store
+├── package.json                        # React 19, Vite 7, Vitest 4
+├── vite.config.ts                      # React + Tailwind + API proxy
+├── vitest.config.ts                    # jsdom, setup, coverage
+├── tsconfig.json                       # Strict TS
+└── eslint.config.js                    # React Hooks + Refresh rules
+```
+
+### 14.6 Technology Versions (Actual)
+
+| Package               | Version | Notes                            |
+| --------------------- | ------- | -------------------------------- |
+| react                 | 19.2.0  | Upgraded from design's React 18  |
+| react-dom             | 19.2.0  | -                                |
+| react-router-dom      | 7.13.0  | Upgraded from design's RR 6      |
+| @tanstack/react-query | 5.90.20 | Server state management          |
+| zustand               | 5.0.11  | Client state (notifications)     |
+| vite                  | 7.2.4   | Build tool                       |
+| tailwindcss           | 4.1.18  | Utility CSS (v4, `@import` based)|
+| vitest                | 4.0.18  | Test runner                      |
+| msw                   | 2.12.8  | API mocking                      |
+| typescript            | 5.9.3   | Strict mode                      |
+
+### 14.7 SSE Event Mapping (Backend → Frontend)
+
+| Backend Event Type  | SSE Event Name     | Query Invalidated | Notification         |
+| ------------------- | ------------------ | ----------------- | -------------------- |
+| `run.Started`       | `run.started`      | `["runs"]`        | success: "Run X started"     |
+| `run.Stopped`       | `run.stopped`      | `["runs"]`        | info: "Run X stopped"       |
+| `run.Completed`     | `run.completed`    | `["runs"]`        | success: "Run X completed"  |
+| `run.Error`         | `run.error`        | `["runs"]`        | error: "Run X error: ..."   |
+| `orders.Created`    | `orders.Created`   | `["orders"]`      | info: "Order X created"     |
+| `orders.Filled`     | `orders.Filled`    | `["orders"]`      | success: "Order filled"     |
+| `orders.Rejected`   | `orders.Rejected`  | `["orders"]`      | error: "Order rejected: ..."|
+
+### 14.8 Key Implementation Decisions Log
+
+1. **No shadcn/ui**: The design planned for shadcn/ui as a component library, but
+   plain Tailwind provided sufficient UI quality for the MVP. This reduced installation
+   complexity and kept the dependency tree small.
+
+2. **Toast outside Layout**: The `<Toast />` component renders as a sibling to
+   `<Layout>` in `App.tsx`, not inside it. Since Layout uses `overflow: hidden` on
+   the flex container, placing a `position: fixed` element inside would have been
+   clipped in some browsers.
+
+3. **Optimistic UI for stop**: `RunsPage` maintains a local `stoppedIds` set.
+   When the user clicks Stop, the ID is added immediately, and `effectiveStatus()`
+   returns `"stopped"` before the server responds. Combined with mutation's
+   `onSuccess` → `invalidateQueries`, the real status arrives shortly after.
+
+4. **SSE reconnection delay**: Set to 3 seconds (`RECONNECT_DELAY`). On error,
+   the EventSource is closed, and `setTimeout(connect, 3000)` schedules a
+   reconnect. The cleanup in `useEffect` clears pending timeouts to prevent
+   reconnection attempts after unmount.
+
+5. **Notification auto-dismiss**: Each notification auto-removes after 5 seconds
+   via `setTimeout` inside the Zustand action. The counter-based ID generation
+   (`notif-${++_counter}-${Date.now()}`) ensures uniqueness even in rapid succession.
+
+6. **Health polling**: `useHealth` polls every 30 seconds (`refetchInterval: 30_000`)
+   so the Dashboard status card stays current without SSE.
+
+7. **URL-driven filtering**: The Orders page reads `?run_id=...` from URL params
+   via `useSearchParams()`. This allows deep-linking from the Runs page directly
+   to a run's orders.
+
+8. **No separate RunDetailPage**: The design proposed a dedicated `RunDetailPage`.
+   In practice, the Runs table with stop controls and run ID links was sufficient.
+   The route `/runs/:runId` exists but shows the same `RunsPage` (could be extended
+   later for a detail view).
+
+### 14.9 Known Limitations (for M8/M9)
+
+| Limitation                      | Impact          | Fix In |
+| ------------------------------- | --------------- | ------ |
+| No error boundaries             | Crash = blank   | M8     |
+| No loading skeleton for tables  | More polish     | M8     |
+| No pagination UI                | Fixed 50 items  | M9     |
+| No WebSocket data stream        | No live prices  | M9     |
+| No authentication               | Open access     | M8     |
+| No responsive/mobile design     | Desktop only    | M9     |
+| Health polling (not SSE)        | 30s delay       | M9     |
+| Toast z-index may overlap modal | Minor UI issue  | M8     |
