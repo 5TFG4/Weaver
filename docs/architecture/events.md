@@ -11,6 +11,14 @@
 
 `{ id, kind:'evt'|'cmd', type, version, run_id, corr_id, causation_id, trace_id, ts, producer, headers, payload }`
 
+### Contract Appendix (Locked Baseline — Segment 5)
+
+- Event type naming is case-sensitive and currently uses `namespace.PascalCase` (for example `run.Started`, `orders.Filled`).
+- SSE `event` is a direct passthrough of `Envelope.type` from backend to clients.
+- `ui.*` events are reserved and not currently the public stream contract.
+- `run_id` is required for run-scoped lifecycle and routing semantics.
+- Contract drift policy: when docs and runtime differ, document both states explicitly and track runtime convergence in the action queue.
+
 ### Identity Chain Explained
 
 ```
@@ -77,6 +85,13 @@
 ## 5. Delivery & Idempotency
 
 - Write `outbox` in‑transaction; `NOTIFY` after commit; resume via `consumer_offsets`; deduplicate by `id/corr_id`.
+
+### 5.1 API-Boundary Delivery Semantics
+
+- Delivery guarantee remains at-least-once at event log/consumer boundary.
+- API boundary currently guarantees reconnect behavior from SSE clients, but does not guarantee resume-from-last-event replay contract for browser consumers.
+- In DB-backed mode, append/offset durability is provided by `outbox` and `consumer_offsets`.
+- In no-DB mode, there is no durable event log or offset store; stream delivery is best-effort and non-durable.
 
 ## 6. Multi-Run Event Isolation
 

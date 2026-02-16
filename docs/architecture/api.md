@@ -9,6 +9,22 @@
 
 ## 1. REST API
 
+### Contract Appendix (Locked Baseline — Segment 5)
+
+This appendix is the current contract baseline used for review and remediation.
+
+| Surface              | Baseline Contract                                   | Current Runtime State                                      |
+| -------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| Health               | `GET /healthz`                                      | Implemented and tested at `/healthz` (no `/api/v1` prefix) |
+| Runs start           | `POST /api/v1/runs/{id}/start`                      | **Not implemented yet** (documented target contract)       |
+| Runs stop            | `POST /api/v1/runs/{id}/stop`                       | Implemented                                                |
+| Runs list/create/get | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`    | Implemented                                                |
+| Orders list/get      | `GET /api/v1/orders`, `GET /api/v1/orders/{id}`     | Implemented via mock read path                             |
+| Orders create/cancel | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}` | Implemented via `VedaService`                              |
+| SSE stream           | `GET /api/v1/events/stream`                         | Implemented                                                |
+
+**Drift decision (doc vs code):** this appendix records both the locked contract target and current runtime truth when they differ. Code remediation must move runtime to the locked contract, not silently rewrite the contract.
+
 ### Implemented Endpoints (M6)
 
 | Method     | Endpoint                 | Description                                        |
@@ -67,6 +83,13 @@
 | Method | Endpoint                | Description      |
 | ------ | ----------------------- | ---------------- |
 | GET    | `/api/v1/events/stream` | SSE event stream |
+
+### SSE Contract Appendix (Locked Baseline — Segment 5)
+
+- SSE `event` field is the exact backend event type (`Envelope.type`) and is case-sensitive.
+- Current emitted run/order domain names are PascalCase suffix style (for example `run.Started`, `orders.Created`, `orders.Filled`, `orders.Rejected`).
+- Current public stream forwards domain events directly (not `ui.*` projection events).
+- Browser-level reconnection is expected; resume from `Last-Event-ID` is not currently guaranteed by an offset replay contract at API boundary.
 
 ### Implementation
 
@@ -183,10 +206,10 @@ EventSource("/api/v1/events/stream")
 
 | SSE Event         | Query Invalidated | Notification Type |
 | ----------------- | ----------------- | ----------------- |
-| `run.started`     | `["runs"]`        | success           |
-| `run.stopped`     | `["runs"]`        | info              |
-| `run.completed`   | `["runs"]`        | success           |
-| `run.error`       | `["runs"]`        | error             |
+| `run.Started`     | `["runs"]`        | success           |
+| `run.Stopped`     | `["runs"]`        | info              |
+| `run.Completed`   | `["runs"]`        | success           |
+| `run.Error`       | `["runs"]`        | error             |
 | `orders.Created`  | `["orders"]`      | info              |
 | `orders.Filled`   | `["orders"]`      | success           |
 | `orders.Rejected` | `["orders"]`      | error             |

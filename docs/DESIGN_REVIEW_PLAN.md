@@ -12,7 +12,7 @@
 > **How this doc is used**:
 >
 > - This is the “home base” for the review plan, progress, and outcomes.
-> - After each review segment, we update **Progress & Results Log** and the **Action Queue**.
+> - After each review segment, we update **Findings by Layer**, **Action Queue**, and **Next Segment**.
 >
 > **Scope**: Not just M7 (Haro). Covers the full system: GLaDOS, Events/SSE, Veda, Greta, Marvin, WallE, Config/Deployment, and cross-cutting invariants.
 
@@ -132,79 +132,89 @@ This is the index we use to avoid losing context across sessions.
 
 ---
 
-## 6. Progress & Results Log
+## 6. Findings by Layer (Logical Structure)
 
-> Append-only log. Each entry should be small and link to follow-up actions.
+### 6.1 Global status
 
-### 6.1 Current status
+- **Current confidence**: Architecture direction is correct, but implementation contracts are still unstable.
+- **Scope covered so far**: Layers 0–4 fully reviewed; Layer 5 verification completed at contract/test level.
+- **Release posture**: Not merge-gate ready for M8 execution until P0 contract and runtime wiring issues are closed.
 
-- **Review started**: 2026-02-06
-- **Branch**: `haro_update`
-- **Focus**: Long-running local reliability + MVP milestone execution
+### 6.2 Layer 0–1 (Mission, boundaries, invariants)
 
-### 6.2 Log entries
+**Status: Satisfied (direction coherent)**
 
-#### 2026-02-06 — Initial triage (partial)
+- Modulith + GLaDOS-only northbound boundary remains a good fit for local long-running reliability.
+- Multi-run isolation (`run_id`) and per-run/per-singleton split are structurally sound.
+- Main risk is not direction but drift: old and new execution paths coexist and reintroduce ambiguity.
 
-- Observed doc drift: `docs/architecture/roadmap.md` still marks Haro as not started while milestone plan indicates Haro progress.
-- Observed API drift: frontend contains a `startRun()` call (`/runs/{id}/start`) while backend route list currently exposes only `/runs/{id}/stop`.
-- Observed SSE risk: EventLog LISTEN/NOTIFY requires an asyncpg pool; if not wired, SSE may connect but not receive real-time events.
+### 6.3 Layer 2–3 (Contracts + runtime semantics)
 
-#### 2026-02-06 — Segment 0: Architecture direction & structure (design-doc review)
+**Status: Mostly / Not Satisfied (contract baseline locked in docs, runtime convergence pending)**
 
-**Scope**: Validate the _big picture_ (direction, boundaries, invariants) using architecture docs only:
-`docs/ARCHITECTURE.md`, `docs/architecture/events.md`, `docs/architecture/api.md`, `docs/architecture/clock.md`, `docs/architecture/veda.md`, `docs/architecture/deployment.md`, and the meta findings in `docs/AUDIT_FINDINGS.md`.
+| Contract / runtime expectation              | Current implementation / source                                                | Drift / risk                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Health endpoint contract is unambiguous     | Backend exposes `/healthz`; frontend client prepends `/api/v1`                 | `/api/v1/healthz` mismatch yields false-negative health state |
+| Runs lifecycle contract includes start/stop | Service has `RunManager.start()`; routes expose only `POST /{id}/stop`         | Frontend `startRun()` fails by contract                       |
+| SSE event naming is stable                  | Backend emits `run.Started`; frontend listens `run.started`                    | Case-sensitive SSE mismatch causes silent run update loss     |
+| Thin-events policy is explicit and enforced | Docs describe thin `ui.*`; runtime broadcasts raw domain event names/payloads  | Public event contract is ambiguous                            |
+| Resume semantics are operationalized        | Offsets primitives exist; app startup does not wire SSE replay/resume consumer | At-least-once intent not fully realized at boundary           |
 
-**Conclusion: Satisfied (direction is coherent), with 2–3 clarifying decisions to prevent future drift**
+### 6.4 Layer 4 (Module internals)
 
-- **Modulith + strict northbound boundary (GLaDOS only)** is a good MVP shape for “local long-running reliability”: fewer moving parts, simpler deployment, easier debugging.
-- **EventLog + Outbox + offsets** is the right durability primitive for a 24/7 system: replayable, crash-recoverable, and naturally supports fan-out consumers (SSE, persistence, runners).
-- **Multi-run isolation via `run_id`** is a strong structural invariant that scales to parallel backtests + live/paper runs.
-- **Thin events to UI** is a good UI contract choice to keep the SSE schema stable and payloads small.
-- **Primary risk is not the design itself but ambiguity/parallelism**: the audit identifies “legacy vs modern architecture” coexisting, which will keep reintroducing drift unless we make a clear “one true path” decision and enforce it.
+**Status: Mostly / Not Satisfied (module intent right, seams not fully closed)**
 
-**Architecture integrity checks (design-level)**
+| Module     | Responsibility status                                     | Key seams verified                                                                  | Primary risks discovered                                                                              |
+| ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Veda**   | ✅ Facade + persistence + event emission shape is correct | `VedaService` ↔ `OrderManager` ↔ `OrderRepository`                                  | `list_orders(run_id=None)` reads in-memory state, not durable global store                            |
+| **Greta**  | ✅ Per-run simulator boundary is clear                    | Uses shared `BarRepository` + `EventLog`                                            | Runtime subscription focuses on `backtest.FetchWindow`; order-intent event path closure is incomplete |
+| **Marvin** | ✅ Mode-agnostic runner design is correct                 | Emits `strategy.FetchWindow` / `strategy.PlaceRequest`; consumes `data.WindowReady` | Depends on router/downstream wiring; chain degrades when router not active                            |
+| **WallE**  | ✅ Persistence role is structurally consistent            | `BarRecord`, `VedaOrder`, `OutboxEvent`, `ConsumerOffset` align                     | API boundary still contains mock read paths, weakening source-of-truth                                |
 
-| Invariant / direction             | Design intent                                              | Notes / risks                                                                                                                     |
-| --------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| GLaDOS is the only northbound API | Haro talks REST+SSE only; domain modules don’t expose APIs | Needs enforcement to prevent “side doors” as features grow.                                                                       |
-| EventLog is the durable backbone  | Outbox + LISTEN/NOTIFY + offsets                           | Great for local reliability; requires clear lifecycle + backpressure semantics (see Segment 3 later).                             |
-| Multi-run is first-class          | per-run Greta/Marvin/Clock; singletons share infra         | Sound; requires every produced/consumed event to consistently carry `run_id`.                                                     |
-| Thin events to UI                 | `ui.*` notifications + REST refetch                        | Docs currently show both raw domain events (`orders.*`, `run.*`) and example `ui.*` events; we need one explicit contract choice. |
-| Dual credentials (live+paper)     | Parallel runs, not time-based switching                    | Sound; raises UI/ops need to clearly label run mode and safety defaults.                                                          |
+### 6.5 Layer 5 (Implementation & tests verification)
 
-**P0/P1 design decisions to lock down (before more implementation)**
+**Status: Not Satisfied (critical path has explicit gaps)**
 
-- **P0 — SSE contract decision**: Do Haro clients receive raw domain events (`orders.*`, `run.*`) or only `ui.*` thin events?
-  - If we choose `ui.*`: define the minimal stable payload keys per UI use-case and treat it as a versioned public contract.
-  - If we choose raw domain events: Haro must treat them as semi-internal and we accept tighter coupling to backend event evolution.
+| Verification item (P0/P1)                              | Implementation evidence                                                        | Test evidence                                                                                       | Result                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Run start route exists and is tested                   | `/runs/{id}/start` route missing in `routes/runs.py`                           | `tests/unit/glados/routes/test_runs.py` only covers create/get/list/stop                            | **FAIL** (proposal needs re-discussion)                     |
+| Health contract aligned frontend/backend               | Backend route is `/healthz`; frontend API base is `/api/v1`                    | Backend tests assert `/healthz`; no frontend health API test file present                           | **FAIL** (plan confirmed)                                   |
+| SSE run events casing consistent                       | Backend constants use `run.Started`; frontend hook listens `run.started`       | `tests/unit/events/test_types.py` + `haro/tests/unit/hooks/useSSE.test.tsx` encode divergent casing | **FAIL** (plan confirmed)                                   |
+| DomainRouter active in runtime                         | `DomainRouter` implemented but not wired in app lifespan                       | `tests/unit/glados/test_domain_router.py` verifies router in isolation only                         | **FAIL** (needs deeper discussion)                          |
+| Per-run cleanup guarantees complete                    | `StrategyRunner.cleanup()` exists; RunManager stop/completion does not call it | Tests assert clock/context behavior, not subscription cleanup invariants                            | **FAIL** (jointly discuss with run-start/dependency design) |
+| EventLog DB real-time path wired with listener pool    | App constructs `PostgresEventLog(session_factory=...)` only                    | Integration tests verify append/read/offset stores; no app-level SSE real-time wiring proof         | **FAIL** (needs deeper discussion)                          |
+| Orders read path uses durable source with write parity | POST/DELETE uses Veda; GET/list routes still use mock service                  | Route/unit coverage validates current split behavior, not parity guarantee                          | **FAIL** (needs deeper discussion)                          |
+| no-DB publish/stream policy is finalized               | Degraded matrix documents non-durable behavior baseline                        | No explicit acceptance test for no-DB publish/stream policy decision                                | **OPEN** (needs deeper discussion)                          |
+| Offset store durability primitives                     | `PostgresOffsetStore` and models implemented                                   | `tests/integration/test_offset_store.py` covers persistence/concurrency                             | **PASS (primitive level)**                                  |
 
-- **P0 — “No DB mode” behavior**: When `DB_URL` is absent, do we expect _any_ event streaming / run lifecycle events to function, or is it a “degraded demo mode” with limited guarantees?
-  - This matters because the design emphasizes “graceful degradation” but doesn’t explicitly define what the UI should expect without DB.
+**Layer 5 merge-gate recommendation**
 
-- **P1 — “One architecture” enforcement**: The audit’s root cause (“two parallel architectures”) implies we need an explicit migration/cleanup policy:
-  - What is authoritative: the FastAPI app + app.state DI + modern services.
-  - Everything else is deprecated/removed or moved under a clear `_deprecated/` boundary.
+- **Recommendation**: **Do not treat current state as M8 merge-gate ready**.
+- **Reason**: P0 contract and runtime wiring failures are functional blockers, not polish issues.
+- **Immediate focus**: close contract baseline doc decisions first, then apply tests-first fixes on routing/startup wiring.
 
-**Recommendations (design-only, no code yet)**
+### 6.6 Segment 5 closure (Contract baseline docs)
 
-1. Write a 10–15 line “Contract Appendix” under the API + Events docs:
-   - SSE event namespace choice (`ui.*` vs raw domain)
-   - Minimal payload rules
-   - Reconnection semantics expectations (Last-Event-ID support or not)
+**Status: Completed (doc-only closure for contract baseline)**
 
-2. Write a 5–10 line “Degraded Mode” policy:
-   - What works without DB (health? runs? SSE?)
-   - What is explicitly unsupported without DB
+| Segment 5 target               | Document update                                           | Result   |
+| ------------------------------ | --------------------------------------------------------- | -------- |
+| API/Event contract appendix    | `docs/architecture/api.md`, `docs/architecture/events.md` | **DONE** |
+| Degraded/no-DB behavior matrix | `docs/architecture/deployment.md`                         | **DONE** |
+| Veda doc sync (env + enum)     | `docs/architecture/veda.md`                               | **DONE** |
 
-3. Add a “Single Source of Truth” statement:
-   - For orders: Veda + persistence is authoritative; mocks are test-only.
-   - For runs: RunManager lifecycle is authoritative.
+**Decisions locked in docs**
 
-**Open questions (to answer in Segment 2/3)**
+- Health canonical path is `/healthz` in current runtime contract.
+- SSE event names are case-sensitive passthrough of backend domain event types.
+- Public SSE stream currently exposes domain events (not `ui.*` projection).
+- No-DB mode is explicitly documented as degraded/non-durable.
 
-- Where is backpressure defined between EventLog → SSEBroadcaster → clients (bounded queues, drop policy, lag metrics)?
-- What is the restart strategy: on process restart, should SSE consumers resume from offsets, or only stream live events?
+**Remaining risk after Segment 5**
+
+- Runtime still diverges from target contract on run-start route (`POST /api/v1/runs/{id}/start`).
+- Frontend/backend health base-path and run-event casing mismatch remain implementation-level blockers.
+- Runtime wiring gaps (DomainRouter activation, RunManager dependency injection, EventLog real-time path completeness) remain P0 code work.
 
 ---
 
@@ -228,7 +238,7 @@ Instead, higher layers pass down what they learned so lower layers can:
 
 #### Required output of every layer review: “Layer Handoff Packet”
 
-Each completed layer must produce a short packet (added to the Progress & Results Log) with:
+Each completed layer must produce a short packet (added to the Findings by Layer section) with:
 
 1. **Decisions locked** (e.g., SSE contract choice, degraded/no-DB policy)
 2. **Constraints** lower layers must respect (e.g., “GLaDOS-only northbound API”, “no module singletons”)
@@ -337,54 +347,12 @@ Each completed layer must produce a short packet (added to the Progress & Result
 
 - Segment 0 (done) covers Layers 0–1 at design level.
 - Segment 1 (done) is an initial Layer 5 drift audit for the highest-risk contract points.
-- Next: we should complete Layers 2–3 explicitly (contracts + runtime semantics) _in docs first_, then continue with deeper module reviews.
+- Segment 2 (done) completes Layers 2–3 explicitly (contracts + runtime semantics) with code/doc cross-check.
+- Segment 3 (done) completes Layer 4 module-internal review (Veda/Greta/Marvin/WallE).
+- Segment 4 (done) completes Layer 5 implementation/test verification (contract pass/fail + merge-gate assessment).
+- Next: synthesize doc-contract baseline updates (`api.md`, `events.md`, degraded-mode policy) before code remediation.
 
 **Plan adaptation expectation**: After we complete Layer 2 and Layer 3, we must update the Layer 4/5 checklists and Action Queue ordering using the “Layer Handoff Packet” outputs.
-
-#### 2026-02-06 — Segment 1: Cross-cutting invariants & drift audit (complete)
-
-**Conclusion: Mostly / Not Satisfied (drift is impacting reliability + milestone execution)**
-
-- **Runs lifecycle contract drifts**: backend implements create/get/list/stop, but not start; frontend calls `POST /runs/{id}/start`.
-- **Orders source-of-truth is split**: create/cancel go through Veda, but list/get use a mock service (UI cannot reflect real orders reliably).
-- **SSE “real-time” is not actually real-time when DB is enabled**: `PostgresEventLog` only starts LISTEN/NOTIFY when constructed with an asyncpg pool; app initializes it with only a session factory.
-- **Docs drift exists and is untracked**: roadmap reports Haro “not started”; API docs omit `/runs/{id}/start` while frontend expects it.
-
-**Design→Code Alignment Table**
-
-| Design expectation                                   | Implementation location(s)                                                                                                     | Tests location(s)                         | Drift / notes                                                                                                                                                   |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Run lifecycle supports create → start → stop         | `src/glados/services/run_manager.py` has `start()`; routes: `src/glados/routes/runs.py`                                        | (missing for route)                       | Route for start is missing (`/runs/{id}/start`).                                                                                                                |
-| Orders REST reflects real placed orders              | `src/glados/routes/orders.py`                                                                                                  | (existing tests cover Veda create/cancel) | GET/list use `MockOrderService`; create/cancel use `VedaService`.                                                                                               |
-| SSE receives all events in real-time when DB enabled | `src/glados/app.py` subscribes broadcaster via `event_log.subscribe`; `src/events/log.py` requires `pool` to run listener task | (unclear / likely missing coverage)       | Listener task never starts without pool → no real-time delivery.                                                                                                |
-| System degrades gracefully without DB_URL            | `src/glados/app.py` sets `event_log=None` without DB                                                                           | (unclear)                                 | SSEBroadcaster exists, but nothing publishes into it without an EventLog. If “no DB” mode is expected to still stream events, we should use `InMemoryEventLog`. |
-| Planning docs reflect implementation status          | `docs/architecture/roadmap.md`, `docs/MILESTONE_PLAN.md`                                                                       | N/A                                       | Roadmap current state table is stale for Haro; milestone plan reflects M7-2 complete.                                                                           |
-
-**Risks**
-
-- **P0**: Runs “start” mismatch blocks Haro Runs page from working against backend.
-- **P0**: SSE real-time likely non-functional with DB enabled; this undermines long-running local reliability and M7 SSE features.
-- **P0**: Orders list/get won’t reflect Veda-created orders; UI correctness will be misleading during live/paper testing.
-- **P1**: “No DB” mode may lose event streaming entirely unless we explicitly wire an in-memory EventLog.
-- **P1**: Docs drift will keep reintroducing contract mistakes unless we treat it as work.
-
-**Actionable Recommendations (tests-first)**
-
-1. **Runs start endpoint**
-   - Acceptance: backend exposes `POST /api/v1/runs/{id}/start` and returns the updated `RunResponse`.
-   - Tests: unit/integration test for the route (404 unknown run; 409 or 400 if not startable; success transitions to RUNNING).
-   - Frontend: keep `startRun()` as-is once backend is aligned.
-
-2. **Make SSE real-time when DB enabled**
-   - Acceptance: when DB is enabled, `PostgresEventLog` is constructed with an asyncpg pool, and the LISTEN/NOTIFY listener task is started on first subscribe.
-   - Tests: add focused tests around `PostgresEventLog.subscribe()` starting the listener when pool exists; add an integration test to confirm `append()` leads to SSE publish.
-
-3. **Unify Orders list/get with real state**
-   - Acceptance: if VedaService is configured, GET/list routes return orders from the same persisted source that Veda writes (WallE repository), or Veda provides read APIs for order state.
-   - Tests: integration test places an order (paper), then `GET /orders` includes it; `GET /orders/{id}` returns it.
-
-4. **Docs drift cleanup (small but high leverage)**
-   - Acceptance: `docs/architecture/roadmap.md` current state reflects Haro M7-2 status; API docs explicitly document chosen run start behavior.
 
 ---
 
@@ -394,15 +362,21 @@ Each completed layer must produce a short packet (added to the Progress & Result
 
 ### P0 (Do first)
 
-- [ ] **Align Runs “start” contract**: add `POST /api/v1/runs/{id}/start` route calling `RunManager.start()` + tests; confirm frontend `startRun()` works end-to-end.
-- [ ] **Make SSE truly real-time (DB mode)**: wire an asyncpg pool into `PostgresEventLog` so LISTEN/NOTIFY actually runs; add at least one integration test proving SSE receives an appended event.
-- [ ] **Unify Orders list/get source of truth**: in DB mode + Veda enabled, list/get must reflect the same persisted orders created by Veda (no mock for read paths).
+- [x] **Freeze contract baseline in docs (before code edits)**: add Contract Appendix to `docs/architecture/api.md` + `docs/architecture/events.md` (health path, run start route contract, SSE casing/namespace, payload/reconnect semantics).
+- [x] **Define degraded/no-DB behavior explicitly**: add a short matrix for DB-on vs DB-off runtime guarantees (especially SSE/run lifecycle visibility).
+- [ ] **Wire DomainRouter into runtime pipeline** (**discussion required**): make `strategy.* → backtest/live.*` routing active in app lifecycle and prove via integration tests.
+- [ ] **Add per-run cleanup guarantees** (**discussion required; tied to run-start/dependency design**) : ensure run completion/stop executes runner/greta unsubscribe cleanup paths to prevent long-running subscription leaks.
+- [ ] **Inject RunManager runtime dependencies** (**discussion required; tied to run-start/cleanup design**) : app startup must provide `StrategyLoader` and required backtest dependencies for `/runs/{id}/start` readiness.
+- [ ] **Align Runs “start” contract** (**re-discussion required**) : add `POST /api/v1/runs/{id}/start` route calling `RunManager.start()` + tests; confirm frontend `startRun()` works end-to-end.
+- [ ] **Make SSE truly real-time (DB mode)** (**discussion required**): wire an asyncpg pool into `PostgresEventLog` so LISTEN/NOTIFY actually runs; add at least one integration test proving SSE receives an appended event.
+- [ ] **Unify Orders list/get source of truth** (**discussion required**): in DB mode + Veda enabled, list/get must reflect the same persisted orders created by Veda (no mock for read paths).
 
 ### P1
 
-- [ ] Update `docs/architecture/roadmap.md` current state table to reflect Haro status (M7-2 complete).
-- [ ] Decide and document SSE event naming contract (raw domain event types vs `ui.*` “thin events”), then enforce consistently.
-- [ ] Decide whether “no DB” mode must still publish/stream events; if yes, wire `InMemoryEventLog` into app lifespan and test it.
+- [x] Sync `docs/architecture/veda.md` with current config/model reality (ALPACA env var names + `OrderStatus` values including `submitting/submitted`).
+- [ ] Update `docs/architecture/roadmap.md` current state and test-count snapshot references to avoid stale planning signals.
+- [ ] Define durable global order list semantics in `VedaService` (`run_id=None` behavior) and cover with restart-oriented integration tests.
+- [ ] Decide whether “no DB” mode must still publish/stream events (**discussion required**); if yes, wire `InMemoryEventLog` into app lifespan and test it.
 
 ### P2
 
@@ -414,16 +388,190 @@ Each completed layer must produce a short packet (added to the Progress & Result
 
 After each segment:
 
-1. Add one entry to **Progress & Results Log**
+1. Update **Findings by Layer** with the latest pass/fail and evidence deltas
 2. Update **Action Queue** (move items between P0/P1/P2 as needed)
 3. Record any **decisions** (especially doc-vs-code resolution)
-4. Update the **deeper-layer plan** using the segment’s “Layer Handoff Packet” (priorities, ordering, and confirmation depth)
+4. Update **Next Focus** so the plan always reflects current logical dependency order
 
 ---
 
-## 9. Next Segment (Planned)
+## 9. Next Focus (Planned)
 
-**Segment 1**: Cross-cutting invariants & drift audit
+**Issue-package discussion and option narrowing (doc-only)**
 
-- Inputs: `docs/ARCHITECTURE.md`, `docs/architecture/roadmap.md`, `docs/AUDIT_FINDINGS.md`
-- Output: top drift list + P0 blockers for long-running local reliability
+- Inputs: all items marked **discussion required** in Layer 5 findings and Action Queue
+- Output: per-package decision record (chosen option + reasons + acceptance criteria), then update implementation-facing P0/P1 plan
+
+### 9.1 Package A — Run lifecycle design (Issues 1 + 5 + 6)
+
+**Problem description**
+
+- `POST /api/v1/runs/{id}/start` contract is missing at route layer.
+- Run lifecycle ownership is split: start/stop status changes exist, but cleanup and dependency readiness are not guaranteed as one atomic lifecycle design.
+- Startup wiring does not yet guarantee `RunManager` has all dependencies required to actually execute start in all modes.
+
+**Trigger conditions**
+
+- Any frontend/operator action that starts a run.
+- Any run stop/completion path (normal stop, error stop, repeated stop).
+- App startup in environments where strategy/backtest dependencies are partially configured.
+
+**Observed/expected frequency**
+
+- **High** for start-route mismatch (user-facing primary flow).
+- **Medium–High** for cleanup gaps in long-running use (accumulates over repeated runs).
+- **Medium** for dependency-injection failures (environment/config dependent).
+
+**Severity**
+
+- **High / P0**: directly blocks run control and can cause lifecycle instability.
+
+**Decision constraint**
+
+- **A1 is excluded**: “minimal route patch first” is not accepted and should not be considered further.
+
+**Solution options**
+
+1. **Option A2 — Lifecycle-first cohesive fix**
+   - Treat start route + DI readiness + cleanup guarantees as one change set.
+   - **Pros**: root-cause closure; cleaner long-running behavior; fewer follow-up hotfixes.
+   - **Cons**: larger change scope; more tests needed before merge.
+
+2. **Option A3 — Guarded phased rollout**
+   - Phase 1: start route + strict readiness checks/fail-fast errors.
+   - Phase 2: full cleanup/DI unification.
+   - **Pros**: balances delivery speed and safety; explicit transitional behavior.
+   - **Cons**: temporary dual behavior must be documented and tested.
+
+### 9.2 Package B — Runtime event wiring (Issues 4 + 7)
+
+**Problem description**
+
+- `DomainRouter` exists but is not activated in runtime lifecycle.
+- DB-mode EventLog realtime path (LISTEN/NOTIFY listener wiring) is incomplete at app level.
+- Result: architecture intent exists in code pieces, but runtime chain is not end-to-end guaranteed.
+
+**Trigger conditions**
+
+- Strategy emits `strategy.*` intents expecting domain routing.
+- SSE subscribers rely on real-time propagation from appended outbox events.
+- Service restart or reconnect scenarios where listener tasks must be re-established.
+
+**Observed/expected frequency**
+
+- **High** in strategy-driven runs (router path is core flow).
+- **Medium–High** in DB-mode realtime UI usage.
+- **Medium** for restart/recovery edge cases (but high operational impact when it happens).
+
+**Severity**
+
+- **High / P0**: breaks core event-driven control plane and realtime observability.
+
+**Solution options**
+
+1. **Option B1 — Direct app-lifespan wiring**
+   - Explicitly wire router/listener tasks in startup/shutdown.
+   - **Pros**: straightforward, explicit lifecycle ownership.
+   - **Cons**: app factory complexity increases; careful teardown ordering needed.
+
+2. **Option B2 — Dedicated orchestration component**
+   - Introduce a single runtime orchestrator for subscriptions/listeners.
+   - **Pros**: centralizes lifecycle logic; cleaner extensibility.
+   - **Cons**: additional abstraction and initial refactor overhead.
+
+3. **Option B3 — Partial wiring with feature flags**
+   - Enable router/listener paths incrementally behind toggles.
+   - **Pros**: safer rollout and easier rollback.
+   - **Cons**: configuration complexity; risk of environment drift.
+
+### 9.3 Package C — Data source-of-truth and degraded policy (Issues 8 + 9)
+
+**Problem description**
+
+- Orders write path uses Veda/persistence while read path still uses mock service.
+- no-DB mode is documented as degraded, but publish/stream behavior is still a policy decision point.
+- Result: data truth and degraded behavior are both not fully deterministic for operators.
+
+**Trigger conditions**
+
+- Any workflow that creates/cancels then immediately lists/gets orders.
+- Any environment running without DB_URL but expecting event visibility.
+- Regression checks comparing paper/live behavior with UI order history.
+
+**Observed/expected frequency**
+
+- **High** for read/write mismatch in trading workflows.
+- **Medium** for no-DB policy ambiguity (depends on local/dev usage patterns).
+
+**Severity**
+
+- Issue 8: **High / P0** (business correctness and operator trust).
+- Issue 9: **Medium / P1** (policy clarity and expected behavior in degraded mode).
+
+**Solution options**
+
+1. **Option C1 — Hard unify to durable source (DB mode), strict degraded semantics**
+   - DB mode: reads always from durable Veda/WallE source.
+   - no-DB mode: explicit non-durable/no-guarantee behavior.
+   - **Pros**: clear correctness model; easiest to reason about.
+   - **Cons**: reduced convenience in no-DB local demos.
+
+2. **Option C2 — Transitional dual-read with priority rules**
+   - Prefer durable source, fallback to mock during migration window.
+   - **Pros**: smoother migration; fewer immediate breakages.
+   - **Cons**: temporary complexity; risk of inconsistent edge cases.
+
+3. **Option C3 — In-memory event/read model for no-DB parity**
+   - Add explicit in-memory event log + order read model when DB absent.
+   - **Pros**: better local parity without DB.
+   - **Cons**: extra subsystem to maintain; can blur production guarantees.
+
+### 9.4 Decision recording template (for each package)
+
+**Package A (Issues 1 + 5 + 6)**
+
+- **Chosen option**: **A2 — Lifecycle-first cohesive fix** (current preference)
+- **Why chosen (top 2 reasons)**:
+  1.  Avoids recurring lifecycle debt by solving route + DI + cleanup as one system problem.
+  2.  Better fit for long-running reliability goal than phased temporary behavior.
+- **Rejected options + reason**:
+  - A1 rejected: explicitly excluded; too likely to create rework.
+  - A3 not selected (for now): useful fallback, but introduces transitional dual behavior.
+- **Acceptance criteria (must all pass)**:
+  - Start route exists and is contract-tested.
+  - RunManager startup dependencies are validated before run start.
+  - Stop/completion/error paths execute deterministic cleanup and are test-covered.
+- **Rollback/mitigation plan**:
+  - If cohesive change cannot be stabilized in one cycle, temporarily pivot to A3 with explicit fail-fast and documented transition constraints.
+
+**Package B (Issues 4 + 7)**
+
+- **Chosen option**: **B2 — Dedicated orchestration component** (current preference)
+- **Why chosen (top 2 reasons)**:
+  1.  Centralizes runtime subscription/listener lifecycle and reduces hidden wiring drift.
+  2.  Scales better as more event consumers are added.
+- **Rejected options + reason**:
+  - B1 not preferred: faster, but increases app factory wiring complexity over time.
+  - B3 not preferred: adds config/flag complexity unless staged rollout is strictly required.
+- **Acceptance criteria (must all pass)**:
+  - Router path (`strategy.*` → `live/backtest.*`) is active in runtime and integration-tested.
+  - DB-mode listener path is active and SSE receives appended event in integration test.
+  - Startup/shutdown ordering is deterministic and leak-free.
+- **Rollback/mitigation plan**:
+  - If orchestration extraction proves too disruptive, fall back to B1 as an interim implementation with clear debt ticket and deprecation window.
+
+**Package C (Issues 8 + 9)**
+
+- **Chosen option**: **C1 — Hard unify to durable source (DB mode), strict degraded semantics** (confirmed)
+- **Why chosen (top 2 reasons)**:
+  1.  Establishes one authoritative order truth in DB mode, restoring correctness and operator trust.
+  2.  Keeps no-DB semantics explicit as degraded/local mode rather than pseudo-production parity.
+- **Rejected options + reason**:
+  - C2 not preferred by default: acceptable only as time-boxed migration bridge due to dual-path complexity.
+  - C3 not preferred: increases maintenance surface and can blur production guarantees.
+- **Acceptance criteria (must all pass)**:
+  - In DB mode, order read/write paths are unified to durable source behavior.
+  - no-DB behavior is explicitly non-durable and documented in API/deployment semantics.
+  - Integration coverage demonstrates write→read parity in DB mode.
+- **Rollback/mitigation plan**:
+  - If full C1 unification cannot be completed in one pass, use C2 only as a short, explicitly tracked transition state.

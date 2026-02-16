@@ -60,6 +60,20 @@ alembic revision --autogenerate -m "description"
 - **Observability**: structured logs (include `run_id / corr_id`); optional metrics for lag/in‑flight/error rates.
 - **Idempotency & Recovery**: event dedupe (`id/corr_id`); `client_order_id` on orders; consumers resume via offsets; outbox is replayable.
 
+### 4.1 Degraded Mode Matrix (DB On vs DB Off)
+
+| Capability                                                                      | DB On                                                      | DB Off                                          |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
+| `GET /healthz`                                                                  | ✅ available                                               | ✅ available                                    |
+| `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`, `POST /api/v1/runs/{id}/stop` | ✅ available (in-memory run store + event log integration) | ✅ available (in-memory only, non-durable)      |
+| `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}`                             | ✅ available when `VedaService` is configured              | ❌ `503` (`VedaService` not configured)         |
+| `GET /api/v1/orders`, `GET /api/v1/orders/{id}`                                 | ✅ available (current mock read path)                      | ✅ available (mock read path)                   |
+| `GET /api/v1/events/stream` connection                                          | ✅ available                                               | ✅ available                                    |
+| Run/order domain events delivered to SSE                                        | ✅ best-effort real-time (DB event log path)               | ⚠️ not guaranteed; no durable event log/offsets |
+| Offset durability / replay primitives                                           | ✅ `consumer_offsets` persistence                          | ❌ unavailable                                  |
+
+**Operational decision**: no-DB mode is a degraded local mode for API bring-up and non-durable smoke usage, not a production reliability profile.
+
 ## 5. Versioning & Compatibility
 
 - **Additive changes are backward‑compatible**; breaking changes use new names like `*.v2` and run in parallel for migration.

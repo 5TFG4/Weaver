@@ -350,6 +350,8 @@ class OrderState:
 ```python
 class OrderStatus(str, Enum):
     PENDING = "pending"           # Created locally, not yet sent
+    SUBMITTING = "submitting"     # Being sent to exchange
+    SUBMITTED = "submitted"       # Sent, awaiting exchange ack
     ACCEPTED = "accepted"         # Exchange accepted
     PARTIALLY_FILLED = "partial"  # Some qty filled
     FILLED = "filled"             # Fully filled
@@ -428,29 +430,29 @@ class AlpacaAdapter:
 # In config.py
 @dataclass
 class AlpacaConfig:
-    paper_key: str | None = None
-    paper_secret: str | None = None
-    live_key: str | None = None
-    live_secret: str | None = None
+    paper_api_key: str | None = None
+    paper_api_secret: str | None = None
+    live_api_key: str | None = None
+    live_api_secret: str | None = None
 
     @property
     def has_paper_credentials(self) -> bool:
-        return self.paper_key and self.paper_secret
+        return self.paper_api_key and self.paper_api_secret
 
     def get_credentials(self, mode: str) -> dict:
         if mode == "paper":
-            return {"api_key": self.paper_key, "api_secret": self.paper_secret, "paper": True}
-        return {"api_key": self.live_key, "api_secret": self.live_secret, "paper": False}
+            return {"api_key": self.paper_api_key, "api_secret": self.paper_api_secret, "paper": True}
+        return {"api_key": self.live_api_key, "api_secret": self.live_api_secret, "paper": False}
 ```
 
 ### 8.2 Environment Variables
 
-| Variable              | Description           | Required          |
-| --------------------- | --------------------- | ----------------- |
-| `ALPACA_PAPER_KEY`    | Paper trading API key | For paper trading |
-| `ALPACA_PAPER_SECRET` | Paper trading secret  | For paper trading |
-| `ALPACA_LIVE_KEY`     | Live trading API key  | For live trading  |
-| `ALPACA_LIVE_SECRET`  | Live trading secret   | For live trading  |
+| Variable                  | Description           | Required          |
+| ------------------------- | --------------------- | ----------------- |
+| `ALPACA_PAPER_API_KEY`    | Paper trading API key | For paper trading |
+| `ALPACA_PAPER_API_SECRET` | Paper trading secret  | For paper trading |
+| `ALPACA_LIVE_API_KEY`     | Live trading API key  | For live trading  |
+| `ALPACA_LIVE_API_SECRET`  | Live trading secret   | For live trading  |
 
 ---
 
@@ -473,11 +475,11 @@ def mock_adapter():
 
 ```python
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("ALPACA_PAPER_KEY"), reason="No Alpaca credentials")
+@pytest.mark.skipif(not os.getenv("ALPACA_PAPER_API_KEY"), reason="No Alpaca credentials")
 async def test_real_alpaca_connection():
     adapter = AlpacaAdapter(
-        api_key=os.getenv("ALPACA_PAPER_KEY"),
-        api_secret=os.getenv("ALPACA_PAPER_SECRET"),
+        api_key=os.getenv("ALPACA_PAPER_API_KEY"),
+        api_secret=os.getenv("ALPACA_PAPER_API_SECRET"),
         paper=True
     )
     await adapter.connect()
