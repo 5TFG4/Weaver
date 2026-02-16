@@ -1,9 +1,9 @@
 # Design Review Plan (Weaver)
 
 > **Document Charter**  
-> **Primary role**: review methodology and process governance.  
-> **Authoritative for**: review rubric, segment flow, and review output protocol.  
-> **Not authoritative for**: active defect backlog details (use `DESIGN_AUDIT.md`).
+> **Primary role**: review methodology, process governance, and **consolidated findings control center**.  
+> **Authoritative for**: review rubric, segment flow, review output protocol, **all finding IDs (C-01–C-04, N-01–N-10), action queue, and design decisions (D-1–D-5)**.  
+> **Not authoritative for**: active defect backlog details (use `DESIGN_AUDIT.md`); detailed analysis narrative (use `INDEPENDENT_DESIGN_REVIEW.md`).
 
 > **Purpose**: Provide a repeatable, context-resilient review process for validating Weaver’s architecture and implementation against the documented design.
 >
@@ -12,7 +12,7 @@
 > **How this doc is used**:
 >
 > - This is the “home base” for the review plan, progress, and outcomes.
-> - After each review segment, we update **Findings by Layer**, **Action Queue**, and **Next Segment**.
+> - After each review segment, we update **Review Findings**, **Action Queue**, and **Next Segment**.
 >
 > **Scope**: Not just M7 (Haro). Covers the full system: GLaDOS, Events/SSE, Veda, Greta, Marvin, WallE, Config/Deployment, and cross-cutting invariants.
 
@@ -102,6 +102,7 @@ We review in an order that minimizes rework and prioritizes reliability:
 7. **Config + deployment (Docker/devcontainer)** (env vars, secrets, startup ergonomics)
 8. **Haro frontend architecture** (API client, hooks, pages, SSE usage, tests)
 9. **Synthesis: prioritized roadmap** (what to fix/build next)
+10. **Independent full-system audit** (fresh-start review of all code + docs, new findings N-01–N-10)
 
 ---
 
@@ -115,6 +116,7 @@ This is the index we use to avoid losing context across sessions.
 - `docs/architecture/roadmap.md` — current state + milestone status
 - `docs/AUDIT_FINDINGS.md` — known issues and fix ordering
 - `docs/DEVELOPMENT.md` — methodology (TDD + doc rules)
+- `docs/INDEPENDENT_DESIGN_REVIEW.md` — full independent audit (N-01–N-10), alignment matrices, module reviews
 
 ### 5.2 Module design docs
 
@@ -132,13 +134,39 @@ This is the index we use to avoid losing context across sessions.
 
 ---
 
-## 6. Findings by Layer (Logical Structure)
+## 6. Review Findings
 
-### 6.1 Global status
+### 6.1 Overall Assessment
 
-- **Current confidence**: Architecture direction is correct, but implementation contracts are still unstable.
-- **Scope covered so far**: Layers 0–4 fully reviewed; Layer 5 verification completed at contract/test level.
-- **Release posture**: Not merge-gate ready for M8 execution until P0 contract and runtime wiring issues are closed.
+Architecture direction is sound — modulith, event-driven decoupling, per-run isolation, and plugin architecture are appropriate for this system's goal. Implementation has structural gaps deeper than surface contract mismatches.
+
+- **Release posture**: Not merge-gate ready for M8 — 10 P0 + 7 P1 open issues, 5 design decisions pending (D-1–D-5).
+- **Core insight**: `InMemoryEventLog.append()` directly calls subscribers; `PostgresEventLog.append()` only issues `pg_notify()`. Unit tests pass with InMemory but the same flows silently break with Postgres. The SSE pipeline, GretaService subscriptions, and StrategyRunner subscriptions are all non-functional in DB mode.
+- **Detailed analysis**: `docs/INDEPENDENT_DESIGN_REVIEW.md`
+
+#### Issue Registry
+
+All known issues from all review passes, sorted by severity.
+
+| ID   | Issue                                                                           | Sev    | Category       | Location                              | Plan             |
+| ---- | ------------------------------------------------------------------------------- | ------ | -------------- | ------------------------------------- | ---------------- |
+| N-01 | PostgresEventLog `append()` never calls subscriber callbacks                    | **P0** | Runtime wiring | `src/events/log.py`                   | Package B + D-1  |
+| N-07 | InMemory vs Postgres EventLog behavioral parity broken                          | **P0** | Test validity  | `src/events/log.py`                   | Package B + D-1  |
+| N-02 | `_start_live` zero error handling — ghost zombie runs                           | **P0** | Reliability    | `src/glados/services/run_manager.py`  | Package A        |
+| C-01 | SSE event casing mismatch — `run.Started` vs `run.started` (4/7 listeners dead) | **P0** | Contract       | `useSSE.ts` / `events/types.py`       | Standalone       |
+| C-02 | POST /runs/{id}/start route missing — `startRun()` always 404                   | **P0** | Contract       | `routes/runs.py`                      | Package A        |
+| C-03 | Health path mismatch — `/healthz` without `/api/v1` prefix                      | **P0** | Contract       | `app.py`                              | Standalone       |
+| C-04 | Order read/write source split — POST/DELETE via Veda, GET/list via Mock         | **P0** | Data integrity | `routes/orders.py`                    | Package C        |
+| —    | DomainRouter not wired in app lifespan                                          | **P0** | Runtime wiring | `app.py`                              | Package B + D-4  |
+| —    | RunManager missing `bar_repository` / `strategy_loader`                         | **P0** | Runtime wiring | `app.py`                              | Package A        |
+| —    | Per-run cleanup not guaranteed on stop/complete                                 | **P0** | Reliability    | `run_manager.py`                      | Package A        |
+| N-03 | Fill history lost on persistence round-trip                                     | **P1** | Data integrity | `src/veda/persistence.py`             | Standalone + D-3 |
+| N-04 | AlpacaAdapter blocks event loop — sync SDK in async                             | **P1** | Reliability    | `src/veda/adapters/alpaca_adapter.py` | Standalone       |
+| N-06 | SSE has no run_id filtering (ARCHITECTURE.md claims it does)                    | **P1** | Contract drift | `sse_broadcaster.py`                  | Standalone + D-5 |
+| N-09 | `time_in_force` default inconsistency — schema "day" vs handler "gtc"           | **P1** | Contract       | `schemas.py` vs `veda_service.py`     | Standalone       |
+| N-10 | Frontend sends pagination params backend ignores                                | **P1** | Contract       | `haro/src/api/types.ts`               | Standalone       |
+| N-05 | StrategyAction stringly-typed, no compile-time safety                           | **P2** | Type safety    | `src/marvin/base_strategy.py`         | Standalone       |
+| N-08 | BacktestResult stats mostly zeros (Sharpe, Sortino, drawdown)                   | **P2** | Completeness   | `src/greta/greta_service.py`          | Standalone       |
 
 ### 6.2 Layer 0–1 (Mission, boundaries, invariants)
 
@@ -193,28 +221,48 @@ This is the index we use to avoid losing context across sessions.
 - **Reason**: P0 contract and runtime wiring failures are functional blockers, not polish issues.
 - **Immediate focus**: close contract baseline doc decisions first, then apply tests-first fixes on routing/startup wiring.
 
-### 6.6 Segment 5 closure (Contract baseline docs)
+### 6.6 Design-Code Alignment
 
-**Status: Completed (doc-only closure for contract baseline)**
+| Invariant                   | Verdict      | Detail                                             |
+| --------------------------- | ------------ | -------------------------------------------------- |
+| Single EventLog instance    | **PASS**     | Single instance in lifespan                        |
+| VedaService as order entry  | **PARTIAL**  | Writes use Veda; reads use Mock (C-04)             |
+| Session per request         | **PASS**     | FastAPI DI provides per-request sessions           |
+| SSE receives all events     | **FAIL**     | Subscriber dispatch broken in Postgres mode (N-01) |
+| Graceful degradation w/o DB | **PASS**     | Conditional init in app.py                         |
+| No module singletons        | **PASS**     | All services via FastAPI Depends()                 |
+| Multi-run support           | **PASS**     | Per-run instances via RunContext                   |
+| Run isolation via run_id    | **PASS**     | Events carry run_id; filtered subscriptions work   |
+| Plugin architecture         | **PASS**     | PluginStrategyLoader + PluginAdapterLoader work    |
+| **Result**                  | **7/9 PASS** | 1 PARTIAL (C-04), 1 FAIL (N-01)                    |
 
-| Segment 5 target               | Document update                                           | Result   |
-| ------------------------------ | --------------------------------------------------------- | -------- |
-| API/Event contract appendix    | `docs/architecture/api.md`, `docs/architecture/events.md` | **DONE** |
-| Degraded/no-DB behavior matrix | `docs/architecture/deployment.md`                         | **DONE** |
-| Veda doc sync (env + enum)     | `docs/architecture/veda.md`                               | **DONE** |
+### 6.7 Module Health
 
-**Decisions locked in docs**
+| Module | Architecture | Contracts | Runtime      | Tests  | Verdict                        |
+| ------ | ------------ | --------- | ------------ | ------ | ------------------------------ |
+| GLaDOS | OK           | C-02/C-03 | deps missing | gaps   | Contract + wiring fixes needed |
+| Events | OK           | OK        | N-01/N-07    | parity | **Critical** — dispatch broken |
+| Veda   | OK           | C-04      | N-04         | OK     | Source unification + async     |
+| Greta  | OK           | OK        | OK           | OK     | Healthiest module              |
+| Marvin | OK           | OK        | router gap   | OK     | Blocked by DomainRouter wiring |
+| WallE  | OK           | OK        | OK           | OK     | OK (Fills/Runs tables later)   |
+| Haro   | OK           | C-01      | C-02         | casing | Functional but contract-broken |
+
+### 6.8 Documentation Gaps
+
+1. No `docs/architecture/greta.md` — relies on M4 milestone doc only
+2. No `docs/architecture/marvin.md` — same
+3. No `docs/architecture/walle.md` — schema/repo decisions undocumented
+4. SSE event wire format undocumented
+5. Error handling strategy undocumented (exception hierarchy, HTTP mapping)
+6. ARCHITECTURE.md §5 falsely claims SSEBroadcaster filters by run_id (N-06)
+
+### 6.9 Decisions Locked
 
 - Health canonical path is `/healthz` in current runtime contract.
 - SSE event names are case-sensitive passthrough of backend domain event types.
-- Public SSE stream currently exposes domain events (not `ui.*` projection).
-- No-DB mode is explicitly documented as degraded/non-durable.
-
-**Remaining risk after Segment 5**
-
-- Runtime still diverges from target contract on run-start route (`POST /api/v1/runs/{id}/start`).
-- Frontend/backend health base-path and run-event casing mismatch remain implementation-level blockers.
-- Runtime wiring gaps (DomainRouter activation, RunManager dependency injection, EventLog real-time path completeness) remain P0 code work.
+- Public SSE stream exposes domain events (not `ui.*` projection).
+- No-DB mode is documented as degraded/non-durable.
 
 ---
 
@@ -238,7 +286,7 @@ Instead, higher layers pass down what they learned so lower layers can:
 
 #### Required output of every layer review: “Layer Handoff Packet”
 
-Each completed layer must produce a short packet (added to the Findings by Layer section) with:
+Each completed layer must produce a short packet (added to the Review Findings section) with:
 
 1. **Decisions locked** (e.g., SSE contract choice, degraded/no-DB policy)
 2. **Constraints** lower layers must respect (e.g., “GLaDOS-only northbound API”, “no module singletons”)
@@ -350,7 +398,9 @@ Each completed layer must produce a short packet (added to the Findings by Layer
 - Segment 2 (done) completes Layers 2–3 explicitly (contracts + runtime semantics) with code/doc cross-check.
 - Segment 3 (done) completes Layer 4 module-internal review (Veda/Greta/Marvin/WallE).
 - Segment 4 (done) completes Layer 5 implementation/test verification (contract pass/fail + merge-gate assessment).
-- Next: synthesize doc-contract baseline updates (`api.md`, `events.md`, degraded-mode policy) before code remediation.
+- Segment 5 (done) synthesizes doc-contract baseline updates (`api.md`, `events.md`, degraded-mode policy).
+- **Segment 6 (done)** independent full-system audit: fresh-start code+doc review → 10 new findings (N-01–N-10), 4 confirmed critical, 5 design decisions (D-1–D-5). See `docs/INDEPENDENT_DESIGN_REVIEW.md` for detail.
+- Next: resolve design decisions D-1–D-5 → execute Package A → B → C → standalone P1s.
 
 **Plan adaptation expectation**: After we complete Layer 2 and Layer 3, we must update the Layer 4/5 checklists and Action Queue ordering using the “Layer Handoff Packet” outputs.
 
@@ -364,6 +414,8 @@ Each completed layer must produce a short packet (added to the Findings by Layer
 
 - [x] **Freeze contract baseline in docs (before code edits)**: add Contract Appendix to `docs/architecture/api.md` + `docs/architecture/events.md` (health path, run start route contract, SSE casing/namespace, payload/reconnect semantics).
 - [x] **Define degraded/no-DB behavior explicitly**: add a short matrix for DB-on vs DB-off runtime guarantees (especially SSE/run lifecycle visibility).
+- [ ] **[N-01/N-07] Fix EventLog subscriber dispatch parity** (**design decision D-1 required**): PostgresEventLog.append() must dispatch to in-process subscribers the same way InMemoryEventLog does. Without this, SSE/GretaService/StrategyRunner subscriptions are all non-functional in DB mode.
+- [ ] **[N-02] Add error handling to `_start_live`**: copy try/except/finally pattern from `_start_backtest` to prevent ghost zombie runs from accumulating during long-running operation.
 - [ ] **Wire DomainRouter into runtime pipeline** (**discussion required**): make `strategy.* → backtest/live.*` routing active in app lifecycle and prove via integration tests.
 - [ ] **Add per-run cleanup guarantees** (**discussion required; tied to run-start/dependency design**) : ensure run completion/stop executes runner/greta unsubscribe cleanup paths to prevent long-running subscription leaks.
 - [ ] **Inject RunManager runtime dependencies** (**discussion required; tied to run-start/cleanup design**) : app startup must provide `StrategyLoader` and required backtest dependencies for `/runs/{id}/start` readiness.
@@ -375,12 +427,24 @@ Each completed layer must produce a short packet (added to the Findings by Layer
 
 - [x] Sync `docs/architecture/veda.md` with current config/model reality (ALPACA env var names + `OrderStatus` values including `submitting/submitted`).
 - [ ] Update `docs/architecture/roadmap.md` current state and test-count snapshot references to avoid stale planning signals.
+- [ ] **[N-03] Persist fill history**: add Fills table + migration; update `persistence.py` to include fills in order round-trip. Audit-critical for trading operations.
+- [ ] **[N-04] Fix AlpacaAdapter event loop blocking**: wrap all sync Alpaca SDK calls in `asyncio.to_thread()` to prevent freezing the entire app during live trading.
+- [ ] **[N-06] Implement SSE run_id filtering**: add `run_id` query parameter to SSE endpoint; fix false claim in ARCHITECTURE.md.
+- [ ] **[N-09] Unify time_in_force defaults**: `schemas.py` says "day", `veda_service.py` handler says "gtc" — pick one and enforce at the boundary.
+- [ ] **[N-10] Fix frontend pagination contract**: backend ignores pagination params — either implement server-side pagination or remove pagination UI.
 - [ ] Define durable global order list semantics in `VedaService` (`run_id=None` behavior) and cover with restart-oriented integration tests.
 - [ ] Decide whether “no DB” mode must still publish/stream events (**discussion required**); if yes, wire `InMemoryEventLog` into app lifespan and test it.
 
 ### P2
 
 - [ ] Record and reconcile version drift in M7 design doc (React/Router versions) or update implementation notes.
+- [ ] **[N-05]** Refactor `StrategyAction` from stringly-typed to proper enum/union type.
+- [ ] **[N-08]** Compute Sharpe, Sortino, max drawdown in BacktestResult (currently all zeros).
+- [ ] Create `docs/architecture/greta.md` — promote from milestone doc to living architecture.
+- [ ] Create `docs/architecture/marvin.md` — same.
+- [ ] Create `docs/architecture/walle.md` — document schema decisions, repository patterns, migration strategy.
+- [ ] Document SSE event wire format (exact bytes on wire).
+- [ ] Document error handling strategy (exception hierarchy, HTTP mapping, event pipeline propagation).
 
 ---
 
@@ -388,7 +452,7 @@ Each completed layer must produce a short packet (added to the Findings by Layer
 
 After each segment:
 
-1. Update **Findings by Layer** with the latest pass/fail and evidence deltas
+1. Update **Review Findings** with the latest pass/fail and evidence deltas
 2. Update **Action Queue** (move items between P0/P1/P2 as needed)
 3. Record any **decisions** (especially doc-vs-code resolution)
 4. Update **Next Focus** so the plan always reflects current logical dependency order
@@ -553,6 +617,9 @@ After each segment:
 - **Rejected options + reason**:
   - B1 not preferred: faster, but increases app factory wiring complexity over time.
   - B3 not preferred: adds config/flag complexity unless staged rollout is strictly required.
+
+> **Independent review counterpoint (B1 preference)**: The system currently has only 3 runtime subscriptions (SSE, Greta, StrategyRunner). B1 (direct app-lifespan wiring) is simpler for an MVP with this scale. A dedicated orchestrator adds abstraction complexity that may not be justified until 10+ consumers exist. Consider B1 as interim and reassess when subscription count grows.
+
 - **Acceptance criteria (must all pass)**:
   - Router path (`strategy.*` → `live/backtest.*`) is active in runtime and integration-tested.
   - DB-mode listener path is active and SSE receives appended event in integration test.
@@ -575,3 +642,30 @@ After each segment:
   - Integration coverage demonstrates write→read parity in DB mode.
 - **Rollback/mitigation plan**:
   - If full C1 unification cannot be completed in one pass, use C2 only as a short, explicitly tracked transition state.
+
+### 9.5 Pending Design Decisions (D-1 through D-5)
+
+These must be locked before M8 coding starts.
+
+| #   | Question                                                                     | Options                                                                                       | Recommendation                                    |
+| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| D-1 | How should PostgresEventLog dispatch to in-process subscribers?              | (a) Direct dispatch in append + pg_notify (b) Always require pool (c) Hybrid EventLog wrapper | **(a)** for simplicity and parity                 |
+| D-2 | Should runs be persisted to database?                                        | (a) In-memory only (current) (b) Add runs table                                               | **(b)** for restart recovery                      |
+| D-3 | Should fills be persisted separately?                                        | (a) Embedded in serialized order (b) Separate fills table                                     | **(b)** for queryability and audit                |
+| D-4 | Should DomainRouter be a standalone wired component or inline in RunManager? | (a) Separate wired singleton (b) Integrated into RunManager per-run startup                   | **(a)** for consistency with architecture doc     |
+| D-5 | Should SSE support run_id filtering?                                         | (a) Yes, via query param (b) No, client-side filter                                           | **(a)** to reduce UI noise in multi-run scenarios |
+
+**How these integrate with issue packages**
+
+- N-01/N-07 + D-1 → extends **Package B** to fix dispatch semantics
+- N-02 → extends **Package A** to cover live mode resilience
+- D-2 (runs table) / D-3 (fills table) → new WallE schema migration scope
+- N-03, N-04, N-06 + D-5, N-09, N-10 → standalone P1 items in Action Queue
+
+**Recommended execution order**
+
+1. Lock D-1 → enables Package B
+2. Lock D-4 → enables DomainRouter wiring
+3. Lock D-5 → determines SSE endpoint change
+4. Lock D-2, D-3 → informs schema migration
+5. Execute: Package A → Package B → Package C → standalone P1s

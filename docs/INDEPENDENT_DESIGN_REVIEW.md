@@ -1,5 +1,10 @@
 # Independent Design Review — Full System Audit
 
+> **Document Charter**  
+> **Primary role**: detailed analysis narrative for Segment 6 independent audit.  
+> **Authoritative for**: module-by-module deep analysis, alignment matrices, cross-cutting verification evidence.  
+> **Not authoritative for**: finding IDs, action queue, or design decisions — those are controlled in `DESIGN_REVIEW_PLAN.md` §6.7, §7, §9.5.
+
 > **Reviewer**: Independent fresh-start review  
 > **Date**: 2026-02-16  
 > **Scope**: Full system — architecture docs, code, tests, cross-cutting concerns  
