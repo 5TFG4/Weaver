@@ -11,7 +11,7 @@ export default defineConfig({
     host: "0.0.0.0", // Allow access from outside container
     proxy: {
       "/api": {
-        target: "http://backend_dev:8000",
+        target: process.env.API_PROXY_TARGET || "http://localhost:8000",
         changeOrigin: true,
       },
     },
