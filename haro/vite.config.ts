@@ -9,6 +9,7 @@ export default defineConfig({
     // Port is handled by Docker port mapping (FRONTEND_PORT_DEV:5173)
     // Keep Vite on default 5173, Docker maps it to FRONTEND_PORT_DEV
     host: "0.0.0.0", // Allow access from outside container
+    allowedHosts: true, // Dev-only; prod uses nginx, not Vite server
     proxy: {
       "/api": {
         target: process.env.API_PROXY_TARGET || "http://localhost:8000",

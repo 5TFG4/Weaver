@@ -19,7 +19,7 @@ services:
       db_dev:
         condition: service_healthy
     command: >
-      python -m debugpy --listen 0.0.0.0:5678 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      python -m debugpy --listen 0.0.0.0:5678 -m uvicorn weaver:app --host 0.0.0.0 --port 8000 --reload
 
   frontend_dev:
     build:
@@ -32,6 +32,8 @@ services:
       - frontend_node_modules:/weaver/haro/node_modules # Persist node_modules in named volume
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    environment:
+      - API_PROXY_TARGET=http://backend_dev:8000
     depends_on:
       - backend_dev
     working_dir: /weaver/haro

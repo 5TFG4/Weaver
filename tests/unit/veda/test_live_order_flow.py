@@ -499,3 +499,52 @@ class TestIdempotency:
         assert mock_adapter.submit_order.call_count == 1
         assert mock_repository.save.call_count == 1  # Saved only once
         assert mock_event_log.append.call_count == 1  # Event emitted once
+
+
+class TestHandlePlaceOrderDefaults:
+    """N-09: handle_place_order should default time_in_force to 'day'."""
+
+    async def test_time_in_force_defaults_to_day(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+    ) -> None:
+        """When payload omits time_in_force, it should default to 'day'."""
+        from src.events.protocol import Envelope
+        from src.veda.veda_service import VedaService
+
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=True,
+            exchange_order_id="exch-1",
+            status=OrderStatus.SUBMITTED,
+        )
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+        )
+
+        envelope = Envelope(
+            type="live.PlaceOrder",
+            producer="test",
+            run_id="run-1",
+            payload={
+                "run_id": "run-1",
+                "client_order_id": "test-order-1",
+                "symbol": "AAPL",
+                "side": "buy",
+                "order_type": "market",
+                "qty": "10",
+                # time_in_force intentionally omitted
+            },
+        )
+
+        await service.handle_place_order(envelope)
+
+        # Verify the OrderIntent passed to place_order had day TIF
+        call_args = mock_adapter.submit_order.call_args
+        submitted_intent = call_args[0][0]  # first positional arg
+        assert submitted_intent.time_in_force == TimeInForce.DAY

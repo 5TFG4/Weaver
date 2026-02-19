@@ -41,6 +41,17 @@ def client(app: FastAPI) -> TestClient:
     
     Uses context manager to trigger app lifespan events,
     which initializes services in app.state.
+    Replaces RunManager with a fully-wired version for route testing.
     """
+    from tests.factories.runs import create_run_manager_with_deps
+
     with TestClient(app) as client:
+        # Replace RunManager with one that has all deps mocked,
+        # so routes like POST /runs/{id}/start actually work.
+        app.state.run_manager = create_run_manager_with_deps(
+            event_log=getattr(app.state, "event_log", None),
+        )
+        # Ensure VedaService is None by default in unit tests.
+        # Tests that need VedaService inject it explicitly via app.state.
+        app.state.veda_service = None
         yield client

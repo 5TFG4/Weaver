@@ -59,10 +59,10 @@ class TestCreateApp:
         assert app.state.settings is not None
 
     def test_healthz_route_registered(self, test_settings: WeaverConfig) -> None:
-        """App should have /healthz route registered."""
+        """App should have /api/v1/healthz route registered."""
         from src.glados.app import create_app
 
         app = create_app(settings=test_settings)
         routes = [getattr(route, "path", None) for route in app.routes]
 
-        assert "/healthz" in routes
+        assert "/api/v1/healthz" in routes

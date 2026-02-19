@@ -196,6 +196,7 @@ ALL_EVENT_TYPES: Final[set[str]] = {
     MarketEvents.TRADE,
     MarketEvents.BAR,
     # Orders
+    OrderEvents.CREATED,
     OrderEvents.PLACE_REQUEST,
     OrderEvents.ACK,
     OrderEvents.PLACED,
@@ -204,9 +205,11 @@ ALL_EVENT_TYPES: Final[set[str]] = {
     OrderEvents.CANCELLED,
     OrderEvents.REJECTED,
     # Run
+    RunEvents.CREATED,
     RunEvents.STARTED,
     RunEvents.STOP_REQUESTED,
     RunEvents.STOPPED,
+    RunEvents.COMPLETED,
     RunEvents.HEARTBEAT,
     RunEvents.ERROR,
     # Clock

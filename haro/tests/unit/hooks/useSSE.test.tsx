@@ -161,7 +161,7 @@ describe("useSSE", () => {
     expect(MockEventSource.instances).toHaveLength(2);
   });
 
-  it("calls onEvent callback for run.started event", () => {
+  it("calls onEvent callback for run.Started event", () => {
     const wrapper = createWrapper();
     renderHook(() => useSSE(), { wrapper });
 
@@ -170,7 +170,7 @@ describe("useSSE", () => {
     });
 
     act(() => {
-      MockEventSource.latest().simulateEvent("run.started", {
+      MockEventSource.latest().simulateEvent("run.Started", {
         run_id: "run-123",
       });
     });
@@ -220,7 +220,7 @@ describe("useSSE", () => {
     });
 
     act(() => {
-      MockEventSource.latest().simulateEvent("run.started", {
+      MockEventSource.latest().simulateEvent("run.Started", {
         run_id: "run-1",
       });
     });
@@ -242,13 +242,13 @@ describe("useSSE", () => {
     expect(es.readyState).toBe(MockEventSource.CLOSED);
   });
 
-  it("handles run.stopped event", () => {
+  it("handles run.Stopped event", () => {
     const wrapper = createWrapper();
     renderHook(() => useSSE(), { wrapper });
 
     act(() => {
       MockEventSource.latest().simulateOpen();
-      MockEventSource.latest().simulateEvent("run.stopped", {
+      MockEventSource.latest().simulateEvent("run.Stopped", {
         run_id: "run-789",
       });
     });
@@ -275,5 +275,53 @@ describe("useSSE", () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0].type).toBe("error");
     expect(notifications[0].message).toContain("rejected");
+  });
+
+  // =========================================================================
+  // M-03: orders.Cancelled listener
+  // =========================================================================
+
+  it("handles orders.Cancelled event", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.Cancelled", {
+        order_id: "order-777",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("info");
+    expect(notifications[0].message).toContain("cancelled");
+  });
+
+  // =========================================================================
+  // C-01: SSE event names must match backend PascalCase convention
+  // Backend emits: run.Started, run.Stopped, run.Completed, run.Error
+  // =========================================================================
+
+  it("registers listeners with PascalCase run event names matching backend", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    const es = MockEventSource.latest();
+    const registeredTypes = Array.from(
+      (es as unknown as { listeners: Map<string, unknown[]> }).listeners.keys(),
+    );
+
+    // Must match backend RunEvents constants (PascalCase)
+    expect(registeredTypes).toContain("run.Started");
+    expect(registeredTypes).toContain("run.Stopped");
+    expect(registeredTypes).toContain("run.Completed");
+    expect(registeredTypes).toContain("run.Error");
+
+    // Must NOT have lowercase variants
+    expect(registeredTypes).not.toContain("run.started");
+    expect(registeredTypes).not.toContain("run.stopped");
+    expect(registeredTypes).not.toContain("run.completed");
+    expect(registeredTypes).not.toContain("run.error");
   });
 });

@@ -11,7 +11,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.glados.dependencies import get_run_manager
-from src.glados.exceptions import RunNotFoundError
+from src.glados.exceptions import RunNotFoundError, RunNotStartableError
 from src.glados.schemas import RunCreate, RunListResponse, RunResponse
 from src.glados.services.run_manager import Run, RunManager
 
@@ -88,4 +88,36 @@ async def stop_run(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Run not found: {run_id}",
+        )
+
+
+@router.post("/{run_id}/start", response_model=RunResponse)
+async def start_run(
+    run_id: str,
+    run_manager: RunManager = Depends(get_run_manager),
+) -> RunResponse:
+    """
+    Start a pending run.
+
+    M8-P0 / C-02: This route was missing — frontend startRun() always 404'd.
+
+    Returns:
+        RunResponse with RUNNING status
+
+    Raises:
+        404: Run not found
+        409: Run is not in PENDING status (already started)
+    """
+    try:
+        run = await run_manager.start(run_id)
+        return _run_to_response(run)
+    except RunNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run not found: {run_id}",
+        )
+    except RunNotStartableError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id} cannot be started (not in pending status)",
         )

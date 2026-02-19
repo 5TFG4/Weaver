@@ -51,7 +51,7 @@ class TestOpenAPIDocs:
         data = response.json()
         assert "paths" in data
         # Key endpoints should be documented
-        assert "/healthz" in data["paths"]
+        assert "/api/v1/healthz" in data["paths"]
         assert "/api/v1/runs" in data["paths"]
 
     def test_docs_ui_available(self, client: TestClient) -> None:
@@ -89,7 +89,7 @@ class TestCORSMiddleware:
     def test_cors_allows_localhost_origin(self, client: TestClient) -> None:
         """CORS should allow localhost origins for development."""
         response = client.get(
-            "/healthz",
+            "/api/v1/healthz",
             headers={"Origin": "http://localhost:3000"},
         )
         assert response.status_code == 200
@@ -150,13 +150,13 @@ class TestLifecycleEvents:
     def test_app_starts_successfully(self, client: TestClient) -> None:
         """App should start without errors."""
         # TestClient handles startup automatically
-        response = client.get("/healthz")
+        response = client.get("/api/v1/healthz")
         assert response.status_code == 200
 
     def test_app_shutdown_completes(self) -> None:
         """App shutdown should complete without errors."""
         app = create_app()
         with TestClient(app) as client:
-            response = client.get("/healthz")
+            response = client.get("/api/v1/healthz")
             assert response.status_code == 200
         # If we get here, shutdown completed successfully

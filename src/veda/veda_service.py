@@ -10,11 +10,20 @@ Main entry point for Veda module. Orchestrates:
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Callable
 
 from src.events.protocol import Envelope
 from src.veda.interfaces import ExchangeAdapter
-from src.veda.models import OrderIntent, OrderState, OrderStatus, Position
+from src.veda.models import (
+    OrderIntent,
+    OrderSide,
+    OrderState,
+    OrderStatus,
+    OrderType,
+    Position,
+    TimeInForce,
+)
 from src.veda.order_manager import OrderManager
 from src.veda.persistence import OrderRepository
 from src.veda.position_tracker import PositionTracker
@@ -231,12 +240,12 @@ class VedaService:
             run_id=payload["run_id"],
             client_order_id=payload["client_order_id"],
             symbol=payload["symbol"],
-            side=payload["side"],
-            order_type=payload["order_type"],
-            qty=payload["qty"],
-            limit_price=payload.get("limit_price"),
-            stop_price=payload.get("stop_price"),
-            time_in_force=payload.get("time_in_force", "gtc"),
+            side=OrderSide(payload["side"]),
+            order_type=OrderType(payload["order_type"]),
+            qty=Decimal(str(payload["qty"])),
+            limit_price=Decimal(str(payload["limit_price"])) if payload.get("limit_price") else None,
+            stop_price=Decimal(str(payload["stop_price"])) if payload.get("stop_price") else None,
+            time_in_force=TimeInForce(payload.get("time_in_force", "day")),
         )
         await self.place_order(intent)
 

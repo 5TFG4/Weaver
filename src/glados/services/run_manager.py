@@ -219,6 +219,9 @@ class RunManager:
         Creates RealtimeClock and StrategyRunner, starts async execution.
         Unlike backtest, this returns immediately while clock runs in background.
         
+        N-02: Added try/except/finally matching _start_backtest pattern.
+        On failure: status → ERROR, stopped_at set, RunContext cleaned up.
+        
         Args:
             run: The run to execute
         """
@@ -239,18 +242,28 @@ class RunManager:
         ctx = RunContext(greta=None, runner=runner, clock=clock)
         self._run_contexts[run.id] = ctx
         
-        # 3. Initialize runner
-        await runner.initialize(run_id=run.id, symbols=run.symbols)
-        
-        # 4. Wire tick handler
-        async def on_tick(tick: ClockTick) -> None:
-            # Strategy processes tick (may emit order intents)
-            await runner.on_tick(tick)
-        
-        clock.on_tick(on_tick)
-        
-        # 5. Start clock (runs in background, doesn't block)
-        await clock.start(run.id)
+        try:
+            # 3. Initialize runner
+            await runner.initialize(run_id=run.id, symbols=run.symbols)
+            
+            # 4. Wire tick handler
+            async def on_tick(tick: ClockTick) -> None:
+                # Strategy processes tick (may emit order intents)
+                await runner.on_tick(tick)
+            
+            clock.on_tick(on_tick)
+            
+            # 5. Start clock (runs in background, doesn't block)
+            await clock.start(run.id)
+        except Exception:
+            run.status = RunStatus.ERROR
+            raise
+        finally:
+            # Cleanup RunContext if start failed (status == ERROR)
+            if run.status == RunStatus.ERROR:
+                run.stopped_at = datetime.now(UTC)
+                if run.id in self._run_contexts:
+                    del self._run_contexts[run.id]
 
     async def _start_backtest(self, run: Run) -> None:
         """

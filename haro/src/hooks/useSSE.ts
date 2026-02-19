@@ -59,7 +59,7 @@ export function useSSE() {
     // Run Events
     // =========================================================================
 
-    eventSource.addEventListener("run.started", (e: MessageEvent) => {
+    eventSource.addEventListener("run.Started", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       queryClient.invalidateQueries({ queryKey: ["runs"] });
       addNotification({
@@ -68,7 +68,7 @@ export function useSSE() {
       });
     });
 
-    eventSource.addEventListener("run.stopped", (e: MessageEvent) => {
+    eventSource.addEventListener("run.Stopped", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       queryClient.invalidateQueries({ queryKey: ["runs"] });
       addNotification({
@@ -77,7 +77,7 @@ export function useSSE() {
       });
     });
 
-    eventSource.addEventListener("run.completed", (e: MessageEvent) => {
+    eventSource.addEventListener("run.Completed", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       queryClient.invalidateQueries({ queryKey: ["runs"] });
       addNotification({
@@ -86,7 +86,7 @@ export function useSSE() {
       });
     });
 
-    eventSource.addEventListener("run.error", (e: MessageEvent) => {
+    eventSource.addEventListener("run.Error", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       queryClient.invalidateQueries({ queryKey: ["runs"] });
       addNotification({
@@ -122,6 +122,15 @@ export function useSSE() {
       addNotification({
         type: "error",
         message: `Order rejected: ${data.reason}`,
+      });
+    });
+
+    eventSource.addEventListener("orders.Cancelled", (e: MessageEvent) => {
+      const data = JSON.parse(e.data);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      addNotification({
+        type: "info",
+        message: `Order ${data.order_id} cancelled`,
       });
     });
   }, [queryClient, addNotification]);

@@ -144,13 +144,22 @@ async def cancel_order(
 @router.get("", response_model=OrderListResponse)
 async def list_orders(
     run_id: str | None = Query(default=None),
+    veda_service: VedaService | None = Depends(get_veda_service),
     order_service: MockOrderService = Depends(get_order_service),
 ) -> OrderListResponse:
     """
     List orders with optional filters.
-    
-    MVP-4: Only run_id filter supported.
+
+    C-04: Uses VedaService when available (live/paper trading),
+    falls back to MockOrderService for demo/test mode.
     """
+    if veda_service is not None:
+        states = await veda_service.list_orders(run_id=run_id)
+        return OrderListResponse(
+            items=[_state_to_response(s) for s in states],
+            total=len(states),
+        )
+
     orders, total = await order_service.list(run_id=run_id)
     return OrderListResponse(
         items=[_order_to_response(o) for o in orders],
@@ -161,9 +170,23 @@ async def list_orders(
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: str,
+    veda_service: VedaService | None = Depends(get_veda_service),
     order_service: MockOrderService = Depends(get_order_service),
 ) -> OrderResponse:
-    """Get order by ID."""
+    """
+    Get order by ID.
+
+    C-04: Uses VedaService when available, falls back to MockOrderService.
+    """
+    if veda_service is not None:
+        state = await veda_service.get_order(order_id)
+        if state is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order not found: {order_id}",
+            )
+        return _state_to_response(state)
+
     order = await order_service.get(order_id)
     if order is None:
         raise HTTPException(

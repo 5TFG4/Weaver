@@ -181,3 +181,55 @@ class TestStopRunEndpoint:
         response = client.post("/api/v1/runs/non-existent-id/stop")
 
         assert response.status_code == 404
+
+
+class TestStartRunEndpoint:
+    """Tests for POST /api/v1/runs/{id}/start.
+
+    M8-P0 / C-02: Start route was missing — frontend startRun() had no backend.
+    """
+
+    def test_start_run_returns_200(self, client: TestClient) -> None:
+        """POST /runs/{id}/start should return 200 with RunResponse."""
+        create_resp = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        )
+        run_id = create_resp.json()["id"]
+
+        response = client.post(f"/api/v1/runs/{run_id}/start")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == run_id
+        assert data["status"] == "running"
+
+    def test_start_unknown_run_returns_404(self, client: TestClient) -> None:
+        """POST /runs/{id}/start with unknown ID returns 404."""
+        response = client.post("/api/v1/runs/non-existent-id/start")
+
+        assert response.status_code == 404
+
+    def test_start_already_running_returns_409(self, client: TestClient) -> None:
+        """POST /runs/{id}/start on already-running run returns 409."""
+        create_resp = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        )
+        run_id = create_resp.json()["id"]
+
+        # Start once
+        client.post(f"/api/v1/runs/{run_id}/start")
+
+        # Start again — should be 409
+        response = client.post(f"/api/v1/runs/{run_id}/start")
+
+        assert response.status_code == 409
