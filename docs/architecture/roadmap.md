@@ -32,7 +32,7 @@
 
 | Component           | Status                | Tests |
 | ------------------- | --------------------- | ----- |
-| Test Infrastructure | ✅ Complete           | 705   |
+| Test Infrastructure | ✅ Complete           | 808   |
 | Events Module       | ✅ Subscription added | 57    |
 | Clock Module        | ✅ Complete           | 93    |
 | Config Module       | ✅ Complete           | 24    |
@@ -43,7 +43,13 @@
 | WallE (bars)        | ✅ Complete           | 16    |
 | Haro (frontend)     | ✅ Complete           | 86    |
 
-## 2. Milestones (Revised 2026-02-03)
+**Total**: 808 backend + 86 frontend = 894 tests
+
+**Active Milestone**: M8 (Critical Fixes & Improvements)
+
+**Last State Update**: 2026-02-19
+
+## 2. Milestones (Revised 2026-02-19)
 
 | Milestone | Definition of Done                                                                | Status              |
 | --------- | --------------------------------------------------------------------------------- | ------------------- |
@@ -53,7 +59,8 @@
 | **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)  |
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
-| **M8**    | Polish & E2E (Quality + Tests)                                                    | ⏳                  |
+| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | 🔄 ACTIVE           |
+| **M9**    | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
 
@@ -63,7 +70,8 @@
 | **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
 | **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
 | **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8** | E2E + Polish                  | ~40        | ⏳                   |
+| **8** | Critical Fixes + Improvements | ~40–50     | 🔄 ACTIVE            |
+| **9** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
 
 ## 4. Architecture Invariants
 
@@ -116,13 +124,23 @@
 - [x] SSE real-time updates working ✅ 2026-02-06
 - [x] 86 new tests (target: 821+) → actual: 894 ✅
 
-### M8 Exit Gate (MVP Complete)
+### M8 Exit Gate (Fixes & Improvements Complete)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Coverage ≥80%
+- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [ ] Design decisions D-1–D-5 implemented
+- [ ] DomainRouter wired into runtime lifecycle
+- [ ] RunManager dependencies fully injected
+- [ ] Code coverage ≥80%
 - [ ] All TODO/FIXME cleaned
 - [ ] Documentation complete
-- [ ] ~40 new tests (target: 861+)
+- [ ] ~40–50 new tests (target: 934+)
+
+### M9 Exit Gate (E2E & Release Ready)
+
+- [ ] E2E tests pass (Playwright)
+- [ ] Full user workflow validated end-to-end
+- [ ] Deployment guide complete
+- [ ] ~20–30 new tests (target: 954+)
 
 ---
 

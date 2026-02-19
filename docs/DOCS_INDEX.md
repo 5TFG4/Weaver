@@ -1,7 +1,8 @@
 # Weaver Documentation Index
 
-> Last updated: 2026-02-15  
+> Last updated: 2026-02-19  
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
+> **Current State**: M7 ✅ Closed · M8 🔄 Active (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 894 total tests
 
 ## 1) Entry Layer (Start Here)
 

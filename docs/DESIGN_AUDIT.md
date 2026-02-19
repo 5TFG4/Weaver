@@ -1,15 +1,15 @@
-# Design Audit Report & Pre-M8 Quality Gate
+# Design Audit Report & M8 Quality Gate
 
 > **Document Charter**  
 > **Primary role**: active design-code-test quality gate and open findings.  
-> **Authoritative for**: current unresolved audit items and pre-milestone release criteria.  
+> **Authoritative for**: current unresolved audit items and milestone release criteria.  
 > **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
 
-> **Audit Date**: 2026-02-15  
+> **Audit Date**: 2026-02-19 (updated)  
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
-> **Branch**: `haro_update` (uncommitted M7-6 SSE work included)  
-> **Auditor**: Automated deep scan  
-> **Purpose**: Ensure design-code-test alignment before M8 (Polish & E2E)
+> **Branch**: `haro_update`  
+> **Purpose**: Quality gate for M8 (Polish, Critical Fixes & E2E)  
+> **Status**: M7 ✅ Formally Closed · M8 🔄 Active
 
 ---
 
@@ -394,59 +394,101 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 | Source              | Claims                          | Actual                          | Delta |
 | ------------------- | ------------------------------- | ------------------------------- | ----- |
-| `ARCHITECTURE.md`   | 808 backend + 86 frontend = 894 | 809 backend + 86 frontend = 895 | +1    |
-| `TEST_COVERAGE.md`  | 808 backend + 86 frontend       | 809 backend + 86 frontend       | +1    |
-| `roadmap.md`        | 808 backend                     | 809 backend                     | +1    |
-| `MILESTONE_PLAN.md` | M6=808=808                      | 809                             | +1    |
+| `ARCHITECTURE.md`   | 808 backend + 86 frontend = 894 | 808 backend + 86 frontend = 894 | 0     |
+| `TEST_COVERAGE.md`  | 808 backend + 86 frontend       | 808 backend + 86 frontend       | 0     |
+| `roadmap.md`        | 808 backend                     | 808 backend                     | 0     |
+| `MILESTONE_PLAN.md` | 808 backend + 86 frontend       | 808 backend + 86 frontend       | 0     |
 
-**Note**: The 1-test discrepancy is minor and likely from an uncommitted test addition.
+**Verified**: 2026-02-19 via `pytest --co -q` and `vitest --run`.
 
 ### 7.2 Test Type Distribution (Actual)
 
 | Type        | Backend | Frontend | Total   |
 | ----------- | ------- | -------- | ------- |
-| Unit        | 765     | 86       | 851     |
+| Unit        | 764     | 86       | 850     |
 | Integration | 44      | 0        | 44      |
 | E2E         | 0       | 0        | 0       |
-| **Total**   | **809** | **86**   | **895** |
+| **Total**   | **808** | **86**   | **894** |
 
 ---
 
-## 8. Pre-M8 Checklist
+## 8. M8 Execution Checklist (Fixes & Improvements)
 
-### 8.1 Must Fix Before Starting M8 (Critical)
+### 8.1 Phase 0: Critical Contract Fixes (M8-P0) — Must Fix First
 
 - [ ] **C-01**: Fix SSE event name casing — align frontend `useSSE.ts` to use `run.Started`, `run.Stopped`, `run.Completed`, `run.Error` (match backend)
 - [ ] **C-02**: Add `POST /api/v1/runs/{run_id}/start` route in `routes/runs.py`
 - [ ] **C-03**: Fix health endpoint path — add `/api/v1` prefix to health router or change frontend
 - [ ] **C-04**: Update `GET /orders` and `GET /orders/{id}` to use VedaService when available (fall back to MockOrderService)
-
-### 8.2 Fix During M8 (Medium)
-
-- [ ] **M-01**: Add `RunEvents.CREATED`, `RunEvents.COMPLETED`, `OrderEvents.CREATED` to `ALL_EVENT_TYPES`
-- [ ] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
+- [ ] **N-02**: Add error handling to `_start_live` (copy `_start_backtest` pattern)
+- [ ] **N-09**: Unify `time_in_force` defaults
+- [ ] **M-01**: Add missing events to `ALL_EVENT_TYPES`
 - [ ] **M-03**: Add `orders.Cancelled` listener to frontend `useSSE.ts`
-- [ ] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
-- [ ] **M-05**: Document PositionTracker zero-value limitation or implement market data feed
-- [ ] **M-06**: Document SSE event format (SSE `event:` and `data:` field shapes)
-- [ ] **M-07**: Either implement `runId` parameter usage in `RunsPage` or remove the route
 
-### 8.3 Fix During M8-4 Code Quality (Low)
+### 8.2 Phase 1: Runtime Wiring (M8-P1)
+
+- [ ] **N-01/N-07**: Fix EventLog subscriber dispatch parity (Package B + D-1)
+- [ ] Wire DomainRouter as standalone singleton (Package B + D-4)
+- [ ] Inject RunManager runtime dependencies (Package A)
+- [ ] Per-run cleanup guarantees (Package A)
+- [ ] Unify order read/write sources (Package C)
+
+### 8.3 Code Quality & P1 Fixes (M8-Q)
+
+- [ ] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
+- [ ] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
+- [ ] **M-07**: Either implement `runId` parameter usage in `RunsPage` or remove the route
+- [ ] **N-03**: Add Fills table + persist fill history (D-3)
+- [ ] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
+- [ ] **N-06**: Add `run_id` query param to SSE endpoint (D-5)
+- [ ] **N-10**: Implement server-side pagination or remove UI
+- [ ] **D-2**: Add Runs table for restart recovery
+
+### 8.4 Documentation (M8-D)
+
+- [ ] Create `docs/architecture/greta.md`
+- [ ] Create `docs/architecture/marvin.md`
+- [ ] Create `docs/architecture/walle.md`
+- [ ] Document SSE event wire format
+- [ ] Document error handling strategy
+- [ ] Fix ARCHITECTURE.md §5 false SSE run_id claim
+- [ ] Update veda.md env var names (L-04) and OrderStatus enum (L-05)
+
+### 8.5 Code Cleanup (Low)
 
 - [ ] **L-01**: Delete orphan files: `src/models.py`, `src/constants.py`, `src/veda/base_api_handler.py`
 - [ ] **L-02**: Resolve 3 TODO/FIXME comments
 - [ ] **L-03**: Document or unify dual `Bar` types
-- [ ] **L-04**: Fix env var names in `veda.md` to match `config.py`
-- [ ] **L-05**: Update `OrderStatus` enum documentation in `veda.md` to include `submitting` and `submitted`
 
-### 8.4 Commit & Merge Checklist
+### 8.6 Commit & Merge Checklist
 
-- [ ] Commit all uncommitted M7-6 SSE work on `haro_update`
-- [ ] Apply critical fixes (C-01 through C-04) on `haro_update`
+- [ ] Apply M8-P0 critical fixes on `haro_update`
 - [ ] Run full test suite (both backend and frontend)
-- [ ] Update test counts in docs after fixes
-- [ ] Create PR: `haro_update` → `main`
-- [ ] Merge and start M8 from clean `main`
+- [ ] Update test counts in docs after each phase
+- [ ] Merge to `main` after M8 complete
+
+---
+
+## 9. M9 Checklist (E2E Tests & Release Prep)
+
+### 9.1 E2E Setup
+
+- [ ] Configure Playwright
+- [ ] Setup test database + Docker Compose for E2E
+- [ ] Basic page load tests
+
+### 9.2 E2E User Flows
+
+- [ ] Create backtest run → view progress → view results
+- [ ] Create paper run → monitor status → stop run
+- [ ] View generated orders after backtest
+- [ ] Dashboard reflects active run count
+
+### 9.3 Release Polish
+
+- [ ] Deployment guide (production Docker Compose)
+- [ ] Final cross-doc consistency check
+- [ ] Smoke test: fresh deploy → create run → verify
 
 ---
 
@@ -460,7 +502,7 @@ src/constants.py           # ALPACA = "alpaca", 0 imports
 src/veda/base_api_handler.py  # Legacy pre-M6, 0 imports
 ```
 
-### Key Files Modified (uncommitted on haro_update)
+### Key Files (M7-6 SSE — committed on haro_update)
 
 ```
 haro/src/components/common/ConnectionStatus.tsx  (new)
@@ -477,3 +519,4 @@ haro/tests/unit/stores/notificationStore.test.ts (new)
 ---
 
 _Generated: 2026-02-15_
+_Updated: 2026-02-19 (M7 closed, M8 = fixes & improvements, M9 = E2E tests)_

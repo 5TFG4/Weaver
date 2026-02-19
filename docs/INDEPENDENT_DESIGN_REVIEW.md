@@ -6,10 +6,11 @@
 > **Not authoritative for**: finding IDs, action queue, or design decisions — those are controlled in `DESIGN_REVIEW_PLAN.md` §6.7, §7, §9.5.
 
 > **Reviewer**: Independent fresh-start review  
-> **Date**: 2026-02-16  
+> **Date**: 2026-02-16 (referenced by M8 planning as of 2026-02-19)  
 > **Scope**: Full system — architecture docs, code, tests, cross-cutting concerns  
 > **Method**: Bottom-up code reading + top-down documentation validation, deliberately ignoring prior review conclusions until final cross-check  
-> **Constraint**: Documentation-only — no code changes
+> **Constraint**: Documentation-only — no code changes  
+> **Status**: All findings (N-01–N-10) and decisions (D-1–D-5) incorporated into M8 plan
 
 ---
 

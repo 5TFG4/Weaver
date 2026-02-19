@@ -459,12 +459,18 @@ After each segment:
 
 ---
 
-## 9. Next Focus (Planned)
+## 9. Next Focus (Active — M8 Execution)
 
-**Issue-package discussion and option narrowing (doc-only)**
+**M8 has started (2026-02-19).** All design decisions (D-1–D-5) are locked. M8 focuses on critical fixes and improvements. E2E testing is deferred to M9.
 
-- Inputs: all items marked **discussion required** in Layer 5 findings and Action Queue
-- Output: per-package decision record (chosen option + reasons + acceptance criteria), then update implementation-facing P0/P1 plan
+**Execution order:**
+
+1. ✅ Lock D-1–D-5 (all locked)
+2. 🔄 M8-P0: Critical contract fixes (C-01–C-04, N-02, N-09, M-01, M-03)
+3. ⏳ M8-P1: Runtime wiring (Package A → B → C)
+4. ⏳ M8-Q: Code quality + P1 standalone fixes
+5. ⏳ M8-D: Documentation completion
+6. ⏳ M9: E2E tests (Playwright) + Release preparation
 
 ### 9.1 Package A — Run lifecycle design (Issues 1 + 5 + 6)
 
@@ -643,17 +649,17 @@ After each segment:
 - **Rollback/mitigation plan**:
   - If full C1 unification cannot be completed in one pass, use C2 only as a short, explicitly tracked transition state.
 
-### 9.5 Pending Design Decisions (D-1 through D-5)
+### 9.5 Design Decisions (D-1 through D-5) — ALL LOCKED ✅
 
-These must be locked before M8 coding starts.
+All decisions locked as of 2026-02-19. Implementation tracked in `MILESTONE_PLAN.md` §4.
 
-| #   | Question                                                                     | Options                                                                                       | Recommendation                                    |
-| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| D-1 | How should PostgresEventLog dispatch to in-process subscribers?              | (a) Direct dispatch in append + pg_notify (b) Always require pool (c) Hybrid EventLog wrapper | **(a)** for simplicity and parity                 |
-| D-2 | Should runs be persisted to database?                                        | (a) In-memory only (current) (b) Add runs table                                               | **(b)** for restart recovery                      |
-| D-3 | Should fills be persisted separately?                                        | (a) Embedded in serialized order (b) Separate fills table                                     | **(b)** for queryability and audit                |
-| D-4 | Should DomainRouter be a standalone wired component or inline in RunManager? | (a) Separate wired singleton (b) Integrated into RunManager per-run startup                   | **(a)** for consistency with architecture doc     |
-| D-5 | Should SSE support run_id filtering?                                         | (a) Yes, via query param (b) No, client-side filter                                           | **(a)** to reduce UI noise in multi-run scenarios |
+| #   | Question                                                                     | Chosen Option                                 | Status    |
+| --- | ---------------------------------------------------------------------------- | --------------------------------------------- | --------- |
+| D-1 | How should PostgresEventLog dispatch to in-process subscribers?              | **(a)** Direct dispatch in append + pg_notify | ✅ Locked |
+| D-2 | Should runs be persisted to database?                                        | **(b)** Add runs table                        | ✅ Locked |
+| D-3 | Should fills be persisted separately?                                        | **(b)** Separate fills table                  | ✅ Locked |
+| D-4 | Should DomainRouter be a standalone wired component or inline in RunManager? | **(a)** Separate wired singleton              | ✅ Locked |
+| D-5 | Should SSE support run_id filtering?                                         | **(a)** Yes, via query param                  | ✅ Locked |
 
 **How these integrate with issue packages**
 
