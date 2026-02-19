@@ -1,10 +1,23 @@
 # Event Model & Flows
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
+>
+> **Document Charter**  
+> **Primary role**: event envelope, event taxonomy, and delivery semantics.  
+> **Authoritative for**: event identity chain, namespacing, offsets, and subscription model.  
+> **Not authoritative for**: HTTP route planning and milestone tracking.
 
 ## 1. Envelope (Stable Contract)
 
 `{ id, kind:'evt'|'cmd', type, version, run_id, corr_id, causation_id, trace_id, ts, producer, headers, payload }`
+
+### Contract Appendix (Locked Baseline — Segment 5)
+
+- Event type naming is case-sensitive and currently uses `namespace.PascalCase` (for example `run.Started`, `orders.Filled`).
+- SSE `event` is a direct passthrough of `Envelope.type` from backend to clients.
+- `ui.*` events are reserved and not currently the public stream contract.
+- `run_id` is required for run-scoped lifecycle and routing semantics.
+- Contract drift policy: when docs and runtime differ, document both states explicitly and track runtime convergence in the action queue.
 
 ### Identity Chain Explained
 
@@ -37,41 +50,48 @@
 
 ## 2. Namespaces
 
-| Namespace | Source | Handler | Events |
-|-----------|--------|---------|--------|
-| `strategy.*` | Marvin | DomainRouter → live/backtest | FetchWindow, PlaceRequest, DecisionMade |
-| `live.*` | DomainRouter | Veda | FetchWindow, PlaceOrder |
-| `backtest.*` | DomainRouter | Greta | FetchWindow, PlaceOrder |
-| `data.*` | Veda/Greta | Marvin | WindowReady, WindowChunk, WindowComplete |
-| `market.*` | Exchange | - | Quote, Trade, Bar |
-| `orders.*` | Veda/Greta | - | **Created**, PlaceRequest, Ack, Placed, Filled, **Rejected** |
-| `run.*` | RunManager | SSE | Created, Started, StopRequested, Stopped, Completed, Error |
-| `clock.*` | Clock | StrategyRunner | Tick |
-| `ui.*` | Frontend | - | (future) |
+| Namespace    | Source       | Handler                      | Events                                                       |
+| ------------ | ------------ | ---------------------------- | ------------------------------------------------------------ |
+| `strategy.*` | Marvin       | DomainRouter → live/backtest | FetchWindow, PlaceRequest, DecisionMade                      |
+| `live.*`     | DomainRouter | Veda                         | FetchWindow, PlaceOrder                                      |
+| `backtest.*` | DomainRouter | Greta                        | FetchWindow, PlaceOrder                                      |
+| `data.*`     | Veda/Greta   | Marvin                       | WindowReady, WindowChunk, WindowComplete                     |
+| `market.*`   | Exchange     | -                            | Quote, Trade, Bar                                            |
+| `orders.*`   | Veda/Greta   | -                            | **Created**, PlaceRequest, Ack, Placed, Filled, **Rejected** |
+| `run.*`      | RunManager   | SSE                          | Created, Started, StopRequested, Stopped, Completed, Error   |
+| `clock.*`    | Clock        | StrategyRunner               | Tick                                                         |
+| `ui.*`       | Frontend     | -                            | (future)                                                     |
 
 ### 2.1 Order Events (M6)
 
-| Event | Emitter | Trigger | Payload |
-|-------|---------|---------|---------|
-| `orders.Created` | VedaService | Order accepted by exchange | `{order_id, client_order_id, exchange_order_id, symbol, side, qty, status}` |
-| `orders.Rejected` | VedaService | Order rejected by exchange | `{order_id, client_order_id, symbol, error_code, error_message}` |
-| `orders.Filled` | VedaService | Order fully filled | `{order_id, exchange_order_id, filled_qty, filled_avg_price}` |
-| `orders.Cancelled` | VedaService | Order cancelled | `{order_id, exchange_order_id}` |
+| Event              | Emitter     | Trigger                    | Payload                                                                     |
+| ------------------ | ----------- | -------------------------- | --------------------------------------------------------------------------- |
+| `orders.Created`   | VedaService | Order accepted by exchange | `{order_id, client_order_id, exchange_order_id, symbol, side, qty, status}` |
+| `orders.Rejected`  | VedaService | Order rejected by exchange | `{order_id, client_order_id, symbol, error_code, error_message}`            |
+| `orders.Filled`    | VedaService | Order fully filled         | `{order_id, exchange_order_id, filled_qty, filled_avg_price}`               |
+| `orders.Cancelled` | VedaService | Order cancelled            | `{order_id, exchange_order_id}`                                             |
 
 ## 3. Payload & Size Policy
 
-* **Thin events** (to UI): keys + status only; fetch details via REST.
-* **Internal events**: ≤ ~100KB inline; 100KB–2MB use `data.WindowChunk/Complete`; >2MB store **reference** only (`data_ref`).
+- **Thin events** (to UI): keys + status only; fetch details via REST.
+- **Internal events**: ≤ ~100KB inline; 100KB–2MB use `data.WindowChunk/Complete`; >2MB store **reference** only (`data_ref`).
 
 ## 4. Typical Flows
 
-* **Fetch**: `strategy.FetchWindow → (GLaDOS route) → live|backtest.FetchWindow → data.WindowReady/Chunk/Complete`.
-* **Orders**: `orders.PlaceRequest → orders.Ack/Placed/Filled/Rejected`.
-* **Run**: `run.Started/StopRequested/Heartbeat`; `clock.Tick`.
+- **Fetch**: `strategy.FetchWindow → (GLaDOS route) → live|backtest.FetchWindow → data.WindowReady/Chunk/Complete`.
+- **Orders**: `orders.PlaceRequest → orders.Ack/Placed/Filled/Rejected`.
+- **Run**: `run.Started/StopRequested/Heartbeat`; `clock.Tick`.
 
 ## 5. Delivery & Idempotency
 
-* Write `outbox` in‑transaction; `NOTIFY` after commit; resume via `consumer_offsets`; deduplicate by `id/corr_id`.
+- Write `outbox` in‑transaction; `NOTIFY` after commit; resume via `consumer_offsets`; deduplicate by `id/corr_id`.
+
+### 5.1 API-Boundary Delivery Semantics
+
+- Delivery guarantee remains at-least-once at event log/consumer boundary.
+- API boundary currently guarantees reconnect behavior from SSE clients, but does not guarantee resume-from-last-event replay contract for browser consumers.
+- In DB-backed mode, append/offset durability is provided by `outbox` and `consumer_offsets`.
+- In no-DB mode, there is no durable event log or offset store; stream delivery is best-effort and non-durable.
 
 ## 6. Multi-Run Event Isolation
 
@@ -170,6 +190,7 @@ log.unsubscribe_by_id(sub_id)
 ```
 
 **Key Features:**
+
 - `subscribe_filtered()` returns a unique subscription ID
 - Filter by event types (list) + optional custom `filter_fn`
 - Wildcard `["*"]` subscribes to all events
@@ -180,16 +201,16 @@ log.unsubscribe_by_id(sub_id)
 
 **Files**: `src/events/`
 
-| File | Purpose |
-|------|---------|
+| File          | Purpose                                                   |
+| ------------- | --------------------------------------------------------- |
 | `protocol.py` | Envelope dataclass, Subscription dataclass, ErrorResponse |
-| `types.py` | Event type constants by namespace |
-| `registry.py` | Type → Payload validation |
-| `log.py` | Outbox write + LISTEN/NOTIFY + Subscription management |
-| `offsets.py` | Consumer offset management |
+| `types.py`    | Event type constants by namespace                         |
+| `registry.py` | Type → Payload validation                                 |
+| `log.py`      | Outbox write + LISTEN/NOTIFY + Subscription management    |
+| `offsets.py`  | Consumer offset management                                |
 
 ## 10. Data & Persistence
 
-* **Business data (WallE)**: `orders / fills / candles / runs / backtests / strategy_results`, exposed via repositories.
-* **EventLog**: `outbox` (fact log) and `consumer_offsets` (progress).
-* **Retention & Cleanup**: time/partition based; TTL + audit retention; large payloads may use external storage (store references only).
+- **Business data (WallE)**: `orders / fills / candles / runs / backtests / strategy_results`, exposed via repositories.
+- **EventLog**: `outbox` (fact log) and `consumer_offsets` (progress).
+- **Retention & Cleanup**: time/partition based; TTL + audit retention; large payloads may use external storage (store references only).

@@ -2,10 +2,16 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)  
 > Last Updated: 2026-02-04 (M6 Complete)
+>
+> **Document Charter**  
+> **Primary role**: Veda internals (adapter contract, order flow, domain models).  
+> **Authoritative for**: Veda architecture and integration patterns inside trading subsystem.  
+> **Not authoritative for**: global credential policy and security baseline (use `config.md`).
 
 ## 1. Overview
 
 Veda is the live/paper trading subsystem. It handles:
+
 - Exchange communication via adapters
 - Order management and persistence
 - Position tracking
@@ -46,30 +52,30 @@ All exchange adapters implement this protocol:
 ```python
 class ExchangeAdapter(ABC):
     """Abstract interface for exchange communication."""
-    
+
     @abstractmethod
     async def connect(self) -> None:
         """
         Connect to the exchange.
-        
+
         - Initialize API clients
         - Verify credentials (account ping)
         - Idempotent (safe to call multiple times)
-        
+
         Raises:
             ExchangeConnectionError: If connection fails
         """
-    
+
     @abstractmethod
     async def disconnect(self) -> None:
         """
         Disconnect from the exchange.
-        
+
         - Release resources
         - Clear client references
         - Idempotent
         """
-    
+
     @property
     @abstractmethod
     def is_connected(self) -> bool:
@@ -83,10 +89,10 @@ class ExchangeAdapter(ABC):
     async def submit_order(self, intent: OrderIntent) -> OrderSubmitResult:
         """
         Submit order to exchange.
-        
+
         Args:
             intent: Order intent with symbol, side, qty, type, etc.
-            
+
         Returns:
             OrderSubmitResult:
                 - success: bool
@@ -94,15 +100,15 @@ class ExchangeAdapter(ABC):
                 - status: OrderStatus
                 - error_code/error_message: if failed
         """
-    
+
     @abstractmethod
     async def cancel_order(self, exchange_order_id: str) -> bool:
         """Cancel an order. Returns True if accepted."""
-    
+
     @abstractmethod
     async def get_order(self, exchange_order_id: str) -> ExchangeOrder | None:
         """Get order status from exchange."""
-    
+
     @abstractmethod
     async def list_orders(
         self,
@@ -119,11 +125,11 @@ class ExchangeAdapter(ABC):
     @abstractmethod
     async def get_account(self) -> AccountInfo:
         """Get account balance, buying power, etc."""
-    
+
     @abstractmethod
     async def get_positions(self) -> list[Position]:
         """Get all current positions."""
-    
+
     @abstractmethod
     async def get_position(self, symbol: str) -> Position | None:
         """Get position for specific symbol."""
@@ -142,15 +148,15 @@ class ExchangeAdapter(ABC):
         limit: int | None = None,
     ) -> list[Bar]:
         """Get historical OHLCV bars."""
-    
+
     @abstractmethod
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get most recent bar."""
-    
+
     @abstractmethod
     async def get_latest_quote(self, symbol: str) -> Quote | None:
         """Get most recent quote (bid/ask)."""
-    
+
     @abstractmethod
     async def get_latest_trade(self, symbol: str) -> Trade | None:
         """Get most recent trade."""
@@ -173,7 +179,7 @@ ADAPTER_META = {
     "class": "AlpacaAdapter",          # Class to instantiate
     "features": [                      # Capability flags
         "stocks",
-        "crypto", 
+        "crypto",
         "paper",
         "live",
     ],
@@ -235,7 +241,7 @@ class VedaService:
     async def place_order(self, intent: OrderIntent) -> OrderState:
         """
         Place order with idempotency and event emission.
-        
+
         Flow:
         1. Check idempotency (by client_order_id)
         2. Submit to adapter
@@ -253,10 +259,10 @@ async def place_order(self, intent: OrderIntent) -> OrderState:
     existing = await self._order_manager.get_order(intent.client_order_id)
     if existing:
         return existing  # Return existing, don't resubmit
-    
+
     # 2. Submit to exchange
     result = await self._adapter.submit_order(intent)
-    
+
     # 3. Create order state
     order = OrderState(
         id=str(uuid4()),
@@ -265,16 +271,16 @@ async def place_order(self, intent: OrderIntent) -> OrderState:
         status=result.status,
         ...
     )
-    
+
     # 4. Persist
     await self._order_manager.save_order(order)
-    
+
     # 5. Emit event
     if result.success:
         await self._emit_event("orders.Created", order)
     else:
         await self._emit_event("orders.Rejected", order)
-    
+
     return order
 ```
 
@@ -285,11 +291,11 @@ class VedaService:
     async def connect(self) -> None:
         """Delegate to adapter."""
         await self._adapter.connect()
-    
+
     async def disconnect(self) -> None:
         """Delegate to adapter."""
         await self._adapter.disconnect()
-    
+
     @property
     def is_connected(self) -> bool:
         """Delegate to adapter."""
@@ -344,6 +350,8 @@ class OrderState:
 ```python
 class OrderStatus(str, Enum):
     PENDING = "pending"           # Created locally, not yet sent
+    SUBMITTING = "submitting"     # Being sent to exchange
+    SUBMITTED = "submitted"       # Sent, awaiting exchange ack
     ACCEPTED = "accepted"         # Exchange accepted
     PARTIALLY_FILLED = "partial"  # Some qty filled
     FILLED = "filled"             # Fully filled
@@ -358,26 +366,26 @@ class OrderStatus(str, Enum):
 
 ### 6.1 AlpacaAdapter
 
-| Feature | Status |
-|---------|--------|
-| Paper trading | ✅ |
-| Live trading | ✅ (credentials required) |
-| Stocks | ✅ |
-| Crypto | ✅ |
-| Connection management | ✅ |
-| Historical bars | ✅ |
-| Latest quote/trade | ✅ |
-| WebSocket streaming | ❌ (planned) |
+| Feature               | Status                    |
+| --------------------- | ------------------------- |
+| Paper trading         | ✅                        |
+| Live trading          | ✅ (credentials required) |
+| Stocks                | ✅                        |
+| Crypto                | ✅                        |
+| Connection management | ✅                        |
+| Historical bars       | ✅                        |
+| Latest quote/trade    | ✅                        |
+| WebSocket streaming   | ❌ (planned)              |
 
 ### 6.2 MockExchangeAdapter
 
 For testing without real API:
 
-| Feature | Behavior |
-|---------|----------|
-| submit_order | Always succeeds (configurable) |
-| get_bars | Returns empty or configured data |
-| Latency simulation | Optional delays |
+| Feature            | Behavior                         |
+| ------------------ | -------------------------------- |
+| submit_order       | Always succeeds (configurable)   |
+| get_bars           | Returns empty or configured data |
+| Latency simulation | Optional delays                  |
 
 ---
 
@@ -406,7 +414,7 @@ class AlpacaAdapter:
             raise ExchangeConnectionError(
                 "Not connected to Alpaca. Call connect() first."
             )
-    
+
     async def submit_order(self, intent: OrderIntent) -> OrderSubmitResult:
         self._require_connection()  # Guard
         # ... rest of method
@@ -422,29 +430,29 @@ class AlpacaAdapter:
 # In config.py
 @dataclass
 class AlpacaConfig:
-    paper_key: str | None = None
-    paper_secret: str | None = None
-    live_key: str | None = None
-    live_secret: str | None = None
-    
+    paper_api_key: str | None = None
+    paper_api_secret: str | None = None
+    live_api_key: str | None = None
+    live_api_secret: str | None = None
+
     @property
     def has_paper_credentials(self) -> bool:
-        return self.paper_key and self.paper_secret
-    
+        return self.paper_api_key and self.paper_api_secret
+
     def get_credentials(self, mode: str) -> dict:
         if mode == "paper":
-            return {"api_key": self.paper_key, "api_secret": self.paper_secret, "paper": True}
-        return {"api_key": self.live_key, "api_secret": self.live_secret, "paper": False}
+            return {"api_key": self.paper_api_key, "api_secret": self.paper_api_secret, "paper": True}
+        return {"api_key": self.live_api_key, "api_secret": self.live_api_secret, "paper": False}
 ```
 
 ### 8.2 Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ALPACA_PAPER_KEY` | Paper trading API key | For paper trading |
-| `ALPACA_PAPER_SECRET` | Paper trading secret | For paper trading |
-| `ALPACA_LIVE_KEY` | Live trading API key | For live trading |
-| `ALPACA_LIVE_SECRET` | Live trading secret | For live trading |
+| Variable                  | Description           | Required          |
+| ------------------------- | --------------------- | ----------------- |
+| `ALPACA_PAPER_API_KEY`    | Paper trading API key | For paper trading |
+| `ALPACA_PAPER_API_SECRET` | Paper trading secret  | For paper trading |
+| `ALPACA_LIVE_API_KEY`     | Live trading API key  | For live trading  |
+| `ALPACA_LIVE_API_SECRET`  | Live trading secret   | For live trading  |
 
 ---
 
@@ -467,11 +475,11 @@ def mock_adapter():
 
 ```python
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("ALPACA_PAPER_KEY"), reason="No Alpaca credentials")
+@pytest.mark.skipif(not os.getenv("ALPACA_PAPER_API_KEY"), reason="No Alpaca credentials")
 async def test_real_alpaca_connection():
     adapter = AlpacaAdapter(
-        api_key=os.getenv("ALPACA_PAPER_KEY"),
-        api_secret=os.getenv("ALPACA_PAPER_SECRET"),
+        api_key=os.getenv("ALPACA_PAPER_API_KEY"),
+        api_secret=os.getenv("ALPACA_PAPER_API_SECRET"),
         paper=True
     )
     await adapter.connect()
@@ -480,4 +488,4 @@ async def test_real_alpaca_connection():
 
 ---
 
-*See also: [Events](events.md) for order event details, [API](api.md) for REST endpoints*
+_See also: [Events](events.md) for order event details, [API](api.md) for REST endpoints_

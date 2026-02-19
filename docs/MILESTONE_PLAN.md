@@ -1,34 +1,48 @@
-# Weaver Milestone Plan (2026-02-04)
+# Weaver Milestone Plan (2026-02-19)
 
-> **Current State**: M6 Complete, 806 tests passing  
-> **Remaining Work**: M7 → M8  
-> **Estimated Total**: ~50 new tests remaining, 2 weeks
+> **Document Charter**  
+> **Primary role**: authoritative milestone execution plan and current status.  
+> **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
+> **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
+
+> **Current State**: M7 ✅ Formally Closed · M8 Active  
+> **Tests**: 808 backend + 86 frontend = 894 total  
+> **Remaining Work**: M8 (Critical Fixes & Improvements) → M9 (E2E Tests)  
+> **Estimated Total**: ~60–80 new tests remaining, ~3 weeks
 
 ---
 
 ## Executive Summary
 
-All pending tasks have been consolidated and reorganized into 4 milestones:
+All pending tasks have been consolidated and reorganized into 5 milestones.
+M7 is formally closed as of 2026-02-19. M8 is now the active milestone, focused on critical fixes and code improvements. E2E testing is separated into M9 for cleaner scope and delivery.
 
-| Milestone | Name | Core Objective | Est. Tests | Status |
-|-----------|------|----------------|------------|--------|
-| **M5** | Marvin Core | Strategy system + Plugin architecture | 74 | ✅ DONE |
-| **M6** | Live Trading | Paper/Live trading flow | ~65 | ⏳ M6-2 done (63 tests) |
-| **M7** | Haro Frontend | React UI + SSE | ~50 | ⏳ |
-| **M8** | Polish & E2E | Code quality + End-to-end tests | ~40 | ⏳ |
+| Milestone | Name               | Core Objective                            | Tests  | Status              |
+| --------- | ------------------ | ----------------------------------------- | ------ | ------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
+| **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
+| **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | ~40–50 | 🔄 ACTIVE           |
+| **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
 
-**M6-1 & M6-2 Complete**:
+**M6 Complete** (101 tests added):
+
 1. ✅ PluginAdapterLoader (mirrors PluginStrategyLoader pattern)
 2. ✅ AdapterMeta dataclass with features support
-3. ✅ ADAPTER_META added to AlpacaAdapter and MockExchangeAdapter
-4. ✅ AST-based discovery without importing
-5. ✅ AlpacaAdapter connect()/disconnect()/is_connected
-6. ✅ _require_connection() guard on all methods
+3. ✅ AlpacaAdapter connect()/disconnect()/is_connected
+4. ✅ VedaService wired to order routes
+5. ✅ Live order flow with events + persistence
+6. ✅ RealtimeClock for live runs
 
-**M6 Remaining**:
-- M6-3: VedaService wired to order routes
-- M6-4: Live order flow with events + persistence
-- M6-5: RealtimeClock for live runs
+**M7 Complete** (86 tests):
+
+- M7-0: Dev Environment Setup ✅
+- M7-1: React App Scaffold ✅ (8 tests)
+- M7-2: API Client Layer ✅ (9 tests)
+- M7-3: Dashboard Page ✅ (15 tests)
+- M7-4: Runs Page ✅ (14 tests)
+- M7-5: Orders Page ✅ (17 tests)
+- M7-6: SSE Integration ✅ (23 tests)
 
 ---
 
@@ -49,17 +63,18 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 1.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M5-1 | EventLog Subscription | ~10 | - |
-| M5-2 | data.WindowReady Flow | ~15 | M5-1 |
-| M5-3 | SMA Strategy | ~12 | M5-2 |
-| M5-4 | Plugin Strategy Loader | ~15 | M5-3 |
-| M5-5 | Code Quality (Marvin) | ~8 | - |
+| MVP  | Focus                  | Tests | Dependencies |
+| ---- | ---------------------- | ----- | ------------ |
+| M5-1 | EventLog Subscription  | ~10   | -            |
+| M5-2 | data.WindowReady Flow  | ~15   | M5-1         |
+| M5-3 | SMA Strategy           | ~12   | M5-2         |
+| M5-4 | Plugin Strategy Loader | ~15   | M5-3         |
+| M5-5 | Code Quality (Marvin)  | ~8    | -            |
 
 ### 1.3 Detailed Tasks
 
 #### M5-1: EventLog Subscription (~10 tests)
+
 ```
 - [ ] Add subscribe()/unsubscribe() to EventLog protocol
 - [ ] Implement subscription in InMemoryEventLog
@@ -69,6 +84,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-2: data.WindowReady Flow (~15 tests)
+
 ```
 - [ ] StrategyRunner subscribes to data.WindowReady
 - [ ] GretaService subscribes to backtest.FetchWindow (M4 deferred)
@@ -78,6 +94,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-3: SMA Strategy (~12 tests)
+
 ```
 - [ ] Create src/marvin/strategies/ directory
 - [ ] Implement SMAStrategy (dual moving average crossover)
@@ -88,6 +105,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-4: Plugin Strategy Loader (~15 tests)
+
 ```
 - [ ] Create StrategyMeta dataclass
 - [ ] Create @strategy decorator (optional)
@@ -103,6 +121,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 ```
 
 #### M5-5: Code Quality - Marvin (~8 tests)
+
 ```
 - [ ] SimulatedFill.side: str → OrderSide enum
 - [ ] Extract SimpleTestStrategy to fixtures
@@ -131,19 +150,19 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ### 2.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M6-1 | PluginAdapterLoader | 40 ✅ | - |
-| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅ |
-| M6-3 | VedaService Routing | 13 ✅ | M6-2 ✅ |
-| M6-4 | Live Order Flow | 15 ✅ | M6-3 ✅ |
-| M6-5 | Run Mode Integration | 10 ✅ | M6-4 ✅ |
+| MVP  | Focus                    | Tests | Dependencies |
+| ---- | ------------------------ | ----- | ------------ |
+| M6-1 | PluginAdapterLoader      | 40 ✅ | -            |
+| M6-2 | AlpacaAdapter Connection | 23 ✅ | M6-1 ✅      |
+| M6-3 | VedaService Routing      | 13 ✅ | M6-2 ✅      |
+| M6-4 | Live Order Flow          | 15 ✅ | M6-3 ✅      |
+| M6-5 | Run Mode Integration     | 10 ✅ | M6-4 ✅      |
 
 ### 2.3 Detailed Tasks
 
 #### M6-1: PluginAdapterLoader ✅ COMPLETE (40 tests)
 
-**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/*.py (MODIFIED)
+**Files**: `adapter_meta.py`, `adapter_loader.py` (CREATED), adapters/\*.py (MODIFIED)
 
 ```
 - [x] Create AdapterMeta dataclass (id, name, version, class_name, features)
@@ -208,7 +227,7 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 ```
 - [x] Add VedaService.connect() method
-- [x] Add VedaService.disconnect() method  
+- [x] Add VedaService.disconnect() method
 - [x] Add VedaService.is_connected property
 - [x] Add connect/disconnect/is_connected to ExchangeAdapter interface
 - [x] Add connect/disconnect/is_connected to MockExchangeAdapter
@@ -253,179 +272,299 @@ All pending tasks have been consolidated and reorganized into 4 milestones:
 
 > **Goal**: React frontend to display trading status and data  
 > **Prerequisite**: M6 ✅  
-> **Estimated Effort**: 1.5-2 weeks
+> **Estimated Effort**: 1.5-2 weeks  
+> **Design Document**: [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md)
 
 ### 3.1 Exit Gate (Definition of Done)
 
-- [ ] React app running in standalone container
-- [ ] Dashboard page displays system status
-- [ ] Runs page with list and details
-- [ ] Orders page displays order status
-- [ ] SSE real-time updates
+- [x] React app builds and runs in Docker container ✅
+- [x] Dashboard displays system status and active runs ✅
+- [x] Can create, view, and stop runs via UI ✅
+- [x] Orders page shows order list with status ✅
+- [x] SSE delivers real-time updates to UI ✅ 2026-02-06
+- [x] 86 tests passing (unit + integration) ✅
+- [x] TypeScript strict mode, no `any` types ✅
 
 ### 3.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M7-1 | React App Scaffold | ~10 | - |
-| M7-2 | Dashboard Page | ~10 | M7-1 |
-| M7-3 | Runs Page | ~12 | M7-2 |
-| M7-4 | Orders Page | ~10 | M7-3 |
-| M7-5 | SSE Integration | ~8 | M7-4 |
+| MVP  | Focus                 | Tests | Dependencies |
+| ---- | --------------------- | ----- | ------------ |
+| M7-0 | Dev Environment Setup | 0     | ✅           |
+| M7-1 | React App Scaffold    | 8 ✅  | M7-0 ✅      |
+| M7-2 | API Client Layer      | 9 ✅  | M7-1 ✅      |
+| M7-3 | Dashboard Page        | 15 ✅ | M7-2 ✅      |
+| M7-4 | Runs Page             | 14 ✅ | M7-3 ✅      |
+| M7-5 | Orders Page           | 17 ✅ | M7-4 ✅      |
+| M7-6 | SSE Integration       | 23 ✅ | M7-5 ✅      |
 
-### 3.3 Detailed Tasks
+### 3.3 Technology Stack (Actual)
 
-#### M7-1: React App Scaffold (~10 tests)
-```
-- [ ] Create src/haro/ React project
-- [ ] Configure Vite + TypeScript
-- [ ] Setup Docker build
-- [ ] API client configuration
-- [ ] Routing setup (React Router)
-```
+| Category  | Designed                 | Actual                          |
+| --------- | ------------------------ | ------------------------------- |
+| Framework | React 18 + TypeScript    | React 19.2 + TypeScript 5.9     |
+| Build     | Vite 5                   | Vite 7.2                        |
+| Routing   | React Router 6           | React Router 7.13               |
+| State     | TanStack Query + Zustand | TanStack Query 5.90 + Zustand 5 |
+| Styling   | Tailwind CSS + shadcn/ui | Tailwind CSS 4.1 (no shadcn/ui) |
+| Testing   | Vitest + RTL + MSW       | Vitest 4 + RTL 16 + MSW 2.12    |
 
-#### M7-2: Dashboard Page (~10 tests)
-```
-- [ ] System health status display
-- [ ] Active run count
-- [ ] Recent orders summary
-- [ ] API connection status indicator
-```
+### 3.4 Dev Environment (Option 3: Hybrid)
 
-#### M7-3: Runs Page (~12 tests)
 ```
-- [ ] Run list (paginated)
-- [ ] Run detail page
-- [ ] Create new run form
-- [ ] Start/Stop actions
-- [ ] Run status badges
-```
-
-#### M7-4: Orders Page (~10 tests)
-```
-- [ ] Order list (filter by run)
-- [ ] Order details
-- [ ] Status filter
-- [ ] Time range filter
+┌─────────────────────────────────────────────────────────────┐
+│  VS Code (backend_dev container)                            │
+│  - Edit Python (src/) + React (haro/) in one window         │
+│  - Python 3.13 + Node.js 20 (for IDE support)               │
+└─────────────────────────────────────────────────────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────┐          ┌─────────────────┐
+│ backend_dev     │◀─────────│ frontend_dev    │
+│ uvicorn :8000   │  proxy   │ vite :3000      │
+│ (runs backend)  │          │ (runs frontend) │
+└─────────────────┘          └─────────────────┘
 ```
 
-#### M7-5: SSE Integration (~8 tests)
-```
-- [ ] SSE client wrapper
-- [ ] Auto-reconnection mechanism
-- [ ] Event dispatch to components
-- [ ] Optimistic updates + rollback
-```
+See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development-environment-setup) for full details.
 
 ---
 
-## 4. M8: Polish & E2E
+## 4. M8: Critical Fixes & Improvements
 
-> **Goal**: Code quality improvement + full E2E testing  
+> **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
 > **Prerequisite**: M7 ✅  
-> **Estimated Effort**: 1-1.5 weeks
+> **Estimated Effort**: 1.5–2 weeks  
+> **Status**: 🔄 ACTIVE (started 2026-02-19)  
+> **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
 
-- [ ] E2E tests pass (Playwright)
+- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [ ] Design decisions D-1 through D-5 implemented
+- [ ] DomainRouter wired into runtime lifecycle
+- [ ] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [ ] All TODO/FIXME cleaned up
-- [ ] Documentation complete
+- [ ] Documentation complete and accurate
 
 ### 4.2 MVP Breakdown
 
-| MVP | Focus | Tests | Dependencies |
-|-----|-------|-------|--------------|
-| M8-1 | E2E Test Setup | ~5 | - |
-| M8-2 | E2E Backtest Flow | ~8 | M8-1 |
-| M8-3 | E2E Live Flow | ~8 | M8-2 |
-| M8-4 | Code Quality | ~10 | - |
-| M8-5 | Documentation | - | M8-4 |
+| MVP   | Focus                           | Est. Tests | Dependencies | Status |
+| ----- | ------------------------------- | ---------- | ------------ | ------ |
+| M8-P0 | Critical Contract Fixes         | ~15        | -            | ⏳     |
+| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ⏳     |
+| M8-Q  | Code Quality & P1 Fixes         | ~10        | M8-P0        | ⏳     |
+| M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
 
 ### 4.3 Detailed Tasks
 
-#### M8-1: E2E Test Setup (~5 tests)
+#### M8-P0: Critical Contract Fixes (~15 tests)
+
+**Priority**: Must fix before any other M8 work.
+
 ```
-- [ ] Configure Playwright
-- [ ] Setup test database
-- [ ] Docker Compose for E2E
-- [ ] Basic page load tests
+- [ ] C-01: Fix SSE event casing — align frontend useSSE.ts to PascalCase
+        (run.Started, run.Stopped, run.Completed, run.Error)
+- [ ] C-02: Add POST /api/v1/runs/{run_id}/start route + tests
+- [ ] C-03: Fix health endpoint path — add /api/v1 prefix or adjust frontend
+- [ ] C-04: Unify order read/write to VedaService (fallback to Mock when unconfigured)
+- [ ] N-02: Add error handling to _start_live (copy _start_backtest pattern)
+- [ ] N-09: Unify time_in_force defaults (schema vs handler)
+- [ ] M-01: Add missing events to ALL_EVENT_TYPES
+        (RunEvents.CREATED, RunEvents.COMPLETED, OrderEvents.CREATED)
+- [ ] M-03: Add orders.Cancelled listener to frontend useSSE.ts
 ```
 
-#### M8-2: E2E Backtest Flow (~8 tests)
+#### M8-P1: Runtime Wiring — Packages A/B/C (~20 tests)
+
+**Requires**: Design decisions D-1, D-4 locked.
+
+**Package A — Run Lifecycle (chosen: A2 lifecycle-first):**
+
 ```
-- [ ] Create backtest run
-- [ ] View backtest progress
-- [ ] View backtest results
-- [ ] View generated orders
+- [ ] Inject RunManager runtime dependencies (strategy_loader, bar_repository)
+- [ ] Per-run cleanup guarantees (stop/complete/error paths)
+- [ ] Integration test: start → run → stop lifecycle
+- [ ] Integration test: error during run → proper cleanup
 ```
 
-#### M8-3: E2E Live Flow (~8 tests)
+**Package B — Event Pipeline Wiring (chosen: B2, with B1 fallback):**
+
 ```
-- [ ] Create paper run
-- [ ] Monitor real-time status
-- [ ] Manually stop run
-- [ ] Verify order status updates
+- [ ] D-1: Add direct subscriber dispatch in PostgresEventLog.append()
+        (matching InMemoryEventLog behavior for in-process consumers)
+- [ ] D-4: Wire DomainRouter as standalone singleton in app lifespan
+- [ ] Integration test: append event → subscriber fires → SSEBroadcaster receives
+- [ ] Integration test: strategy.FetchWindow → DomainRouter → backtest.FetchWindow
 ```
 
-#### M8-4: Code Quality (~10 tests)
+**Package C — Data Source Unification (chosen: C1 hard unify):**
+
 ```
-- [ ] Clean all TODO/FIXME
-- [ ] Fix Pylance/mypy warnings
-- [ ] Add missing docstrings
-- [ ] Configure strict type checking
+- [ ] Unify orders list/get to VedaService in DB mode
+- [ ] Explicit non-durable semantics in no-DB mode
+- [ ] Integration test: write order → read order (same source)
+```
+
+#### M8-Q: Code Quality & P1 Fixes (~10 tests)
+
+**Code Quality:**
+
+```
+- [ ] L-01: Delete orphan files (src/models.py, src/constants.py, src/veda/base_api_handler.py)
+- [ ] L-02: Resolve 3 TODO/FIXME comments
+- [ ] M-04: Change SimulatedFill.side from str to OrderSide enum
+- [ ] N-05: Refactor StrategyAction to proper enum/union type
+- [ ] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
+- [ ] Fix Pylance/mypy warnings + strict type checking
 - [ ] Remove unused code
-- [ ] Advanced backtest stats (Sharpe, Drawdown)
-- [ ] LISTEN/NOTIFY activation (optional)
 ```
 
-#### M8-5: Documentation
+**P1 Standalone Fixes:**
+
 ```
+- [ ] N-03: Add Fills table + persist fill history (D-3: separate fills table)
+- [ ] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
+- [ ] N-06: Add run_id query param to SSE endpoint (D-5)
+- [ ] N-10: Implement server-side pagination or remove pagination UI
+- [ ] D-2: Add Runs table for restart recovery
+- [ ] M-07: Either use runId param in RunsPage or remove route
+```
+
+#### M8-D: Documentation
+
+```
+- [ ] Create docs/architecture/greta.md (promote from milestone doc)
+- [ ] Create docs/architecture/marvin.md (promote from milestone doc)
+- [ ] Create docs/architecture/walle.md (schema, repos, migrations)
+- [ ] Document SSE event wire format
+- [ ] Document error handling strategy (exception hierarchy, HTTP mapping)
+- [ ] Fix ARCHITECTURE.md §5 false claim about SSE run_id filtering
+- [ ] L-04: Fix env var names in veda.md to match config.py
+- [ ] L-05: Update OrderStatus enum docs to include submitting/submitted
 - [ ] Update README with usage instructions
-- [ ] Complete API documentation
-- [ ] Deployment guide
 - [ ] Strategy development guide
 - [ ] Exchange adapter development guide
 ```
 
+### 4.4 Design Decisions (All Locked)
+
+| #   | Question                                          | Chosen Option                                 | Status    |
+| --- | ------------------------------------------------- | --------------------------------------------- | --------- |
+| D-1 | PostgresEventLog subscriber dispatch model        | **(a)** Direct dispatch in append + pg_notify | 🔒 Locked |
+| D-2 | Should runs be persisted to database?             | **(b)** Add runs table                        | 🔒 Locked |
+| D-3 | Should fills be persisted separately?             | **(b)** Separate fills table                  | 🔒 Locked |
+| D-4 | DomainRouter: standalone or inline in RunManager? | **(a)** Separate wired singleton              | 🔒 Locked |
+| D-5 | SSE run_id filtering?                             | **(a)** Yes, via query param                  | 🔒 Locked |
+
 ---
 
-## 5. Backlog (Deferred Tasks)
+## 5. M9: E2E Tests & Release Preparation
+
+> **Goal**: Full end-to-end test coverage + final release polish  
+> **Prerequisite**: M8 ✅  
+> **Estimated Effort**: 1–1.5 weeks  
+> **Status**: ⏳ PLANNED
+
+### 5.1 Exit Gate (Definition of Done)
+
+- [ ] E2E tests pass (Playwright)
+- [ ] Full user workflow validated end-to-end
+- [ ] Deployment guide complete
+- [ ] All docs accurate post-M8 changes
+
+### 5.2 MVP Breakdown
+
+| MVP  | Focus                 | Est. Tests | Dependencies |
+| ---- | --------------------- | ---------- | ------------ |
+| M9-1 | E2E Setup & Infra     | ~5         | -            |
+| M9-2 | E2E Backtest Flow     | ~8         | M9-1         |
+| M9-3 | E2E Live/Paper Flow   | ~8         | M9-1         |
+| M9-4 | Release Polish & Docs | ~5         | M9-2, M9-3   |
+
+### 5.3 Detailed Tasks
+
+#### M9-1: E2E Test Setup (~5 tests)
+
+```
+- [ ] Configure Playwright (install, config, base helpers)
+- [ ] Setup test database (seeded fixtures)
+- [ ] Docker Compose for E2E (backend + frontend + DB)
+- [ ] Basic page load tests (Dashboard, Runs, Orders, 404)
+- [ ] Health check E2E test
+```
+
+#### M9-2: E2E Backtest Flow (~8 tests)
+
+```
+- [ ] Create backtest run via UI
+- [ ] View backtest progress (SSE updates reflected)
+- [ ] View backtest results (stats displayed)
+- [ ] View generated orders after backtest
+- [ ] Stop backtest mid-run
+- [ ] Multiple concurrent backtests
+```
+
+#### M9-3: E2E Live/Paper Flow (~8 tests)
+
+```
+- [ ] Create paper run via UI
+- [ ] Monitor real-time status (SSE updates)
+- [ ] Manually stop paper run
+- [ ] Verify order status updates in UI
+- [ ] Dashboard reflects active run count
+- [ ] Error state displayed correctly
+```
+
+#### M9-4: Release Polish & Docs (~5 tests)
+
+```
+- [ ] Deployment guide (production Docker Compose)
+- [ ] Update all doc test counts post-M8/M9
+- [ ] Final cross-doc consistency check
+- [ ] Smoke test: fresh deploy → create run → verify
+- [ ] Performance baseline (response times, SSE latency)
+```
+
+---
+
+## 6. Backlog (Deferred Tasks)
 
 The following tasks have been incorporated into milestones or deferred:
 
 ### Incorporated into Milestones
 
-| Task | Source | Assigned To |
-|------|--------|-------------|
-| EventLog subscription | AUDIT 1.7 | M5-1 |
-| GretaService subscribe FetchWindow | M4 defer | M5-2 |
-| SimulatedFill.side enum | M4 note #4 | M5-5 |
-| ClockTick duplicate | M4 note #5 | M5-5 |
-| AlpacaAdapter init | AUDIT 1.4 | M6-2 |
-| VedaService routing | AUDIT 1.3 | M6-3 |
-| Sharpe ratio | greta TODO | M8-4 |
-| Max drawdown | greta TODO | M8-4 |
+| Task                               | Source     | Assigned To |
+| ---------------------------------- | ---------- | ----------- |
+| EventLog subscription              | AUDIT 1.7  | M5-1        |
+| GretaService subscribe FetchWindow | M4 defer   | M5-2        |
+| SimulatedFill.side enum            | M4 note #4 | M5-5        |
+| ClockTick duplicate                | M4 note #5 | M5-5        |
+| AlpacaAdapter init                 | AUDIT 1.4  | M6-2        |
+| VedaService routing                | AUDIT 1.3  | M6-3        |
+| Sharpe ratio                       | greta TODO | M8-Q        |
+| Max drawdown                       | greta TODO | M8-Q        |
 
-### Deferred (M9+)
+### Deferred (M10+)
 
-| Task | Reason |
-|------|--------|
+| Task                             | Reason                              |
+| -------------------------------- | ----------------------------------- |
 | Multiple simultaneous strategies | High complexity, future enhancement |
-| Strategy optimization | Requires more infrastructure |
-| Real money trading | Requires more security measures |
-| WebSocket streaming | Polling sufficient for MVP |
-| Multi-exchange support | Complete Alpaca first |
+| Strategy optimization            | Requires more infrastructure        |
+| Real money trading               | Requires more security measures     |
+| WebSocket streaming              | Polling sufficient for MVP          |
+| Multi-exchange support           | Complete Alpaca first               |
 
 ---
 
-## 6. Timeline
+## 7. Timeline
 
 ```
-Week 1-2   │██████████████████████│ M5: Marvin Core
-Week 3-4   │██████████████████│     M6: Live Trading
-Week 5-6   │██████████████████│     M7: Haro Frontend
-Week 7     │████████████│           M8: Polish & E2E
+Week 1-2   │██████████████████████│ M5: Marvin Core          ✅
+Week 3-4   │██████████████████│     M6: Live Trading         ✅
+Week 5-6   │██████████████████│     M7: Haro Frontend        ✅
+Week 7-8   │██████████████████████│ M8: Fixes & Improve      🔄
+Week 9     │████████████│           M9: E2E & Release         ⏳
 ```
 
 ### Key Dependencies
@@ -443,48 +582,57 @@ M6: Live Trading ────┤
 M7: Haro Frontend ───┤
     │                │
     ▼                ▼
-M8: Polish & E2E
+M8: Fixes & Improve ─┤
+    │                │
+    ▼                ▼
+M9: E2E & Release
 ```
 
 ---
 
-## 7. Risks & Mitigations
+## 8. Risks & Mitigations
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Alpaca API changes | Low | High | Abstraction layer isolation, quick adaptation |
-| Frontend development delay | Medium | Medium | Backend can complete first, CLI as fallback |
-| Flaky E2E tests | Medium | Low | Retry mechanism, isolated test environment |
-| Plugin architecture complexity | Low | Medium | AST parsing has mature solutions |
+| Risk                           | Probability | Impact | Mitigation                                    |
+| ------------------------------ | ----------- | ------ | --------------------------------------------- |
+| Alpaca API changes             | Low         | High   | Abstraction layer isolation, quick adaptation |
+| Frontend development delay     | Medium      | Medium | Backend can complete first, CLI as fallback   |
+| Flaky E2E tests                | Medium      | Low    | Retry mechanism, isolated test environment    |
+| Plugin architecture complexity | Low         | Medium | AST parsing has mature solutions              |
 
 ---
 
-## 8. Success Metrics
+## 9. Success Metrics
 
 ### Test Count
 
 | Milestone | New Tests | Cumulative |
-|-----------|-----------|------------|
-| M4 (Done) | - | 631 |
-| M5 | ~80 | ~711 |
-| M6 | ~60 | ~771 |
-| M7 | ~50 | ~821 |
-| M8 | ~40 | ~861 |
+| --------- | --------- | ---------- |
+| M4 (Done) | -         | 631        |
+| M5        | 74        | 705        |
+| M6        | 101       | 808 ¹      |
+| M7        | 86        | 894        |
+| M8        | ~40–50    | ~934–944   |
+| M9        | ~20–30    | ~954–974   |
+
+¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
 ### Coverage Targets
 
-| Module | Target |
-|--------|--------|
-| events/ | 90% |
-| glados/ | 85% |
-| veda/ | 85% |
-| greta/ | 90% |
-| marvin/ | 85% |
-| walle/ | 80% |
-| haro/ | 75% |
+| Module  | Target |
+| ------- | ------ |
+| events/ | 90%    |
+| glados/ | 85%    |
+| veda/   | 85%    |
+| greta/  | 90%    |
+| marvin/ | 85%    |
+| walle/  | 80%    |
+| haro/   | 75%    |
 
 ---
 
-*Last Updated: 2026-02-03*
-*Total Estimated New Tests: ~230*
-*Total Estimated Timeline: 7-8 weeks*
+_Last Updated: 2026-02-19_  
+_M7 Formally Closed: 2026-02-19_  
+_M8 Active Start: 2026-02-19_  
+_Total Tests: 894 (808 backend + 86 frontend)_  
+_M8 Scope: Critical fixes + Improvements (~40–50 tests, ~1.5–2 weeks)_  
+_M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_

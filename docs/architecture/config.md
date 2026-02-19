@@ -1,15 +1,20 @@
 # Configuration System
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
+>
+> **Document Charter**  
+> **Primary role**: configuration model and credential/security policy.  
+> **Authoritative for**: config class boundaries, env-variable policy, secret handling rules.  
+> **Not authoritative for**: exchange adapter internals (see `veda.md`).
 
 **Implementation**: `src/config.py` using `pydantic-settings`
 
 ## 1. Design Principles
 
-* **Dual Credentials**: Support running Live and Paper trading in parallel (not time-based switching).
-* **Environment Isolation**: Each config class reads from specific env var prefixes.
-* **Type Safety**: All settings are validated via Pydantic.
-* **Test Isolation**: `get_test_config()` provides safe defaults for testing.
+- **Dual Credentials**: Support running Live and Paper trading in parallel (not time-based switching).
+- **Environment Isolation**: Each config class reads from specific env var prefixes.
+- **Type Safety**: All settings are validated via Pydantic.
+- **Test Isolation**: `get_test_config()` provides safe defaults for testing.
 
 ## 2. Alpaca Credentials
 
@@ -44,11 +49,13 @@ The system supports **simultaneous Live and Paper API access**:
 **Original consideration**: Switch between Paper (during market hours) and Live (off-hours testing).
 
 **Actual need**: Run Live and Paper **simultaneously** as separate trading runs:
+
 - Run A: Live trading with strategy X
 - Run B: Paper testing with experimental strategy Y
 - Both active at the same time, isolated by `run_id`
 
 This design also supports:
+
 - A/B testing strategies (Live vs Paper with same parameters)
 - Validating Paper results before promoting to Live
 - Running backtests while Live trading continues
@@ -90,17 +97,18 @@ class AlpacaConfig(BaseSettings):
 
 ## 4. Security Best Practices
 
-| Practice | Implementation |
-|----------|----------------|
-| Never commit secrets | `.gitignore` excludes `.env*` files |
-| Template files only | `docker/example.env` contains placeholders only |
-| Test isolation | Tests use `monkeypatch` to prevent real credential leakage |
-| CI/CD secrets | Use GitHub Secrets (`${{ secrets.XXX }}`) in workflows |
-| Key rotation | Rotate keys immediately if exposed in logs/errors |
+| Practice             | Implementation                                             |
+| -------------------- | ---------------------------------------------------------- |
+| Never commit secrets | `.gitignore` excludes `.env*` files                        |
+| Template files only  | `docker/example.env` contains placeholders only            |
+| Test isolation       | Tests use `monkeypatch` to prevent real credential leakage |
+| CI/CD secrets        | Use GitHub Secrets (`${{ secrets.XXX }}`) in workflows     |
+| Key rotation         | Rotate keys immediately if exposed in logs/errors          |
 
 ### Codespace Security Note
 
 GitHub Codespaces are **private to each user**. When someone forks or clones the repository:
+
 - They get the code but NOT your `.env` file
 - They must configure their own API keys
 - Your secrets remain isolated in your Codespace
@@ -127,12 +135,12 @@ def test_default_values(clean_alpaca_env):
 
 ## 5. Testing with Live vs Paper Credentials
 
-| Test Type | Credentials Used | Real API Calls? | Purpose |
-|-----------|------------------|-----------------|---------|
-| **Unit Tests** | None (mocked) | ❌ No | Test logic in isolation |
-| **Integration Tests** | Paper only | ✅ Yes (sandbox) | Test real API interactions safely |
-| **E2E Tests** | Paper only | ✅ Yes (sandbox) | Full system verification |
-| **Production** | Live | ✅ Yes (real money) | Actual trading |
+| Test Type             | Credentials Used | Real API Calls?     | Purpose                           |
+| --------------------- | ---------------- | ------------------- | --------------------------------- |
+| **Unit Tests**        | None (mocked)    | ❌ No               | Test logic in isolation           |
+| **Integration Tests** | Paper only       | ✅ Yes (sandbox)    | Test real API interactions safely |
+| **E2E Tests**         | Paper only       | ✅ Yes (sandbox)    | Full system verification          |
+| **Production**        | Live             | ✅ Yes (real money) | Actual trading                    |
 
 **Rule**: Never use Live credentials in automated tests. Paper API provides identical behavior without financial risk.
 

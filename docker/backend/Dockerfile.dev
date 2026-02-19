@@ -1,7 +1,14 @@
 FROM python:3.13-bookworm
 WORKDIR /weaver
 
-# Install dev dependencies (includes production deps via -r requirements.txt)
+# Install Node.js 20 LTS (for VS Code TypeScript/ESLint extensions support)
+# This allows IDE features to work for frontend code editing in backend container
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest \
+    && node --version && npm --version
+
+# Install Python dev dependencies (includes production deps via -r requirements.txt)
 COPY requirements.txt requirements.dev.txt /weaver/
 RUN pip install --no-cache-dir -r requirements.dev.txt
 
