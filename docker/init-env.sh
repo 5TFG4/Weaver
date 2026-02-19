@@ -38,6 +38,9 @@ sync_env_file() {
     
     # Trim whitespace
     VAR_NAME=$(echo "$VAR_NAME" | xargs)
+
+    # Validate variable name
+    [[ ! "$VAR_NAME" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && continue
     
     # Get value from environment (GitHub Secret or Codespace Env)
     local CURRENT_VALUE="${!VAR_NAME:-}"

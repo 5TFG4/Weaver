@@ -11,7 +11,7 @@ export default defineConfig({
     host: "0.0.0.0", // Allow access from outside container
     proxy: {
       "/api": {
-        target: process.env.VITE_API_BASE_URL || "http://localhost:8000",
+        target: "http://backend_dev:8000",
         changeOrigin: true,
       },
     },
