@@ -208,3 +208,8 @@ usr/user.json
 
 # log files
 log
+
+# Frontend (haro)
+haro/.vite/
+haro/node_modules/
+haro/dist/
