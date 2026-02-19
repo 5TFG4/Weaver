@@ -4,8 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     ports:
-      - "${HOST_PORT_DEV}:8000"           # FastAPI
-      - "${DEBUG_PORT}:5678"              # Debugpy
+      - "${HOST_PORT_DEV}:8000" # FastAPI
+      - "${DEBUG_PORT}:5678" # Debugpy
     volumes:
       - ../:/weaver
       - /etc/timezone:/etc/timezone:ro
@@ -26,10 +26,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "${FRONTEND_PORT_DEV}:5173"       # Vite dev server
+      - "${FRONTEND_PORT_DEV}:5173" # Vite dev server
     volumes:
-      - ../:/weaver                        # Share entire project for code editing
-      - frontend_node_modules:/weaver/haro/node_modules  # Persist node_modules in named volume
+      - ../:/weaver # Share entire project for code editing
+      - frontend_node_modules:/weaver/haro/node_modules # Persist node_modules in named volume
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     depends_on:
@@ -43,7 +43,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT_DEV}:5432"       # PostgreSQL
+      - "${POSTGRES_PORT_DEV}:5432" # PostgreSQL
     volumes:
       - weaver_dev_postgres_data:/var/lib/postgresql/data
     healthcheck:
