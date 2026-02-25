@@ -31,6 +31,8 @@ from src.veda.position_tracker import PositionTracker
 if TYPE_CHECKING:
     from src.config import WeaverConfig
     from src.events.log import EventLog
+    from src.walle.models import FillRecord
+    from src.walle.repositories.fill_repository import FillRepository
 
 
 class VedaService:
@@ -58,6 +60,7 @@ class VedaService:
         event_log: "EventLog",
         repository: OrderRepository,
         config: "WeaverConfig",
+        fill_repository: "FillRepository | None" = None,
     ) -> None:
         """
         Initialize VedaService.
@@ -67,11 +70,13 @@ class VedaService:
             event_log: EventLog for emitting order events
             repository: OrderRepository for persistence
             config: Application configuration
+            fill_repository: Optional FillRepository for fill audit trail (N-03)
         """
         self._adapter = adapter
         self._event_log = event_log
         self._repository = repository
         self._config = config
+        self._fill_repository = fill_repository
 
         # Internal components
         self._order_manager = OrderManager(adapter)
@@ -206,6 +211,38 @@ class VedaService:
         return self._order_manager.list_orders()
 
     # =========================================================================
+    # Fill Operations (N-03)
+    # =========================================================================
+
+    async def record_fill(self, fill: "FillRecord") -> None:
+        """
+        Persist a fill record for audit trail.
+
+        No-op when fill_repository is not configured.
+
+        Args:
+            fill: FillRecord to persist
+        """
+        if self._fill_repository is not None:
+            await self._fill_repository.save(fill)
+
+    async def get_fills(self, order_id: str) -> "list[FillRecord]":
+        """
+        Get fills for an order.
+
+        Returns empty list when fill_repository is not configured.
+
+        Args:
+            order_id: The order identifier
+
+        Returns:
+            List of FillRecord
+        """
+        if self._fill_repository is not None:
+            return await self._fill_repository.list_by_order(order_id)
+        return []
+
+    # =========================================================================
     # Position Operations
     # =========================================================================
 
@@ -304,10 +341,14 @@ def create_veda_service(
     Returns:
         Configured VedaService instance
     """
+    from src.walle.repositories.fill_repository import FillRepository
+
     repository = OrderRepository(session_factory)
+    fill_repository = FillRepository(session_factory)
     return VedaService(
         adapter=adapter,
         event_log=event_log,
         repository=repository,
         config=config,
+        fill_repository=fill_repository,
     )

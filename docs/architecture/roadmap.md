@@ -32,7 +32,7 @@
 
 | Component           | Status                | Tests |
 | ------------------- | --------------------- | ----- |
-| Test Infrastructure | ✅ Complete           | 808   |
+| Test Infrastructure | ✅ Complete           | 904   |
 | Events Module       | ✅ Subscription added | 57    |
 | Clock Module        | ✅ Complete           | 93    |
 | Config Module       | ✅ Complete           | 24    |
@@ -41,13 +41,13 @@
 | Greta (backtest)    | ✅ Events wired       | 56    |
 | Marvin (strategy)   | ✅ Plugin complete    | 74    |
 | WallE (bars)        | ✅ Complete           | 16    |
-| Haro (frontend)     | ✅ Complete           | 86    |
+| Haro (frontend)     | ✅ Complete           | 88    |
 
-**Total**: 808 backend + 86 frontend = 894 tests
+**Total**: 904 backend + 88 frontend = 992 tests
 
 **Active Milestone**: M8 (Critical Fixes & Improvements)
 
-**Last State Update**: 2026-02-19
+**Last State Update**: 2026-02-25
 
 ## 2. Milestones (Revised 2026-02-19)
 
@@ -70,7 +70,7 @@
 | **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
 | **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
 | **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8** | Critical Fixes + Improvements | ~40–50     | 🔄 ACTIVE            |
+| **8** | Critical Fixes + Improvements | ~96        | 🔄 ACTIVE            |
 | **9** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
 
 ## 4. Architecture Invariants
@@ -126,14 +126,14 @@
 
 ### M8 Exit Gate (Fixes & Improvements Complete)
 
-- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
-- [ ] Design decisions D-1–D-5 implemented
-- [ ] DomainRouter wired into runtime lifecycle
-- [ ] RunManager dependencies fully injected
+- [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [x] Design decisions D-1–D-5 implemented
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
-- [ ] All TODO/FIXME cleaned
+- [x] All TODO/FIXME cleaned
 - [ ] Documentation complete
-- [ ] ~40–50 new tests (target: 934+)
+- [x] ~96 new tests (target: 934+) → actual: 992
 
 ### M9 Exit Gate (E2E & Release Ready)
 

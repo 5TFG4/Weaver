@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from src.events.log import EventLog
     from src.marvin.strategy_loader import StrategyLoader
     from src.walle.repositories.bar_repository import BarRepository
+    from src.walle.repositories.run_repository import RunRepository
 
 
 @dataclass
@@ -85,6 +86,7 @@ class RunManager:
         event_log: "EventLog | None" = None,
         bar_repository: "BarRepository | None" = None,
         strategy_loader: "StrategyLoader | None" = None,
+        run_repository: "RunRepository | None" = None,
     ) -> None:
         """
         Initialize RunManager.
@@ -93,11 +95,13 @@ class RunManager:
             event_log: Event log for emitting run events
             bar_repository: Bar repository for GretaService (backtest)
             strategy_loader: Loader for strategy instances
+            run_repository: Optional RunRepository for persistence/recovery (D-2)
         """
         self._runs: dict[str, Run] = {}
         self._event_log = event_log
         self._bar_repository = bar_repository
         self._strategy_loader = strategy_loader
+        self._run_repository = run_repository
         self._run_contexts: dict[str, RunContext] = {}
 
     async def _emit_event(self, event_type: str, run: Run) -> None:
@@ -117,6 +121,27 @@ class RunManager:
             run_id=run.id,
         )
         await self._event_log.append(envelope)
+
+    async def _persist_run(self, run: Run) -> None:
+        """Persist run state to repository if configured."""
+        if self._run_repository is None:
+            return
+
+        from src.walle.models import RunRecord
+
+        record = RunRecord(
+            id=run.id,
+            strategy_id=run.strategy_id,
+            mode=run.mode.value,
+            status=run.status.value,
+            symbols=run.symbols,
+            timeframe=run.timeframe,
+            config=run.config,
+            created_at=run.created_at,
+            started_at=run.started_at,
+            stopped_at=run.stopped_at,
+        )
+        await self._run_repository.save(record)
 
     async def create(self, request: RunCreate) -> Run:
         """
@@ -142,6 +167,7 @@ class RunManager:
         )
         self._runs[run.id] = run
         await self._emit_event(RunEvents.CREATED, run)
+        await self._persist_run(run)
         return run
 
     async def get(self, run_id: str) -> Run | None:
@@ -372,5 +398,55 @@ class RunManager:
             run.status = RunStatus.STOPPED
             run.stopped_at = datetime.now(UTC)
             await self._emit_event(RunEvents.STOPPED, run)
+            await self._persist_run(run)
         
         return run
+
+    async def recover(self) -> int:
+        """
+        Recover runs from database on startup (D-2).
+
+        Loads pending and running runs from the repository.
+        Running runs from a previous process are marked as ERROR
+        (unclean shutdown — cannot resume execution context).
+        Pending runs are loaded as-is (can be restarted).
+
+        Returns:
+            Number of runs recovered
+        """
+        if self._run_repository is None:
+            return 0
+
+        recovered = 0
+
+        # Load runs that need recovery (running or pending)
+        for status in ("running", "pending"):
+            records = await self._run_repository.list(status=status)
+            for record in records:
+                # Skip if already in memory
+                if record.id in self._runs:
+                    continue
+
+                run = Run(
+                    id=record.id,
+                    strategy_id=record.strategy_id,
+                    mode=RunMode(record.mode),
+                    status=RunStatus(record.status),
+                    symbols=record.symbols or [],
+                    timeframe=record.timeframe or "1h",
+                    config=record.config,
+                    created_at=record.created_at,
+                    started_at=record.started_at,
+                    stopped_at=record.stopped_at,
+                )
+
+                # Mark previously-running runs as ERROR (unclean shutdown)
+                if run.status == RunStatus.RUNNING:
+                    run.status = RunStatus.ERROR
+                    run.stopped_at = datetime.now(UTC)
+                    await self._persist_run(run)
+
+                self._runs[run.id] = run
+                recovered += 1
+
+        return recovered

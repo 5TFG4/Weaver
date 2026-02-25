@@ -17,7 +17,6 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/runs" element={<RunsPage />} />
-          <Route path="/runs/:runId" element={<RunsPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -435,14 +435,14 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 ### 8.3 Code Quality & P1 Fixes (M8-Q)
 
-- [ ] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
-- [ ] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
-- [ ] **M-07**: Either implement `runId` parameter usage in `RunsPage` or remove the route
-- [ ] **N-03**: Add Fills table + persist fill history (D-3)
-- [ ] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
-- [ ] **N-06**: Add `run_id` query param to SSE endpoint (D-5)
-- [ ] **N-10**: Implement server-side pagination or remove UI
-- [ ] **D-2**: Add Runs table for restart recovery
+- [x] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
+- [x] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
+- [x] **M-07**: Removed unused `/runs/:runId` route from App.tsx
+- [x] **N-03**: Add Fills table + persist fill history (D-3) — FillRecord, FillRepository, VedaService wiring, migration
+- [x] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
+- [x] **N-06**: Add `run_id` query param to SSE endpoint (D-5)
+- [x] **N-10**: Implement server-side pagination or remove UI
+- [x] **D-2**: Add Runs table for restart recovery — RunRecord, RunRepository, RunManager persistence + recover(), migration
 
 ### 8.4 Documentation (M8-D)
 

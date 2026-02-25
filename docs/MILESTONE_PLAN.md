@@ -6,9 +6,9 @@
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
 > **Current State**: M7 ✅ Formally Closed · M8 Active  
-> **Tests**: 808 backend + 86 frontend = 894 total  
+> **Tests**: 904 backend + 88 frontend = 992 total  
 > **Remaining Work**: M8 (Critical Fixes & Improvements) → M9 (E2E Tests)  
-> **Estimated Total**: ~60–80 new tests remaining, ~3 weeks
+> **Estimated Total**: ~20–30 new tests remaining (M8-D docs + M9), ~2 weeks
 
 ---
 
@@ -22,7 +22,7 @@ M7 is formally closed as of 2026-02-19. M8 is now the active milestone, focused 
 | **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
 | **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
 | **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | ~40–50 | 🔄 ACTIVE           |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 96+    | 🔄 ACTIVE           |
 | **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
 
 **M6 Complete** (101 tests added):
@@ -353,7 +353,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | ----- | ------------------------------- | ---------- | ------------ | ------ |
 | M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
 | M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
-| M8-Q  | Code Quality & P1 Fixes         | ~10        | M8-P0        | ⏳     |
+| M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | ✅     |
 | M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
 
 ### 4.3 Detailed Tasks
@@ -416,19 +416,19 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] M-04: Change SimulatedFill.side from str to OrderSide enum
 - [x] N-05: Refactor StrategyAction to proper enum/union type
 - [x] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
-- [ ] Fix Pylance/mypy warnings + strict type checking
-- [ ] Remove unused code
+- [x] Fix Pylance/mypy warnings + strict type checking
+- [x] Remove unused code
 ```
 
 **P1 Standalone Fixes:**
 
 ```
-- [ ] N-03: Add Fills table + persist fill history (D-3: separate fills table) *(partial: FillRecord + FillRepository done; persistence round-trip + migration pending)*
+- [x] N-03: Add Fills table + persist fill history (D-3: separate fills table) ✅ FillRecord + FillRepository + VedaService wiring + migration
 - [x] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
 - [x] N-06: Add run_id query param to SSE endpoint (D-5)
 - [x] N-10: Implement server-side pagination or remove pagination UI
-- [ ] D-2: Add Runs table for restart recovery *(partial: RunRecord + RunRepository done; migration + RunManager recovery wiring pending)*
-- [ ] M-07: Either use runId param in RunsPage or remove route
+- [x] D-2: Add Runs table for restart recovery ✅ RunRecord + RunRepository + RunManager persistence + recover() + migration
+- [x] M-07: Removed unused /runs/:runId route from App.tsx
 ```
 
 #### M8-D: Documentation
@@ -611,7 +611,7 @@ M9: E2E & Release
 | M5        | 74        | 705        |
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
-| M8        | ~40–50    | ~934–944   |
+| M8        | ~96       | ~992 ²    |
 | M9        | ~20–30    | ~954–974   |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
@@ -630,9 +630,9 @@ M9: E2E & Release
 
 ---
 
-_Last Updated: 2026-02-19_  
+_Last Updated: 2026-02-25_  
 _M7 Formally Closed: 2026-02-19_  
 _M8 Active Start: 2026-02-19_  
-_Total Tests: 894 (808 backend + 86 frontend)_  
-_M8 Scope: Critical fixes + Improvements (~40–50 tests, ~1.5–2 weeks)_  
+_Total Tests: 992 (904 backend + 88 frontend)_  
+_M8 Scope: Critical fixes + Improvements (96+ tests added, M8-D docs remaining)_  
 _M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_
