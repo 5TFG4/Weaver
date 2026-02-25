@@ -518,3 +518,111 @@ class TestGretaServiceGetResult:
         result = completed_service.get_result()
 
         assert result.fills == completed_service.fills
+
+
+class TestGretaServiceStatsComputation:
+    """N-08: Tests for backtest statistics computation (Sharpe, drawdown, win_rate)."""
+
+    @pytest_asyncio.fixture
+    async def service_with_trades(self) -> GretaService:
+        """
+        Create a service with multiple trades for stats testing.
+
+        Scenario: 3 round-trip trades (buy+sell) across 6 bars.
+        Trade 1: Buy@100, Sell@110 → profit $10
+        Trade 2: Buy@105, Sell@95  → loss  $10
+        Trade 3: Buy@102, Sell@108 → profit $6
+        """
+        bar_repo = AsyncMock()
+        event_log = AsyncMock()
+        event_log.append = AsyncMock()
+        event_log.subscribe_filtered = AsyncMock(return_value="sub-1")
+
+        bars = [
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC), open_=Decimal("100"), high=Decimal("112"), low=Decimal("98"), close=Decimal("110")),
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 31, tzinfo=UTC), open_=Decimal("110"), high=Decimal("115"), low=Decimal("108"), close=Decimal("112")),
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 32, tzinfo=UTC), open_=Decimal("105"), high=Decimal("107"), low=Decimal("93"), close=Decimal("95")),
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 33, tzinfo=UTC), open_=Decimal("95"), high=Decimal("100"), low=Decimal("90"), close=Decimal("98")),
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 34, tzinfo=UTC), open_=Decimal("102"), high=Decimal("110"), low=Decimal("100"), close=Decimal("108")),
+            make_bar(timestamp=datetime(2024, 1, 1, 9, 35, tzinfo=UTC), open_=Decimal("108"), high=Decimal("112"), low=Decimal("106"), close=Decimal("109")),
+        ]
+        bar_repo.get_bars = AsyncMock(return_value=bars)
+
+        service = GretaService(
+            run_id="run-stats",
+            bar_repository=bar_repo,
+            event_log=event_log,
+            initial_cash=Decimal("10000"),
+        )
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            end=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+        )
+
+        # Trade 1: Buy at open=100, Sell at open=110 → profit $10
+        await service.place_order(make_order_intent(
+            client_order_id="buy-1", side=OrderSide.BUY, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
+
+        await service.place_order(make_order_intent(
+            client_order_id="sell-1", side=OrderSide.SELL, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 31, tzinfo=UTC))
+
+        # Trade 2: Buy at open=105, Sell at open=95 → loss $10
+        await service.place_order(make_order_intent(
+            client_order_id="buy-2", side=OrderSide.BUY, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 32, tzinfo=UTC))
+
+        await service.place_order(make_order_intent(
+            client_order_id="sell-2", side=OrderSide.SELL, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 33, tzinfo=UTC))
+
+        # Trade 3: Buy at open=102, Sell at open=108 → profit $6
+        await service.place_order(make_order_intent(
+            client_order_id="buy-3", side=OrderSide.BUY, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 34, tzinfo=UTC))
+
+        await service.place_order(make_order_intent(
+            client_order_id="sell-3", side=OrderSide.SELL, qty=Decimal("1"),
+        ))
+        await service.advance_to(datetime(2024, 1, 1, 9, 35, tzinfo=UTC))
+
+        return service
+
+    async def test_sharpe_ratio_computed(self, service_with_trades: GretaService) -> None:
+        """Sharpe ratio is computed from equity curve returns."""
+        result = service_with_trades.get_result()
+        assert result.stats.sharpe_ratio is not None
+        # With mixed positive/negative returns, Sharpe should be a finite number
+        assert result.stats.sharpe_ratio != Decimal("0")
+
+    async def test_max_drawdown_computed(self, service_with_trades: GretaService) -> None:
+        """Max drawdown is computed from equity curve."""
+        result = service_with_trades.get_result()
+        # Drawdown should be negative (loss from peak)
+        assert result.stats.max_drawdown < Decimal("0")
+        assert result.stats.max_drawdown_pct < Decimal("0")
+
+    async def test_win_rate_computed(self, service_with_trades: GretaService) -> None:
+        """Win rate is computed from round-trip trades."""
+        result = service_with_trades.get_result()
+        stats = result.stats
+        # 2 winners out of 3 trades (buy-sell pairs)
+        assert stats.winning_trades == 2
+        assert stats.losing_trades == 1
+        assert stats.win_rate > Decimal("0")
+        assert stats.win_rate <= Decimal("100")
+
+    async def test_profit_factor_computed(self, service_with_trades: GretaService) -> None:
+        """Profit factor = gross profit / gross loss."""
+        result = service_with_trades.get_result()
+        stats = result.stats
+        assert stats.profit_factor is not None
+        assert stats.profit_factor > Decimal("0")

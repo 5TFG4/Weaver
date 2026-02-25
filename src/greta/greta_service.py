@@ -364,7 +364,7 @@ class GretaService:
                         "order_id": order_id,
                         "client_order_id": intent.client_order_id,
                         "symbol": fill.symbol,
-                        "side": fill.side,
+                        "side": fill.side.value,
                         "qty": str(fill.qty),
                         "fill_price": str(fill.fill_price),
                         "commission": str(fill.commission),
@@ -408,7 +408,7 @@ class GretaService:
     def _apply_fill(self, fill: SimulatedFill) -> None:
         """Apply a fill to update positions and cash."""
         symbol = fill.symbol
-        is_buy = fill.side == OrderSide.BUY.value
+        is_buy = fill.side == OrderSide.BUY
         qty_change = fill.qty if is_buy else -fill.qty
         notional = fill.qty * fill.fill_price
 
@@ -501,9 +501,117 @@ class GretaService:
             (f.slippage for f in self._fills), Decimal("0")
         )
 
-        # TODO: Calculate more advanced stats (Sharpe, drawdown, etc.)
+        # Win/loss analysis from round-trip trades
+        self._compute_trade_stats(stats)
+
+        # Risk metrics from equity curve
+        self._compute_risk_metrics(stats)
 
         return stats
+
+    def _compute_trade_stats(self, stats: BacktestStats) -> None:
+        """Compute win/loss stats from paired buy/sell fills."""
+        # Pair fills into round-trip trades: buy→sell or sell→buy
+        # Group by symbol, pair in order
+        from collections import defaultdict
+
+        symbol_fills: dict[str, list[SimulatedFill]] = defaultdict(list)
+        for fill in self._fills:
+            symbol_fills[fill.symbol].append(fill)
+
+        gross_profit = Decimal("0")
+        gross_loss = Decimal("0")
+        wins: list[Decimal] = []
+        losses: list[Decimal] = []
+
+        for symbol, fills in symbol_fills.items():
+            i = 0
+            while i + 1 < len(fills):
+                entry = fills[i]
+                exit_ = fills[i + 1]
+
+                # Calculate P&L for this round-trip
+                if entry.side == OrderSide.BUY:
+                    pnl = (exit_.fill_price - entry.fill_price) * entry.qty
+                else:
+                    pnl = (entry.fill_price - exit_.fill_price) * entry.qty
+
+                # Account for commissions
+                pnl -= entry.commission + exit_.commission
+
+                if pnl > Decimal("0"):
+                    stats.winning_trades += 1
+                    gross_profit += pnl
+                    wins.append(pnl)
+                elif pnl < Decimal("0"):
+                    stats.losing_trades += 1
+                    gross_loss += abs(pnl)
+                    losses.append(pnl)
+
+                i += 2
+
+        total_round_trips = stats.winning_trades + stats.losing_trades
+        if total_round_trips > 0:
+            stats.win_rate = (Decimal(stats.winning_trades) / Decimal(total_round_trips)) * 100
+
+        if wins:
+            stats.avg_win = gross_profit / Decimal(len(wins))
+        if losses:
+            stats.avg_loss = gross_loss / Decimal(len(losses))
+
+        if gross_loss > Decimal("0"):
+            stats.profit_factor = gross_profit / gross_loss
+
+    def _compute_risk_metrics(self, stats: BacktestStats) -> None:
+        """Compute Sharpe ratio, Sortino ratio, and max drawdown from equity curve."""
+        if len(self._equity_curve) < 2:
+            return
+
+        # Period returns from equity curve
+        returns: list[Decimal] = []
+        for i in range(1, len(self._equity_curve)):
+            prev_equity = self._equity_curve[i - 1][1]
+            curr_equity = self._equity_curve[i][1]
+            if prev_equity != Decimal("0"):
+                ret = (curr_equity - prev_equity) / abs(prev_equity)
+                returns.append(ret)
+
+        if not returns:
+            return
+
+        # Mean and std of returns
+        n = Decimal(len(returns))
+        mean_return = sum(returns) / n
+
+        variance = sum((r - mean_return) ** 2 for r in returns) / n
+        std_return = variance.sqrt() if hasattr(variance, 'sqrt') else Decimal(str(variance ** Decimal("0.5")))
+
+        # Sharpe ratio (assuming risk-free rate = 0 for simplicity)
+        if std_return > Decimal("0"):
+            stats.sharpe_ratio = mean_return / std_return
+
+        # Sortino ratio (downside deviation only)
+        downside_returns = [r for r in returns if r < Decimal("0")]
+        if downside_returns:
+            downside_variance = sum(r ** 2 for r in downside_returns) / Decimal(len(downside_returns))
+            downside_std = Decimal(str(downside_variance ** Decimal("0.5")))
+            if downside_std > Decimal("0"):
+                stats.sortino_ratio = mean_return / downside_std
+
+        # Max drawdown from equity curve
+        peak = self._equity_curve[0][1]
+        max_dd = Decimal("0")
+
+        for _, equity in self._equity_curve:
+            if equity > peak:
+                peak = equity
+            dd = equity - peak  # negative when below peak
+            if dd < max_dd:
+                max_dd = dd
+
+        stats.max_drawdown = max_dd
+        if peak > Decimal("0"):
+            stats.max_drawdown_pct = (max_dd / peak) * 100
 
     # =========================================================================
     # Event Emission

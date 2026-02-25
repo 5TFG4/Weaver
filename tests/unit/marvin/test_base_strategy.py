@@ -9,7 +9,13 @@ from decimal import Decimal
 
 import pytest
 
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import (
+    BaseStrategy,
+    StrategyAction,
+    ActionType,
+    StrategyOrderSide,
+    StrategyOrderType,
+)
 
 
 class TestStrategyAction:
@@ -18,35 +24,52 @@ class TestStrategyAction:
     def test_fetch_window_action(self) -> None:
         """Can create fetch_window action."""
         action = StrategyAction(
-            type="fetch_window",
+            type=ActionType.FETCH_WINDOW,
             symbol="BTC/USD",
             lookback=10,
         )
 
-        assert action.type == "fetch_window"
+        assert action.type == ActionType.FETCH_WINDOW
         assert action.symbol == "BTC/USD"
         assert action.lookback == 10
 
     def test_place_order_action(self) -> None:
         """Can create place_order action."""
         action = StrategyAction(
-            type="place_order",
+            type=ActionType.PLACE_ORDER,
             symbol="BTC/USD",
-            side="buy",
+            side=StrategyOrderSide.BUY,
             qty=Decimal("1.5"),
         )
 
-        assert action.type == "place_order"
+        assert action.type == ActionType.PLACE_ORDER
         assert action.symbol == "BTC/USD"
-        assert action.side == "buy"
+        assert action.side == StrategyOrderSide.BUY
         assert action.qty == Decimal("1.5")
 
     def test_action_is_frozen(self) -> None:
         """StrategyAction is immutable."""
-        action = StrategyAction(type="fetch_window", symbol="BTC/USD")
+        action = StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD")
 
         with pytest.raises(FrozenInstanceError):
             action.type = "other"  # type: ignore
+
+    def test_action_type_checks_at_construction(self) -> None:
+        """N-05: StrategyAction fields use proper enums, not bare strings."""
+        action = StrategyAction(
+            type=ActionType.PLACE_ORDER,
+            symbol="AAPL",
+            side=StrategyOrderSide.SELL,
+            qty=Decimal("10"),
+            order_type=StrategyOrderType.LIMIT,
+            limit_price=Decimal("150.00"),
+        )
+        assert isinstance(action.type, ActionType)
+        assert isinstance(action.side, StrategyOrderSide)
+        assert isinstance(action.order_type, StrategyOrderType)
+        assert action.type == ActionType.PLACE_ORDER
+        assert action.side == StrategyOrderSide.SELL
+        assert action.order_type == StrategyOrderType.LIMIT
 
 
 class TestBaseStrategy:

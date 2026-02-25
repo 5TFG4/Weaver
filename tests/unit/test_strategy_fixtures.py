@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest
 
 from src.glados.clock.base import ClockTick
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction, StrategyOrderSide
 
 
 def make_tick(run_id: str = "run-001") -> ClockTick:
@@ -46,12 +46,12 @@ class TestDummyStrategy:
 
         strategy = DummyStrategy()
         strategy.tick_actions = [
-            StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=5)
+            StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=5)
         ]
 
         actions = await strategy.on_tick(make_tick())
         assert len(actions) == 1
-        assert actions[0].type == "fetch_window"
+        assert actions[0].type == ActionType.FETCH_WINDOW
 
     @pytest.mark.asyncio
     async def test_returns_configured_data_actions(self) -> None:
@@ -61,17 +61,16 @@ class TestDummyStrategy:
         strategy = DummyStrategy()
         strategy.data_actions = [
             StrategyAction(
-                type="place_order",
+                type=ActionType.PLACE_ORDER,
                 symbol="BTC/USD",
-                side="buy",
+                side=StrategyOrderSide.BUY,
                 qty=Decimal("1.0"),
-                order_type="market",
             )
         ]
 
         actions = await strategy.on_data({"bars": []})
         assert len(actions) == 1
-        assert actions[0].type == "place_order"
+        assert actions[0].type == ActionType.PLACE_ORDER
 
     @pytest.mark.asyncio
     async def test_records_received_ticks(self) -> None:

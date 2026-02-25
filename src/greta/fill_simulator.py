@@ -66,7 +66,7 @@ class DefaultFillSimulator:
             order_id=intent.client_order_id,
             client_order_id=intent.client_order_id,
             symbol=intent.symbol,
-            side=intent.side.value,
+            side=intent.side,
             qty=intent.qty,
             fill_price=fill_price,
             commission=commission,

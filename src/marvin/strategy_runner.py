@@ -8,7 +8,7 @@ Mode-agnostic: doesn't know if backtest or live.
 from typing import TYPE_CHECKING
 
 from src.events.protocol import Envelope
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
 
 if TYPE_CHECKING:
     from src.events.log import EventLog
@@ -130,9 +130,9 @@ class StrategyRunner:
         Args:
             action: The strategy action to emit
         """
-        if action.type == "fetch_window":
+        if action.type == ActionType.FETCH_WINDOW:
             await self._emit_fetch_window(action)
-        elif action.type == "place_order":
+        elif action.type == ActionType.PLACE_ORDER:
             await self._emit_place_request(action)
 
     async def _emit_fetch_window(self, action: StrategyAction) -> None:
@@ -168,9 +168,9 @@ class StrategyRunner:
             type="strategy.PlaceRequest",
             payload={
                 "symbol": action.symbol,
-                "side": action.side,
+                "side": action.side.value if action.side else None,
                 "qty": str(action.qty),
-                "order_type": action.order_type,
+                "order_type": action.order_type.value,
                 "limit_price": str(action.limit_price) if action.limit_price else None,
                 "stop_price": str(action.stop_price) if action.stop_price else None,
             },

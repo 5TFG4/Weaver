@@ -144,26 +144,40 @@ async def cancel_order(
 @router.get("", response_model=OrderListResponse)
 async def list_orders(
     run_id: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=50, ge=1, le=200, description="Items per page"),
     veda_service: VedaService | None = Depends(get_veda_service),
     order_service: MockOrderService = Depends(get_order_service),
 ) -> OrderListResponse:
     """
-    List orders with optional filters.
+    List orders with optional filters and pagination.
 
     C-04: Uses VedaService when available (live/paper trading),
     falls back to MockOrderService for demo/test mode.
+    N-10: Accepts page and page_size query params.
     """
     if veda_service is not None:
         states = await veda_service.list_orders(run_id=run_id)
+        total = len(states)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = states[start:end]
         return OrderListResponse(
-            items=[_state_to_response(s) for s in states],
-            total=len(states),
+            items=[_state_to_response(s) for s in paginated],
+            total=total,
+            page=page,
+            page_size=page_size,
         )
 
     orders, total = await order_service.list(run_id=run_id)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = orders[start:end]
     return OrderListResponse(
-        items=[_order_to_response(o) for o in orders],
+        items=[_order_to_response(o) for o in paginated],
         total=total,
+        page=page,
+        page_size=page_size,
     )
 
 

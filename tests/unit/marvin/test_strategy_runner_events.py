@@ -14,7 +14,7 @@ from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
 from src.events.types import DataEvents, StrategyEvents
 from src.glados.clock.base import ClockTick
-from src.marvin.base_strategy import StrategyAction
+from src.marvin.base_strategy import ActionType, StrategyAction, StrategyOrderSide
 from src.marvin.strategy_runner import StrategyRunner
 
 # Import DummyStrategy from fixtures instead of defining inline
@@ -132,9 +132,9 @@ class TestStrategyRunnerEventSubscription:
         """When strategy.on_data returns place_order, emit strategy.PlaceRequest."""
         strategy.data_actions = [
             StrategyAction(
-                type="place_order",
+                type=ActionType.PLACE_ORDER,
                 symbol="BTC/USD",
-                side="buy",
+                side=StrategyOrderSide.BUY,
                 qty=Decimal("0.1"),
             )
         ]
@@ -236,7 +236,7 @@ class TestStrategyRunnerEventSubscription:
     ) -> None:
         """When strategy.on_tick returns fetch_window action, emit strategy.FetchWindow."""
         strategy.tick_actions = [
-            StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=20)
+            StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=20)
         ]
 
         await runner.initialize("run-001", ["BTC/USD"])

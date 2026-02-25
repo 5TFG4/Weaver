@@ -165,6 +165,70 @@ class VedaOrder(Base):
         return f"<VedaOrder(id={self.id!r}, symbol={self.symbol!r}, status={self.status!r})>"
 
 
+class RunRecord(Base):
+    """
+    Persisted run state for restart recovery.
+
+    D-2: Stores run metadata so RunManager can restore runs
+    after a process restart.
+    """
+
+    __tablename__ = "runs"
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    strategy_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), nullable=False)  # backtest/paper/live
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    symbols: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    timeframe: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    stopped_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        Index("idx_runs_status_created", "status", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<RunRecord(id={self.id!r}, strategy_id={self.strategy_id!r}, status={self.status!r})>"
+
+
+class FillRecord(Base):
+    """
+    Persisted fill history for audit trail.
+
+    D-3: Each fill represents a partial or full execution of an order.
+    Fills are immutable once created — critical for trading audit.
+    """
+
+    __tablename__ = "fills"
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    order_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    side: Mapped[str] = mapped_column(String(10), nullable=False)  # buy | sell
+    filled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    exchange_fill_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    __table_args__ = (
+        Index("idx_fills_order_filled", "order_id", "filled_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<FillRecord(id={self.id!r}, order_id={self.order_id!r}, price={self.price})>"
+
+
 # =============================================================================
 # Model Registration Note
 # =============================================================================

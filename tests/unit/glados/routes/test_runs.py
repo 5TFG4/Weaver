@@ -233,3 +233,54 @@ class TestStartRunEndpoint:
         response = client.post(f"/api/v1/runs/{run_id}/start")
 
         assert response.status_code == 409
+
+
+class TestRunsPagination:
+    """N-10/M-02: Server-side pagination for runs."""
+
+    def _create_runs(self, client: TestClient, count: int) -> None:
+        """Helper: create N runs."""
+        for i in range(count):
+            client.post(
+                "/api/v1/runs",
+                json={
+                    "strategy_id": f"strategy-{i}",
+                    "mode": "paper",
+                    "symbols": ["BTC/USD"],
+                },
+            )
+
+    def test_default_pagination(self, client: TestClient) -> None:
+        """GET /runs without params returns page 1 with default page_size."""
+        self._create_runs(client, 3)
+
+        response = client.get("/api/v1/runs")
+        data = response.json()
+
+        assert data["page"] == 1
+        assert data["page_size"] == 20
+        assert len(data["items"]) == 3
+        assert data["total"] == 3
+
+    def test_page_size_limits_results(self, client: TestClient) -> None:
+        """GET /runs with page_size=2 returns at most 2 items."""
+        self._create_runs(client, 5)
+
+        response = client.get("/api/v1/runs?page_size=2")
+        data = response.json()
+
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+        assert data["page"] == 1
+        assert data["page_size"] == 2
+
+    def test_page_offset(self, client: TestClient) -> None:
+        """GET /runs with page=2&page_size=2 returns next slice."""
+        self._create_runs(client, 5)
+
+        response = client.get("/api/v1/runs?page=2&page_size=2")
+        data = response.json()
+
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+        assert data["page"] == 2

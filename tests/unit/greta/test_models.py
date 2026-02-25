@@ -17,6 +17,7 @@ from src.greta.models import (
     BacktestStats,
     BacktestResult,
 )
+from src.veda.models import OrderSide
 
 
 class TestFillSimulationConfig:
@@ -56,7 +57,7 @@ class TestSimulatedFill:
             order_id="order-123",
             client_order_id="client-456",
             symbol="BTC/USD",
-            side="buy",
+            side=OrderSide.BUY,
             qty=Decimal("1.5"),
             fill_price=Decimal("42000.00"),
             commission=Decimal("4.20"),
@@ -75,7 +76,7 @@ class TestSimulatedFill:
             order_id="order-123",
             client_order_id="client-456",
             symbol="BTC/USD",
-            side="buy",
+            side=OrderSide.BUY,
             qty=Decimal("1.5"),
             fill_price=Decimal("42000.00"),
             commission=Decimal("4.20"),
@@ -93,7 +94,7 @@ class TestSimulatedFill:
             order_id="order-123",
             client_order_id="client-456",
             symbol="BTC/USD",
-            side="buy",
+            side=OrderSide.BUY,
             qty=Decimal("2.0"),
             fill_price=Decimal("42000.00"),
             commission=Decimal("0"),
@@ -103,6 +104,38 @@ class TestSimulatedFill:
         )
         
         assert fill.notional == Decimal("84000.00")
+
+    def test_side_accepts_order_side_enum_only(self) -> None:
+        """M-04: SimulatedFill.side must be OrderSide enum, not plain string."""
+        fill = SimulatedFill(
+            order_id="order-1",
+            client_order_id="client-1",
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            qty=Decimal("10"),
+            fill_price=Decimal("150.00"),
+            commission=Decimal("0"),
+            slippage=Decimal("0"),
+            timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            bar_index=0,
+        )
+        assert isinstance(fill.side, OrderSide)
+        assert fill.side == OrderSide.BUY
+
+        sell_fill = SimulatedFill(
+            order_id="order-2",
+            client_order_id="client-2",
+            symbol="AAPL",
+            side=OrderSide.SELL,
+            qty=Decimal("10"),
+            fill_price=Decimal("155.00"),
+            commission=Decimal("0"),
+            slippage=Decimal("0"),
+            timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            bar_index=1,
+        )
+        assert fill.side == OrderSide.BUY
+        assert sell_fill.side == OrderSide.SELL
 
 
 class TestSimulatedPosition:

@@ -8,7 +8,12 @@ Buys when fast SMA crosses above slow SMA, sells when it crosses below.
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import (
+    ActionType,
+    BaseStrategy,
+    StrategyAction,
+    StrategyOrderSide,
+)
 
 
 # Plugin metadata for auto-discovery
@@ -88,7 +93,7 @@ class SMAStrategy(BaseStrategy):
 
         return [
             StrategyAction(
-                type="fetch_window",
+                type=ActionType.FETCH_WINDOW,
                 symbol=symbol,
                 lookback=lookback,
             )
@@ -193,11 +198,10 @@ class SMAStrategy(BaseStrategy):
                 self._has_position = True
                 return [
                     StrategyAction(
-                        type="place_order",
+                        type=ActionType.PLACE_ORDER,
                         symbol=symbol,
-                        side="buy",
+                        side=StrategyOrderSide.BUY,
                         qty=self._config.qty,
-                        order_type="market",
                     )
                 ]
 
@@ -207,11 +211,10 @@ class SMAStrategy(BaseStrategy):
                 self._has_position = False
                 return [
                     StrategyAction(
-                        type="place_order",
+                        type=ActionType.PLACE_ORDER,
                         symbol=symbol,
-                        side="sell",
+                        side=StrategyOrderSide.SELL,
                         qty=self._config.qty,
-                        order_type="market",
                     )
                 ]
 

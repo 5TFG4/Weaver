@@ -211,3 +211,24 @@ class TestGetOrderVedaPath:
         """Without VedaService, get_order reads from MockOrderService."""
         response = client.get("/api/v1/orders/order-123")
         assert response.status_code == 200
+
+
+class TestOrdersPagination:
+    """N-10/M-02: Server-side pagination for orders."""
+
+    def test_default_pagination_params(self, client: TestClient) -> None:
+        """GET /orders returns page and page_size in response."""
+        response = client.get("/api/v1/orders")
+        data = response.json()
+
+        assert data["page"] == 1
+        assert data["page_size"] == 50
+
+    def test_page_size_limits_results(self, client: TestClient) -> None:
+        """GET /orders with page_size limits returned items."""
+        response = client.get("/api/v1/orders?page_size=1")
+        data = response.json()
+
+        assert data["page_size"] == 1
+        # MockOrderService has some preset orders, check pagination applies
+        assert len(data["items"]) <= 1

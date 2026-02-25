@@ -7,7 +7,12 @@ Logic: Buy when price drops 1% below average, sell when up 1%.
 
 from decimal import Decimal
 
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import (
+    ActionType,
+    BaseStrategy,
+    StrategyAction,
+    StrategyOrderSide,
+)
 
 
 # Plugin metadata for auto-discovery
@@ -57,7 +62,7 @@ class SampleStrategy(BaseStrategy):
         # Always request data window
         return [
             StrategyAction(
-                type="fetch_window",
+                type=ActionType.FETCH_WINDOW,
                 symbol=self._symbols[0] if self._symbols else "BTC/USD",
                 lookback=self._lookback,
             )
@@ -98,11 +103,10 @@ class SampleStrategy(BaseStrategy):
             self._has_position = True
             return [
                 StrategyAction(
-                    type="place_order",
+                    type=ActionType.PLACE_ORDER,
                     symbol=symbol,
-                    side="buy",
+                    side=StrategyOrderSide.BUY,
                     qty=Decimal("1"),
-                    order_type="market",
                 )
             ]
         elif current > upper_threshold and self._has_position:
@@ -110,11 +114,10 @@ class SampleStrategy(BaseStrategy):
             self._has_position = False
             return [
                 StrategyAction(
-                    type="place_order",
+                    type=ActionType.PLACE_ORDER,
                     symbol=symbol,
-                    side="sell",
+                    side=StrategyOrderSide.SELL,
                     qty=Decimal("1"),
-                    order_type="market",
                 )
             ]
 
