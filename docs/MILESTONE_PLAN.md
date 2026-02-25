@@ -351,8 +351,8 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 | MVP   | Focus                           | Est. Tests | Dependencies | Status |
 | ----- | ------------------------------- | ---------- | ------------ | ------ |
-| M8-P0 | Critical Contract Fixes         | ~15        | -            | ⏳     |
-| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ⏳     |
+| M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
+| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
 | M8-Q  | Code Quality & P1 Fixes         | ~10        | M8-P0        | ⏳     |
 | M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
 
@@ -363,16 +363,16 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Priority**: Must fix before any other M8 work.
 
 ```
-- [ ] C-01: Fix SSE event casing — align frontend useSSE.ts to PascalCase
+- [x] C-01: Fix SSE event casing — align frontend useSSE.ts to PascalCase
         (run.Started, run.Stopped, run.Completed, run.Error)
-- [ ] C-02: Add POST /api/v1/runs/{run_id}/start route + tests
-- [ ] C-03: Fix health endpoint path — add /api/v1 prefix or adjust frontend
-- [ ] C-04: Unify order read/write to VedaService (fallback to Mock when unconfigured)
-- [ ] N-02: Add error handling to _start_live (copy _start_backtest pattern)
-- [ ] N-09: Unify time_in_force defaults (schema vs handler)
-- [ ] M-01: Add missing events to ALL_EVENT_TYPES
+- [x] C-02: Add POST /api/v1/runs/{run_id}/start route + tests
+- [x] C-03: Fix health endpoint path — add /api/v1 prefix or adjust frontend
+- [x] C-04: Unify order read/write to VedaService (fallback to Mock when unconfigured)
+- [x] N-02: Add error handling to _start_live (copy _start_backtest pattern)
+- [x] N-09: Unify time_in_force defaults (schema vs handler)
+- [x] M-01: Add missing events to ALL_EVENT_TYPES
         (RunEvents.CREATED, RunEvents.COMPLETED, OrderEvents.CREATED)
-- [ ] M-03: Add orders.Cancelled listener to frontend useSSE.ts
+- [x] M-03: Add orders.Cancelled listener to frontend useSSE.ts
 ```
 
 #### M8-P1: Runtime Wiring — Packages A/B/C (~20 tests)
@@ -382,28 +382,28 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Package A — Run Lifecycle (chosen: A2 lifecycle-first):**
 
 ```
-- [ ] Inject RunManager runtime dependencies (strategy_loader, bar_repository)
-- [ ] Per-run cleanup guarantees (stop/complete/error paths)
-- [ ] Integration test: start → run → stop lifecycle
-- [ ] Integration test: error during run → proper cleanup
+- [x] Inject RunManager runtime dependencies (strategy_loader, bar_repository)
+- [x] Per-run cleanup guarantees (stop/complete/error paths)
+- [x] Integration test: start → run → stop lifecycle
+- [x] Integration test: error during run → proper cleanup
 ```
 
 **Package B — Event Pipeline Wiring (chosen: B2, with B1 fallback):**
 
 ```
-- [ ] D-1: Add direct subscriber dispatch in PostgresEventLog.append()
+- [x] D-1: Add direct subscriber dispatch in PostgresEventLog.append()
         (matching InMemoryEventLog behavior for in-process consumers)
-- [ ] D-4: Wire DomainRouter as standalone singleton in app lifespan
-- [ ] Integration test: append event → subscriber fires → SSEBroadcaster receives
-- [ ] Integration test: strategy.FetchWindow → DomainRouter → backtest.FetchWindow
+- [x] D-4: Wire DomainRouter as standalone singleton in app lifespan
+- [x] Integration test: append event → subscriber fires → SSEBroadcaster receives
+- [x] Integration test: strategy.FetchWindow → DomainRouter → backtest.FetchWindow
 ```
 
 **Package C — Data Source Unification (chosen: C1 hard unify):**
 
 ```
-- [ ] Unify orders list/get to VedaService in DB mode
-- [ ] Explicit non-durable semantics in no-DB mode
-- [ ] Integration test: write order → read order (same source)
+- [x] Unify orders list/get to VedaService in DB mode
+- [x] Explicit non-durable semantics in no-DB mode
+- [x] Integration test: write order → read order (same source)
 ```
 
 #### M8-Q: Code Quality & P1 Fixes (~10 tests)

@@ -120,8 +120,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         logger.warning("DB_URL not set - running without database (in-memory mode)")
         app.state.database = None
-        app.state.event_log = None
         app.state.veda_service = None
+
+        # B.3: Create InMemoryEventLog for no-DB mode (degraded but functional)
+        from src.events.log import InMemoryEventLog
+
+        event_log = InMemoryEventLog()
+        app.state.event_log = event_log
+        logger.info("InMemoryEventLog initialized (no-DB mode)")
+
+        # Subscribe SSEBroadcaster to InMemoryEventLog
+        broadcaster = app.state.broadcaster
+
+        async def on_event(envelope):
+            """Forward events from EventLog to SSE clients."""
+            await broadcaster.publish(envelope.type, envelope.payload)
+
+        unsubscribe = await event_log.subscribe(on_event)
+        app.state.event_log_unsubscribe = unsubscribe
+        logger.info("SSEBroadcaster subscribed to InMemoryEventLog")
 
     # =========================================================================
     # Startup - Services that may use EventLog

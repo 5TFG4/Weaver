@@ -304,33 +304,34 @@ class RunManager:
         ctx = RunContext(greta=greta, runner=runner, clock=clock)
         self._run_contexts[run.id] = ctx
 
-        # 3. Initialize components
-        await greta.initialize(
-            symbols=run.symbols,
-            timeframe=run.timeframe,
-            start=run.start_time,
-            end=run.end_time,
-        )
-        await runner.initialize(run_id=run.id, symbols=run.symbols)
-
-        # 4. Wire tick handler
-        async def on_tick(tick: ClockTick) -> None:
-            # a. Greta advances (processes orders, updates prices)
-            await greta.advance_to(tick.ts)
-            # b. Strategy processes tick (may emit events)
-            await runner.on_tick(tick)
-
-        clock.on_tick(on_tick)
-
-        # 5. Run to completion (backtest is synchronous)
+        # 3-5: Initialize, wire, and run — all inside try/finally for cleanup
         try:
+            # 3. Initialize components
+            await greta.initialize(
+                symbols=run.symbols,
+                timeframe=run.timeframe,
+                start=run.start_time,
+                end=run.end_time,
+            )
+            await runner.initialize(run_id=run.id, symbols=run.symbols)
+
+            # 4. Wire tick handler
+            async def on_tick(tick: ClockTick) -> None:
+                # a. Greta advances (processes orders, updates prices)
+                await greta.advance_to(tick.ts)
+                # b. Strategy processes tick (may emit events)
+                await runner.on_tick(tick)
+
+            clock.on_tick(on_tick)
+
+            # 5. Run to completion (backtest is synchronous)
             await clock.start(run.id)
             run.status = RunStatus.COMPLETED
         except Exception:
             run.status = RunStatus.ERROR
             raise
         finally:
-            # Cleanup RunContext even if backtest fails
+            # Cleanup RunContext even if init or backtest fails
             run.stopped_at = datetime.now(UTC)
             if run.id in self._run_contexts:
                 del self._run_contexts[run.id]
