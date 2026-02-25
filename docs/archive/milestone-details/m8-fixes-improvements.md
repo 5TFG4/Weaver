@@ -5,7 +5,7 @@
 > **Authoritative for**: M8 task breakdown, file-level change specs, test requirements, and execution order.  
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: 🔄 ACTIVE (started 2026-02-19)  
+> **Status**: 🔄 ACTIVE (started 2026-02-19; M8-Q core tasks completed on 2026-02-25)  
 > **Prerequisite**: M7 ✅ (894 tests: 808 backend + 86 frontend)  
 > **Target**: ~40–50 new tests → cumulative ~934–944  
 > **Estimated Effort**: 1.5–2 weeks  
@@ -43,22 +43,22 @@
 | —    | DomainRouter not wired in app lifespan                          | **P0** | M8-P1-B  | ⏳ Open |
 | —    | RunManager missing `bar_repository` / `strategy_loader`         | **P0** | M8-P1-A  | ⏳ Open |
 | —    | Per-run cleanup not guaranteed on stop/complete                 | **P0** | M8-P1-A  | ⏳ Open |
-| N-03 | Fill history lost on persistence round-trip                     | **P1** | M8-Q     | ⏳ Open |
-| N-04 | AlpacaAdapter blocks event loop — sync SDK in async             | **P1** | M8-Q     | ⏳ Open |
-| N-06 | SSE has no run_id filtering                                     | **P1** | M8-Q     | ⏳ Open |
+| N-03 | Fill history lost on persistence round-trip                     | **P1** | M8-Q     | ✅ Done |
+| N-04 | AlpacaAdapter blocks event loop — sync SDK in async             | **P1** | M8-Q     | ✅ Done |
+| N-06 | SSE has no run_id filtering                                     | **P1** | M8-Q     | ✅ Done |
 | N-09 | `time_in_force` default inconsistency                           | **P1** | M8-P0    | ⏳ Open |
-| N-10 | Frontend sends pagination params backend ignores                | **P1** | M8-Q     | ⏳ Open |
-| N-05 | StrategyAction stringly-typed                                   | **P2** | M8-Q     | ⏳ Open |
-| N-08 | BacktestResult stats mostly zeros                               | **P2** | M8-Q     | ⏳ Open |
+| N-10 | Frontend sends pagination params backend ignores                | **P1** | M8-Q     | ✅ Done |
+| N-05 | StrategyAction stringly-typed                                   | **P2** | M8-Q     | ✅ Done |
+| N-08 | BacktestResult stats mostly zeros                               | **P2** | M8-Q     | ✅ Done |
 | M-01 | `ALL_EVENT_TYPES` missing 3 events                              | **P0** | M8-P0    | ⏳ Open |
-| M-02 | No server-side pagination/filtering                             | 🟡     | M8-Q     | ⏳ Open |
+| M-02 | No server-side pagination/filtering                             | 🟡     | M8-Q     | ✅ Done |
 | M-03 | Frontend `orders.Cancelled` not handled                         | 🟡     | M8-P0    | ⏳ Open |
-| M-04 | `SimulatedFill.side` still `str` not `OrderSide`                | 🟡     | M8-Q     | ⏳ Open |
+| M-04 | `SimulatedFill.side` still `str` not `OrderSide`                | 🟡     | M8-Q     | ✅ Done |
 | M-05 | PositionTracker market values always zero                       | 🟡     | Deferred | —       |
 | M-06 | SSE event format undocumented                                   | 🟡     | M8-D     | ⏳ Open |
 | M-07 | Unused `/runs/:runId` route param in frontend                   | 🟡     | M8-Q     | ⏳ Open |
-| L-01 | 3 orphan/dead files                                             | 🟢     | M8-Q     | ⏳ Open |
-| L-02 | 3 outstanding TODO/FIXME                                        | 🟢     | M8-Q     | ⏳ Open |
+| L-01 | 3 orphan/dead files                                             | 🟢     | M8-Q     | ✅ Done |
+| L-02 | 3 outstanding TODO/FIXME                                        | 🟢     | M8-Q     | ✅ Done |
 | L-03 | Dual `Bar` type definitions                                     | 🟢     | M8-D     | ⏳ Open |
 | L-04 | veda.md env var names mismatch                                  | 🟢     | M8-D     | ⏳ Open |
 | L-05 | veda.md OrderStatus enum incomplete                             | 🟢     | M8-D     | ⏳ Open |
@@ -527,6 +527,7 @@ M8-D: Documentation (after P0+P1, parallel with Q)
 
 1. RED: Integration test — append event to PostgresEventLog → verify subscriber callback fires
 2. GREEN: Add subscriber dispatch in `PostgresEventLog.append()`:
+
    ```python
    async def append(self, envelope: Envelope) -> None:
        # 1. Write to database
@@ -546,6 +547,7 @@ M8-D: Documentation (after P0+P1, parallel with Q)
                    except Exception:
                        logger.exception("Subscriber error")
    ```
+
 3. REFACTOR: Extract subscriber dispatch loop into a shared `_dispatch_to_subscribers()` method used by both EventLog implementations
 
 **Tests** (~3):
@@ -668,6 +670,21 @@ Builds on P0 C-04 route change. Ensures VedaService `list_orders()` and `get_ord
 
 > **Estimated Tests**: ~10–15  
 > **Can run parallel with M8-P1** (independent fixes)
+
+### 6.0 Progress Snapshot (2026-02-25)
+
+| Item                                  | Status  | Notes                                               |
+| ------------------------------------- | ------- | --------------------------------------------------- |
+| D-2 (runs table + repository)         | ✅ Done | `RunRecord` + `RunRepository` landed                |
+| D-3 / N-03 (fills table + repository) | ✅ Done | `FillRecord` + `FillRepository` landed              |
+| N-04 (Alpaca async wrapping)          | ✅ Done | sync SDK calls wrapped with `asyncio.to_thread()`   |
+| N-06 / D-5 (SSE run_id filtering)     | ✅ Done | backend SSE query-param filtering added             |
+| N-10 / M-02 (pagination)              | ✅ Done | runs/orders support `page` + `page_size`            |
+| M-04 (SimulatedFill.side enum)        | ✅ Done | `str` -> `OrderSide`                                |
+| N-05 (StrategyAction enum refactor)   | ✅ Done | stringly typed fields replaced with enums           |
+| N-08 (backtest stats)                 | ✅ Done | Sharpe/Sortino/max-drawdown/win metrics implemented |
+| L-01 / L-02 (cleanup)                 | ✅ Done | dead files removed + TODOs resolved                 |
+| M-07 (RunsPage runId param)           | ⏳ Open | frontend deep-link behavior still pending           |
 
 ### 6.1 D-2: Add Runs Table (Schema Migration)
 
@@ -837,6 +854,8 @@ async def submit_order(self, intent: OrderIntent) -> ExchangeOrderResult:
 |------|--------|
 | `haro/src/pages/RunsPage.tsx` | Read `runId` from URL params; if present, show single run detail |
 
+**Status**: ⏳ Open
+
 ### 6.10 L-01: Delete Orphan Files
 
 ```bash
@@ -844,6 +863,8 @@ rm src/models.py
 rm src/constants.py
 rm src/veda/base_api_handler.py
 ```
+
+**Status**: ✅ Done
 
 ### 6.11 L-02: Resolve TODO/FIXME Comments
 
@@ -853,22 +874,25 @@ rm src/veda/base_api_handler.py
 | `src/greta/greta_service.py:504` | "Calculate advanced stats" | Resolved by N-08                     |
 | `src/greta/models.py:49`         | "Change to OrderSide enum" | Resolved by M-04                     |
 
+**Status**: ✅ Done
+
 ---
 
 ### M8-Q Summary
 
-| Task                   | Tests   |
-| ---------------------- | ------- |
-| D-2 Runs table         | 3       |
-| D-3/N-03 Fills table   | 2       |
-| N-04 Async wrapping    | 2       |
-| N-06/D-5 SSE filtering | 2       |
-| N-10/M-02 Pagination   | 2       |
-| M-04 Side enum         | 1       |
-| N-05 StrategyAction    | 1       |
-| N-08 Backtest stats    | 2       |
-| L-01/L-02 Cleanup      | 0       |
-| **Total**              | **~15** |
+| Task                   | Tests   | Status              |
+| ---------------------- | ------- | ------------------- |
+| D-2 Runs table         | 3       | ✅ Done             |
+| D-3/N-03 Fills table   | 2       | ✅ Done             |
+| N-04 Async wrapping    | 2       | ✅ Done             |
+| N-06/D-5 SSE filtering | 2       | ✅ Done             |
+| N-10/M-02 Pagination   | 2       | ✅ Done             |
+| M-04 Side enum         | 1       | ✅ Done             |
+| N-05 StrategyAction    | 1       | ✅ Done             |
+| N-08 Backtest stats    | 2       | ✅ Done             |
+| L-01/L-02 Cleanup      | 0       | ✅ Done             |
+| M-07 RunsPage runId    | 0       | ⏳ Open             |
+| **Total**              | **~15** | **9 done / 1 open** |
 
 ---
 
@@ -959,6 +983,6 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 
 ---
 
-_Last Updated: 2026-02-19_  
-_Status: M8 Active_  
+_Last Updated: 2026-02-25_  
+_Status: M8 Active (M8-Q core completed; M-07 pending)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 ✅ All Locked_

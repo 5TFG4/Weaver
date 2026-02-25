@@ -411,11 +411,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Code Quality:**
 
 ```
-- [ ] L-01: Delete orphan files (src/models.py, src/constants.py, src/veda/base_api_handler.py)
-- [ ] L-02: Resolve 3 TODO/FIXME comments
-- [ ] M-04: Change SimulatedFill.side from str to OrderSide enum
-- [ ] N-05: Refactor StrategyAction to proper enum/union type
-- [ ] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
+- [x] L-01: Delete orphan files (src/models.py, src/constants.py, src/veda/base_api_handler.py)
+- [x] L-02: Resolve 3 TODO/FIXME comments
+- [x] M-04: Change SimulatedFill.side from str to OrderSide enum
+- [x] N-05: Refactor StrategyAction to proper enum/union type
+- [x] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
 - [ ] Fix Pylance/mypy warnings + strict type checking
 - [ ] Remove unused code
 ```
@@ -423,11 +423,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **P1 Standalone Fixes:**
 
 ```
-- [ ] N-03: Add Fills table + persist fill history (D-3: separate fills table)
-- [ ] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
-- [ ] N-06: Add run_id query param to SSE endpoint (D-5)
-- [ ] N-10: Implement server-side pagination or remove pagination UI
-- [ ] D-2: Add Runs table for restart recovery
+- [x] N-03: Add Fills table + persist fill history (D-3: separate fills table)
+- [x] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
+- [x] N-06: Add run_id query param to SSE endpoint (D-5)
+- [x] N-10: Implement server-side pagination or remove pagination UI
+- [x] D-2: Add Runs table for restart recovery
 - [ ] M-07: Either use runId param in RunsPage or remove route
 ```
 
