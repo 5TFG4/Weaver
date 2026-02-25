@@ -339,7 +339,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 4.1 Exit Gate (Definition of Done)
 
-- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
 - [ ] Design decisions D-1 through D-5 implemented
 - [ ] DomainRouter wired into runtime lifecycle
 - [ ] RunManager dependencies fully injected
@@ -423,11 +423,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **P1 Standalone Fixes:**
 
 ```
-- [x] N-03: Add Fills table + persist fill history (D-3: separate fills table)
+- [ ] N-03: Add Fills table + persist fill history (D-3: separate fills table) *(partial: FillRecord + FillRepository done; persistence round-trip + migration pending)*
 - [x] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
 - [x] N-06: Add run_id query param to SSE endpoint (D-5)
 - [x] N-10: Implement server-side pagination or remove pagination UI
-- [x] D-2: Add Runs table for restart recovery
+- [ ] D-2: Add Runs table for restart recovery *(partial: RunRecord + RunRepository done; migration + RunManager recovery wiring pending)*
 - [ ] M-07: Either use runId param in RunsPage or remove route
 ```
 
