@@ -13,6 +13,9 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { RunsPage } from "../../../src/pages/RunsPage";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { render as rtlRender } from "@testing-library/react";
 import type { RunListResponse } from "../../../src/api/types";
 
 describe("RunsPage", () => {
@@ -248,5 +251,28 @@ describe("RunsPage", () => {
 
     const ordersLink = screen.getByRole("link", { name: /orders/i });
     expect(ordersLink).toHaveAttribute("href", "/orders");
+  });
+
+  it("shows only the targeted run when opened via /runs/:runId", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    rtlRender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/runs/run-2"]}>
+          <Routes>
+            <Route path="/runs/:runId" element={<RunsPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("run-row-run-2")).toBeInTheDocument();
+    expect(screen.queryByTestId("run-row-run-1")).not.toBeInTheDocument();
   });
 });

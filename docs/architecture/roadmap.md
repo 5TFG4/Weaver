@@ -127,7 +127,7 @@
 ### M8 Exit Gate (Fixes & Improvements)
 
 - [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
-- [ ] Design decisions D-1–D-5 implemented
+- [x] Design decisions D-1–D-5 implemented
 - [x] DomainRouter wired into runtime lifecycle
 - [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%

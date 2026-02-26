@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from src.events.protocol import Envelope
 from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
+    Fill,
     OrderIntent,
     OrderSide,
     OrderState,
@@ -194,7 +195,10 @@ class VedaService:
             return state
 
         # Fall back to repository
-        return await self._repository.get_by_client_order_id(client_order_id)
+        state = await self._repository.get_by_client_order_id(client_order_id)
+        if state is None:
+            return None
+        return await self._hydrate_fills(state)
 
     async def list_orders(self, run_id: str | None = None) -> list[OrderState]:
         """
@@ -207,7 +211,11 @@ class VedaService:
             List of OrderState
         """
         if run_id:
-            return await self._repository.list_by_run_id(run_id)
+            states = await self._repository.list_by_run_id(run_id)
+            hydrated: list[OrderState] = []
+            for state in states:
+                hydrated.append(await self._hydrate_fills(state))
+            return hydrated
         return self._order_manager.list_orders()
 
     # =========================================================================
@@ -316,6 +324,29 @@ class VedaService:
             },
         )
         await self._event_log.append(envelope)
+
+    async def _hydrate_fills(self, state: OrderState) -> OrderState:
+        """
+        Attach persisted fill history to an OrderState.
+
+        N-03: Ensures repository round-trip includes order fills.
+        """
+        if self._fill_repository is None:
+            return state
+
+        fill_records = await self._fill_repository.list_by_order(state.id)
+        state.fills = [
+            Fill(
+                id=record.id,
+                order_id=record.order_id,
+                qty=record.quantity,
+                price=record.price,
+                commission=Decimal("0"),
+                timestamp=record.filled_at,
+            )
+            for record in fill_records
+        ]
+        return state
 
 
 # =============================================================================

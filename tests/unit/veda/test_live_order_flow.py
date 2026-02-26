@@ -14,6 +14,7 @@ import pytest
 
 from src.veda.interfaces import OrderSubmitResult
 from src.veda.models import (
+    Fill,
     OrderIntent,
     OrderSide,
     OrderState,
@@ -57,6 +58,15 @@ def mock_repository() -> MagicMock:
     repo.save = AsyncMock()
     repo.get_by_client_order_id = AsyncMock(return_value=None)
     repo.list_by_run_id = AsyncMock(return_value=[])
+    return repo
+
+
+@pytest.fixture
+def mock_fill_repository() -> MagicMock:
+    """Create mock fill repository."""
+    repo = MagicMock()
+    repo.save = AsyncMock()
+    repo.list_by_order = AsyncMock(return_value=[])
     return repo
 
 
@@ -363,6 +373,7 @@ class TestOrderQueries:
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
     ) -> None:
         """get_order() should fall back to repository if not in local state."""
         from src.veda.veda_service import VedaService
@@ -396,13 +407,31 @@ class TestOrderQueries:
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
+
+        from src.walle.models import FillRecord
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-1",
+                order_id="db-order-id",
+                price=Decimal("3000.00"),
+                quantity=Decimal("2.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
         
         result = await service.get_order("stored-order")
         
         assert result is not None
         assert result.client_order_id == "stored-order"
+        assert len(result.fills) == 1
+        assert isinstance(result.fills[0], Fill)
+        assert result.fills[0].order_id == "db-order-id"
         mock_repository.get_by_client_order_id.assert_called_once_with("stored-order")
+        mock_fill_repository.list_by_order.assert_called_once_with("db-order-id")
 
     async def test_list_orders_returns_local_orders(
         self,
@@ -439,22 +468,64 @@ class TestOrderQueries:
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
     ) -> None:
         """list_orders(run_id=...) should query repository."""
         from src.veda.veda_service import VedaService
         
         mock_repository.list_by_run_id.return_value = []
         
+        from src.walle.models import FillRecord
+
+        mock_repository.list_by_run_id.return_value = [
+            OrderState(
+                id="repo-order-1",
+                client_order_id="repo-order-1",
+                exchange_order_id="exch-repo-1",
+                run_id="run-456",
+                symbol="AAPL",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                qty=Decimal("1.0"),
+                limit_price=None,
+                stop_price=None,
+                time_in_force=TimeInForce.DAY,
+                status=OrderStatus.FILLED,
+                filled_qty=Decimal("1.0"),
+                filled_avg_price=Decimal("150.00"),
+                created_at=datetime.now(UTC),
+                submitted_at=datetime.now(UTC),
+                filled_at=datetime.now(UTC),
+                cancelled_at=None,
+                reject_reason=None,
+                error_code=None,
+            )
+        ]
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-repo-1",
+                order_id="repo-order-1",
+                price=Decimal("150.00"),
+                quantity=Decimal("1.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
         
-        await service.list_orders(run_id="run-456")
+        result = await service.list_orders(run_id="run-456")
         
         mock_repository.list_by_run_id.assert_called_once_with("run-456")
+        mock_fill_repository.list_by_order.assert_called_once_with("repo-order-1")
+        assert len(result) == 1
+        assert len(result[0].fills) == 1
 
 
 # =============================================================================

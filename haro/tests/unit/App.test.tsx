@@ -23,6 +23,7 @@ function renderWithRouter(initialRoute: string) {
           <Routes>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/runs" element={<RunsPage />} />
+            <Route path="/runs/:runId" element={<RunsPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -54,6 +55,11 @@ describe("App", () => {
 
   it("routes to runs page on /runs", () => {
     renderWithRouter("/runs");
+    expect(screen.getByText("Manage trading runs")).toBeInTheDocument();
+  });
+
+  it("routes to runs deep-link page on /runs/:runId", () => {
+    renderWithRouter("/runs/run-2");
     expect(screen.getByText("Manage trading runs")).toBeInTheDocument();
   });
 

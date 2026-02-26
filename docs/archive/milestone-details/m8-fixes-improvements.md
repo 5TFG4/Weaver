@@ -31,37 +31,37 @@
 
 ### 1.1 Issue Registry (all sources consolidated)
 
-| ID   | Issue                                                           | Sev    | Phase    | Status     |
-| ---- | --------------------------------------------------------------- | ------ | -------- | ---------- |
-| C-01 | SSE event casing mismatch (`run.Started` vs `run.started`)      | **P0** | M8-P0    | ✅ Done    |
-| C-02 | Missing `POST /runs/{id}/start` route                           | **P0** | M8-P0    | ✅ Done    |
-| C-03 | Health endpoint path mismatch (`/healthz` vs `/api/v1/healthz`) | **P0** | M8-P0    | ✅ Done    |
-| C-04 | Order read/write source split (GET=Mock, POST=Veda)             | **P0** | M8-P0    | ✅ Done    |
-| N-01 | PostgresEventLog `append()` never dispatches to subscribers     | **P0** | M8-P1-B  | ✅ Done    |
-| N-02 | `_start_live()` zero error handling — ghost zombie runs         | **P0** | M8-P0    | ✅ Done    |
-| N-07 | InMemory vs Postgres EventLog behavioral parity broken          | **P0** | M8-P1-B  | ✅ Done    |
-| —    | DomainRouter not wired in app lifespan                          | **P0** | M8-P1-B  | ✅ Done    |
-| —    | RunManager missing `bar_repository` / `strategy_loader`         | **P0** | M8-P1-A  | ✅ Done    |
-| —    | Per-run cleanup not guaranteed on stop/complete                 | **P0** | M8-P1-A  | ✅ Done    |
-| N-03 | Fill history lost on persistence round-trip                     | **P1** | M8-Q     | 🔄 Partial |
-| N-04 | AlpacaAdapter blocks event loop — sync SDK in async             | **P1** | M8-Q     | ✅ Done    |
-| N-06 | SSE has no run_id filtering                                     | **P1** | M8-Q     | ✅ Done    |
-| N-09 | `time_in_force` default inconsistency                           | **P1** | M8-P0    | ✅ Done    |
-| N-10 | Frontend sends pagination params backend ignores                | **P1** | M8-Q     | ✅ Done    |
-| N-05 | StrategyAction stringly-typed                                   | **P2** | M8-Q     | ✅ Done    |
-| N-08 | BacktestResult stats mostly zeros                               | **P2** | M8-Q     | ✅ Done    |
-| M-01 | `ALL_EVENT_TYPES` missing 3 events                              | **P0** | M8-P0    | ✅ Done    |
-| M-02 | No server-side pagination/filtering                             | 🟡     | M8-Q     | ✅ Done    |
-| M-03 | Frontend `orders.Cancelled` not handled                         | 🟡     | M8-P0    | ✅ Done    |
-| M-04 | `SimulatedFill.side` still `str` not `OrderSide`                | 🟡     | M8-Q     | ✅ Done    |
-| M-05 | PositionTracker market values always zero                       | 🟡     | Deferred | —          |
-| M-06 | SSE event format undocumented                                   | 🟡     | M8-D     | ⏳ Open    |
-| M-07 | Unused `/runs/:runId` route param in frontend                   | 🟡     | M8-Q     | ⏳ Open    |
-| L-01 | 3 orphan/dead files                                             | 🟢     | M8-Q     | ✅ Done    |
-| L-02 | 3 outstanding TODO/FIXME                                        | 🟢     | M8-Q     | ✅ Done    |
-| L-03 | Dual `Bar` type definitions                                     | 🟢     | M8-D     | ⏳ Open    |
-| L-04 | veda.md env var names mismatch                                  | 🟢     | M8-D     | ⏳ Open    |
-| L-05 | veda.md OrderStatus enum incomplete                             | 🟢     | M8-D     | ⏳ Open    |
+| ID   | Issue                                                           | Sev    | Phase    | Status  |
+| ---- | --------------------------------------------------------------- | ------ | -------- | ------- |
+| C-01 | SSE event casing mismatch (`run.Started` vs `run.started`)      | **P0** | M8-P0    | ✅ Done |
+| C-02 | Missing `POST /runs/{id}/start` route                           | **P0** | M8-P0    | ✅ Done |
+| C-03 | Health endpoint path mismatch (`/healthz` vs `/api/v1/healthz`) | **P0** | M8-P0    | ✅ Done |
+| C-04 | Order read/write source split (GET=Mock, POST=Veda)             | **P0** | M8-P0    | ✅ Done |
+| N-01 | PostgresEventLog `append()` never dispatches to subscribers     | **P0** | M8-P1-B  | ✅ Done |
+| N-02 | `_start_live()` zero error handling — ghost zombie runs         | **P0** | M8-P0    | ✅ Done |
+| N-07 | InMemory vs Postgres EventLog behavioral parity broken          | **P0** | M8-P1-B  | ✅ Done |
+| —    | DomainRouter not wired in app lifespan                          | **P0** | M8-P1-B  | ✅ Done |
+| —    | RunManager missing `bar_repository` / `strategy_loader`         | **P0** | M8-P1-A  | ✅ Done |
+| —    | Per-run cleanup not guaranteed on stop/complete                 | **P0** | M8-P1-A  | ✅ Done |
+| N-03 | Fill history lost on persistence round-trip                     | **P1** | M8-Q     | ✅ Done |
+| N-04 | AlpacaAdapter blocks event loop — sync SDK in async             | **P1** | M8-Q     | ✅ Done |
+| N-06 | SSE has no run_id filtering                                     | **P1** | M8-Q     | ✅ Done |
+| N-09 | `time_in_force` default inconsistency                           | **P1** | M8-P0    | ✅ Done |
+| N-10 | Frontend sends pagination params backend ignores                | **P1** | M8-Q     | ✅ Done |
+| N-05 | StrategyAction stringly-typed                                   | **P2** | M8-Q     | ✅ Done |
+| N-08 | BacktestResult stats mostly zeros                               | **P2** | M8-Q     | ✅ Done |
+| M-01 | `ALL_EVENT_TYPES` missing 3 events                              | **P0** | M8-P0    | ✅ Done |
+| M-02 | No server-side pagination/filtering                             | 🟡     | M8-Q     | ✅ Done |
+| M-03 | Frontend `orders.Cancelled` not handled                         | 🟡     | M8-P0    | ✅ Done |
+| M-04 | `SimulatedFill.side` still `str` not `OrderSide`                | 🟡     | M8-Q     | ✅ Done |
+| M-05 | PositionTracker market values always zero                       | 🟡     | Deferred | —       |
+| M-06 | SSE event format undocumented                                   | 🟡     | M8-D     | ⏳ Open |
+| M-07 | Unused `/runs/:runId` route param in frontend                   | 🟡     | M8-Q     | ✅ Done |
+| L-01 | 3 orphan/dead files                                             | 🟢     | M8-Q     | ✅ Done |
+| L-02 | 3 outstanding TODO/FIXME                                        | 🟢     | M8-Q     | ✅ Done |
+| L-03 | Dual `Bar` type definitions                                     | 🟢     | M8-D     | ⏳ Open |
+| L-04 | veda.md env var names mismatch                                  | 🟢     | M8-D     | ⏳ Open |
+| L-05 | veda.md OrderStatus enum incomplete                             | 🟢     | M8-D     | ⏳ Open |
 
 ### 1.2 Design Decisions — All Locked ✅
 
@@ -673,18 +673,18 @@ Builds on P0 C-04 route change. Ensures VedaService `list_orders()` and `get_ord
 
 ### 6.0 Progress Snapshot (2026-02-26, code-verified)
 
-| Item                                  | Status     | Notes                                                                                       |
-| ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
-| D-2 (runs table + repository)         | ✅ Done    | model/repo/migration + app lifespan wiring (`RunRepository` inject + `recover()`) completed |
-| D-3 / N-03 (fills table + repository) | 🔄 Partial | model/repo/migration landed; order↔fills round-trip in `veda.persistence` still pending     |
-| N-04 (Alpaca async wrapping)          | ✅ Done    | sync SDK calls wrapped with `asyncio.to_thread()`                                           |
-| N-06 / D-5 (SSE run_id filtering)     | ✅ Done    | backend SSE query-param filtering added                                                     |
-| N-10 / M-02 (pagination)              | ✅ Done    | runs/orders support `page` + `page_size`                                                    |
-| M-04 (SimulatedFill.side enum)        | ✅ Done    | `str` -> `OrderSide`                                                                        |
-| N-05 (StrategyAction enum refactor)   | ✅ Done    | stringly typed fields replaced with enums                                                   |
-| N-08 (backtest stats)                 | ✅ Done    | Sharpe/Sortino/max-drawdown/win metrics implemented                                         |
-| L-01 / L-02 (cleanup)                 | ✅ Done    | dead files removed + TODOs resolved                                                         |
-| M-07 (RunsPage runId param)           | ⏳ Open    | frontend deep-link behavior still pending                                                   |
+| Item                                  | Status  | Notes                                                                                       |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| D-2 (runs table + repository)         | ✅ Done | model/repo/migration + app lifespan wiring (`RunRepository` inject + `recover()`) completed |
+| D-3 / N-03 (fills table + repository) | ✅ Done | model/repo/migration + VedaService fill hydration on repository reads completed             |
+| N-04 (Alpaca async wrapping)          | ✅ Done | sync SDK calls wrapped with `asyncio.to_thread()`                                           |
+| N-06 / D-5 (SSE run_id filtering)     | ✅ Done | backend SSE query-param filtering added                                                     |
+| N-10 / M-02 (pagination)              | ✅ Done | runs/orders support `page` + `page_size`                                                    |
+| M-04 (SimulatedFill.side enum)        | ✅ Done | `str` -> `OrderSide`                                                                        |
+| N-05 (StrategyAction enum refactor)   | ✅ Done | stringly typed fields replaced with enums                                                   |
+| N-08 (backtest stats)                 | ✅ Done | Sharpe/Sortino/max-drawdown/win metrics implemented                                         |
+| L-01 / L-02 (cleanup)                 | ✅ Done | dead files removed + TODOs resolved                                                         |
+| M-07 (RunsPage runId param)           | ✅ Done | `/runs/:runId` deep-link wired in App + RunsPage param handling                             |
 
 ### 6.1 D-2: Add Runs Table (Schema Migration)
 
@@ -756,7 +756,7 @@ CREATE TABLE fills (
 - `test: order persistence round-trip includes fills`
 - `test: FillRepository.list_by_order(order_id) returns fills`
 
-**Status**: 🔄 Partial (model/repository/migration completed; `veda.persistence` fill round-trip integration pending)
+**Status**: ✅ Done (model/repository/migration completed; fill round-trip hydration implemented in VedaService read paths)
 
 ### 6.3 N-04: AlpacaAdapter Async Wrapping
 
@@ -884,19 +884,19 @@ rm src/veda/base_api_handler.py
 
 ### M8-Q Summary
 
-| Task                   | Tests   | Status                          |
-| ---------------------- | ------- | ------------------------------- |
-| D-2 Runs table         | 3       | ✅ Done                         |
-| D-3/N-03 Fills table   | 2       | 🔄 Partial                      |
-| N-04 Async wrapping    | 2       | ✅ Done                         |
-| N-06/D-5 SSE filtering | 2       | ✅ Done                         |
-| N-10/M-02 Pagination   | 2       | ✅ Done                         |
-| M-04 Side enum         | 1       | ✅ Done                         |
-| N-05 StrategyAction    | 1       | ✅ Done                         |
-| N-08 Backtest stats    | 2       | ✅ Done                         |
-| L-01/L-02 Cleanup      | 0       | ✅ Done                         |
-| M-07 RunsPage runId    | 0       | ⏳ Open                         |
-| **Total**              | **~15** | **8 done / 1 partial / 1 open** |
+| Task                   | Tests   | Status                           |
+| ---------------------- | ------- | -------------------------------- |
+| D-2 Runs table         | 3       | ✅ Done                          |
+| D-3/N-03 Fills table   | 2       | ✅ Done                          |
+| N-04 Async wrapping    | 2       | ✅ Done                          |
+| N-06/D-5 SSE filtering | 2       | ✅ Done                          |
+| N-10/M-02 Pagination   | 2       | ✅ Done                          |
+| M-04 Side enum         | 1       | ✅ Done                          |
+| N-05 StrategyAction    | 1       | ✅ Done                          |
+| N-08 Backtest stats    | 2       | ✅ Done                          |
+| L-01/L-02 Cleanup      | 0       | ✅ Done                          |
+| M-07 RunsPage runId    | 0       | ✅ Done                          |
+| **Total**              | **~15** | **10 done / 0 partial / 0 open** |
 
 ---
 
@@ -988,5 +988,5 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 ---
 
 _Last Updated: 2026-02-26_  
-_Status: M8 Active (P0/P1 done; Q tails: D-3 fill round-trip integration + M-07 pending)_  
+_Status: M8 Active (P0/P1/Q code scope completed; M8-D docs + coverage gate pending)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked (implementation not fully complete)_
