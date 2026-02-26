@@ -985,7 +985,7 @@ All items must pass for M8 to close:
 - [x] Architecture docs created (greta.md, marvin.md, walle.md)
 - [x] All docs accurate post-M8 changes
 - [x] Full test suite green: 992 tests (904 backend + 88 frontend)
-- [ ] Code coverage ≥80% for critical modules
+- [x] Code coverage ≥80% for critical modules (pytest-cov: 89.73%)
 
 ### 8.2 Test Count Target
 
@@ -1020,5 +1020,5 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 ---
 
 _Last Updated: 2026-02-26_  
-_Status: M8 Active (P0/P1/Q/D completed; coverage gate pending)_  
+_Status: M8 Complete (P0/P1/Q/D delivered; exit gate passed)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked and implemented in M8_

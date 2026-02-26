@@ -130,7 +130,7 @@
 - [x] Design decisions D-1–D-5 implemented
 - [x] DomainRouter wired into runtime lifecycle
 - [x] RunManager dependencies fully injected
-- [ ] Code coverage ≥80%
+- [x] Code coverage ≥80% (pytest-cov: 89.73%)
 - [x] All TODO/FIXME cleaned
 - [x] Documentation complete
 - [x] ~96 new tests (target: 934+) → actual: 992

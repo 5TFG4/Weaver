@@ -334,7 +334,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
 > **Prerequisite**: M7 ✅  
 > **Estimated Effort**: 1.5–2 weeks  
-> **Status**: 🔄 ACTIVE (started 2026-02-19)  
+> **Status**: ✅ COMPLETE (2026-02-19 → 2026-02-26)  
 > **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
@@ -343,7 +343,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] Design decisions D-1 through D-5 implemented
 - [x] DomainRouter wired into runtime lifecycle
 - [x] RunManager dependencies fully injected
-- [ ] Code coverage ≥80%
+- [x] Code coverage ≥80% (pytest-cov: 89.73%)
 - [x] All TODO/FIXME cleaned up
 - [x] Documentation complete and accurate
 
