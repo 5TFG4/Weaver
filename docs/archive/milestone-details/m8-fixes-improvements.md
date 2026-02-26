@@ -1022,3 +1022,109 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 _Last Updated: 2026-02-26_  
 _Status: M8 Complete (P0/P1/Q/D delivered; exit gate passed)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked and implemented in M8_
+
+---
+
+## 9. M8-R: Audit Closeout Plan (TDD + MVP, planning only)
+
+> **Date**: 2026-02-26  
+> **Purpose**: execution-level remediation plan for final M8 audit findings (planning first, then implementation).  
+> **Source**: [../../M8_FINAL_PYRAMID_REVIEW.md](../../M8_FINAL_PYRAMID_REVIEW.md)
+
+### 9.1 Scope
+
+M8-R focuses on final closeout work after M8-core delivery:
+
+- P0 deployment blockers,
+- P1 runtime/doc consistency gaps,
+- P2 hardening decisions.
+
+### 9.2 Exit Gate (Definition of Done)
+
+- [ ] All P0 deployment blockers closed and validated by container smoke tests
+- [ ] Run state transition persistence gap closed with unit + integration proof
+- [ ] Execution-layer docs synchronized to one authoritative status baseline
+- [ ] P2 hardening items either implemented or explicitly deferred with rationale
+- [ ] M8-R evidence appended to DESIGN_AUDIT + TEST_COVERAGE + MILESTONE_PLAN
+
+### 9.3 MVP Breakdown
+
+| MVP   | Focus                                  | Est. Tests | Dependencies | Status |
+| ----- | -------------------------------------- | ---------- | ------------ | ------ |
+| M8-R0 | Release Blockers (P0)                  | ~6         | -            | ⏳     |
+| M8-R1 | Runtime Consistency (P1 core)          | ~10        | M8-R0        | ⏳     |
+| M8-R2 | Documentation Authority Sync (P1 docs) | ~4         | M8-R0        | ⏳     |
+| M8-R3 | Contract/Operability Hardening (P2)    | ~6         | M8-R1        | ⏳     |
+
+### 9.4 Detailed Tasks (TDD-first)
+
+#### M8-R0: Release Blockers (P0)
+
+```
+- [ ] R-01: Fix prod compose backend ASGI target mismatch (main:app -> canonical app target)
+- [ ] R-02: Fix backend Dockerfile dependency copy/install path mismatch
+- [ ] RED: Add failing smoke checks for prod compose boot + backend image build
+- [ ] GREEN: Make smoke checks pass in CI/local prod-like compose
+- [ ] REFACTOR: normalize backend startup command references across docs/scripts
+```
+
+#### M8-R1: Runtime Consistency (P1 core)
+
+```
+- [ ] R-03: Persist run status transitions at start/completion/error boundaries
+- [ ] RED: Add tests proving DB/in-memory status can drift on restart (current behavior)
+- [ ] GREEN: Ensure start/backtest-complete/error transitions persist immediately
+- [ ] Integration test: restart recovery reflects latest persisted status accurately
+- [ ] REFACTOR: centralize run-status transition + persist helper to reduce omission risk
+```
+
+#### M8-R2: Documentation Authority Sync (P1 docs)
+
+```
+- [ ] R-04: DESIGN_AUDIT.md convert from active backlog state to final M8 closeout snapshot
+- [ ] R-05: TEST_COVERAGE.md sync to latest verified counts/coverage (998, 89.78%)
+- [ ] R-06: MILESTONE_PLAN.md wording fix for /runs/:runId (deep-link enabled, not removed)
+- [ ] R-07: README.md sync runtime contract (ports/endpoints/current snapshot)
+- [ ] RED: add doc consistency grep checks for stale markers
+- [ ] GREEN: all doc consistency checks pass
+```
+
+#### M8-R3: Contract/Operability Hardening (P2)
+
+```
+- [ ] R-08: Decide + implement status filtering contract (frontend params vs backend usage)
+- [ ] R-09: Explicit StrategyRunner cleanup contract on run stop (if retained after design review)
+- [ ] RED: add tests for status filtering + cleanup behavior
+- [ ] GREEN: pass tests with explicit contract semantics
+- [ ] REFACTOR: update API/events docs with final hardening decisions
+```
+
+### 9.5 Issue Mapping Matrix (Final Review -> M8-R)
+
+| Final Review Issue                          | Severity | Planned In   | Delivery Rule                 |
+| ------------------------------------------- | -------- | ------------ | ----------------------------- |
+| Prod compose ASGI target mismatch           | P0       | M8-R0 / R-01 | Must close before M9 starts   |
+| Backend Dockerfile dependency path mismatch | P0       | M8-R0 / R-02 | Must close before M9 starts   |
+| Run state persistence gap                   | P1       | M8-R1 / R-03 | Must close before release tag |
+| DESIGN_AUDIT stale status                   | P1       | M8-R2 / R-04 | Must close before release tag |
+| TEST_COVERAGE stale metrics                 | P1       | M8-R2 / R-05 | Must close before release tag |
+| /runs/:runId wording drift                  | P1       | M8-R2 / R-06 | Must close before release tag |
+| README runtime drift                        | P1       | M8-R2 / R-07 | Must close before release tag |
+| status param contract debt                  | P2       | M8-R3 / R-08 | Close or explicitly defer     |
+| explicit cleanup contract debt              | P2       | M8-R3 / R-09 | Close or explicitly defer     |
+
+### 9.6 Execution Order
+
+```
+Phase A (M8-R0): deploy blockers first (RED->GREEN->REFACTOR)
+Phase B (M8-R1): runtime state consistency and recovery correctness
+Phase C (M8-R2): authority docs synchronization and stale-assertion cleanup
+Phase D (M8-R3): hardening contracts + explicit deferral decisions
+```
+
+### 9.7 Deliverables
+
+- Updated audit closeout evidence in DESIGN_AUDIT.md
+- Updated coverage snapshot in TEST_COVERAGE.md
+- Updated high-level status in MILESTONE_PLAN.md
+- Final consistency grep report attached to release notes

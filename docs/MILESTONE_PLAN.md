@@ -5,24 +5,24 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 Active  
-> **Tests**: 904 backend + 88 frontend = 992 total  
-> **Remaining Work**: M8 (Critical Fixes & Improvements) → M9 (E2E Tests)  
-> **Estimated Total**: ~20–30 new tests remaining (M8-D docs + M9), ~2 weeks
+> **Current State**: M7 ✅ Formally Closed · M8-Core ✅ Complete · M8-R 🔄 Active (Audit Closeout)  
+> **Tests (latest verified)**: 908 backend + 90 frontend = 998 total  
+> **Remaining Work**: M8-R (Release Blockers + Consistency Closeout) → M9 (E2E Tests)  
+> **Estimated Total**: ~25–40 new tests remaining (M8-R + M9), ~2–3 weeks
 
 ---
 
 ## Executive Summary
 
 All pending tasks have been consolidated and reorganized into 5 milestones.
-M7 is formally closed as of 2026-02-19. M8 is now the active milestone, focused on critical fixes and code improvements. E2E testing is separated into M9 for cleaner scope and delivery.
+M7 is formally closed as of 2026-02-19. M8 core work is complete, and M8-R is now active for final audit closeout (deployment blockers + runtime/doc consistency) before M9 E2E execution.
 
 | Milestone | Name               | Core Objective                            | Tests  | Status              |
 | --------- | ------------------ | ----------------------------------------- | ------ | ------------------- |
 | **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
 | **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
 | **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 96+    | 🔄 ACTIVE           |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 96+    | 🔄 ACTIVE (M8-R)    |
 | **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
 
 **M6 Complete** (101 tests added):
@@ -334,7 +334,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
 > **Prerequisite**: M7 ✅  
 > **Estimated Effort**: 1.5–2 weeks  
-> **Status**: ✅ COMPLETE (2026-02-19 → 2026-02-26)  
+> **Status**: 🔄 ACTIVE (M8-Core complete, M8-R closeout in progress)  
 > **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
@@ -456,6 +456,29 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | D-3 | Should fills be persisted separately?             | **(b)** Separate fills table                  | 🔒 Locked |
 | D-4 | DomainRouter: standalone or inline in RunManager? | **(a)** Separate wired singleton              | 🔒 Locked |
 | D-5 | SSE run_id filtering?                             | **(a)** Yes, via query param                  | 🔒 Locked |
+
+### 4.5 M8-R: Audit Closeout Plan (TDD + MVP, planning only)
+
+> **Purpose**: final closeout of deployment blockers + runtime/doc consistency before M9.  
+> **Style**: TDD + MVP phased execution (RED → GREEN → REFACTOR).  
+> **Detailed plan document**: [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only)  
+> **Audit baseline**: [M8_FINAL_PYRAMID_REVIEW.md](M8_FINAL_PYRAMID_REVIEW.md)
+
+#### 4.5.1 High-Level Phases
+
+| Phase | Focus                                        | Severity | Status |
+| ----- | -------------------------------------------- | -------- | ------ |
+| M8-R0 | Release blockers (compose/docker boot path)  | P0       | ⏳     |
+| M8-R1 | Runtime consistency (run status persistence) | P1       | ⏳     |
+| M8-R2 | Documentation authority sync                 | P1       | ⏳     |
+| M8-R3 | Contract hardening decisions                 | P2       | ⏳     |
+
+#### 4.5.2 M8-R Exit Gate (Summary)
+
+- [ ] P0 deployment blockers closed and smoke-verified
+- [ ] Run state persistence consistency verified by tests
+- [ ] Execution-layer docs synchronized and stale markers cleared
+- [ ] P2 items either implemented or formally deferred with rationale
 
 ---
 
