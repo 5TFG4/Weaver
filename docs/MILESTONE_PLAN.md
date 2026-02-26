@@ -344,7 +344,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] DomainRouter wired into runtime lifecycle
 - [ ] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
-- [ ] All TODO/FIXME cleaned up
+- [x] All TODO/FIXME cleaned up
 - [ ] Documentation complete and accurate
 
 ### 4.2 MVP Breakdown
@@ -352,8 +352,8 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | MVP   | Focus                           | Est. Tests | Dependencies | Status |
 | ----- | ------------------------------- | ---------- | ------------ | ------ |
 | M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
-| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
-| M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | ✅     |
+| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | 🔄     |
+| M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | 🔄     |
 | M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
 
 ### 4.3 Detailed Tasks
@@ -634,5 +634,5 @@ _Last Updated: 2026-02-25_
 _M7 Formally Closed: 2026-02-19_  
 _M8 Active Start: 2026-02-19_  
 _Total Tests: 992 (904 backend + 88 frontend)_  
-_M8 Scope: Critical fixes + Improvements (96+ tests added, M8-D docs remaining)_  
+_M8 Scope: Critical fixes + Improvements (96+ tests added; runtime integration tails + M8-D docs remaining)_  
 _M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_

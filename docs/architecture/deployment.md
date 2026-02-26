@@ -64,10 +64,10 @@ alembic revision --autogenerate -m "description"
 
 | Capability                                                                      | DB On                                                      | DB Off                                          |
 | ------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| `GET /healthz`                                                                  | ✅ available                                               | ✅ available                                    |
+| `GET /api/v1/healthz`                                                           | ✅ available                                               | ✅ available                                    |
 | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`, `POST /api/v1/runs/{id}/stop` | ✅ available (in-memory run store + event log integration) | ✅ available (in-memory only, non-durable)      |
 | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}`                             | ✅ available when `VedaService` is configured              | ❌ `503` (`VedaService` not configured)         |
-| `GET /api/v1/orders`, `GET /api/v1/orders/{id}`                                 | ✅ available (current mock read path)                      | ✅ available (mock read path)                   |
+| `GET /api/v1/orders`, `GET /api/v1/orders/{id}`                                 | ✅ available (`VedaService` first, fallback to mock path)  | ✅ available (mock read path)                   |
 | `GET /api/v1/events/stream` connection                                          | ✅ available                                               | ✅ available                                    |
 | Run/order domain events delivered to SSE                                        | ✅ best-effort real-time (DB event log path)               | ⚠️ not guaranteed; no durable event log/offsets |
 | Offset durability / replay primitives                                           | ✅ `consumer_offsets` persistence                          | ❌ unavailable                                  |

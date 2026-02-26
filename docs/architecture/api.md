@@ -13,32 +13,33 @@
 
 This appendix is the current contract baseline used for review and remediation.
 
-| Surface              | Baseline Contract                                   | Current Runtime State                                      |
-| -------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
-| Health               | `GET /healthz`                                      | Implemented and tested at `/healthz` (no `/api/v1` prefix) |
-| Runs start           | `POST /api/v1/runs/{id}/start`                      | **Not implemented yet** (documented target contract)       |
-| Runs stop            | `POST /api/v1/runs/{id}/stop`                       | Implemented                                                |
-| Runs list/create/get | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`    | Implemented                                                |
-| Orders list/get      | `GET /api/v1/orders`, `GET /api/v1/orders/{id}`     | Implemented via mock read path                             |
-| Orders create/cancel | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}` | Implemented via `VedaService`                              |
-| SSE stream           | `GET /api/v1/events/stream`                         | Implemented                                                |
+| Surface              | Baseline Contract                                   | Current Runtime State                                    |
+| -------------------- | --------------------------------------------------- | -------------------------------------------------------- |
+| Health               | `GET /api/v1/healthz`                               | Implemented and tested at `/api/v1/healthz`              |
+| Runs start           | `POST /api/v1/runs/{id}/start`                      | Implemented                                              |
+| Runs stop            | `POST /api/v1/runs/{id}/stop`                       | Implemented                                              |
+| Runs list/create/get | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`    | Implemented                                              |
+| Orders list/get      | `GET /api/v1/orders`, `GET /api/v1/orders/{id}`     | Implemented (`VedaService` first, fallback to mock path) |
+| Orders create/cancel | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}` | Implemented via `VedaService`                            |
+| SSE stream           | `GET /api/v1/events/stream`                         | Implemented                                              |
 
 **Drift decision (doc vs code):** this appendix records both the locked contract target and current runtime truth when they differ. Code remediation must move runtime to the locked contract, not silently rewrite the contract.
 
-### Implemented Endpoints (M6)
+### Implemented Endpoints (M8 Verified)
 
-| Method     | Endpoint                 | Description                                        |
-| ---------- | ------------------------ | -------------------------------------------------- |
-| GET        | `/healthz`               | Health check                                       |
-| GET        | `/api/v1/runs`           | List all runs                                      |
-| POST       | `/api/v1/runs`           | Create a new run                                   |
-| GET        | `/api/v1/runs/{id}`      | Get run details                                    |
-| POST       | `/api/v1/runs/{id}/stop` | Stop a running run                                 |
-| GET        | `/api/v1/orders`         | List orders (optional `run_id` filter)             |
-| **POST**   | `/api/v1/orders`         | **Create order via VedaService**                   |
-| GET        | `/api/v1/orders/{id}`    | Get order details                                  |
-| **DELETE** | `/api/v1/orders/{id}`    | **Cancel order via VedaService**                   |
-| GET        | `/api/v1/candles`        | Get OHLCV candles (`symbol`, `timeframe` required) |
+| Method     | Endpoint                  | Description                                        |
+| ---------- | ------------------------- | -------------------------------------------------- |
+| GET        | `/api/v1/healthz`         | Health check                                       |
+| GET        | `/api/v1/runs`            | List all runs                                      |
+| POST       | `/api/v1/runs`            | Create a new run                                   |
+| GET        | `/api/v1/runs/{id}`       | Get run details                                    |
+| POST       | `/api/v1/runs/{id}/start` | Start a pending run                                |
+| POST       | `/api/v1/runs/{id}/stop`  | Stop a running run                                 |
+| GET        | `/api/v1/orders`          | List orders (optional `run_id` filter)             |
+| **POST**   | `/api/v1/orders`          | **Create order via VedaService**                   |
+| GET        | `/api/v1/orders/{id}`     | Get order details                                  |
+| **DELETE** | `/api/v1/orders/{id}`     | **Cancel order via VedaService**                   |
+| GET        | `/api/v1/candles`         | Get OHLCV candles (`symbol`, `timeframe` required) |
 
 ### Order Creation (M6-3)
 

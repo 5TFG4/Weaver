@@ -124,12 +124,12 @@
 - [x] SSE real-time updates working ✅ 2026-02-06
 - [x] 86 new tests (target: 821+) → actual: 894 ✅
 
-### M8 Exit Gate (Fixes & Improvements Complete)
+### M8 Exit Gate (Fixes & Improvements)
 
 - [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
-- [x] Design decisions D-1–D-5 implemented
-- [x] DomainRouter wired into runtime lifecycle
-- [x] RunManager dependencies fully injected
+- [ ] Design decisions D-1–D-5 implemented
+- [ ] DomainRouter wired into runtime lifecycle
+- [ ] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [x] All TODO/FIXME cleaned
 - [ ] Documentation complete
@@ -205,4 +205,4 @@
 
 ---
 
-_Last updated: 2026-02-06 (M7 complete, 808 backend + 86 frontend = 894 total tests)_
+_Last updated: 2026-02-26 (M8 active verification sync, 904 backend + 88 frontend = 992 total tests)_
