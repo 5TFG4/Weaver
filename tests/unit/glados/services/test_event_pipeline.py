@@ -10,6 +10,7 @@ TDD tests for:
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -472,3 +473,114 @@ class TestEventToSSEIntegration:
         # The routed event should reach the broadcaster
         fetch_events = [e for e in broadcasted if e.type == "backtest.FetchWindow"]
         assert len(fetch_events) == 1
+
+
+class TestRouteToHandlerClosedLoop:
+    """F-01: strategy.PlaceRequest should reach backtest order handler via routing chain."""
+
+    async def test_strategy_place_request_reaches_greta_handler(self) -> None:
+        """strategy.PlaceRequest -> DomainRouter -> backtest.PlaceOrder -> GretaService.place_order."""
+        from datetime import UTC, datetime
+        from unittest.mock import AsyncMock
+
+        from src.glados.schemas import RunMode, RunStatus
+        from src.glados.services.domain_router import DomainRouter
+        from src.glados.services.run_manager import Run
+        from src.greta.greta_service import GretaService
+
+        event_log = InMemoryEventLog()
+
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        greta = GretaService(
+            run_id="run-123",
+            bar_repository=mock_bar_repo,
+            event_log=event_log,
+        )
+        await greta.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+        )
+
+        run = Run(
+            id="run-123",
+            strategy_id="test-strategy",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.RUNNING,
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            config=None,
+            created_at=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+        mock_run_manager = AsyncMock()
+        mock_run_manager.get = AsyncMock(return_value=run)
+
+        router = DomainRouter(event_log=event_log, run_manager=mock_run_manager)
+
+        strategy_event = Envelope(
+            type="strategy.PlaceRequest",
+            producer="marvin.runner",
+            run_id="run-123",
+            payload={
+                "symbol": "BTC/USD",
+                "side": "buy",
+                "qty": "1.0",
+                "order_type": "market",
+            },
+        )
+        await router.route(strategy_event)
+
+        await asyncio.sleep(0)
+
+        assert len(greta.pending_orders) == 1
+
+
+class TestLiveFetchWindowClosedLoop:
+    """Closed-loop proof for live.FetchWindow consumer wiring."""
+
+    def test_live_fetch_window_emits_data_window_ready(self) -> None:
+        """live.FetchWindow appended to app event log should produce data.WindowReady."""
+        import os
+
+        from fastapi.testclient import TestClient
+
+        from src.config import get_test_config
+        from src.glados.app import create_app
+
+        settings = get_test_config()
+        app = create_app(settings=settings)
+
+        old_db_url = os.environ.pop("DB_URL", None)
+        try:
+            with TestClient(app):
+                event_log = app.state.event_log
+                captured: list[Envelope] = []
+
+                async def on_event(envelope: Envelope) -> None:
+                    captured.append(envelope)
+
+                import asyncio
+
+                asyncio.run(event_log.subscribe(on_event))
+
+                fetch_event = Envelope(
+                    type="live.FetchWindow",
+                    producer="test",
+                    run_id="run-live-1",
+                    payload={
+                        "symbol": "BTC/USD",
+                        "lookback": 3,
+                    },
+                )
+                asyncio.run(event_log.append(fetch_event))
+
+                produced = [e for e in captured if e.type == "data.WindowReady"]
+                assert len(produced) >= 1
+                assert produced[-1].payload["symbol"] == "BTC/USD"
+                assert produced[-1].payload["lookback"] == 3
+                assert isinstance(produced[-1].payload["bars"], list)
+        finally:
+            if old_db_url is not None:
+                os.environ["DB_URL"] = old_db_url

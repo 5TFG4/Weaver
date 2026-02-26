@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useSSE,
@@ -203,7 +203,6 @@ describe("useSSE", () => {
   });
 
   it("invalidates React Query cache on run events", () => {
-    const wrapper = createWrapper();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -275,6 +274,24 @@ describe("useSSE", () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0].type).toBe("error");
     expect(notifications[0].message).toContain("rejected");
+  });
+
+  it("handles orders.Rejected event with reject_reason payload", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.Rejected", {
+        order_id: "order-1000",
+        reject_reason: "Exchange rejected order",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("error");
+    expect(notifications[0].message).toContain("Exchange rejected order");
   });
 
   // =========================================================================

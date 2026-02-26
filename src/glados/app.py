@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import WeaverConfig, get_config
+from src.events.protocol import Envelope
 from src.glados.routes.candles import router as candles_router
 from src.glados.routes.health import router as health_router
 from src.glados.routes.orders import router as orders_router
@@ -190,6 +191,70 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.domain_router_subscription_id = domain_router_subscription_id
     logger.info("DomainRouter wired to strategy.* events")
 
+    # Wire live.PlaceOrder to VedaService handler when VedaService is available
+    app.state.veda_place_order_subscription_id = None
+    if getattr(app.state, "veda_service", None) is not None:
+        veda_place_order_subscription_id = await event_log.subscribe_filtered(
+            event_types=["live.PlaceOrder"],
+            callback=app.state.veda_service.handle_place_order,
+        )
+        app.state.veda_place_order_subscription_id = veda_place_order_subscription_id
+        logger.info("VedaService wired to live.PlaceOrder events")
+
+    # Wire live.FetchWindow to market data service and emit data.WindowReady
+    async def on_live_fetch_window(envelope: Envelope) -> None:
+        payload = envelope.payload
+        symbol = payload.get("symbol")
+        if not symbol:
+            return
+
+        lookback = int(payload.get("lookback", 10))
+        timeframe = payload.get("timeframe")
+
+        if timeframe is None and envelope.run_id is not None:
+            run = await run_manager.get(envelope.run_id)
+            if run is not None:
+                timeframe = run.timeframe
+        if timeframe is None:
+            timeframe = "1m"
+
+        candles = await app.state.market_data_service.get_candles(
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=lookback,
+        )
+
+        window_ready = Envelope(
+            type="data.WindowReady",
+            producer="glados.market_data",
+            run_id=envelope.run_id,
+            corr_id=envelope.corr_id,
+            causation_id=envelope.id,
+            payload={
+                "symbol": symbol,
+                "bars": [
+                    {
+                        "timestamp": candle.timestamp.isoformat(),
+                        "open": str(candle.open),
+                        "high": str(candle.high),
+                        "low": str(candle.low),
+                        "close": str(candle.close),
+                        "volume": str(candle.volume),
+                    }
+                    for candle in candles
+                ],
+                "lookback": lookback,
+            },
+        )
+        await event_log.append(window_ready)
+
+    live_fetch_window_subscription_id = await event_log.subscribe_filtered(
+        event_types=["live.FetchWindow"],
+        callback=on_live_fetch_window,
+    )
+    app.state.live_fetch_window_subscription_id = live_fetch_window_subscription_id
+    logger.info("MarketDataService wired to live.FetchWindow events")
+
     yield
 
     # =========================================================================
@@ -209,6 +274,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ):
         await app.state.event_log.unsubscribe_by_id(app.state.domain_router_subscription_id)
         logger.info("DomainRouter unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "veda_place_order_subscription_id")
+        and app.state.veda_place_order_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.veda_place_order_subscription_id)
+        logger.info("VedaService unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "live_fetch_window_subscription_id")
+        and app.state.live_fetch_window_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.live_fetch_window_subscription_id)
+        logger.info("MarketDataService unsubscribed from EventLog")
 
     # Close database connection
     if hasattr(app.state, "database") and app.state.database:

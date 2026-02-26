@@ -1134,3 +1134,76 @@ Phase D (M8-R3): hardening contracts + explicit deferral decisions
 - Updated coverage snapshot in TEST_COVERAGE.md
 - Updated high-level status in MILESTONE_PLAN.md
 - Final consistency grep report attached to release notes
+
+### 9.9 Post-Review Clarification Log (Independent Audit Delta)
+
+> Added: 2026-02-26
+> Purpose: Explain two recurring questions from independent review:
+>
+> 1. why terminal cwd sometimes appears to be "stuck" in `haro`,
+> 2. why some items marked ✅ Done can still be flagged as risk during a fresh audit.
+
+#### 9.9.1 Terminal cwd behavior (not environment misconfiguration)
+
+Observation from verification:
+
+```bash
+pwd
+cd /workspaces/Weaver/haro
+pwd
+cd /workspaces/Weaver
+pwd
+```
+
+Result:
+
+```text
+/workspaces/Weaver
+/workspaces/Weaver/haro
+/workspaces/Weaver
+```
+
+Conclusion:
+
+- The shell session is stateful; cwd persists across subsequent commands.
+- This is expected terminal/session behavior, not a devcontainer/env-file defect.
+- When a prior command runs `cd /workspaces/Weaver/haro && npm test`, later relative Python test paths can fail unless cwd is reset.
+
+Operational guardrail:
+
+- For backend test commands, always anchor with `cd /workspaces/Weaver && ...`.
+- For frontend test commands, always anchor with `cd /workspaces/Weaver/haro && ...`.
+
+#### 9.9.2 Why "✅ Done" items can still be flagged in independent audit
+
+Independent audits are evidence-first and do not inherit prior verdicts. A finding can be re-raised when one of these conditions occurs:
+
+1. **Scope mismatch**: implementation fixed at unit/routing level, but end-to-end closed-loop evidence is missing.
+2. **Contract drift**: docs and runtime both changed, but payload fields/examples are not fully synchronized.
+3. **Authority drift**: multiple docs publish different totals/snapshots at the same timestamp.
+
+This does not necessarily mean the fix is wrong; it means the **proof chain** for release confidence is incomplete or inconsistent.
+
+#### 9.9.3 Item-by-item reconciliation (Done vs. independently re-flagged)
+
+| Area                                   | M8 Status | Independent Re-flag Reason                                                        | Current Position                                                  |
+| -------------------------------------- | --------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| N-01/N-07 EventLog dispatch parity     | ✅ Done   | Initially flagged before targeted test verification                               | **Closed** (unit evidence confirms parity)                        |
+| N-02 `_start_live` error handling      | ✅ Done   | Initially flagged before reading latest RunManager path                           | **Closed**                                                        |
+| N-06 SSE run_id filter                 | ✅ Done   | Initially flagged from stale assumption, then verified in route code/tests        | **Closed**                                                        |
+| DomainRouter runtime wiring            | ✅ Done   | Wiring exists, but independent audit sought full route→consumer closed-loop proof | **Closed** (added route→handler closed-loop test evidence)        |
+| SSE rejected payload field consistency | ✅ Done   | frontend/backend/docs used mixed keys (`reason`/`reject_reason`/`error_message`)  | **Closed** (frontend listener now accepts all three, test-backed) |
+| Test-count authority sync              | ✅ Done   | Snapshot values differ across docs (e.g., 992/998/1023 references)                | **Open (docs governance)**                                        |
+
+#### 9.9.4 Remaining follow-up (to document/close)
+
+| ID   | Topic                                                                                                              | Type                     | Recommended Closure                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------- |
+| F-01 | Domain route-to-handler closed-loop proof (`strategy.PlaceRequest -> live/backtest.PlaceOrder -> terminal effect`) | Evidence gap             | ✅ Closed in current branch (new closed-loop unit proof + backtest.PlaceOrder subscription handler) |
+| F-02 | Rejected-order payload key alignment (`reason` vs `reject_reason` vs `error_message`)                              | Contract consistency     | ✅ Closed in current branch (frontend listener compatibility + dedicated unit test)                 |
+| F-03 | Test-count single source of truth                                                                                  | Documentation governance | Declare one authoritative counter (recommended: TEST_COVERAGE) and reference it from other docs     |
+
+Decision note:
+
+- Re-flagging during independent review should be interpreted as a **validation-depth signal**, not as denial of completed work.
+- Closure evidence now attached for F-01/F-02; remaining delta is F-03 (documentation authority unification).

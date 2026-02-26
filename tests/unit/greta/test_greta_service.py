@@ -4,6 +4,7 @@ Tests for GretaService
 Unit tests for the backtest execution service.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import cast
@@ -12,6 +13,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest_asyncio
 
 # These imports will fail until we implement GretaService
+from src.events.log import InMemoryEventLog
+from src.events.protocol import Envelope
 from src.greta.greta_service import GretaService
 from src.greta.models import FillSimulationConfig
 from src.veda.models import OrderIntent, OrderSide, OrderType, TimeInForce
@@ -170,6 +173,23 @@ class TestGretaServiceInitialize:
         assert service.positions == {}
         assert service.fills == []
 
+    async def test_initialize_subscribes_fetch_and_place_order(self, service: GretaService) -> None:
+        """Initialize subscribes to both backtest.FetchWindow and backtest.PlaceOrder."""
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+        )
+
+        assert cast(AsyncMock, service._event_log).subscribe_filtered.await_count == 2
+        event_type_calls = [
+            c.kwargs["event_types"]
+            for c in cast(AsyncMock, service._event_log).subscribe_filtered.await_args_list
+        ]
+        assert ["backtest.FetchWindow"] in event_type_calls
+        assert ["backtest.PlaceOrder"] in event_type_calls
+
 
 class TestGretaServiceCleanup:
     """Tests for GretaService.cleanup()."""
@@ -180,7 +200,9 @@ class TestGretaServiceCleanup:
         mock_bar_repo = AsyncMock()
         mock_bar_repo.get_bars = AsyncMock(return_value=[])
         mock_event_log = AsyncMock()
-        mock_event_log.subscribe_filtered = AsyncMock(return_value="sub-123")
+        mock_event_log.subscribe_filtered = AsyncMock(
+            side_effect=["sub-fetch", "sub-place"]
+        )
         mock_event_log.unsubscribe_by_id = AsyncMock()
 
         service = GretaService(
@@ -200,19 +222,64 @@ class TestGretaServiceCleanup:
     async def test_cleanup_unsubscribes_event_subscription(
         self, initialized_service: GretaService
     ) -> None:
-        """cleanup() unsubscribes from backtest.FetchWindow events."""
+        """cleanup() unsubscribes from all run-scoped subscriptions."""
         await initialized_service.cleanup()
 
-        cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id.assert_awaited_once_with(
-            "sub-123"
-        )
+        unsubscribe_mock = cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id
+        assert unsubscribe_mock.await_count == 2
+        unsubscribed_ids = [c.args[0] for c in unsubscribe_mock.await_args_list]
+        assert "sub-fetch" in unsubscribed_ids
+        assert "sub-place" in unsubscribed_ids
 
     async def test_cleanup_is_idempotent(self, initialized_service: GretaService) -> None:
         """cleanup() can be called more than once without duplicate unsubscribe."""
         await initialized_service.cleanup()
         await initialized_service.cleanup()
 
-        cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id.assert_awaited_once()
+        # First cleanup unsubscribes two IDs; second call does nothing.
+        assert cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id.await_count == 2
+
+
+class TestGretaServiceBacktestPlaceOrderSubscription:
+    """Closed-loop tests for backtest.PlaceOrder event handling."""
+
+    @pytest_asyncio.fixture
+    async def service(self) -> GretaService:
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        event_log = InMemoryEventLog()
+
+        service = GretaService(
+            run_id="run-123",
+            bar_repository=mock_bar_repo,
+            event_log=event_log,
+        )
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+        )
+        return service
+
+    async def test_backtest_place_order_event_queues_order(self, service: GretaService) -> None:
+        """backtest.PlaceOrder event is consumed and queued as pending order."""
+        envelope = Envelope(
+            type="backtest.PlaceOrder",
+            producer="glados.router",
+            run_id="run-123",
+            payload={
+                "symbol": "BTC/USD",
+                "side": "buy",
+                "qty": "1.0",
+                "order_type": "market",
+            },
+        )
+
+        await cast(InMemoryEventLog, service._event_log).append(envelope)
+        await asyncio.sleep(0)
+
+        assert len(service.pending_orders) == 1
 
 
 class TestGretaServicePlaceOrder:

@@ -7,6 +7,7 @@ Each backtest run gets its own GretaService instance.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -22,6 +23,7 @@ from src.greta.models import (
     SimulatedPosition,
 )
 from src.veda.models import OrderIntent, OrderSide, OrderStatus
+from src.veda.models import OrderType, TimeInForce
 
 if TYPE_CHECKING:
     from src.events.log import EventLog
@@ -89,7 +91,7 @@ class GretaService:
         self._equity_curve: list[tuple[datetime, Decimal]] = []
         self._current_bars: dict[str, Bar] = {}
         self._cash: Decimal = initial_cash
-        self._subscription_id: str | None = None
+        self._subscription_ids: list[str] = []
 
     # =========================================================================
     # Properties
@@ -177,20 +179,31 @@ class GretaService:
             self._bar_cache[symbol] = {bar.timestamp: bar for bar in bars}
 
         # Subscribe to backtest.FetchWindow events for this run
-        self._subscription_id = await self._event_log.subscribe_filtered(
+        fetch_window_sub_id = await self._event_log.subscribe_filtered(
             event_types=["backtest.FetchWindow"],
             callback=self._on_fetch_window,
             filter_fn=lambda e: e.run_id == self._run_id,
         )
+
+        # Subscribe to backtest.PlaceOrder events for this run
+        place_order_sub_id = await self._event_log.subscribe_filtered(
+            event_types=["backtest.PlaceOrder"],
+            callback=self._on_place_order,
+            filter_fn=lambda e: e.run_id == self._run_id,
+        )
+        self._subscription_ids = [fetch_window_sub_id, place_order_sub_id]
 
     async def cleanup(self) -> None:
         """Cleanup runtime subscriptions for this run.
 
         Safe to call multiple times.
         """
-        if self._subscription_id is not None:
-            await self._event_log.unsubscribe_by_id(self._subscription_id)
-            self._subscription_id = None
+        if not self._subscription_ids:
+            return
+
+        for sub_id in self._subscription_ids:
+            await self._event_log.unsubscribe_by_id(sub_id)
+        self._subscription_ids = []
 
     async def advance_to(self, timestamp: datetime) -> None:
         """
@@ -292,6 +305,49 @@ class GretaService:
             causation_id=envelope.id,
         )
         await self._event_log.append(window_ready)
+
+    def _on_place_order(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.PlaceOrder event (sync callback wrapper).
+
+        Since EventLog callbacks are sync, we schedule async work.
+        """
+        asyncio.create_task(self._handle_place_order(envelope))
+
+    async def _handle_place_order(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.PlaceOrder event.
+
+        Converts routed order payload into OrderIntent and queues it
+        through place_order() for simulation.
+        """
+        payload = envelope.payload
+
+        try:
+            side = OrderSide(payload["side"])
+            order_type = OrderType(payload["order_type"])
+            qty = Decimal(str(payload["qty"]))
+        except (KeyError, ValueError):
+            return
+
+        client_order_id = payload.get("client_order_id") or f"backtest-{uuid4()}"
+        time_in_force = TimeInForce(payload.get("time_in_force", TimeInForce.DAY.value))
+
+        limit_price = payload.get("limit_price")
+        stop_price = payload.get("stop_price")
+
+        intent = OrderIntent(
+            run_id=envelope.run_id or self._run_id,
+            client_order_id=client_order_id,
+            symbol=payload.get("symbol", ""),
+            side=side,
+            order_type=order_type,
+            qty=qty,
+            limit_price=Decimal(str(limit_price)) if limit_price is not None else None,
+            stop_price=Decimal(str(stop_price)) if stop_price is not None else None,
+            time_in_force=time_in_force,
+        )
+        await self.place_order(intent)
 
     def get_result(self) -> BacktestResult:
         """
