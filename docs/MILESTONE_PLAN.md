@@ -611,7 +611,7 @@ M9: E2E & Release
 | M5        | 74        | 705        |
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
-| M8        | ~96       | ~992 ²    |
+| M8        | ~96       | ~992 ²     |
 | M9        | ~20–30    | ~954–974   |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
