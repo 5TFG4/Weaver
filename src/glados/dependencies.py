@@ -14,6 +14,7 @@ from fastapi import Request
 if TYPE_CHECKING:
     from src.config import WeaverConfig
     from src.events.log import EventLog
+    from src.glados.services.domain_router import DomainRouter
     from src.glados.services.market_data_service import MockMarketDataService
     from src.glados.services.order_service import MockOrderService
     from src.glados.services.run_manager import RunManager
@@ -54,3 +55,8 @@ def get_event_log(request: Request) -> "EventLog | None":
 def get_veda_service(request: Request) -> "VedaService | None":
     """Get VedaService from app state (may be None if no credentials configured)."""
     return getattr(request.app.state, "veda_service", None)
+
+
+def get_domain_router(request: Request) -> "DomainRouter | None":
+    """Get DomainRouter from app state (may be None before lifespan startup)."""
+    return getattr(request.app.state, "domain_router", None)

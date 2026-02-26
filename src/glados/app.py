@@ -54,8 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.broadcaster = SSEBroadcaster()
     logger.info("SSEBroadcaster initialized")
     
-    # Initialize event_log placeholder (may be set to real EventLog below)
+    # Initialize placeholders (may be set to real implementations below)
     event_log = None
+    database = None
 
     # =========================================================================
     # Startup - DB-dependent services
@@ -144,10 +145,50 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup - Services that may use EventLog
     # =========================================================================
     
-    # RunManager (in-memory, optionally with EventLog for event emission)
+    # RunManager runtime dependencies
     from src.glados.services.run_manager import RunManager
-    app.state.run_manager = RunManager(event_log=event_log)
-    logger.info("RunManager initialized%s", " with EventLog" if event_log else "")
+    from src.marvin.strategy_loader import PluginStrategyLoader
+
+    strategy_loader = PluginStrategyLoader()
+    bar_repository = None
+    run_repository = None
+
+    if database is not None:
+        from src.walle.repositories.bar_repository import BarRepository
+        from src.walle.repositories.run_repository import RunRepository
+
+        bar_repository = BarRepository(database.session_factory)
+        run_repository = RunRepository(database.session_factory)
+
+    run_manager = RunManager(
+        event_log=event_log,
+        bar_repository=bar_repository,
+        strategy_loader=strategy_loader,
+        run_repository=run_repository,
+    )
+    app.state.run_manager = run_manager
+    app.state.strategy_loader = strategy_loader
+    app.state.bar_repository = bar_repository
+    app.state.run_repository = run_repository
+
+    recovered_count = await run_manager.recover()
+    if recovered_count > 0:
+        logger.info("Recovered %d runs from persistence", recovered_count)
+
+    logger.info("RunManager initialized with runtime dependencies")
+
+    # D-4: Wire DomainRouter as standalone singleton
+    from src.glados.services.domain_router import DomainRouter
+
+    domain_router = DomainRouter(event_log=event_log, run_manager=run_manager)
+    app.state.domain_router = domain_router
+
+    domain_router_subscription_id = await event_log.subscribe_filtered(
+        event_types=["strategy.FetchWindow", "strategy.PlaceRequest"],
+        callback=domain_router.route,
+    )
+    app.state.domain_router_subscription_id = domain_router_subscription_id
+    logger.info("DomainRouter wired to strategy.* events")
 
     yield
 
@@ -159,6 +200,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if hasattr(app.state, "event_log_unsubscribe") and app.state.event_log_unsubscribe:
         app.state.event_log_unsubscribe()
         logger.info("SSEBroadcaster unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "domain_router_subscription_id")
+        and app.state.domain_router_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.domain_router_subscription_id)
+        logger.info("DomainRouter unsubscribed from EventLog")
 
     # Close database connection
     if hasattr(app.state, "database") and app.state.database:

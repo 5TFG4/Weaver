@@ -341,8 +341,8 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 - [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
 - [ ] Design decisions D-1 through D-5 implemented
-- [ ] DomainRouter wired into runtime lifecycle
-- [ ] RunManager dependencies fully injected
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [x] All TODO/FIXME cleaned up
 - [ ] Documentation complete and accurate
@@ -352,7 +352,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | MVP   | Focus                           | Est. Tests | Dependencies | Status |
 | ----- | ------------------------------- | ---------- | ------------ | ------ |
 | M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
-| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | 🔄     |
+| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
 | M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | 🔄     |
 | M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
 

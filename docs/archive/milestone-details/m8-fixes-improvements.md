@@ -40,8 +40,8 @@
 | N-01 | PostgresEventLog `append()` never dispatches to subscribers     | **P0** | M8-P1-B  | ✅ Done    |
 | N-02 | `_start_live()` zero error handling — ghost zombie runs         | **P0** | M8-P0    | ✅ Done    |
 | N-07 | InMemory vs Postgres EventLog behavioral parity broken          | **P0** | M8-P1-B  | ✅ Done    |
-| —    | DomainRouter not wired in app lifespan                          | **P0** | M8-P1-B  | ⏳ Open    |
-| —    | RunManager missing `bar_repository` / `strategy_loader`         | **P0** | M8-P1-A  | ⏳ Open    |
+| —    | DomainRouter not wired in app lifespan                          | **P0** | M8-P1-B  | ✅ Done    |
+| —    | RunManager missing `bar_repository` / `strategy_loader`         | **P0** | M8-P1-A  | ✅ Done    |
 | —    | Per-run cleanup not guaranteed on stop/complete                 | **P0** | M8-P1-A  | ✅ Done    |
 | N-03 | Fill history lost on persistence round-trip                     | **P1** | M8-Q     | 🔄 Partial |
 | N-04 | AlpacaAdapter blocks event loop — sync SDK in async             | **P1** | M8-Q     | ✅ Done    |
@@ -673,18 +673,18 @@ Builds on P0 C-04 route change. Ensures VedaService `list_orders()` and `get_ord
 
 ### 6.0 Progress Snapshot (2026-02-26, code-verified)
 
-| Item                                  | Status     | Notes                                                                                           |
-| ------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------- |
-| D-2 (runs table + repository)         | 🔄 Partial | model/repo/migration landed; app lifespan wiring (`RunRepository` inject + `recover()`) pending |
-| D-3 / N-03 (fills table + repository) | 🔄 Partial | model/repo/migration landed; order↔fills round-trip in `veda.persistence` still pending         |
-| N-04 (Alpaca async wrapping)          | ✅ Done    | sync SDK calls wrapped with `asyncio.to_thread()`                                               |
-| N-06 / D-5 (SSE run_id filtering)     | ✅ Done    | backend SSE query-param filtering added                                                         |
-| N-10 / M-02 (pagination)              | ✅ Done    | runs/orders support `page` + `page_size`                                                        |
-| M-04 (SimulatedFill.side enum)        | ✅ Done    | `str` -> `OrderSide`                                                                            |
-| N-05 (StrategyAction enum refactor)   | ✅ Done    | stringly typed fields replaced with enums                                                       |
-| N-08 (backtest stats)                 | ✅ Done    | Sharpe/Sortino/max-drawdown/win metrics implemented                                             |
-| L-01 / L-02 (cleanup)                 | ✅ Done    | dead files removed + TODOs resolved                                                             |
-| M-07 (RunsPage runId param)           | ⏳ Open    | frontend deep-link behavior still pending                                                       |
+| Item                                  | Status     | Notes                                                                                       |
+| ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| D-2 (runs table + repository)         | ✅ Done    | model/repo/migration + app lifespan wiring (`RunRepository` inject + `recover()`) completed |
+| D-3 / N-03 (fills table + repository) | 🔄 Partial | model/repo/migration landed; order↔fills round-trip in `veda.persistence` still pending     |
+| N-04 (Alpaca async wrapping)          | ✅ Done    | sync SDK calls wrapped with `asyncio.to_thread()`                                           |
+| N-06 / D-5 (SSE run_id filtering)     | ✅ Done    | backend SSE query-param filtering added                                                     |
+| N-10 / M-02 (pagination)              | ✅ Done    | runs/orders support `page` + `page_size`                                                    |
+| M-04 (SimulatedFill.side enum)        | ✅ Done    | `str` -> `OrderSide`                                                                        |
+| N-05 (StrategyAction enum refactor)   | ✅ Done    | stringly typed fields replaced with enums                                                   |
+| N-08 (backtest stats)                 | ✅ Done    | Sharpe/Sortino/max-drawdown/win metrics implemented                                         |
+| L-01 / L-02 (cleanup)                 | ✅ Done    | dead files removed + TODOs resolved                                                         |
+| M-07 (RunsPage runId param)           | ⏳ Open    | frontend deep-link behavior still pending                                                   |
 
 ### 6.1 D-2: Add Runs Table (Schema Migration)
 
@@ -723,7 +723,7 @@ CREATE TABLE runs (
 - `test: RunRepository.get(id) retrieves run`
 - `test: RunRepository.list() returns all runs`
 
-**Status**: 🔄 Partial (model/repository/migration completed; app startup wiring for `RunRepository` + `recover()` pending)
+**Status**: ✅ Done (model/repository/migration + app startup wiring for `RunRepository` + `recover()` completed)
 
 ### 6.2 D-3/N-03: Add Fills Table + Persistence
 
@@ -886,7 +886,7 @@ rm src/veda/base_api_handler.py
 
 | Task                   | Tests   | Status                          |
 | ---------------------- | ------- | ------------------------------- |
-| D-2 Runs table         | 3       | 🔄 Partial                      |
+| D-2 Runs table         | 3       | ✅ Done                         |
 | D-3/N-03 Fills table   | 2       | 🔄 Partial                      |
 | N-04 Async wrapping    | 2       | ✅ Done                         |
 | N-06/D-5 SSE filtering | 2       | ✅ Done                         |
@@ -896,7 +896,7 @@ rm src/veda/base_api_handler.py
 | N-08 Backtest stats    | 2       | ✅ Done                         |
 | L-01/L-02 Cleanup      | 0       | ✅ Done                         |
 | M-07 RunsPage runId    | 0       | ⏳ Open                         |
-| **Total**              | **~15** | **7 done / 2 partial / 1 open** |
+| **Total**              | **~15** | **8 done / 1 partial / 1 open** |
 
 ---
 
@@ -988,5 +988,5 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 ---
 
 _Last Updated: 2026-02-26_  
-_Status: M8 Active (P0 done; P1/Q have runtime integration tails: DomainRouter wiring, RunManager DI wiring, D-2/D-3 app integration, M-07 pending)_  
+_Status: M8 Active (P0/P1 done; Q tails: D-3 fill round-trip integration + M-07 pending)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked (implementation not fully complete)_

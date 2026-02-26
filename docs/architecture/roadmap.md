@@ -128,8 +128,8 @@
 
 - [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
 - [ ] Design decisions D-1–D-5 implemented
-- [ ] DomainRouter wired into runtime lifecycle
-- [ ] RunManager dependencies fully injected
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [x] All TODO/FIXME cleaned
 - [ ] Documentation complete
