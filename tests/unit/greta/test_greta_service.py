@@ -171,6 +171,50 @@ class TestGretaServiceInitialize:
         assert service.fills == []
 
 
+class TestGretaServiceCleanup:
+    """Tests for GretaService.cleanup()."""
+
+    @pytest_asyncio.fixture
+    async def initialized_service(self) -> GretaService:
+        """Create service with subscription initialized."""
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        mock_event_log = AsyncMock()
+        mock_event_log.subscribe_filtered = AsyncMock(return_value="sub-123")
+        mock_event_log.unsubscribe_by_id = AsyncMock()
+
+        service = GretaService(
+            run_id="run-123",
+            bar_repository=mock_bar_repo,
+            event_log=mock_event_log,
+        )
+
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+        )
+        return service
+
+    async def test_cleanup_unsubscribes_event_subscription(
+        self, initialized_service: GretaService
+    ) -> None:
+        """cleanup() unsubscribes from backtest.FetchWindow events."""
+        await initialized_service.cleanup()
+
+        cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id.assert_awaited_once_with(
+            "sub-123"
+        )
+
+    async def test_cleanup_is_idempotent(self, initialized_service: GretaService) -> None:
+        """cleanup() can be called more than once without duplicate unsubscribe."""
+        await initialized_service.cleanup()
+        await initialized_service.cleanup()
+
+        cast(AsyncMock, initialized_service._event_log).unsubscribe_by_id.assert_awaited_once()
+
+
 class TestGretaServicePlaceOrder:
     """Tests for GretaService.place_order()."""
 

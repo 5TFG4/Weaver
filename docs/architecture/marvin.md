@@ -43,6 +43,9 @@ Lifecycle:
 3. `on_data_ready()` feeds data payload back into strategy and emits follow-up actions.
 4. `cleanup()` unsubscribes from EventLog.
 
+`cleanup()` is invoked explicitly by `RunManager` during stop/completion/error teardown,
+so per-run subscriptions are not left behind across run lifecycle transitions.
+
 ## 4. Action → Event Translation
 
 `StrategyRunner` emits:

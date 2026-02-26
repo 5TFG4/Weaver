@@ -183,6 +183,15 @@ class GretaService:
             filter_fn=lambda e: e.run_id == self._run_id,
         )
 
+    async def cleanup(self) -> None:
+        """Cleanup runtime subscriptions for this run.
+
+        Safe to call multiple times.
+        """
+        if self._subscription_id is not None:
+            await self._event_log.unsubscribe_by_id(self._subscription_id)
+            self._subscription_id = None
+
     async def advance_to(self, timestamp: datetime) -> None:
         """
         Advance simulation to a specific timestamp.

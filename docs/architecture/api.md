@@ -30,12 +30,12 @@ This appendix is the current contract baseline used for review and remediation.
 | Method     | Endpoint                  | Description                                        |
 | ---------- | ------------------------- | -------------------------------------------------- |
 | GET        | `/api/v1/healthz`         | Health check                                       |
-| GET        | `/api/v1/runs`            | List all runs                                      |
+| GET        | `/api/v1/runs`            | List runs (optional `status` filter)               |
 | POST       | `/api/v1/runs`            | Create a new run                                   |
 | GET        | `/api/v1/runs/{id}`       | Get run details                                    |
 | POST       | `/api/v1/runs/{id}/start` | Start a pending run                                |
 | POST       | `/api/v1/runs/{id}/stop`  | Stop a running run                                 |
-| GET        | `/api/v1/orders`          | List orders (optional `run_id` filter)             |
+| GET        | `/api/v1/orders`          | List orders (optional `run_id` + `status` filters) |
 | **POST**   | `/api/v1/orders`          | **Create order via VedaService**                   |
 | GET        | `/api/v1/orders/{id}`     | Get order details                                  |
 | **DELETE** | `/api/v1/orders/{id}`     | **Cancel order via VedaService**                   |
@@ -65,6 +65,21 @@ This appendix is the current contract baseline used for review and remediation.
 
 - `422 Unprocessable Entity`: Invalid input
 - `503 Service Unavailable`: VedaService not configured (no trading credentials)
+
+### List Filtering Contract (M8-R3)
+
+`GET /api/v1/runs` supports:
+
+- `status`: `pending | running | stopped | completed | error`
+- `page`, `page_size`
+
+`GET /api/v1/orders` supports:
+
+- `run_id`
+- `status`: `pending | submitted | accepted | partial | filled | cancelled | rejected | expired`
+- `page`, `page_size`
+
+Filtering is applied server-side before pagination.
 
 ### API Documentation
 
@@ -142,6 +157,17 @@ SSE sends **minimal notification events**; the frontend fetches full details via
 - SSE payloads stay small (< 1KB)
 - Frontend always has fresh data from REST
 - No need to version SSE payload schemas aggressively
+
+### Run Stop Cleanup Contract (M8-R3)
+
+When `POST /api/v1/runs/{id}/stop` is called for an active run, runtime cleanup is explicit and ordered:
+
+1. stop run clock,
+2. cleanup `StrategyRunner` subscriptions,
+3. cleanup backtest `GretaService` subscriptions/state (when present),
+4. remove run context from `RunManager`.
+
+This guarantees no per-run event subscription leak after stop/completion/error teardown.
 
 ## 3. Frontend API Client (Haro)
 

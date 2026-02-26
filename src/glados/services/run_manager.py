@@ -143,6 +143,26 @@ class RunManager:
         )
         await self._run_repository.save(record)
 
+    async def _cleanup_run_context(self, run_id: str) -> None:
+        """Cleanup per-run runtime resources if context exists.
+
+        Cleanup contract (best-effort, idempotent by run_id):
+        1. Stop clock
+        2. Cleanup StrategyRunner subscriptions
+        3. Cleanup GretaService subscriptions/state (backtest runs)
+        4. Remove context from manager
+        """
+        ctx = self._run_contexts.get(run_id)
+        if ctx is None:
+            return
+
+        await ctx.clock.stop()
+        await ctx.runner.cleanup()
+        if ctx.greta is not None:
+            await ctx.greta.cleanup()
+
+        del self._run_contexts[run_id]
+
     async def create(self, request: RunCreate) -> Run:
         """
         Create a new run in PENDING status.
@@ -301,8 +321,7 @@ class RunManager:
             # Cleanup RunContext if start failed (status == ERROR)
             if run.status == RunStatus.ERROR:
                 run.stopped_at = datetime.now(UTC)
-                if run.id in self._run_contexts:
-                    del self._run_contexts[run.id]
+                await self._cleanup_run_context(run.id)
 
     async def _start_backtest(self, run: Run) -> None:
         """
@@ -372,8 +391,7 @@ class RunManager:
         finally:
             # Cleanup RunContext even if init or backtest fails
             run.stopped_at = datetime.now(UTC)
-            if run.id in self._run_contexts:
-                del self._run_contexts[run.id]
+            await self._cleanup_run_context(run.id)
 
         # 6. Emit completion event
         await self._emit_event(RunEvents.COMPLETED, run)
@@ -401,10 +419,7 @@ class RunManager:
             raise RunNotFoundError(run_id)
 
         # Cleanup per-run context
-        if run_id in self._run_contexts:
-            ctx = self._run_contexts[run_id]
-            await ctx.clock.stop()
-            del self._run_contexts[run_id]
+        await self._cleanup_run_context(run_id)
 
         # Idempotent: if already stopped, just return
         if run.status != RunStatus.STOPPED:
