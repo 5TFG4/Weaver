@@ -30,6 +30,7 @@ addopts = [
     "-v",                          # Verbose output
     "--strict-markers",            # Error on unknown markers
     "--strict-config",             # Error on config issues
+    "-m", "not container",        # Skip container-only smoke tests by default
     "-ra",                         # Show summary of all except passed
     "--tb=short",                  # Shorter traceback format
 ]
@@ -38,6 +39,7 @@ addopts = [
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (may use database/containers)",
+    "container: Container-level smoke tests (run in CI with Docker)",
     "e2e: End-to-end tests (full system)",
     "slow: Slow tests (excluded by default)",
 ]

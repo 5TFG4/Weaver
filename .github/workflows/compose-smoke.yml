@@ -1,0 +1,76 @@
+name: Compose Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docker/**"
+      - "src/**"
+      - "weaver.py"
+      - "pyproject.toml"
+      - ".github/workflows/compose-smoke.yml"
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare compose env
+        shell: bash
+        run: |
+          cp docker/example.env docker/.env
+          sed -i 's|^ALPACA_LIVE_API_KEY=.*|ALPACA_LIVE_API_KEY=|' docker/.env
+          sed -i 's|^ALPACA_LIVE_API_SECRET=.*|ALPACA_LIVE_API_SECRET=|' docker/.env
+          sed -i 's|^ALPACA_PAPER_API_KEY=.*|ALPACA_PAPER_API_KEY=|' docker/.env
+          sed -i 's|^ALPACA_PAPER_API_SECRET=.*|ALPACA_PAPER_API_SECRET=|' docker/.env
+
+      - name: Validate compose config
+        run: docker compose -f docker/docker-compose.yml config
+
+      - name: Build backend/frontend images
+        run: docker compose -f docker/docker-compose.yml build backend frontend
+
+      - name: Start stack
+        run: docker compose -f docker/docker-compose.yml up -d db backend frontend
+
+      - name: Wait for API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          source docker/.env
+          for i in {1..60}; do
+            code="$(curl -sS -o /tmp/api.out -w "%{http_code}" "http://127.0.0.1:${HOST_PORT_PROD}/api/v1/healthz" || true)"
+            if [[ "$code" == "200" ]]; then
+              cat /tmp/api.out
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API health check failed"
+          docker compose -f docker/docker-compose.yml logs backend db
+          exit 1
+
+      - name: Wait for frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          source docker/.env
+          for i in {1..60}; do
+            code="$(curl -sS -o /tmp/front.out -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT_PROD}/" || true)"
+            if [[ "$code" == "200" ]]; then
+              head -n 5 /tmp/front.out
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend smoke check failed"
+          docker compose -f docker/docker-compose.yml logs frontend
+          exit 1
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down -v

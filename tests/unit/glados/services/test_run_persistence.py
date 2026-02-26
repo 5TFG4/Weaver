@@ -8,7 +8,7 @@ Tests written BEFORE implementation — expect RED initially.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -147,6 +147,22 @@ class TestRunManagerPersistence:
             for call_args in mock_run_repo.save.await_args_list
         ]
         assert "running" in statuses
+        assert statuses[0] == "running"
+
+    @pytest.mark.asyncio
+    async def test_start_persists_started_at_in_running_record(self, manager, mock_run_repo) -> None:
+        """RUNNING transition persistence includes started_at timestamp."""
+        request = _make_run_create(mode=RunMode.PAPER)
+        run = await manager.create(request)
+
+        mock_run_repo.save.reset_mock()
+
+        manager._start_live = AsyncMock(return_value=None)  # type: ignore[attr-defined]
+        await manager.start(run.id)
+
+        first_saved_record = mock_run_repo.save.await_args_list[0][0][0]
+        assert first_saved_record.status == "running"
+        assert first_saved_record.started_at is not None
 
     @pytest.mark.asyncio
     async def test_backtest_completion_persists_completed_status(
@@ -176,6 +192,33 @@ class TestRunManagerPersistence:
         assert "completed" in statuses
 
     @pytest.mark.asyncio
+    async def test_backtest_completion_persists_stopped_at(self, manager, mock_run_repo) -> None:
+        """COMPLETED transition persistence includes stopped_at timestamp."""
+        request = _make_run_create(
+            mode=RunMode.BACKTEST,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        )
+        run = await manager.create(request)
+
+        mock_run_repo.save.reset_mock()
+
+        async def fake_start_backtest(run_obj) -> None:
+            run_obj.status = RunStatus.COMPLETED
+            run_obj.stopped_at = datetime.now(UTC)
+
+        manager._start_backtest = fake_start_backtest  # type: ignore[method-assign]
+        await manager.start(run.id)
+
+        completed_records = [
+            call_args[0][0]
+            for call_args in mock_run_repo.save.await_args_list
+            if call_args[0][0].status == "completed"
+        ]
+        assert len(completed_records) == 1
+        assert completed_records[0].stopped_at is not None
+
+    @pytest.mark.asyncio
     async def test_start_failure_persists_error_status(self, manager, mock_run_repo) -> None:
         """start() persists ERROR transition when execution startup fails."""
         request = _make_run_create(mode=RunMode.PAPER)
@@ -198,6 +241,34 @@ class TestRunManagerPersistence:
             for call_args in mock_run_repo.save.await_args_list
         ]
         assert "error" in statuses
+
+    @pytest.mark.asyncio
+    async def test_start_failure_persists_error_with_stopped_at(
+        self, manager, mock_run_repo
+    ) -> None:
+        """ERROR transition persistence includes stopped_at for failed starts."""
+        request = _make_run_create(mode=RunMode.PAPER)
+        run = await manager.create(request)
+
+        mock_run_repo.save.reset_mock()
+
+        async def failing_start_live(run_obj) -> None:
+            run_obj.status = RunStatus.ERROR
+            run_obj.stopped_at = datetime.now(UTC)
+            raise RuntimeError("startup failed")
+
+        manager._start_live = failing_start_live  # type: ignore[method-assign]
+
+        with pytest.raises(RuntimeError, match="startup failed"):
+            await manager.start(run.id)
+
+        error_records = [
+            call_args[0][0]
+            for call_args in mock_run_repo.save.await_args_list
+            if call_args[0][0].status == "error"
+        ]
+        assert len(error_records) == 1
+        assert error_records[0].stopped_at is not None
 
 
 # ============================================================================
