@@ -88,7 +88,7 @@ This appendix is the current contract baseline used for review and remediation.
 ### SSE Contract Appendix (Locked Baseline — Segment 5)
 
 - SSE `event` field is the exact backend event type (`Envelope.type`) and is case-sensitive.
-- Current emitted run/order domain names are PascalCase suffix style (for example `run.Started`, `orders.Created`, `orders.Filled`, `orders.Rejected`).
+- Current emitted run/order domain names are PascalCase suffix style (for example `run.Started`, `orders.Created`, `orders.Filled`, `orders.Rejected`, `orders.Cancelled`).
 - Current public stream forwards domain events directly (not `ui.*` projection events).
 - Browser-level reconnection is expected; resume from `Last-Event-ID` is not currently guaranteed by an offset replay contract at API boundary.
 
@@ -197,7 +197,7 @@ EventSource("/api/v1/events/stream")
   ├── onopen → isConnected = true
   ├── onerror → isConnected = false, reconnect after 3s
   │
-  └── addEventListener("run.started", ...) → {
+  └── addEventListener("run.Started", ...) → {
         queryClient.invalidateQueries({ queryKey: ["runs"] })
         addNotification({ type: "success", message: "Run started" })
       }
@@ -205,15 +205,16 @@ EventSource("/api/v1/events/stream")
 
 **Event mapping** (7 event types):
 
-| SSE Event         | Query Invalidated | Notification Type |
-| ----------------- | ----------------- | ----------------- |
-| `run.Started`     | `["runs"]`        | success           |
-| `run.Stopped`     | `["runs"]`        | info              |
-| `run.Completed`   | `["runs"]`        | success           |
-| `run.Error`       | `["runs"]`        | error             |
-| `orders.Created`  | `["orders"]`      | info              |
-| `orders.Filled`   | `["orders"]`      | success           |
-| `orders.Rejected` | `["orders"]`      | error             |
+| SSE Event          | Query Invalidated | Notification Type |
+| ------------------ | ----------------- | ----------------- |
+| `run.Started`      | `["runs"]`        | success           |
+| `run.Stopped`      | `["runs"]`        | info              |
+| `run.Completed`    | `["runs"]`        | success           |
+| `run.Error`        | `["runs"]`        | error             |
+| `orders.Created`   | `["orders"]`      | info              |
+| `orders.Filled`    | `["orders"]`      | success           |
+| `orders.Rejected`  | `["orders"]`      | error             |
+| `orders.Cancelled` | `["orders"]`      | info              |
 
 ### 3.4 Vite Proxy
 
@@ -249,3 +250,37 @@ frontend types must be updated.
 
 - If no timezone specified in inputs, fall back to system default.
 - Responses are UTC or include timezone explicitly.
+
+## 6. Error Handling Strategy
+
+### 6.1 REST Error Mapping
+
+Routes map domain and validation failures to explicit HTTP statuses:
+
+- `400 Bad Request`: malformed business input (for example invalid order payload)
+- `404 Not Found`: missing resource (`Run`/`Order` not found)
+- `409 Conflict`: invalid state transition (for example starting non-pending run)
+- `422 Unprocessable Entity`: schema validation failure
+- `503 Service Unavailable`: dependent subsystem unavailable (for example trading adapter unconfigured)
+
+Error payloads follow FastAPI `HTTPException` shape (`detail`), and frontend client normalizes into `ApiClientError` with `status/message/details`.
+
+### 6.2 Exception Boundaries
+
+Current pattern is route-level translation:
+
+- domain exceptions are raised in service layer,
+- routes catch and convert to HTTP exceptions,
+- unexpected exceptions bubble to framework default 500 handling.
+
+Representative domain exceptions are defined in `src/glados/exceptions.py` (`RunNotFoundError`, `RunNotStartableError`, `RunNotStoppableError`).
+
+### 6.3 Event Pipeline Error Semantics
+
+Event pipeline handling is best-effort with isolation between subscribers:
+
+- one subscriber callback failure does not stop other subscribers,
+- callback errors are logged,
+- delivery guarantees remain at-least-once in DB mode and non-durable best-effort in no-DB mode.
+
+Run lifecycle failures should emit `run.Error` events for UI/operator visibility.

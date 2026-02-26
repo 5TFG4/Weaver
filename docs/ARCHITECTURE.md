@@ -14,7 +14,7 @@
 - Test coverage snapshot (authoritative): [TEST_COVERAGE.md](TEST_COVERAGE.md)
 - Historical audit trail: [AUDIT_FINDINGS.md](AUDIT_FINDINGS.md)
 
-**Last Updated**: 2026-02-19
+**Last Updated**: 2026-02-26
 
 ---
 
@@ -29,7 +29,10 @@
 | [Events](architecture/events.md)         | Event model, envelope, namespaces, delivery                      |
 | [API](architecture/api.md)               | REST, SSE, auth, thin events pattern                             |
 | [Clock](architecture/clock.md)           | RealtimeClock, BacktestClock, bar alignment                      |
+| [Greta](architecture/greta.md)           | Backtest runtime, fill simulation, per-run lifecycle             |
+| [Marvin](architecture/marvin.md)         | Strategy plugin model and strategy runner                        |
 | [Veda](architecture/veda.md)             | Trading subsystem, ExchangeAdapter protocol, adapters            |
+| [WallE](architecture/walle.md)           | Persistence schema, repositories, migrations                     |
 | [Config](architecture/config.md)         | Dual credentials, security, testing                              |
 | [Deployment](architecture/deployment.md) | Docker, env vars, operations                                     |
 

@@ -913,6 +913,12 @@ rm src/veda/base_api_handler.py
 | `docs/architecture/marvin.md` | Promote from M5 milestone doc | Strategy loading, StrategyRunner, plugin architecture                  |
 | `docs/architecture/walle.md`  | New                           | Schema design, repository pattern, migration strategy, table inventory |
 
+**Completion Snapshot (2026-02-26)**:
+
+- ✅ `docs/architecture/greta.md` created
+- ✅ `docs/architecture/marvin.md` created
+- ✅ `docs/architecture/walle.md` created
+
 ### 7.2 Docs to Update
 
 | Document                      | Change                                                                          |
@@ -923,6 +929,15 @@ rm src/veda/base_api_handler.py
 | `docs/ARCHITECTURE.md`        | Fix §5 false claim about SSE run_id filtering (was N-06; now D-5 implements it) |
 | `MILESTONE_PLAN.md`           | Update test counts after M8 completion                                          |
 | `TEST_COVERAGE.md`            | Update test counts and coverage numbers                                         |
+
+**Completion Snapshot (2026-02-26)**:
+
+- ✅ `docs/architecture/api.md` updated (start route, health path, SSE/event mapping, error strategy)
+- ✅ `docs/architecture/events.md` updated (SSE wire format section)
+- ✅ `docs/architecture/veda.md` updated for env var and `OrderStatus` drift
+- ✅ `docs/ARCHITECTURE.md` updated (module quick links + runtime-aligned claims)
+- ✅ `docs/MILESTONE_PLAN.md` updated (M8-D/doc gate status)
+- 🟡 `docs/TEST_COVERAGE.md` updated to latest test snapshot; coverage gate remains pending
 
 ### 7.3 New Documentation Sections
 
@@ -953,6 +968,23 @@ All items must pass for M8 to close:
 - [ ] Architecture docs created (greta.md, marvin.md, walle.md)
 - [ ] All docs accurate post-M8 changes
 - [ ] Full test suite green: ≥934 tests (808+ backend + 86+ frontend)
+- [ ] Code coverage ≥80% for critical modules
+
+### 8.1.1 Current Exit Snapshot (2026-02-26)
+
+- [x] All P0 critical issues resolved (C-01–C-04, N-01, N-02, N-07)
+- [x] Design decisions D-1 through D-5 implemented
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected (strategy_loader, bar_repository)
+- [x] Per-run cleanup guarantees tested
+- [x] EventLog dispatch parity between InMemory and Postgres
+- [x] Order read/write unified to VedaService (DB mode)
+- [x] No-DB mode uses InMemoryEventLog (not None)
+- [x] All TODO/FIXME cleaned up (L-02)
+- [x] Orphan files deleted (L-01)
+- [x] Architecture docs created (greta.md, marvin.md, walle.md)
+- [x] All docs accurate post-M8 changes
+- [x] Full test suite green: 992 tests (904 backend + 88 frontend)
 - [ ] Code coverage ≥80% for critical modules
 
 ### 8.2 Test Count Target
@@ -988,5 +1020,5 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 ---
 
 _Last Updated: 2026-02-26_  
-_Status: M8 Active (P0/P1/Q code scope completed; M8-D docs + coverage gate pending)_  
-_Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked (implementation not fully complete)_
+_Status: M8 Active (P0/P1/Q/D completed; coverage gate pending)_  
+_Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked and implemented in M8_

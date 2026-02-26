@@ -1,8 +1,8 @@
 # Weaver Documentation Index
 
-> Last updated: 2026-02-19  
+> Last updated: 2026-02-26  
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
-> **Current State**: M7 ✅ Closed · M8 🔄 Active (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 894 total tests
+> **Current State**: M7 ✅ Closed · M8 🔄 Active (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 992 total tests
 
 ## 1) Entry Layer (Start Here)
 
@@ -19,9 +19,12 @@
 | [architecture/api.md](architecture/api.md)               | REST/SSE contracts and frontend API integration model   | Milestone planning              |
 | [architecture/events.md](architecture/events.md)         | Event envelope, types, delivery/offset semantics        | UI state management detail      |
 | [architecture/clock.md](architecture/clock.md)           | Time model, realtime/backtest clock semantics           | API status                      |
+| [architecture/greta.md](architecture/greta.md)           | Greta backtest runtime, simulated fills, per-run state  | Exchange adapter internals      |
+| [architecture/marvin.md](architecture/marvin.md)         | Strategy plugin loading and execution model             | Transport-level SSE details     |
 | [architecture/config.md](architecture/config.md)         | Credentials, config classes, config security rules      | Adapter internal implementation |
 | [architecture/deployment.md](architecture/deployment.md) | Deployment topology and ops procedures                  | Product roadmap                 |
 | [architecture/veda.md](architecture/veda.md)             | Veda internals (adapter interfaces, order flow, models) | Global config policy            |
+| [architecture/walle.md](architecture/walle.md)           | Persistence schema, repositories, migration lifecycle   | Frontend state behavior         |
 
 ## 3) Execution Layer (Frequently Updated)
 

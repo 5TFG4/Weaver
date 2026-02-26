@@ -11,6 +11,33 @@
 
 `{ id, kind:'evt'|'cmd', type, version, run_id, corr_id, causation_id, trace_id, ts, producer, headers, payload }`
 
+### 1.1 SSE Wire Format (API Boundary)
+
+Public SSE endpoint: `GET /api/v1/events/stream`
+
+Wire rules:
+
+- each message uses standard SSE framing (`event:` + `data:` + blank line),
+- `event` is exactly `Envelope.type` (case-sensitive),
+- `data` is JSON object encoded from envelope payload and metadata,
+- optional query filter `run_id=<id>` limits stream to a single run.
+
+Example message:
+
+```text
+event: run.Started
+data: {"id":"evt-123","type":"run.Started","run_id":"run-abc","ts":"2026-02-26T10:00:00Z","payload":{"run_id":"run-abc","status":"running"}}
+
+```
+
+Example order event:
+
+```text
+event: orders.Filled
+data: {"id":"evt-456","type":"orders.Filled","run_id":"run-abc","payload":{"order_id":"ord-1","filled_qty":"1.0","filled_avg_price":"50000"}}
+
+```
+
 ### Contract Appendix (Locked Baseline — Segment 5)
 
 - Event type naming is case-sensitive and currently uses `namespace.PascalCase` (for example `run.Started`, `orders.Filled`).

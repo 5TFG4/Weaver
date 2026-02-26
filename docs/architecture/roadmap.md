@@ -132,7 +132,7 @@
 - [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [x] All TODO/FIXME cleaned
-- [ ] Documentation complete
+- [x] Documentation complete
 - [x] ~96 new tests (target: 934+) → actual: 992
 
 ### M9 Exit Gate (E2E & Release Ready)

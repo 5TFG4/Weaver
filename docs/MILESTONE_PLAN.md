@@ -345,7 +345,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] RunManager dependencies fully injected
 - [ ] Code coverage ≥80%
 - [x] All TODO/FIXME cleaned up
-- [ ] Documentation complete and accurate
+- [x] Documentation complete and accurate
 
 ### 4.2 MVP Breakdown
 
@@ -354,7 +354,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
 | M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
 | M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | ✅     |
-| M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
+| M8-D  | Documentation                   | -          | M8-P1        | ✅     |
 
 ### 4.3 Detailed Tasks
 
