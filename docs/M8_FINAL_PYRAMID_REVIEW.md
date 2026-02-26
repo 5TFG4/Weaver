@@ -164,19 +164,19 @@ Result: **90 passed** (`haro/tests`).
 
 ### Verdict
 
-**Not Satisfied** (production-like path has blocking configuration defects).
+**Historical Audit-Time Finding** (items below were valid at audit capture time and have since been closed in M8-R0).
 
 ### Findings
 
-1. **P0 — Production backend entrypoint mismatch**
-   - `docker/docker-compose.yml` uses `gunicorn ... main:app`
-   - repository has no `main.py` module; current entrypoint module is `weaver.py` (`weaver:app`)
-   - risk: production backend container cannot boot with current compose command.
+1. **P0 — Production backend entrypoint mismatch (closed)**
+   - audit-time finding: `docker/docker-compose.yml` referenced `main:app`
+   - current state: compose/runtime entrypoint uses `weaver:app`
+   - closure evidence is tracked in M8-R0 release smoke checks.
 
-2. **P0 — Production backend Dockerfile dependency copy mismatch**
-   - `docker/backend/Dockerfile` performs `COPY requirements.txt /weaver/`
-   - repository only contains `docker/backend/requirements.txt` and `docker/backend/requirements.dev.txt`
-   - risk: build failure in production-like image build path.
+2. **P0 — Production backend Dockerfile dependency copy mismatch (closed)**
+   - audit-time finding: Dockerfile copied `requirements.txt` from wrong path
+   - current state: Dockerfile installs from `docker/backend/requirements.txt`
+   - closure evidence is tracked in M8-R0 release smoke checks.
 
 3. **P1 — Deployment architecture doc drift**
    - `docs/architecture/deployment.md` describes backend as a multi-stage dev/prod Dockerfile,
@@ -203,7 +203,7 @@ Result: **90 passed** (`haro/tests`).
 
 ### Deployment Gate (Production-like Compose)
 
-**FAIL (Blocker)** until Dockerfile/compose entrypoint mismatches are corrected.
+**PASS (Closed post-audit in M8-R0)**.
 
 ### Documentation Gate
 
