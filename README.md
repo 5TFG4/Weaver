@@ -90,27 +90,25 @@ npm run dev
 | M5: Marvin Core            | ✅ Complete      | +74   |
 | M6: Live Trading           | ✅ Complete      | +101  |
 | **M7: Haro Frontend**      | ✅ Complete      | +86   |
-| M8: Fixes & Improve        | 🔄 Active (M8-R) | 96+   |
+| **M8: Fixes & Improve**    | ✅ Complete      | +129  |
 
-**Current Snapshot**: 998 tests (908 backend + 90 frontend) · Coverage 89.78% · Python 3.13 · FastAPI · SQLAlchemy 2.x
+**Current Snapshot**: 1023 tests (933 backend + 90 frontend) · Coverage 89.61% · Python 3.13 · FastAPI · SQLAlchemy 2.x
 **Authoritative milestone status**: [docs/MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)
 
-### Recent Changes (2026-02-04)
+### Recent Changes (2026-02-26)
 
-- ✅ **M6 Complete**: Live trading system with plugin adapter architecture (808 total tests)
-- ✅ PluginAdapterLoader with AST-based discovery (40 tests)
-- ✅ AlpacaAdapter connection management with connect/disconnect/is_connected (23 tests)
-- ✅ VedaService wired to order routes for live order creation (13 tests)
-- ✅ Live order flow with persistence and event emission (15 tests)
-- ✅ RealtimeClock integration for live/paper runs (10 tests)
-- ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
+- ✅ **M8 Complete**: Critical fixes, runtime wiring, code quality, and documentation (1023 total tests)
+- ✅ All P0 critical issues resolved (SSE casing, start route, health path, order unification)
+- ✅ Runtime pipeline wired (DomainRouter, PostgresEventLog dispatch, RunManager cleanup)
+- ✅ Fills persistence + Runs recovery + AlpacaAdapter async wrapping
+- ✅ Docker deployment blockers resolved (gunicorn, Dockerfile CMD, smoke tests)
+- ✅ Architecture docs created (greta.md, marvin.md, walle.md)
 
-### Next: M8-R Closeout → M9 E2E
+### Next: M9 E2E & Release
 
-- M8-R: deployment blockers + runtime/doc consistency closeout
-- M9: end-to-end test execution and release polish
+- M9: end-to-end Playwright tests + deployment guide + release polish
 
 ## Endpoints (essentials)
 
-- REST: `GET /api/v1/healthz`, `GET/POST /api/v1/runs`, `GET /api/v1/orders`, `GET /api/v1/candles`
-- Realtime: `GET /api/v1/events/stream` (SSE)
+- REST: `GET /api/v1/healthz`, `GET/POST /api/v1/runs`, `POST /api/v1/runs/{id}/start`, `GET /api/v1/orders`, `GET /api/v1/candles`
+- Realtime: `GET /api/v1/events/stream` (SSE, supports `?run_id=` filtering)

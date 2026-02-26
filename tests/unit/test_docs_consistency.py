@@ -1,4 +1,4 @@
-"""Documentation consistency guards for M8-R closeout.
+"""Documentation consistency guards for M8 closeout.
 
 These tests lock key execution-layer docs to the current runtime contract
 and prevent known stale markers from reappearing.
@@ -32,11 +32,11 @@ def test_readme_runtime_contract_is_current() -> None:
 def test_test_coverage_snapshot_is_current() -> None:
     coverage_doc = _read("docs/TEST_COVERAGE.md")
 
-    assert "908 backend + 90 frontend = 998" in coverage_doc
-    assert "89.78%" in coverage_doc
+    assert "933 backend + 90 frontend = 1023" in coverage_doc
+    assert "89.61%" in coverage_doc
 
+    assert "908 backend + 90 frontend = 998" not in coverage_doc
     assert "904 backend + 88 frontend = 992" not in coverage_doc
-    assert "89.73%" not in coverage_doc
 
 
 def test_milestone_plan_keeps_runs_deeplink_wording() -> None:
@@ -46,7 +46,8 @@ def test_milestone_plan_keeps_runs_deeplink_wording() -> None:
     assert "Removed unused /runs/:runId route" not in milestone_plan
 
 
-def test_design_audit_status_reflects_m8r_closeout() -> None:
+def test_design_audit_status_reflects_m8_complete() -> None:
     design_audit = _read("docs/DESIGN_AUDIT.md")
 
-    assert "M8-Core ✅ Complete · M8-R 🔄 Active" in design_audit
+    assert "M8 ✅ Complete" in design_audit
+    assert "M8-R 🔄 Active" not in design_audit

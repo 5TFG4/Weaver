@@ -522,7 +522,7 @@ class TestOrderQueries:
         
         result = await service.list_orders(run_id="run-456")
         
-        mock_repository.list_by_run_id.assert_called_once_with("run-456")
+        mock_repository.list_by_run_id.assert_called_once_with("run-456", status=None)
         mock_fill_repository.list_by_order.assert_called_once_with("repo-order-1")
         assert len(result) == 1
         assert len(result[0].fills) == 1

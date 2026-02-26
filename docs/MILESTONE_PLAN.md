@@ -5,24 +5,24 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8-Core ✅ Complete · M8-R 🔄 Active (Audit Closeout)  
-> **Tests (latest verified)**: 908 backend + 90 frontend = 998 total  
-> **Remaining Work**: M8-R (Release Blockers + Consistency Closeout) → M9 (E2E Tests)  
-> **Estimated Total**: ~25–40 new tests remaining (M8-R + M9), ~2–3 weeks
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned  
+> **Tests (latest verified)**: 933 backend + 90 frontend = 1023 total  
+> **Remaining Work**: M9 (E2E Tests & Release Prep)  
+> **Estimated Total**: ~20–30 new tests remaining (M9), ~1–1.5 weeks
 
 ---
 
 ## Executive Summary
 
 All pending tasks have been consolidated and reorganized into 5 milestones.
-M7 is formally closed as of 2026-02-19. M8 core work is complete, and M8-R is now active for final audit closeout (deployment blockers + runtime/doc consistency) before M9 E2E execution.
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 is next.
 
 | Milestone | Name               | Core Objective                            | Tests  | Status              |
 | --------- | ------------------ | ----------------------------------------- | ------ | ------------------- |
 | **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
 | **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
 | **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 96+    | 🔄 ACTIVE (M8-R)    |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 129    | ✅ DONE (1023 total) |
 | **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
 
 **M6 Complete** (101 tests added):
@@ -334,7 +334,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
 > **Prerequisite**: M7 ✅  
 > **Estimated Effort**: 1.5–2 weeks  
-> **Status**: 🔄 ACTIVE (M8-Core complete, M8-R closeout in progress)  
+> **Status**: ✅ COMPLETE  
 > **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
@@ -434,17 +434,17 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 #### M8-D: Documentation
 
 ```
-- [ ] Create docs/architecture/greta.md (promote from milestone doc)
-- [ ] Create docs/architecture/marvin.md (promote from milestone doc)
-- [ ] Create docs/architecture/walle.md (schema, repos, migrations)
-- [ ] Document SSE event wire format
-- [ ] Document error handling strategy (exception hierarchy, HTTP mapping)
-- [ ] Fix ARCHITECTURE.md §5 false claim about SSE run_id filtering
-- [ ] L-04: Fix env var names in veda.md to match config.py
-- [ ] L-05: Update OrderStatus enum docs to include submitting/submitted
-- [ ] Update README with usage instructions
-- [ ] Strategy development guide
-- [ ] Exchange adapter development guide
+- [x] Create docs/architecture/greta.md (promote from milestone doc)
+- [x] Create docs/architecture/marvin.md (promote from milestone doc)
+- [x] Create docs/architecture/walle.md (schema, repos, migrations)
+- [x] Document SSE event wire format (events.md §1.1)
+- [x] Document error handling strategy (api.md §6)
+- [x] Fix ARCHITECTURE.md §5 SSE run_id filtering (now accurate after D-5)
+- [x] L-04: Fix env var names in veda.md to match config.py
+- [x] L-05: Update OrderStatus enum docs to include submitting/submitted
+- [x] Update README with usage instructions
+- [ ] Strategy development guide (deferred to M9-4)
+- [ ] Exchange adapter development guide (deferred to M9-4)
 ```
 
 ### 4.4 Design Decisions (All Locked)
@@ -468,14 +468,14 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 | Phase | Focus                                        | Severity | Status |
 | ----- | -------------------------------------------- | -------- | ------ |
-| M8-R0 | Release blockers (compose/docker boot path)  | P0       | 🔄     |
+| M8-R0 | Release blockers (compose/docker boot path)  | P0       | ✅     |
 | M8-R1 | Runtime consistency (run status persistence) | P1       | ✅     |
 | M8-R2 | Documentation authority sync                 | P1       | ✅     |
 | M8-R3 | Contract hardening decisions                 | P2       | ✅     |
 
 #### 4.5.2 M8-R Exit Gate (Summary)
 
-- [ ] P0 deployment blockers closed and smoke-verified
+- [x] P0 deployment blockers closed and smoke-verified
 - [x] Run state persistence consistency verified by tests
 - [x] Execution-layer docs synchronized and stale markers cleared
 - [x] P2 items either implemented or formally deferred with rationale
@@ -639,8 +639,8 @@ M9: E2E & Release
 | M5        | 74        | 705        |
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
-| M8        | ~96       | ~992 ²     |
-| M9        | ~20–30    | ~954–974   |
+| M8        | 129       | 1023       |
+| M9        | ~20–30    | ~1043–1053 |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
@@ -658,9 +658,9 @@ M9: E2E & Release
 
 ---
 
-_Last Updated: 2026-02-25_  
+_Last Updated: 2026-02-26_  
 _M7 Formally Closed: 2026-02-19_  
-_M8 Active Start: 2026-02-19_  
-_Total Tests: 992 (904 backend + 88 frontend)_  
-_M8 Scope: Critical fixes + Improvements (96+ tests added; runtime integration tails + M8-D docs remaining)_  
+_M8 Complete: 2026-02-26_  
+_Total Tests: 1023 (933 backend + 90 frontend)_  
+_M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
 _M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_

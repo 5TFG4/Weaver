@@ -5,9 +5,9 @@
 > **Authoritative for**: M8 task breakdown, file-level change specs, test requirements, and execution order.  
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: 🔄 ACTIVE (started 2026-02-19; M8-Q core tasks completed on 2026-02-25)  
+> **Status**: ✅ COMPLETE (started 2026-02-19; M8 fully closed 2026-02-26)  
 > **Prerequisite**: M7 ✅ (894 tests: 808 backend + 86 frontend)  
-> **Target**: ~40–50 new tests → cumulative ~934–944  
+> **Result**: 129 new tests → cumulative 1023 (933 backend + 90 frontend)  
 > **Estimated Effort**: 1.5–2 weeks  
 > **Design Decisions**: All 5 (D-1–D-5) locked ✅  
 > **Key Inputs**: `DESIGN_AUDIT.md`, `INDEPENDENT_DESIGN_REVIEW.md`, `DESIGN_REVIEW_PLAN.md`
@@ -55,13 +55,13 @@
 | M-03 | Frontend `orders.Cancelled` not handled                         | 🟡     | M8-P0    | ✅ Done |
 | M-04 | `SimulatedFill.side` still `str` not `OrderSide`                | 🟡     | M8-Q     | ✅ Done |
 | M-05 | PositionTracker market values always zero                       | 🟡     | Deferred | —       |
-| M-06 | SSE event format undocumented                                   | 🟡     | M8-D     | ⏳ Open |
+| M-06 | SSE event format undocumented                                   | 🟡     | M8-D     | ✅ Done |
 | M-07 | Unused `/runs/:runId` route param in frontend                   | 🟡     | M8-Q     | ✅ Done |
 | L-01 | 3 orphan/dead files                                             | 🟢     | M8-Q     | ✅ Done |
 | L-02 | 3 outstanding TODO/FIXME                                        | 🟢     | M8-Q     | ✅ Done |
-| L-03 | Dual `Bar` type definitions                                     | 🟢     | M8-D     | ⏳ Open |
-| L-04 | veda.md env var names mismatch                                  | 🟢     | M8-D     | ⏳ Open |
-| L-05 | veda.md OrderStatus enum incomplete                             | 🟢     | M8-D     | ⏳ Open |
+| L-03 | Dual `Bar` type definitions                                     | 🟢     | M8-D     | ✅ Done |
+| L-04 | veda.md env var names mismatch                                  | 🟢     | M8-D     | ✅ Done |
+| L-05 | veda.md OrderStatus enum incomplete                             | 🟢     | M8-D     | ✅ Done |
 
 ### 1.2 Design Decisions — All Locked ✅
 
@@ -984,8 +984,8 @@ All items must pass for M8 to close:
 - [x] Orphan files deleted (L-01)
 - [x] Architecture docs created (greta.md, marvin.md, walle.md)
 - [x] All docs accurate post-M8 changes
-- [x] Full test suite green: 992 tests (904 backend + 88 frontend)
-- [x] Code coverage ≥80% for critical modules (pytest-cov: 89.73%)
+- [x] Full test suite green: 1023 tests (933 backend + 90 frontend)
+- [x] Code coverage ≥80% for critical modules (pytest-cov: 89.61%)
 
 ### 8.2 Test Count Target
 
@@ -1020,7 +1020,7 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 ---
 
 _Last Updated: 2026-02-26_  
-_Status: M8 Complete (P0/P1/Q/D delivered; exit gate passed)_  
+_Status: M8 Complete (P0/P1/Q/D/R0-R3 all delivered; exit gate passed)_  
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked and implemented in M8_
 
 ---
@@ -1041,17 +1041,17 @@ M8-R focuses on final closeout work after M8-core delivery:
 
 ### 9.2 Exit Gate (Definition of Done)
 
-- [ ] All P0 deployment blockers closed and validated by container smoke tests
-- [ ] Run state transition persistence gap closed with unit + integration proof
-- [ ] Execution-layer docs synchronized to one authoritative status baseline
-- [ ] P2 hardening items either implemented or explicitly deferred with rationale
-- [ ] M8-R evidence appended to DESIGN_AUDIT + TEST_COVERAGE + MILESTONE_PLAN
+- [x] All P0 deployment blockers closed and validated by container smoke tests
+- [x] Run state transition persistence gap closed with unit + integration proof
+- [x] Execution-layer docs synchronized to one authoritative status baseline
+- [x] P2 hardening items either implemented or explicitly deferred with rationale
+- [x] M8-R evidence appended to DESIGN_AUDIT + TEST_COVERAGE + MILESTONE_PLAN
 
 ### 9.3 MVP Breakdown
 
 | MVP   | Focus                                  | Est. Tests | Dependencies | Status |
 | ----- | -------------------------------------- | ---------- | ------------ | ------ |
-| M8-R0 | Release Blockers (P0)                  | ~6         | -            | 🔄     |
+| M8-R0 | Release Blockers (P0)                  | ~6         | -            | ✅     |
 | M8-R1 | Runtime Consistency (P1 core)          | ~10        | M8-R0        | ✅     |
 | M8-R2 | Documentation Authority Sync (P1 docs) | ~4         | M8-R0        | ✅     |
 | M8-R3 | Contract/Operability Hardening (P2)    | ~6         | M8-R1        | ✅     |
@@ -1061,11 +1061,11 @@ M8-R focuses on final closeout work after M8-core delivery:
 #### M8-R0: Release Blockers (P0)
 
 ```
-- [ ] R-01: Fix prod compose backend ASGI target mismatch (main:app -> canonical app target)
-- [ ] R-02: Fix backend Dockerfile dependency copy/install path mismatch
-- [ ] RED: Add failing smoke checks for prod compose boot + backend image build
-- [ ] GREEN: Make smoke checks pass in CI/local prod-like compose
-- [ ] REFACTOR: normalize backend startup command references across docs/scripts
+- [x] R-01: Fix prod compose backend ASGI target mismatch (already correct: weaver:app)
+- [x] R-02: Fix backend Dockerfile: add gunicorn to requirements, fix CMD, add EXPOSE
+- [x] RED: Add failing smoke checks for prod compose boot + backend image build
+- [x] GREEN: Make smoke checks pass (8 tests in test_release_smoke_contract.py)
+- [x] REFACTOR: normalize backend startup command references across docs/scripts
 ```
 
 #### M8-R1: Runtime Consistency (P1 core)

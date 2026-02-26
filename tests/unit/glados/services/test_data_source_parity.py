@@ -44,7 +44,7 @@ class TestOrderWriteReadParity:
         async def mock_save(state):
             stored[state.client_order_id] = state
 
-        def mock_list_by_run(rid):
+        def mock_list_by_run(rid, status=None):
             return [s for s in stored.values() if s.run_id == rid]
 
         repo = MagicMock()

@@ -7,25 +7,25 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-02-26 · **Total Tests**: 908 backend + 90 frontend = 998  
+**Last Updated**: 2026-02-26 · **Total Tests**: 933 backend + 90 frontend = 1023  
 **M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (E2E Tests)
 
 ---
 
 ## 1. Executive Summary
 
-| Metric            | Value                   | Status        |
-| ----------------- | ----------------------- | ------------- |
-| Total Tests       | 998 (908 + 90)          | ✅            |
-| Test Files        | 73+                     | ✅            |
-| Total Assertions  | ~1,600+                 | ✅            |
-| Unit Tests        | majority                | ✅            |
-| Integration Tests | targeted core flows     | ✅            |
-| E2E Tests         | 0 (0%)                  | ❌ Planned M9 |
-| Coverage Gate     | 89.78% (threshold: 80%) | ✅            |
-| Mock Usages       | high (design-intent)    | -             |
+| Metric            | Value                    | Status        |
+| ----------------- | ------------------------ | ------------- |
+| Total Tests       | 1023 (933 + 90)          | ✅            |
+| Test Files        | 73+                      | ✅            |
+| Total Assertions  | ~1,700+                  | ✅            |
+| Unit Tests        | majority                 | ✅            |
+| Integration Tests | targeted core flows      | ✅            |
+| E2E Tests         | 0 (0%)                   | ❌ Planned M9 |
+| Coverage Gate     | 89.61% (threshold: 80%)  | ✅            |
+| Mock Usages       | high (design-intent)     | -             |
 
-**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (998 total). Coverage gate is now passed (`pytest --cov=src tests` = 89.78%, required 80%). E2E testing remains planned for M9.
+**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (1023 total). Coverage gate is passed (`pytest --cov=src tests` = 89.61%, required 80%). E2E testing remains planned for M9.
 
 ---
 
@@ -46,7 +46,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 15    | 86    | 21      | 9.6%       |
+| **Haro (Frontend)**    | 15    | 90    | 21      | 8.8%       |
 
 ### 2.2 Top Test Files by Count
 

@@ -20,7 +20,7 @@ services:
       db:
         condition: service_healthy
     command: >
-      gunicorn -w 4 -k uvicorn.workers.UvicornWorker weaver:app --bind 0.0.0.0:8000
+      uvicorn weaver:app --host 0.0.0.0 --port 8000
 
   frontend:
     build:

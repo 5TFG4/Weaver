@@ -5,13 +5,13 @@
 > **Authoritative for**: current closeout status and remaining release-gate items.  
 > **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
 
-> **Audit Date**: 2026-02-26 (closeout refresh)  
+> **Audit Date**: 2026-02-26 (final closeout)  
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
-> **Branch**: `haro_update`  
-> **Purpose**: Quality gate closeout for M8-R (deployment/runtime/docs consistency)  
-> **Status**: M8-Core ✅ Complete · M8-R 🔄 Active (R1/R2/R3 delivered, R0 smoke verification pending)
+> **Branch**: `improvements`  
+> **Purpose**: Quality gate closeout for M8 (all phases complete)  
+> **Status**: M8 ✅ Complete (all R0/R1/R2/R3 phases delivered and verified)
 
-> **Closeout Note (2026-02-26)**: Sections 2–8 are retained as full audit baseline. Current execution authority is the M8-R plan in `MILESTONE_PLAN.md` + `archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only`.
+> **Closeout Note (2026-02-26)**: All M8 phases complete. R0 deployment blockers resolved (gunicorn added, Dockerfile CMD fixed, smoke tests added). Sections 2–8 retained as audit baseline. Next milestone: M9 (E2E Tests).
 
 ---
 

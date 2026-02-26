@@ -428,31 +428,36 @@ class AlpacaAdapter:
 
 ```python
 # In config.py
-@dataclass
-class AlpacaConfig:
-    paper_api_key: str | None = None
-    paper_api_secret: str | None = None
-    live_api_key: str | None = None
-    live_api_secret: str | None = None
+class AlpacaConfig(BaseSettings):
+    """
+    Alpaca API configuration supporting both Live and Paper accounts.
+    Uses pydantic-settings with env_prefix="ALPACA_".
+    """
+    model_config = SettingsConfigDict(env_prefix="ALPACA_", env_file=".env", extra="ignore")
 
-    @property
-    def has_paper_credentials(self) -> bool:
-        return self.paper_api_key and self.paper_api_secret
+    live_api_key: str = ""
+    live_api_secret: str = ""
+    paper_api_key: str = ""
+    paper_api_secret: str = ""
+    live_base_url: str = "https://api.alpaca.markets"
+    paper_base_url: str = "https://paper-api.alpaca.markets"
 
-    def get_credentials(self, mode: str) -> dict:
-        if mode == "paper":
-            return {"api_key": self.paper_api_key, "api_secret": self.paper_api_secret, "paper": True}
-        return {"api_key": self.live_api_key, "api_secret": self.live_api_secret, "paper": False}
+    def get_credentials(self, mode: Literal["live", "paper"]) -> AlpacaCredentials:
+        if mode == "live":
+            return AlpacaCredentials(api_key=self.live_api_key, api_secret=self.live_api_secret, base_url=self.live_base_url, is_paper=False)
+        return AlpacaCredentials(api_key=self.paper_api_key, api_secret=self.paper_api_secret, base_url=self.paper_base_url, is_paper=True)
 ```
 
 ### 8.2 Environment Variables
 
-| Variable                  | Description           | Required          |
-| ------------------------- | --------------------- | ----------------- |
-| `ALPACA_PAPER_API_KEY`    | Paper trading API key | For paper trading |
-| `ALPACA_PAPER_API_SECRET` | Paper trading secret  | For paper trading |
-| `ALPACA_LIVE_API_KEY`     | Live trading API key  | For live trading  |
-| `ALPACA_LIVE_API_SECRET`  | Live trading secret   | For live trading  |
+| Variable                   | Description              | Required          |
+| -------------------------- | ------------------------ | ----------------- |
+| `ALPACA_PAPER_API_KEY`     | Paper trading API key    | For paper trading |
+| `ALPACA_PAPER_API_SECRET`  | Paper trading secret     | For paper trading |
+| `ALPACA_PAPER_BASE_URL`    | Paper API base URL       | Optional (default: `https://paper-api.alpaca.markets`) |
+| `ALPACA_LIVE_API_KEY`      | Live trading API key     | For live trading  |
+| `ALPACA_LIVE_API_SECRET`   | Live trading secret      | For live trading  |
+| `ALPACA_LIVE_BASE_URL`     | Live API base URL        | Optional (default: `https://api.alpaca.markets`) |
 
 ---
 
