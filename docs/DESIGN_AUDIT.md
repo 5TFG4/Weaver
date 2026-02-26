@@ -9,7 +9,7 @@
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
 > **Branch**: `haro_update`  
 > **Purpose**: Quality gate closeout for M8-R (deployment/runtime/docs consistency)  
-> **Status**: M8-Core ✅ Complete · M8-R 🔄 Active (R0/R1 delivered, R2 in progress)
+> **Status**: M8-Core ✅ Complete · M8-R 🔄 Active (R1/R2/R3 delivered, R0 smoke verification pending)
 
 > **Closeout Note (2026-02-26)**: Sections 2–8 are retained as full audit baseline. Current execution authority is the M8-R plan in `MILESTONE_PLAN.md` + `archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only`.
 

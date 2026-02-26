@@ -1051,10 +1051,10 @@ M8-R focuses on final closeout work after M8-core delivery:
 
 | MVP   | Focus                                  | Est. Tests | Dependencies | Status |
 | ----- | -------------------------------------- | ---------- | ------------ | ------ |
-| M8-R0 | Release Blockers (P0)                  | ~6         | -            | ⏳     |
-| M8-R1 | Runtime Consistency (P1 core)          | ~10        | M8-R0        | ⏳     |
-| M8-R2 | Documentation Authority Sync (P1 docs) | ~4         | M8-R0        | ⏳     |
-| M8-R3 | Contract/Operability Hardening (P2)    | ~6         | M8-R1        | ⏳     |
+| M8-R0 | Release Blockers (P0)                  | ~6         | -            | 🔄     |
+| M8-R1 | Runtime Consistency (P1 core)          | ~10        | M8-R0        | ✅     |
+| M8-R2 | Documentation Authority Sync (P1 docs) | ~4         | M8-R0        | ✅     |
+| M8-R3 | Contract/Operability Hardening (P2)    | ~6         | M8-R1        | ✅     |
 
 ### 9.4 Detailed Tasks (TDD-first)
 
@@ -1071,33 +1071,39 @@ M8-R focuses on final closeout work after M8-core delivery:
 #### M8-R1: Runtime Consistency (P1 core)
 
 ```
-- [ ] R-03: Persist run status transitions at start/completion/error boundaries
-- [ ] RED: Add tests proving DB/in-memory status can drift on restart (current behavior)
-- [ ] GREEN: Ensure start/backtest-complete/error transitions persist immediately
-- [ ] Integration test: restart recovery reflects latest persisted status accurately
-- [ ] REFACTOR: centralize run-status transition + persist helper to reduce omission risk
+- [x] R-03: Persist run status transitions at start/completion/error boundaries
+- [x] RED: Add tests proving DB/in-memory status can drift on restart (current behavior)
+- [x] GREEN: Ensure start/backtest-complete/error transitions persist immediately
+- [x] Integration test: restart recovery reflects latest persisted status accurately
+- [x] REFACTOR: centralize run-status transition + persist helper to reduce omission risk
 ```
 
 #### M8-R2: Documentation Authority Sync (P1 docs)
 
 ```
-- [ ] R-04: DESIGN_AUDIT.md convert from active backlog state to final M8 closeout snapshot
-- [ ] R-05: TEST_COVERAGE.md sync to latest verified counts/coverage (998, 89.78%)
-- [ ] R-06: MILESTONE_PLAN.md wording fix for /runs/:runId (deep-link enabled, not removed)
-- [ ] R-07: README.md sync runtime contract (ports/endpoints/current snapshot)
-- [ ] RED: add doc consistency grep checks for stale markers
-- [ ] GREEN: all doc consistency checks pass
+- [x] R-04: DESIGN_AUDIT.md convert from active backlog state to final M8 closeout snapshot
+- [x] R-05: TEST_COVERAGE.md sync to latest verified counts/coverage (998, 89.78%)
+- [x] R-06: MILESTONE_PLAN.md wording fix for /runs/:runId (deep-link enabled, not removed)
+- [x] R-07: README.md sync runtime contract (ports/endpoints/current snapshot)
+- [x] RED: add doc consistency grep checks for stale markers
+- [x] GREEN: all doc consistency checks pass
 ```
 
 #### M8-R3: Contract/Operability Hardening (P2)
 
 ```
-- [ ] R-08: Decide + implement status filtering contract (frontend params vs backend usage)
-- [ ] R-09: Explicit StrategyRunner cleanup contract on run stop (if retained after design review)
-- [ ] RED: add tests for status filtering + cleanup behavior
-- [ ] GREEN: pass tests with explicit contract semantics
-- [ ] REFACTOR: update API/events docs with final hardening decisions
+- [x] R-08: Decide + implement status filtering contract (frontend params vs backend usage)
+- [x] R-09: Explicit StrategyRunner cleanup contract on run stop (if retained after design review)
+- [x] RED: add tests for status filtering + cleanup behavior
+- [x] GREEN: pass tests with explicit contract semantics
+- [x] REFACTOR: update API/events docs with final hardening decisions
 ```
+
+### 9.8 M8-R3 Decision Record (2026-02-26)
+
+- `status` filtering contract is now explicit and server-enforced for runs/orders list APIs.
+- Run teardown cleanup is now explicit and test-backed (`clock.stop` → `runner.cleanup` → `greta.cleanup` when present).
+- Remaining open item before full M8-R closure: CI-backed container smoke verification for R0.
 
 ### 9.5 Issue Mapping Matrix (Final Review -> M8-R)
 

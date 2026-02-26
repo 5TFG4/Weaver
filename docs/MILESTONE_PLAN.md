@@ -471,14 +471,19 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | M8-R0 | Release blockers (compose/docker boot path)  | P0       | 🔄     |
 | M8-R1 | Runtime consistency (run status persistence) | P1       | ✅     |
 | M8-R2 | Documentation authority sync                 | P1       | ✅     |
-| M8-R3 | Contract hardening decisions                 | P2       | 🔄     |
+| M8-R3 | Contract hardening decisions                 | P2       | ✅     |
 
 #### 4.5.2 M8-R Exit Gate (Summary)
 
 - [ ] P0 deployment blockers closed and smoke-verified
 - [x] Run state persistence consistency verified by tests
 - [x] Execution-layer docs synchronized and stale markers cleared
-- [ ] P2 items either implemented or formally deferred with rationale
+- [x] P2 items either implemented or formally deferred with rationale
+
+#### 4.5.3 M8-R3 Closeout Decisions (2026-02-26)
+
+- R-08 implemented: runs/orders list endpoints now enforce server-side `status` filtering contract (with existing pagination/filter semantics preserved).
+- R-09 implemented: `RunManager` teardown now uses explicit per-run cleanup order (clock stop → `StrategyRunner.cleanup()` → `GretaService.cleanup()` when present).
 
 ---
 
