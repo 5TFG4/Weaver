@@ -53,9 +53,11 @@ Result: **90 passed** (`haro/tests`).
 
 ### 2.4 Current Measured Test Totals
 
+> Snapshot note: this subsection captures evidence at review execution time only. Latest canonical totals/coverage are maintained in `docs/TEST_COVERAGE.md`.
+
 - Backend: 908
 - Frontend: 90
-- **Total: 998**
+- **Total: 998 (historical review snapshot)**
 
 ---
 
@@ -152,7 +154,7 @@ Result: **90 passed** (`haro/tests`).
 ### High-Confidence Documentation Drift (P1)
 
 1. `DESIGN_AUDIT.md` still reflects pre-fix/open-checklist state and old test baseline.
-2. `TEST_COVERAGE.md` reports `992` and `89.73%`, while latest executed evidence is `998` and `89.78%`.
+2. Test-count/coverage statements in milestone docs should reference `TEST_COVERAGE.md` as the sole current authority; this review's `998/89.78%` values are historical snapshot evidence.
 3. `MILESTONE_PLAN.md` task text says removed `/runs/:runId`, but implementation currently uses that deep-link route with `useParams` in `RunsPage`.
 4. Some docs label M8 as active while milestone execution section labels it complete.
 
@@ -215,9 +217,9 @@ Result: **90 passed** (`haro/tests`).
 2. Fix backend Dockerfile dependency copy/install path to existing files under `docker/backend/`.
 3. Persist run status transitions at start/completion/error boundaries (not only create/stop).
 4. Update `DESIGN_AUDIT.md` from active queue to closed snapshot with current evidence.
-5. Refresh `TEST_COVERAGE.md` and `MILESTONE_PLAN.md` to 998 tests / 89.78% and deep-link wording.
+5. Keep `TEST_COVERAGE.md` as the only current metrics authority and ensure milestone docs reference it instead of duplicating live totals.
 6. Refresh `README.md` ports/endpoints/status snapshot to current runtime contract.
-7. Run final doc consistency grep (`M8 active|992|89.73|/events/tail|localhost:3000|Removed unused /runs/:runId`) before release tag.
+7. Run final doc consistency grep (`M8 active|latest.*tests|/events/tail|localhost:3000|Removed unused /runs/:runId`) before release tag.
 
 ---
 

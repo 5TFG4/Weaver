@@ -19,14 +19,14 @@ Wire rules:
 
 - each message uses standard SSE framing (`event:` + `data:` + blank line),
 - `event` is exactly `Envelope.type` (case-sensitive),
-- `data` is JSON object encoded from envelope payload and metadata,
+- `data` is JSON object encoded from `Envelope.payload` only (no envelope metadata fields are injected),
 - optional query filter `run_id=<id>` limits stream to a single run.
 
 Example message:
 
 ```text
 event: run.Started
-data: {"id":"evt-123","type":"run.Started","run_id":"run-abc","ts":"2026-02-26T10:00:00Z","payload":{"run_id":"run-abc","status":"running"}}
+data: {"run_id":"run-abc","status":"running"}
 
 ```
 
@@ -34,9 +34,14 @@ Example order event:
 
 ```text
 event: orders.Filled
-data: {"id":"evt-456","type":"orders.Filled","run_id":"run-abc","payload":{"order_id":"ord-1","filled_qty":"1.0","filled_avg_price":"50000"}}
+data: {"order_id":"ord-1","filled_qty":"1.0","filled_avg_price":"50000"}
 
 ```
+
+Current boundary note:
+
+- Envelope metadata (`id`, `run_id`, `ts`, etc.) remains available inside the EventLog and internal consumers.
+- The public SSE wire currently forwards payload-only JSON to clients.
 
 ### Contract Appendix (Locked Baseline — Segment 5)
 
@@ -94,9 +99,11 @@ data: {"id":"evt-456","type":"orders.Filled","run_id":"run-abc","payload":{"orde
 | Event              | Emitter     | Trigger                    | Payload                                                                     |
 | ------------------ | ----------- | -------------------------- | --------------------------------------------------------------------------- |
 | `orders.Created`   | VedaService | Order accepted by exchange | `{order_id, client_order_id, exchange_order_id, symbol, side, qty, status}` |
-| `orders.Rejected`  | VedaService | Order rejected by exchange | `{order_id, client_order_id, symbol, error_code, error_message}`            |
+| `orders.Rejected`  | VedaService | Order rejected by exchange | `{order_id, client_order_id, symbol, error_code, reject_reason}`            |
 | `orders.Filled`    | VedaService | Order fully filled         | `{order_id, exchange_order_id, filled_qty, filled_avg_price}`               |
 | `orders.Cancelled` | VedaService | Order cancelled            | `{order_id, exchange_order_id}`                                             |
+
+Compatibility note: some frontend consumers still tolerate legacy aliases (`reason`, `error_message`) for older payload snapshots.
 
 ## 3. Payload & Size Policy
 

@@ -5,7 +5,7 @@
 > **Document Charter**  
 > **Primary role**: high-level phase roadmap and architecture entry-gate framing.  
 > **Authoritative for**: roadmap phases and gate checklist framing only.  
-> **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`).
+> **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`) or latest test counts/coverage (use `../TEST_COVERAGE.md`).
 
 ---
 
@@ -30,6 +30,8 @@
 
 ## 1. Current State
 
+> Snapshot note: values in this section are historical roadmap checkpoints. For latest measured totals and coverage, use `docs/TEST_COVERAGE.md`.
+
 | Component           | Status                | Tests |
 | ------------------- | --------------------- | ----- |
 | Test Infrastructure | ✅ Complete           | 904   |
@@ -43,9 +45,9 @@
 | WallE (bars)        | ✅ Complete           | 16    |
 | Haro (frontend)     | ✅ Complete           | 88    |
 
-**Total**: 904 backend + 88 frontend = 992 tests
+**Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-**Active Milestone**: M8 (Critical Fixes & Improvements)
+**Active Milestone**: M9 (E2E Tests & Release Preparation)
 
 **Last State Update**: 2026-02-25
 
@@ -59,7 +61,7 @@
 | **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)  |
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
-| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | 🔄 ACTIVE           |
+| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | ✅ COMPLETE         |
 | **M9**    | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
@@ -70,7 +72,7 @@
 | **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
 | **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
 | **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8** | Critical Fixes + Improvements | ~96        | 🔄 ACTIVE            |
+| **8** | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
 | **9** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
 
 ## 4. Architecture Invariants
@@ -130,10 +132,10 @@
 - [x] Design decisions D-1–D-5 implemented
 - [x] DomainRouter wired into runtime lifecycle
 - [x] RunManager dependencies fully injected
-- [x] Code coverage ≥80% (pytest-cov: 89.73%)
+- [x] Code coverage ≥80% (see `docs/TEST_COVERAGE.md` for latest measured value)
 - [x] All TODO/FIXME cleaned
 - [x] Documentation complete
-- [x] ~96 new tests (target: 934+) → actual: 992
+- [x] ~96 new tests (target: 934+) → achieved; latest totals tracked in `docs/TEST_COVERAGE.md`
 
 ### M9 Exit Gate (E2E & Release Ready)
 
@@ -205,4 +207,4 @@
 
 ---
 
-_Last updated: 2026-02-26 (M8 active verification sync, 904 backend + 88 frontend = 992 total tests)_
+_Last updated: 2026-02-26 (roadmap snapshot sync; latest live metrics delegated to TEST_COVERAGE.md)_

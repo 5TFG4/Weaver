@@ -1082,7 +1082,7 @@ M8-R focuses on final closeout work after M8-core delivery:
 
 ```
 - [x] R-04: DESIGN_AUDIT.md convert from active backlog state to final M8 closeout snapshot
-- [x] R-05: TEST_COVERAGE.md sync to latest verified counts/coverage (998, 89.78%)
+- [x] R-05: TEST_COVERAGE.md sync to latest verified counts/coverage (1023, 89.61%)
 - [x] R-06: MILESTONE_PLAN.md wording fix for /runs/:runId (deep-link enabled, not removed)
 - [x] R-07: README.md sync runtime contract (ports/endpoints/current snapshot)
 - [x] RED: add doc consistency grep checks for stale markers
@@ -1186,24 +1186,24 @@ This does not necessarily mean the fix is wrong; it means the **proof chain** fo
 
 #### 9.9.3 Item-by-item reconciliation (Done vs. independently re-flagged)
 
-| Area                                   | M8 Status | Independent Re-flag Reason                                                        | Current Position                                                  |
-| -------------------------------------- | --------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| N-01/N-07 EventLog dispatch parity     | ✅ Done   | Initially flagged before targeted test verification                               | **Closed** (unit evidence confirms parity)                        |
-| N-02 `_start_live` error handling      | ✅ Done   | Initially flagged before reading latest RunManager path                           | **Closed**                                                        |
-| N-06 SSE run_id filter                 | ✅ Done   | Initially flagged from stale assumption, then verified in route code/tests        | **Closed**                                                        |
-| DomainRouter runtime wiring            | ✅ Done   | Wiring exists, but independent audit sought full route→consumer closed-loop proof | **Closed** (added route→handler closed-loop test evidence)        |
-| SSE rejected payload field consistency | ✅ Done   | frontend/backend/docs used mixed keys (`reason`/`reject_reason`/`error_message`)  | **Closed** (frontend listener now accepts all three, test-backed) |
-| Test-count authority sync              | ✅ Done   | Snapshot values differ across docs (e.g., 992/998/1023 references)                | **Open (docs governance)**                                        |
+| Area                                   | M8 Status | Independent Re-flag Reason                                                                      | Current Position                                                  |
+| -------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| N-01/N-07 EventLog dispatch parity     | ✅ Done   | Initially flagged before targeted test verification                                             | **Closed** (unit evidence confirms parity)                        |
+| N-02 `_start_live` error handling      | ✅ Done   | Initially flagged before reading latest RunManager path                                         | **Closed**                                                        |
+| N-06 SSE run_id filter                 | ✅ Done   | Initially flagged from stale assumption, then verified in route code/tests                      | **Closed**                                                        |
+| DomainRouter runtime wiring            | ✅ Done   | Wiring exists, but independent audit sought full route→consumer closed-loop proof               | **Closed** (added route→handler closed-loop test evidence)        |
+| SSE rejected payload field consistency | ✅ Done   | frontend/backend/docs used mixed keys (`reason`/`reject_reason`/`error_message`)                | **Closed** (frontend listener now accepts all three, test-backed) |
+| Test-count authority sync              | ✅ Done   | Historical snapshot values may differ across docs by date; latest authority is TEST_COVERAGE.md | **Closed (single-source rule applied)**                           |
 
 #### 9.9.4 Remaining follow-up (to document/close)
 
-| ID   | Topic                                                                                                              | Type                     | Recommended Closure                                                                                 |
-| ---- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------- |
-| F-01 | Domain route-to-handler closed-loop proof (`strategy.PlaceRequest -> live/backtest.PlaceOrder -> terminal effect`) | Evidence gap             | ✅ Closed in current branch (new closed-loop unit proof + backtest.PlaceOrder subscription handler) |
-| F-02 | Rejected-order payload key alignment (`reason` vs `reject_reason` vs `error_message`)                              | Contract consistency     | ✅ Closed in current branch (frontend listener compatibility + dedicated unit test)                 |
-| F-03 | Test-count single source of truth                                                                                  | Documentation governance | Declare one authoritative counter (recommended: TEST_COVERAGE) and reference it from other docs     |
+| ID   | Topic                                                                                                              | Type                     | Recommended Closure                                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| F-01 | Domain route-to-handler closed-loop proof (`strategy.PlaceRequest -> live/backtest.PlaceOrder -> terminal effect`) | Evidence gap             | ✅ Closed in current branch (new closed-loop unit proof + backtest.PlaceOrder subscription handler)  |
+| F-02 | Rejected-order payload key alignment (`reason` vs `reject_reason` vs `error_message`)                              | Contract consistency     | ✅ Closed in current branch (frontend listener compatibility + dedicated unit test)                  |
+| F-03 | Test-count single source of truth                                                                                  | Documentation governance | ✅ Closed: TEST_COVERAGE is declared authoritative; roadmap/review docs now mark counts as snapshots |
 
 Decision note:
 
 - Re-flagging during independent review should be interpreted as a **validation-depth signal**, not as denial of completed work.
-- Closure evidence now attached for F-01/F-02; remaining delta is F-03 (documentation authority unification).
+- Closure evidence now attached for F-01/F-02/F-03.
