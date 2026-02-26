@@ -14,16 +14,16 @@
 
 ## 1. Executive Summary
 
-| Metric            | Value                    | Status        |
-| ----------------- | ------------------------ | ------------- |
-| Total Tests       | 1023 (933 + 90)          | ✅            |
-| Test Files        | 73+                      | ✅            |
-| Total Assertions  | ~1,700+                  | ✅            |
-| Unit Tests        | majority                 | ✅            |
-| Integration Tests | targeted core flows      | ✅            |
-| E2E Tests         | 0 (0%)                   | ❌ Planned M9 |
-| Coverage Gate     | 89.61% (threshold: 80%)  | ✅            |
-| Mock Usages       | high (design-intent)     | -             |
+| Metric            | Value                   | Status        |
+| ----------------- | ----------------------- | ------------- |
+| Total Tests       | 1023 (933 + 90)         | ✅            |
+| Test Files        | 73+                     | ✅            |
+| Total Assertions  | ~1,700+                 | ✅            |
+| Unit Tests        | majority                | ✅            |
+| Integration Tests | targeted core flows     | ✅            |
+| E2E Tests         | 0 (0%)                  | ❌ Planned M9 |
+| Coverage Gate     | 89.61% (threshold: 80%) | ✅            |
+| Mock Usages       | high (design-intent)    | -             |
 
 **Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (1023 total). Coverage gate is passed (`pytest --cov=src tests` = 89.61%, required 80%). E2E testing remains planned for M9.
 

@@ -450,14 +450,14 @@ class AlpacaConfig(BaseSettings):
 
 ### 8.2 Environment Variables
 
-| Variable                   | Description              | Required          |
-| -------------------------- | ------------------------ | ----------------- |
-| `ALPACA_PAPER_API_KEY`     | Paper trading API key    | For paper trading |
-| `ALPACA_PAPER_API_SECRET`  | Paper trading secret     | For paper trading |
-| `ALPACA_PAPER_BASE_URL`    | Paper API base URL       | Optional (default: `https://paper-api.alpaca.markets`) |
-| `ALPACA_LIVE_API_KEY`      | Live trading API key     | For live trading  |
-| `ALPACA_LIVE_API_SECRET`   | Live trading secret      | For live trading  |
-| `ALPACA_LIVE_BASE_URL`     | Live API base URL        | Optional (default: `https://api.alpaca.markets`) |
+| Variable                  | Description           | Required                                               |
+| ------------------------- | --------------------- | ------------------------------------------------------ |
+| `ALPACA_PAPER_API_KEY`    | Paper trading API key | For paper trading                                      |
+| `ALPACA_PAPER_API_SECRET` | Paper trading secret  | For paper trading                                      |
+| `ALPACA_PAPER_BASE_URL`   | Paper API base URL    | Optional (default: `https://paper-api.alpaca.markets`) |
+| `ALPACA_LIVE_API_KEY`     | Live trading API key  | For live trading                                       |
+| `ALPACA_LIVE_API_SECRET`  | Live trading secret   | For live trading                                       |
+| `ALPACA_LIVE_BASE_URL`    | Live API base URL     | Optional (default: `https://api.alpaca.markets`)       |
 
 ---
 

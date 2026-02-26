@@ -79,18 +79,18 @@ npm run dev
 
 ## Development Status
 
-| Milestone                  | Status           | Tests |
-| -------------------------- | ---------------- | ----- |
-| M0: Test Infrastructure    | ✅ Complete      | 14    |
-| M0.5: Project Restructure  | ✅ Complete      | +74   |
-| M1: Foundation (DB/Events) | ✅ Complete      | +124  |
-| M2: API Live               | ✅ Complete      | +85   |
-| M3: Veda Trading           | ✅ Complete      | +196  |
-| M4: Greta Backtesting      | ✅ Complete      | +56   |
-| M5: Marvin Core            | ✅ Complete      | +74   |
-| M6: Live Trading           | ✅ Complete      | +101  |
-| **M7: Haro Frontend**      | ✅ Complete      | +86   |
-| **M8: Fixes & Improve**    | ✅ Complete      | +129  |
+| Milestone                  | Status      | Tests |
+| -------------------------- | ----------- | ----- |
+| M0: Test Infrastructure    | ✅ Complete | 14    |
+| M0.5: Project Restructure  | ✅ Complete | +74   |
+| M1: Foundation (DB/Events) | ✅ Complete | +124  |
+| M2: API Live               | ✅ Complete | +85   |
+| M3: Veda Trading           | ✅ Complete | +196  |
+| M4: Greta Backtesting      | ✅ Complete | +56   |
+| M5: Marvin Core            | ✅ Complete | +74   |
+| M6: Live Trading           | ✅ Complete | +101  |
+| **M7: Haro Frontend**      | ✅ Complete | +86   |
+| **M8: Fixes & Improve**    | ✅ Complete | +129  |
 
 **Current Snapshot**: 1023 tests (933 backend + 90 frontend) · Coverage 89.61% · Python 3.13 · FastAPI · SQLAlchemy 2.x
 **Authoritative milestone status**: [docs/MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)

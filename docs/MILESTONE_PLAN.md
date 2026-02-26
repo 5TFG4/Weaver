@@ -17,13 +17,13 @@
 All pending tasks have been consolidated and reorganized into 5 milestones.
 M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 is next.
 
-| Milestone | Name               | Core Objective                            | Tests  | Status              |
-| --------- | ------------------ | ----------------------------------------- | ------ | ------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
-| **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
-| **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
+| Milestone | Name               | Core Objective                            | Tests  | Status               |
+| --------- | ------------------ | ----------------------------------------- | ------ | -------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE              |
+| **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total)  |
+| **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total)  |
 | **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 129    | ✅ DONE (1023 total) |
-| **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
+| **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED           |
 
 **M6 Complete** (101 tests added):
 
