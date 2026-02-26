@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: docker/backend/Dockerfile
     ports:
-      - "${HOST_PORT_PROD}:8000"      # FastAPI
+      - "${HOST_PORT_PROD}:8000" # FastAPI
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
@@ -20,14 +20,14 @@ services:
       db:
         condition: service_healthy
     command: >
-      gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
+      gunicorn -w 4 -k uvicorn.workers.UvicornWorker weaver:app --bind 0.0.0.0:8000
 
   frontend:
     build:
       context: ..
       dockerfile: docker/frontend/Dockerfile
     ports:
-      - "${FRONTEND_PORT_PROD}:80"    # Nginx serving built React app
+      - "${FRONTEND_PORT_PROD}:80" # Nginx serving built React app
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro

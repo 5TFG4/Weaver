@@ -229,12 +229,20 @@ class RunManager:
         run.status = RunStatus.RUNNING
         run.started_at = datetime.now(UTC)
         await self._emit_event(RunEvents.STARTED, run)
+        await self._persist_run(run)
 
-        if run.mode == RunMode.BACKTEST:
-            await self._start_backtest(run)
-        else:
-            # LIVE/PAPER use RealtimeClock
-            await self._start_live(run)
+        try:
+            if run.mode == RunMode.BACKTEST:
+                await self._start_backtest(run)
+            else:
+                # LIVE/PAPER use RealtimeClock
+                await self._start_live(run)
+        except Exception:
+            await self._persist_run(run)
+            raise
+
+        if run.status != RunStatus.RUNNING:
+            await self._persist_run(run)
 
         return run
 

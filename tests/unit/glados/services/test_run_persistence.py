@@ -130,6 +130,75 @@ class TestRunManagerPersistence:
         assert run.id is not None
         assert run.status == RunStatus.PENDING
 
+    @pytest.mark.asyncio
+    async def test_start_persists_running_status(self, manager, mock_run_repo) -> None:
+        """start() persists RUNNING transition before execution begins."""
+        request = _make_run_create(mode=RunMode.PAPER)
+        run = await manager.create(request)
+
+        # Isolate start() persistence calls
+        mock_run_repo.save.reset_mock()
+
+        manager._start_live = AsyncMock(return_value=None)  # type: ignore[attr-defined]
+        await manager.start(run.id)
+
+        statuses = [
+            call_args[0][0].status
+            for call_args in mock_run_repo.save.await_args_list
+        ]
+        assert "running" in statuses
+
+    @pytest.mark.asyncio
+    async def test_backtest_completion_persists_completed_status(
+        self, manager, mock_run_repo
+    ) -> None:
+        """start() persists COMPLETED transition after backtest finishes."""
+        request = _make_run_create(
+            mode=RunMode.BACKTEST,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        )
+        run = await manager.create(request)
+
+        # Isolate start() persistence calls
+        mock_run_repo.save.reset_mock()
+
+        async def fake_start_backtest(run_obj) -> None:
+            run_obj.status = RunStatus.COMPLETED
+
+        manager._start_backtest = fake_start_backtest  # type: ignore[method-assign]
+        await manager.start(run.id)
+
+        statuses = [
+            call_args[0][0].status
+            for call_args in mock_run_repo.save.await_args_list
+        ]
+        assert "completed" in statuses
+
+    @pytest.mark.asyncio
+    async def test_start_failure_persists_error_status(self, manager, mock_run_repo) -> None:
+        """start() persists ERROR transition when execution startup fails."""
+        request = _make_run_create(mode=RunMode.PAPER)
+        run = await manager.create(request)
+
+        # Isolate start() persistence calls
+        mock_run_repo.save.reset_mock()
+
+        async def failing_start_live(run_obj) -> None:
+            run_obj.status = RunStatus.ERROR
+            raise RuntimeError("startup failed")
+
+        manager._start_live = failing_start_live  # type: ignore[method-assign]
+
+        with pytest.raises(RuntimeError, match="startup failed"):
+            await manager.start(run.id)
+
+        statuses = [
+            call_args[0][0].status
+            for call_args in mock_run_repo.save.await_args_list
+        ]
+        assert "error" in statuses
+
 
 # ============================================================================
 # Test: RunManager recovery from database
