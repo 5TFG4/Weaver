@@ -232,3 +232,28 @@ class TestOrdersPagination:
         assert data["page_size"] == 1
         # MockOrderService has some preset orders, check pagination applies
         assert len(data["items"]) <= 1
+
+
+class TestOrdersStatusFiltering:
+    """M8-R3/R-08: status query param contract for order listing."""
+
+    def test_filters_mock_orders_by_status(self, client: TestClient) -> None:
+        """GET /orders?status=submitted returns only submitted mock orders."""
+        response = client.get("/api/v1/orders?status=submitted")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["status"] == "submitted"
+
+    def test_passes_status_filter_to_veda(self, client: TestClient) -> None:
+        """status query param is forwarded to VedaService.list_orders."""
+        mock_veda = AsyncMock()
+        mock_veda.list_orders.return_value = []
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        client.get("/api/v1/orders?status=filled")
+
+        mock_veda.list_orders.assert_called_once_with(run_id=None, status=OrderStatus.FILLED)
+        client.app.state.veda_service = None  # type: ignore[union-attr]

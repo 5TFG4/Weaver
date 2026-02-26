@@ -49,20 +49,19 @@
 
 ```bash
 # from repository root
-cp .env.example .env
-cp .env.dev.example .env.dev
+cp docker/example.env docker/.env
 
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
-# API:     http://localhost:8000
-# Frontend http://localhost:3000
+docker compose -f docker/docker-compose.dev.yml up --build
+# API:     http://localhost:18919
+# Frontend http://localhost:13579
 ```
 
 ### 2) “Prod-like” locally
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
-# API:     http://localhost:8000
-# Frontend http://localhost:8080
+# API:     http://localhost:28919
+# Frontend http://localhost:23579
 ```
 
 ### 3) Local (no Docker)
@@ -71,30 +70,29 @@ docker compose -f docker/docker-compose.yml up -d --build
 # Requires Python 3.13+
 # backend
 pip install -r docker/backend/requirements.txt
-# TODO: Update entrypoint once GLaDOS main module is implemented
-# uvicorn GLaDOS.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn weaver:app --host 0.0.0.0 --port 8000 --reload
 
 # frontend (in ./haro)
 npm install
-npm run dev   # http://localhost:3000
+npm run dev
 ```
 
 ## Development Status
 
-| Milestone                  | Status      | Tests |
-| -------------------------- | ----------- | ----- |
-| M0: Test Infrastructure    | ✅ Complete | 14    |
-| M0.5: Project Restructure  | ✅ Complete | +74   |
-| M1: Foundation (DB/Events) | ✅ Complete | +124  |
-| M2: API Live               | ✅ Complete | +85   |
-| M3: Veda Trading           | ✅ Complete | +196  |
-| M4: Greta Backtesting      | ✅ Complete | +56   |
-| M5: Marvin Core            | ✅ Complete | +74   |
-| M6: Live Trading           | ✅ Complete | +101  |
-| **M7: Haro Frontend**      | ✅ Complete | +86   |
-| M8: Polish & E2E           | ⏳ Pending  | ~40   |
+| Milestone                  | Status           | Tests |
+| -------------------------- | ---------------- | ----- |
+| M0: Test Infrastructure    | ✅ Complete      | 14    |
+| M0.5: Project Restructure  | ✅ Complete      | +74   |
+| M1: Foundation (DB/Events) | ✅ Complete      | +124  |
+| M2: API Live               | ✅ Complete      | +85   |
+| M3: Veda Trading           | ✅ Complete      | +196  |
+| M4: Greta Backtesting      | ✅ Complete      | +56   |
+| M5: Marvin Core            | ✅ Complete      | +74   |
+| M6: Live Trading           | ✅ Complete      | +101  |
+| **M7: Haro Frontend**      | ✅ Complete      | +86   |
+| M8: Fixes & Improve        | 🔄 Active (M8-R) | 96+   |
 
-**Current Snapshot**: 894 tests (808 backend + 86 frontend) · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current Snapshot**: 998 tests (908 backend + 90 frontend) · Coverage 89.78% · Python 3.13 · FastAPI · SQLAlchemy 2.x
 **Authoritative milestone status**: [docs/MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)
 
 ### Recent Changes (2026-02-04)
@@ -107,15 +105,12 @@ npm run dev   # http://localhost:3000
 - ✅ RealtimeClock integration for live/paper runs (10 tests)
 - ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
 
-### Next: M8 Polish & E2E (~40 tests)
+### Next: M8-R Closeout → M9 E2E
 
-- React app scaffold with Vite + TypeScript
-- Dashboard page (system status, active runs)
-- Runs page (list + detail view)
-- Orders page
-- SSE client integration for real-time updates
+- M8-R: deployment blockers + runtime/doc consistency closeout
+- M9: end-to-end test execution and release polish
 
 ## Endpoints (essentials)
 
-- REST: `GET /healthz`, `GET/POST /runs`, `GET /orders`, `GET /candles`
-- Realtime: `GET /events/stream` (SSE) · Alternative: `/events/tail` (REST incremental)
+- REST: `GET /api/v1/healthz`, `GET/POST /api/v1/runs`, `GET /api/v1/orders`, `GET /api/v1/candles`
+- Realtime: `GET /api/v1/events/stream` (SSE)

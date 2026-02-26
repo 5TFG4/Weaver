@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.glados.dependencies import get_run_manager
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError
-from src.glados.schemas import RunCreate, RunListResponse, RunResponse
+from src.glados.schemas import RunCreate, RunListResponse, RunResponse, RunStatus
 from src.glados.services.run_manager import Run, RunManager
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -38,6 +38,7 @@ def _run_to_response(run: Run) -> RunResponse:
 async def list_runs(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+    status: RunStatus | None = Query(default=None, description="Optional status filter"),
     run_manager: RunManager = Depends(get_run_manager),
 ) -> RunListResponse:
     """
@@ -45,7 +46,7 @@ async def list_runs(
 
     N-10: Accepts page and page_size query params.
     """
-    runs, total = await run_manager.list()
+    runs, total = await run_manager.list(status=status)
     # Apply pagination
     start = (page - 1) * page_size
     end = start + page_size

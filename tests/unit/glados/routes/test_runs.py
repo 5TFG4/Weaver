@@ -284,3 +284,39 @@ class TestRunsPagination:
         assert len(data["items"]) == 2
         assert data["total"] == 5
         assert data["page"] == 2
+
+
+class TestRunsStatusFiltering:
+    """M8-R3/R-08: status query param contract for run listing."""
+
+    def test_filters_runs_by_status(self, client: TestClient) -> None:
+        """GET /runs?status=running returns only running runs."""
+        # Run A stays running (paper mode)
+        run_a = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "s1",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        ).json()
+        client.post(f"/api/v1/runs/{run_a['id']}/start")
+
+        # Run B gets stopped
+        run_b = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "s2",
+                "mode": "paper",
+                "symbols": ["ETH/USD"],
+            },
+        ).json()
+        client.post(f"/api/v1/runs/{run_b['id']}/stop")
+
+        response = client.get("/api/v1/runs?status=running")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["status"] == "running"

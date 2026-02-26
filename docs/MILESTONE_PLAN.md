@@ -343,7 +343,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] Design decisions D-1 through D-5 implemented
 - [x] DomainRouter wired into runtime lifecycle
 - [x] RunManager dependencies fully injected
-- [x] Code coverage ≥80% (pytest-cov: 89.73%)
+- [x] Code coverage ≥80% (pytest-cov: 89.78%)
 - [x] All TODO/FIXME cleaned up
 - [x] Documentation complete and accurate
 
@@ -428,7 +428,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] N-06: Add run_id query param to SSE endpoint (D-5)
 - [x] N-10: Implement server-side pagination or remove pagination UI
 - [x] D-2: Add Runs table for restart recovery ✅ RunRecord + RunRepository + RunManager persistence + recover() + migration
-- [x] M-07: Removed unused /runs/:runId route from App.tsx
+- [x] M-07: Keep /runs/:runId deep-link route and wire RunsPage useParams handling
 ```
 
 #### M8-D: Documentation
@@ -468,16 +468,16 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 | Phase | Focus                                        | Severity | Status |
 | ----- | -------------------------------------------- | -------- | ------ |
-| M8-R0 | Release blockers (compose/docker boot path)  | P0       | ⏳     |
-| M8-R1 | Runtime consistency (run status persistence) | P1       | ⏳     |
-| M8-R2 | Documentation authority sync                 | P1       | ⏳     |
-| M8-R3 | Contract hardening decisions                 | P2       | ⏳     |
+| M8-R0 | Release blockers (compose/docker boot path)  | P0       | 🔄     |
+| M8-R1 | Runtime consistency (run status persistence) | P1       | ✅     |
+| M8-R2 | Documentation authority sync                 | P1       | ✅     |
+| M8-R3 | Contract hardening decisions                 | P2       | 🔄     |
 
 #### 4.5.2 M8-R Exit Gate (Summary)
 
 - [ ] P0 deployment blockers closed and smoke-verified
-- [ ] Run state persistence consistency verified by tests
-- [ ] Execution-layer docs synchronized and stale markers cleared
+- [x] Run state persistence consistency verified by tests
+- [x] Execution-layer docs synchronized and stale markers cleared
 - [ ] P2 items either implemented or formally deferred with rationale
 
 ---

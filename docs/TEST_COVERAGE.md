@@ -7,7 +7,7 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-02-26 · **Total Tests**: 904 backend + 88 frontend = 992  
+**Last Updated**: 2026-02-26 · **Total Tests**: 908 backend + 90 frontend = 998  
 **M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (E2E Tests)
 
 ---
@@ -16,16 +16,16 @@
 
 | Metric            | Value                   | Status        |
 | ----------------- | ----------------------- | ------------- |
-| Total Tests       | 992 (904 + 88)          | ✅            |
+| Total Tests       | 998 (908 + 90)          | ✅            |
 | Test Files        | 73+                     | ✅            |
 | Total Assertions  | ~1,600+                 | ✅            |
 | Unit Tests        | majority                | ✅            |
 | Integration Tests | targeted core flows     | ✅            |
 | E2E Tests         | 0 (0%)                  | ❌ Planned M9 |
-| Coverage Gate     | 89.73% (threshold: 80%) | ✅            |
+| Coverage Gate     | 89.78% (threshold: 80%) | ✅            |
 | Mock Usages       | high (design-intent)    | -             |
 
-**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (992 total). Coverage gate is now passed (`pytest --cov=src tests` = 89.73%, required 80%). E2E testing remains planned for M9.
+**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (998 total). Coverage gate is now passed (`pytest --cov=src tests` = 89.78%, required 80%). E2E testing remains planned for M9.
 
 ---
 
@@ -72,7 +72,7 @@
 ```
                     ┌─────────────┐
                     │    E2E      │  0 tests (0%)
-                    │  (Planned)  │  Target: ~40 in M8
+                    │  (Planned)  │  Target: ~20–30 in M9
                     ├─────────────┤
                     │ Integration │  44 tests (5%)
                     │   Tests     │  DB, Event flows
@@ -89,7 +89,7 @@
 | --------------- | ----- | ----------------------------- | --------- |
 | **Unit**        | 762   | Isolated function/class tests | ★★★★★     |
 | **Integration** | 44    | Multi-component collaboration | ★★★★☆     |
-| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M8     |
+| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M9     |
 | **Performance** | 0     | Load/stress testing           | ❌ Future |
 
 ---
@@ -193,7 +193,7 @@
 | ------------ | ------------------------ | --------- |
 | **Database** | DB failure recovery      | Medium    |
 | **Network**  | Partial message delivery | Low       |
-| **Security** | Auth bypass attempts     | High (M8) |
+| **Security** | Auth bypass attempts     | High (M9) |
 
 ---
 
@@ -233,8 +233,8 @@ _High async coverage in: Veda (adapters), Events (subscriptions), Integration te
 
 | Gap                   | Impact                        | Recommendation              | Target |
 | --------------------- | ----------------------------- | --------------------------- | ------ |
-| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | M8     |
-| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | M8     |
+| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | M9     |
+| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | M9     |
 | **Real Alpaca Tests** | Unknown production behavior   | Add sandbox integration     | M7     |
 
 ### 7.2 Medium Priority Gaps

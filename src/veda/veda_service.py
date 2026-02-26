@@ -200,23 +200,32 @@ class VedaService:
             return None
         return await self._hydrate_fills(state)
 
-    async def list_orders(self, run_id: str | None = None) -> list[OrderState]:
+    async def list_orders(
+        self,
+        run_id: str | None = None,
+        status: OrderStatus | None = None,
+    ) -> list[OrderState]:
         """
         List orders, optionally filtered by run_id.
 
         Args:
             run_id: Optional run ID filter
+            status: Optional status filter
 
         Returns:
             List of OrderState
         """
         if run_id:
-            states = await self._repository.list_by_run_id(run_id)
+            states = await self._repository.list_by_run_id(run_id, status=status)
             hydrated: list[OrderState] = []
             for state in states:
                 hydrated.append(await self._hydrate_fills(state))
             return hydrated
-        return self._order_manager.list_orders()
+
+        states = self._order_manager.list_orders()
+        if status is not None:
+            states = [state for state in states if state.status == status]
+        return states
 
     # =========================================================================
     # Fill Operations (N-03)

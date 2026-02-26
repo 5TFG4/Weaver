@@ -1,15 +1,17 @@
 # Design Audit Report & M8 Quality Gate
 
 > **Document Charter**  
-> **Primary role**: active design-code-test quality gate and open findings.  
-> **Authoritative for**: current unresolved audit items and milestone release criteria.  
+> **Primary role**: M8-R closeout snapshot for design-code-test quality gate.  
+> **Authoritative for**: current closeout status and remaining release-gate items.  
 > **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
 
-> **Audit Date**: 2026-02-19 (updated)  
+> **Audit Date**: 2026-02-26 (closeout refresh)  
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
 > **Branch**: `haro_update`  
-> **Purpose**: Quality gate for M8 (Polish, Critical Fixes & E2E)  
-> **Status**: M7 ✅ Formally Closed · M8 🔄 Active
+> **Purpose**: Quality gate closeout for M8-R (deployment/runtime/docs consistency)  
+> **Status**: M8-Core ✅ Complete · M8-R 🔄 Active (R0/R1 delivered, R2 in progress)
+
+> **Closeout Note (2026-02-26)**: Sections 2–8 are retained as full audit baseline. Current execution authority is the M8-R plan in `MILESTONE_PLAN.md` + `archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only`.
 
 ---
 

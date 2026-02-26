@@ -182,16 +182,21 @@ class RunManager:
         """
         return self._runs.get(run_id)
 
-    async def list(self) -> tuple[list[Run], int]:
+    async def list(self, status: RunStatus | None = None) -> tuple[list[Run], int]:
         """
         List all runs.
         
         MVP-2: No pagination, returns all runs.
         
+        Args:
+            status: Optional status filter
+
         Returns:
             Tuple of (runs list, total count)
         """
         runs = list(self._runs.values())
+        if status is not None:
+            runs = [run for run in runs if run.status == status]
         return runs, len(runs)
 
     async def start(self, run_id: str) -> Run:

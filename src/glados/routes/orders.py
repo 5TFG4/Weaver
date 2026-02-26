@@ -25,6 +25,7 @@ from src.veda import VedaService
 from src.veda.models import (
     OrderIntent,
     OrderSide,
+    OrderStatus as VedaOrderStatus,
     OrderState,
     OrderType,
     TimeInForce,
@@ -144,6 +145,7 @@ async def cancel_order(
 @router.get("", response_model=OrderListResponse)
 async def list_orders(
     run_id: str | None = Query(default=None),
+    status: SchemaStatus | None = Query(default=None),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(default=50, ge=1, le=200, description="Items per page"),
     veda_service: VedaService | None = Depends(get_veda_service),
@@ -157,7 +159,11 @@ async def list_orders(
     N-10: Accepts page and page_size query params.
     """
     if veda_service is not None:
-        states = await veda_service.list_orders(run_id=run_id)
+        state_status = VedaOrderStatus(status.value) if status is not None else None
+        if state_status is None:
+            states = await veda_service.list_orders(run_id=run_id)
+        else:
+            states = await veda_service.list_orders(run_id=run_id, status=state_status)
         total = len(states)
         start = (page - 1) * page_size
         end = start + page_size
@@ -169,7 +175,7 @@ async def list_orders(
             page_size=page_size,
         )
 
-    orders, total = await order_service.list(run_id=run_id)
+    orders, total = await order_service.list(run_id=run_id, status=status)
     start = (page - 1) * page_size
     end = start + page_size
     paginated = orders[start:end]
