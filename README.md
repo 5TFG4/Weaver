@@ -104,9 +104,10 @@ npm run dev
 - ✅ Docker deployment blockers resolved (gunicorn, Dockerfile CMD, smoke tests)
 - ✅ Architecture docs created (greta.md, marvin.md, walle.md)
 
-### Next: M9 E2E & Release
+### Next: M9 CI Deployment → M10 E2E & Release
 
-- M9: end-to-end Playwright tests + deployment guide + release polish
+- M9: CI deployment pipeline (backend/frontend fast lanes + compose smoke + merge gates)
+- M10: end-to-end Playwright tests + deployment guide + release polish
 
 ## Endpoints (essentials)
 

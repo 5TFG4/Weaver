@@ -5,25 +5,26 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned  
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned (CI Deployment)  
 > **Tests (latest verified)**: 933 backend + 90 frontend = 1023 total  
-> **Remaining Work**: M9 (E2E Tests & Release Prep)  
-> **Estimated Total**: ~20–30 new tests remaining (M9), ~1–1.5 weeks
+> **Remaining Work**: M9 (CI Deployment Pipeline) → M10 (E2E Tests & Release Prep)  
+> **Estimated Total**: ~20–30 new tests remaining (M10), ~2–3 weeks total
 
 ---
 
 ## Executive Summary
 
-All pending tasks have been consolidated and reorganized into 5 milestones.
-M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 is next.
+All pending tasks have been consolidated and reorganized into 6 milestones.
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is next, followed by M10 (E2E + release prep).
 
-| Milestone | Name               | Core Objective                            | Tests  | Status               |
-| --------- | ------------------ | ----------------------------------------- | ------ | -------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE              |
-| **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total)  |
-| **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total)  |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | 129    | ✅ DONE (1023 total) |
-| **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED           |
+| Milestone | Name               | Core Objective                                         | Tests  | Status               |
+| --------- | ------------------ | ------------------------------------------------------ | ------ | -------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture                  | 74     | ✅ DONE              |
+| **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)  |
+| **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)  |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (1023 total) |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ⏳ PLANNED           |
+| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | ~20–30 | ⏳ PLANNED           |
 
 **M6 Complete** (101 tests added):
 
@@ -443,8 +444,8 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] L-04: Fix env var names in veda.md to match config.py
 - [x] L-05: Update OrderStatus enum docs to include submitting/submitted
 - [x] Update README with usage instructions
-- [ ] Strategy development guide (deferred to M9-4)
-- [ ] Exchange adapter development guide (deferred to M9-4)
+- [ ] Strategy development guide (deferred to M10-4)
+- [ ] Exchange adapter development guide (deferred to M10-4)
 ```
 
 ### 4.4 Design Decisions (All Locked)
@@ -487,32 +488,94 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ---
 
-## 5. M9: E2E Tests & Release Preparation
+## 5. M9: CI Deployment Pipeline
 
-> **Goal**: Full end-to-end test coverage + final release polish  
+> **Goal**: establish stable PR quality gates and container smoke verification before E2E expansion  
 > **Prerequisite**: M8 ✅  
-> **Estimated Effort**: 1–1.5 weeks  
+> **Estimated Effort**: 1 week  
 > **Status**: ⏳ PLANNED
 
 ### 5.1 Exit Gate (Definition of Done)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Full user workflow validated end-to-end
-- [ ] Deployment guide complete
-- [ ] All docs accurate post-M8 changes
+- [ ] Backend CI fast lane is green on PR (`ruff` + `mypy` + unit tests)
+- [ ] Frontend CI fast lane is green on PR (`lint` + `test` + `build`)
+- [ ] Compose smoke workflow runs in CI for docker/runtime-affecting changes
+- [ ] Branch protection requires core CI checks before merge
+- [ ] CI troubleshooting/runbook documented in README or DEVELOPMENT docs
 
 ### 5.2 MVP Breakdown
 
-| MVP  | Focus                 | Est. Tests | Dependencies |
-| ---- | --------------------- | ---------- | ------------ |
-| M9-1 | E2E Setup & Infra     | ~5         | -            |
-| M9-2 | E2E Backtest Flow     | ~8         | M9-1         |
-| M9-3 | E2E Live/Paper Flow   | ~8         | M9-1         |
-| M9-4 | Release Polish & Docs | ~5         | M9-2, M9-3   |
+| MVP  | Focus                              | Est. Tests | Dependencies |
+| ---- | ---------------------------------- | ---------- | ------------ |
+| M9-1 | Backend Fast CI (lint/type/unit)   | -          | -            |
+| M9-2 | Frontend Fast CI (lint/test/build) | -          | M9-1         |
+| M9-3 | Container Smoke CI Integration     | -          | M9-1, M9-2   |
+| M9-4 | Branch Protection + CI Governance  | -          | M9-3         |
 
 ### 5.3 Detailed Tasks
 
-#### M9-1: E2E Test Setup (~5 tests)
+#### M9-1: Backend Fast CI
+
+```
+- [ ] Add/verify backend CI workflow (Python 3.13)
+- [ ] Run ruff + mypy as required checks
+- [ ] Run pytest unit scope (exclude container marker)
+- [ ] Add dependency caching to reduce CI duration
+```
+
+#### M9-2: Frontend Fast CI
+
+```
+- [ ] Add/verify frontend CI workflow (Node 20)
+- [ ] Run npm lint + test + build
+- [ ] Cache npm dependencies
+- [ ] Fail fast on TypeScript or build regressions
+```
+
+#### M9-3: Container Smoke Integration
+
+```
+- [ ] Keep/extend compose-smoke workflow for runtime-affecting PRs
+- [ ] Ensure logs are surfaced as CI artifacts on failure
+- [ ] Validate API health + frontend availability checks in CI
+```
+
+#### M9-4: Branch Protection + Governance
+
+```
+- [ ] Define required checks for PR merge
+- [ ] Document rerun/debug process for failed jobs
+- [ ] Mark optional jobs (e.g., full integration suite) vs required checks
+```
+
+---
+
+## 6. M10: E2E Tests & Release Preparation
+
+> **Goal**: Full end-to-end test coverage + final release polish  
+> **Prerequisite**: M9 ✅  
+> **Estimated Effort**: 1–1.5 weeks  
+> **Status**: ⏳ PLANNED
+
+### 6.1 Exit Gate (Definition of Done)
+
+- [ ] E2E tests pass (Playwright)
+- [ ] Full user workflow validated end-to-end
+- [ ] Deployment guide complete
+- [ ] All docs accurate post-M9 changes
+
+### 6.2 MVP Breakdown
+
+| MVP   | Focus                 | Est. Tests | Dependencies |
+| ----- | --------------------- | ---------- | ------------ |
+| M10-1 | E2E Setup & Infra     | ~5         | -            |
+| M10-2 | E2E Backtest Flow     | ~8         | M10-1        |
+| M10-3 | E2E Live/Paper Flow   | ~8         | M10-1        |
+| M10-4 | Release Polish & Docs | ~5         | M10-2, M10-3 |
+
+### 6.3 Detailed Tasks
+
+#### M10-1: E2E Test Setup (~5 tests)
 
 ```
 - [ ] Configure Playwright (install, config, base helpers)
@@ -522,7 +585,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Health check E2E test
 ```
 
-#### M9-2: E2E Backtest Flow (~8 tests)
+#### M10-2: E2E Backtest Flow (~8 tests)
 
 ```
 - [ ] Create backtest run via UI
@@ -533,7 +596,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Multiple concurrent backtests
 ```
 
-#### M9-3: E2E Live/Paper Flow (~8 tests)
+#### M10-3: E2E Live/Paper Flow (~8 tests)
 
 ```
 - [ ] Create paper run via UI
@@ -544,11 +607,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Error state displayed correctly
 ```
 
-#### M9-4: Release Polish & Docs (~5 tests)
+#### M10-4: Release Polish & Docs (~5 tests)
 
 ```
 - [ ] Deployment guide (production Docker Compose)
-- [ ] Update all doc test counts post-M8/M9
+- [ ] Update all doc test counts post-M8/M9/M10
 - [ ] Final cross-doc consistency check
 - [ ] Smoke test: fresh deploy → create run → verify
 - [ ] Performance baseline (response times, SSE latency)
@@ -556,7 +619,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ---
 
-## 6. Backlog (Deferred Tasks)
+## 7. Backlog (Deferred Tasks)
 
 The following tasks have been incorporated into milestones or deferred:
 
@@ -573,7 +636,7 @@ The following tasks have been incorporated into milestones or deferred:
 | Sharpe ratio                       | greta TODO | M8-Q        |
 | Max drawdown                       | greta TODO | M8-Q        |
 
-### Deferred (M10+)
+### Deferred (M11+)
 
 | Task                             | Reason                              |
 | -------------------------------- | ----------------------------------- |
@@ -585,14 +648,15 @@ The following tasks have been incorporated into milestones or deferred:
 
 ---
 
-## 7. Timeline
+## 8. Timeline
 
 ```
 Week 1-2   │██████████████████████│ M5: Marvin Core          ✅
 Week 3-4   │██████████████████│     M6: Live Trading         ✅
 Week 5-6   │██████████████████│     M7: Haro Frontend        ✅
 Week 7-8   │██████████████████████│ M8: Fixes & Improve      🔄
-Week 9     │████████████│           M9: E2E & Release         ⏳
+Week 9     │████████████│           M9: CI Deployment         ⏳
+Week 10    │████████████│           M10: E2E & Release        ⏳
 ```
 
 ### Key Dependencies
@@ -613,23 +677,27 @@ M7: Haro Frontend ───┤
 M8: Fixes & Improve ─┤
     │                │
     ▼                ▼
-M9: E2E & Release
+M9: CI Deployment
+    │
+    ▼
+M10: E2E & Release
 ```
 
 ---
 
-## 8. Risks & Mitigations
+## 9. Risks & Mitigations
 
 | Risk                           | Probability | Impact | Mitigation                                    |
 | ------------------------------ | ----------- | ------ | --------------------------------------------- |
 | Alpaca API changes             | Low         | High   | Abstraction layer isolation, quick adaptation |
 | Frontend development delay     | Medium      | Medium | Backend can complete first, CLI as fallback   |
+| CI runtime too long            | Medium      | Medium | Split fast lanes + cache + selective triggers |
 | Flaky E2E tests                | Medium      | Low    | Retry mechanism, isolated test environment    |
 | Plugin architecture complexity | Low         | Medium | AST parsing has mature solutions              |
 
 ---
 
-## 9. Success Metrics
+## 10. Success Metrics
 
 ### Test Count
 
@@ -640,7 +708,8 @@ M9: E2E & Release
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
 | M8        | 129       | 1023       |
-| M9        | ~20–30    | ~1043–1053 |
+| M9        | -         | 1023       |
+| M10       | ~20–30    | ~1043–1053 |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
@@ -663,4 +732,5 @@ _M7 Formally Closed: 2026-02-19_
 _M8 Complete: 2026-02-26_  
 _Total Tests: 1023 (933 backend + 90 frontend)_  
 _M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
-_M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_
+_M9 Scope: CI deployment pipeline + merge gates (~1 week)_
+_M10 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_

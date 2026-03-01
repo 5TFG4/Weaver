@@ -8,24 +8,24 @@
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
 **Last Updated**: 2026-02-26 · **Total Tests**: 933 backend + 90 frontend = 1023  
-**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (E2E Tests)
+**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (CI Deployment) · **M10 Status**: ⏳ Planned (E2E Tests)
 
 ---
 
 ## 1. Executive Summary
 
-| Metric            | Value                   | Status        |
-| ----------------- | ----------------------- | ------------- |
-| Total Tests       | 1023 (933 + 90)         | ✅            |
-| Test Files        | 73+                     | ✅            |
-| Total Assertions  | ~1,700+                 | ✅            |
-| Unit Tests        | majority                | ✅            |
-| Integration Tests | targeted core flows     | ✅            |
-| E2E Tests         | 0 (0%)                  | ❌ Planned M9 |
-| Coverage Gate     | 89.61% (threshold: 80%) | ✅            |
-| Mock Usages       | high (design-intent)    | -             |
+| Metric            | Value                   | Status         |
+| ----------------- | ----------------------- | -------------- |
+| Total Tests       | 1023 (933 + 90)         | ✅             |
+| Test Files        | 73+                     | ✅             |
+| Total Assertions  | ~1,700+                 | ✅             |
+| Unit Tests        | majority                | ✅             |
+| Integration Tests | targeted core flows     | ✅             |
+| E2E Tests         | 0 (0%)                  | ❌ Planned M10 |
+| Coverage Gate     | 89.61% (threshold: 80%) | ✅             |
+| Mock Usages       | high (design-intent)    | -              |
 
-**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (1023 total). Coverage gate is passed (`pytest --cov=src tests` = 89.61%, required 80%). E2E testing remains planned for M9.
+**Overall Assessment**: Test breadth is strong and M8 test growth target has been exceeded (1023 total). Coverage gate is passed (`pytest --cov=src tests` = 89.61%, required 80%). E2E testing remains planned for M10.
 
 ---
 
@@ -72,7 +72,7 @@
 ```
                     ┌─────────────┐
                     │    E2E      │  0 tests (0%)
-                    │  (Planned)  │  Target: ~20–30 in M9
+                    │  (Planned)  │  Target: ~20–30 in M10
                     ├─────────────┤
                     │ Integration │  44 tests (5%)
                     │   Tests     │  DB, Event flows
@@ -89,7 +89,7 @@
 | --------------- | ----- | ----------------------------- | --------- |
 | **Unit**        | 762   | Isolated function/class tests | ★★★★★     |
 | **Integration** | 44    | Multi-component collaboration | ★★★★☆     |
-| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M9     |
+| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M10    |
 | **Performance** | 0     | Load/stress testing           | ❌ Future |
 
 ---
@@ -189,11 +189,11 @@
 
 ### 5.3 Not Covered ❌
 
-| Category     | Edge Case                | Priority  |
-| ------------ | ------------------------ | --------- |
-| **Database** | DB failure recovery      | Medium    |
-| **Network**  | Partial message delivery | Low       |
-| **Security** | Auth bypass attempts     | High (M9) |
+| Category     | Edge Case                | Priority   |
+| ------------ | ------------------------ | ---------- |
+| **Database** | DB failure recovery      | Medium     |
+| **Network**  | Partial message delivery | Low        |
+| **Security** | Auth bypass attempts     | High (M10) |
 
 ---
 
@@ -233,8 +233,8 @@ _High async coverage in: Veda (adapters), Events (subscriptions), Integration te
 
 | Gap                   | Impact                        | Recommendation              | Target |
 | --------------------- | ----------------------------- | --------------------------- | ------ |
-| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | M9     |
-| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | M9     |
+| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | M10    |
+| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | M10    |
 | **Real Alpaca Tests** | Unknown production behavior   | Add sandbox integration     | M7     |
 
 ### 7.2 Medium Priority Gaps

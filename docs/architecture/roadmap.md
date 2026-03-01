@@ -47,7 +47,7 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-**Active Milestone**: M9 (E2E Tests & Release Preparation)
+**Active Milestone**: M9 (CI Deployment Pipeline)
 
 **Last State Update**: 2026-02-25
 
@@ -62,18 +62,20 @@
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
 | **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | ✅ COMPLETE         |
-| **M9**    | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
+| **M9**    | CI Deployment Pipeline (PR quality gates + container smoke + branch protection)   | ⏳ PLANNED          |
+| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
 
-| Phase | Focus                         | Est. Tests | Status               |
-| ----- | ----------------------------- | ---------- | -------------------- |
-| 1–4   | Foundation → Greta            | 631        | ✅ DONE              |
-| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
-| **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8** | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
-| **9** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
+| Phase  | Focus                         | Est. Tests | Status               |
+| ------ | ----------------------------- | ---------- | -------------------- |
+| 1–4    | Foundation → Greta            | 631        | ✅ DONE              |
+| **5**  | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
+| **6**  | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
+| **7**  | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
+| **8**  | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
+| **9**  | CI Deployment Pipeline        | -          | ⏳ PLANNED           |
+| **10** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
 
 ## 4. Architecture Invariants
 
@@ -137,7 +139,14 @@
 - [x] Documentation complete
 - [x] ~96 new tests (target: 934+) → achieved; latest totals tracked in `docs/TEST_COVERAGE.md`
 
-### M9 Exit Gate (E2E & Release Ready)
+### M9 Exit Gate (CI Deployment Ready)
+
+- [ ] Backend fast CI checks are required and stable
+- [ ] Frontend fast CI checks are required and stable
+- [ ] Container smoke workflow integrated for runtime-affecting PRs
+- [ ] Branch protection rules enforce required CI checks
+
+### M10 Exit Gate (E2E & Release Ready)
 
 - [ ] E2E tests pass (Playwright)
 - [ ] Full user workflow validated end-to-end
