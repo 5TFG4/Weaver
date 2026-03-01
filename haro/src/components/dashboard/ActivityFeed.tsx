@@ -4,7 +4,6 @@
  * Displays a list of recent runs with status badges.
  */
 
-import { Link } from "react-router-dom";
 import type { Run } from "../../api/types";
 
 export interface ActivityFeedProps {

@@ -109,6 +109,14 @@ npm run dev
 - M9: CI deployment pipeline (backend/frontend fast lanes + compose smoke + merge gates)
 - M10: end-to-end Playwright tests + deployment guide + release polish
 
+## Testing Notes (Important)
+
+- In this workspace, `runTests` is most reliable with:
+  - relative paths (e.g., `tests/unit/glados/routes/test_runs.py`), or
+  - `testNames` selectors.
+- Absolute paths like `/weaver/tests/...` may return `No tests found` depending on runner path resolution.
+- This is a tooling path-resolution behavior, not a project test failure.
+
 ## Endpoints (essentials)
 
 - REST: `GET /api/v1/healthz`, `GET/POST /api/v1/runs`, `POST /api/v1/runs/{id}/start`, `GET /api/v1/orders`, `GET /api/v1/candles`
