@@ -127,9 +127,7 @@ class TestBaseStrategy:
         # Should not raise
         import asyncio
 
-        asyncio.get_event_loop().run_until_complete(
-            strategy.initialize(["BTC/USD"])
-        )
+        asyncio.run(strategy.initialize(["BTC/USD"]))
 
     def test_has_position_defaults_false(self) -> None:
         """has_position property defaults to False."""

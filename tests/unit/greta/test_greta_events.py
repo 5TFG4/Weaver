@@ -76,10 +76,14 @@ class TestGretaServiceEventSubscription:
             end=datetime(2024, 1, 2, tzinfo=UTC),
         )
 
-        # Check subscription exists
-        assert len(event_log._filtered_subscriptions) == 1
-        sub = list(event_log._filtered_subscriptions.values())[0]
-        assert BacktestEvents.FETCH_WINDOW in sub.event_types
+        # Check subscriptions exist (FetchWindow + PlaceOrder)
+        assert len(event_log._filtered_subscriptions) == 2
+        all_event_types = [
+            event_type
+            for sub in event_log._filtered_subscriptions.values()
+            for event_type in sub.event_types
+        ]
+        assert BacktestEvents.FETCH_WINDOW in all_event_types
 
     # -------------------------------------------------------------------------
     # Test 2: FetchWindow triggers data.WindowReady
@@ -262,8 +266,9 @@ class TestGretaServiceEventSubscription:
             end=datetime(2024, 1, 2, tzinfo=UTC),
         )
 
-        assert greta._subscription_id is not None
-        assert greta._subscription_id in event_log._filtered_subscriptions
+        assert len(greta._subscription_ids) == 2
+        for subscription_id in greta._subscription_ids:
+            assert subscription_id in event_log._filtered_subscriptions
 
     # -------------------------------------------------------------------------
     # Test 7: Correlation ID preserved

@@ -53,3 +53,10 @@ class TestAuthMiddleware:
         with TestClient(app) as client:
             response = client.get("/api/v1/events/stream")
             assert response.status_code == 401
+
+
+def test_test_config_auth_enabled_by_default() -> None:
+    """Guardrail: test config must keep auth enabled to mirror production path."""
+    settings = get_test_config()
+    assert settings.security.auth_required is True
+    assert settings.security.api_token
