@@ -334,8 +334,9 @@ class TestRunManagerRecovery:
         )
         mock_run_repo.list.return_value = [stale_record]
 
+        event_log = AsyncMock()
         manager = RunManager(
-            event_log=AsyncMock(),
+            event_log=event_log,
             run_repository=mock_run_repo,
         )
 
@@ -348,6 +349,10 @@ class TestRunManagerRecovery:
 
         # Should persist the error status
         mock_run_repo.save.assert_awaited()
+        event_log.append.assert_awaited_once()
+        envelope = event_log.append.await_args.args[0]
+        assert envelope.type == "run.Error"
+        assert envelope.run_id == "run-stale-001"
 
     @pytest.mark.asyncio
     async def test_recover_loads_pending_runs(self, mock_run_repo) -> None:

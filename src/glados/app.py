@@ -11,8 +11,9 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from src.config import WeaverConfig, get_config
 from src.events.protocol import Envelope
@@ -142,6 +143,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.event_log_unsubscribe = unsubscribe
         logger.info("SSEBroadcaster subscribed to InMemoryEventLog")
 
+    if event_log is None:
+        raise RuntimeError("EventLog must be initialized before runtime wiring")
+
     # =========================================================================
     # Startup - Services that may use EventLog
     # =========================================================================
@@ -193,10 +197,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Wire live.PlaceOrder to VedaService handler when VedaService is available
     app.state.veda_place_order_subscription_id = None
-    if getattr(app.state, "veda_service", None) is not None:
+    veda_service = getattr(app.state, "veda_service", None)
+    if veda_service is not None:
         veda_place_order_subscription_id = await event_log.subscribe_filtered(
             event_types=["live.PlaceOrder"],
-            callback=app.state.veda_service.handle_place_order,
+            callback=veda_service.handle_place_order,
         )
         app.state.veda_place_order_subscription_id = veda_place_order_subscription_id
         logger.info("VedaService wired to live.PlaceOrder events")
@@ -335,6 +340,45 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
 
     # Store settings in app state for dependency injection
     app.state.settings = settings
+
+    @app.middleware("http")
+    async def auth_middleware(request: Request, call_next):
+        """Enforce token auth on API routes when configured."""
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
+        path = request.url.path
+        if not path.startswith("/api/v1"):
+            return await call_next(request)
+
+        security = settings.security
+        if not security.is_auth_required(settings.environment):
+            return await call_next(request)
+
+        token = security.api_token
+        if not token:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "detail": "Authentication is enabled but SECURITY_API_TOKEN is not configured",
+                },
+            )
+
+        expected_header = security.api_key_header
+        api_key_value = request.headers.get(expected_header)
+        auth_header = request.headers.get("Authorization")
+        bearer_value = ""
+        if auth_header and auth_header.lower().startswith("bearer "):
+            bearer_value = auth_header[7:].strip()
+
+        if api_key_value == token or bearer_value == token:
+            return await call_next(request)
+
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Register routes
     app.include_router(health_router)

@@ -5,13 +5,19 @@ Runs strategy code in response to clock ticks.
 Mode-agnostic: doesn't know if backtest or live.
 """
 
+import logging
+
 from typing import TYPE_CHECKING
 
 from src.events.protocol import Envelope
+from src.glados.task_utils import spawn_tracked_task
 from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
 
 if TYPE_CHECKING:
     from src.events.log import EventLog
+
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyRunner:
@@ -91,9 +97,11 @@ class StrategyRunner:
         Since EventLog callbacks are sync, we need to schedule
         the async handler.
         """
-        import asyncio
-
-        asyncio.create_task(self.on_data_ready(envelope))
+        spawn_tracked_task(
+            self.on_data_ready(envelope),
+            logger=logger,
+            context=f"marvin.window_ready run_id={self._run_id}",
+        )
 
     async def on_tick(self, tick) -> None:
         """

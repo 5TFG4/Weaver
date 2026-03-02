@@ -7,13 +7,14 @@ Each backtest run gets its own GretaService instance.
 
 from __future__ import annotations
 
-import asyncio
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from src.events.protocol import Envelope
+from src.glados.task_utils import spawn_tracked_task
 from src.greta.fill_simulator import DefaultFillSimulator
 from src.greta.models import (
     BacktestResult,
@@ -28,6 +29,9 @@ from src.veda.models import OrderType, TimeInForce
 if TYPE_CHECKING:
     from src.events.log import EventLog
     from src.walle.repositories.bar_repository import Bar, BarRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class GretaService:
@@ -241,9 +245,11 @@ class GretaService:
         Fetches bars from cache and emits data.WindowReady.
         Since EventLog callbacks are sync, we schedule the async work.
         """
-        import asyncio
-
-        asyncio.create_task(self._handle_fetch_window(envelope))
+        spawn_tracked_task(
+            self._handle_fetch_window(envelope),
+            logger=logger,
+            context=f"greta.fetch_window run_id={self._run_id}",
+        )
 
     async def _handle_fetch_window(self, envelope: Envelope) -> None:
         """
@@ -312,7 +318,11 @@ class GretaService:
 
         Since EventLog callbacks are sync, we schedule async work.
         """
-        asyncio.create_task(self._handle_place_order(envelope))
+        spawn_tracked_task(
+            self._handle_place_order(envelope),
+            logger=logger,
+            context=f"greta.place_order run_id={self._run_id}",
+        )
 
     async def _handle_place_order(self, envelope: Envelope) -> None:
         """

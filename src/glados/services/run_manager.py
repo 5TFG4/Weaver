@@ -473,6 +473,7 @@ class RunManager:
                     run.status = RunStatus.ERROR
                     run.stopped_at = datetime.now(UTC)
                     await self._persist_run(run)
+                    await self._emit_event(RunEvents.ERROR, run)
 
                 self._runs[run.id] = run
                 recovered += 1
