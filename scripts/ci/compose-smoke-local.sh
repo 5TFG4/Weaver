@@ -24,7 +24,8 @@ Options:
   -h, --help          Show this help message.
 
 Environment:
-  COMPOSE_PROJECT_NAME   Optional project name override for docker compose.
+  COMPOSE_PROJECT_NAME   Optional project name override for docker compose
+                         (default: weaver_smoke).
 USAGE
 }
 
@@ -68,10 +69,13 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+: "${COMPOSE_PROJECT_NAME:=weaver_smoke}"
+COMPOSE_ARGS=(-p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE")
+
 teardown() {
   if [[ "$KEEP_UP" -eq 0 ]]; then
     log "Teardown compose stack"
-    docker compose -f "$COMPOSE_FILE" down -v || true
+    docker compose "${COMPOSE_ARGS[@]}" down -v || true
   fi
 }
 trap teardown EXIT
@@ -84,23 +88,23 @@ sed -i 's|^ALPACA_PAPER_API_KEY=.*|ALPACA_PAPER_API_KEY=|' "$ENV_FILE"
 sed -i 's|^ALPACA_PAPER_API_SECRET=.*|ALPACA_PAPER_API_SECRET=|' "$ENV_FILE"
 
 log "Validate compose config"
-docker compose -f "$COMPOSE_FILE" config >/dev/null
+docker compose "${COMPOSE_ARGS[@]}" config
 
 if [[ "$NO_BUILD" -eq 0 ]]; then
   log "Build backend/frontend images"
-  docker compose -f "$COMPOSE_FILE" build backend frontend
+  docker compose "${COMPOSE_ARGS[@]}" build backend frontend
 else
   log "Skip build (requested)"
 fi
 
 log "Start database"
-docker compose -f "$COMPOSE_FILE" up -d db
+docker compose "${COMPOSE_ARGS[@]}" up -d db
 
 log "Run DB migrations"
-docker compose -f "$COMPOSE_FILE" run --rm backend alembic upgrade head
+docker compose "${COMPOSE_ARGS[@]}" run --rm backend alembic upgrade head
 
 log "Start app services"
-docker compose -f "$COMPOSE_FILE" up -d backend frontend
+docker compose "${COMPOSE_ARGS[@]}" up -d backend frontend
 
 source "$ENV_FILE"
 
@@ -125,14 +129,14 @@ wait_http_200() {
 log "Wait for API health"
 if ! wait_http_200 "api" "http://127.0.0.1:${HOST_PORT_PROD}/api/v1/healthz" /tmp/weaver_api_smoke.out; then
   echo "API health check failed"
-  docker compose -f "$COMPOSE_FILE" logs --tail=200 backend db
+  docker compose "${COMPOSE_ARGS[@]}" logs --tail=200 backend db
   exit 1
 fi
 
 log "Wait for frontend"
 if ! wait_http_200 "front" "http://127.0.0.1:${FRONTEND_PORT_PROD}/" /tmp/weaver_front_smoke.out; then
   echo "Frontend smoke check failed"
-  docker compose -f "$COMPOSE_FILE" logs --tail=200 frontend
+  docker compose "${COMPOSE_ARGS[@]}" logs --tail=200 frontend
   exit 1
 fi
 
@@ -141,5 +145,5 @@ cat /tmp/weaver_api_smoke.out
 head -n 5 /tmp/weaver_front_smoke.out
 
 if [[ "$KEEP_UP" -eq 1 ]]; then
-  log "Keep-up enabled; stack left running for inspection"
+  log "Keep-up enabled; stack left running for inspection (project: $COMPOSE_PROJECT_NAME)"
 fi

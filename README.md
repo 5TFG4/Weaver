@@ -125,14 +125,18 @@ scripts/ci/compose-smoke-local.sh --keep-up
 
 # faster rerun if images are already built
 scripts/ci/compose-smoke-local.sh --no-build
+
+# override compose project name (default is weaver_smoke)
+COMPOSE_PROJECT_NAME=my_smoke scripts/ci/compose-smoke-local.sh
 ```
 
 What this script does:
 - prepares `docker/.env` from `docker/example.env` (clears Alpaca keys for smoke)
+- uses isolated compose project `weaver_smoke` by default (override with `COMPOSE_PROJECT_NAME`)
 - validates compose config and builds images
 - starts `db`, runs `alembic upgrade head`, then starts `backend/frontend`
 - checks `GET /api/v1/healthz` and frontend root page for HTTP 200
-- tears down with `docker compose -f docker/docker-compose.yml down -v` (unless `--keep-up`)
+- tears down the same smoke project with `down -v` (unless `--keep-up`)
 
 ## Testing Notes (Important)
 
