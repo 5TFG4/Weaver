@@ -196,16 +196,6 @@ cython_debug/
 # Docker swp files
 setup/*.swp
 
-# TestYard
-TestYard/
-
-# Docker swp files
-setup/
-setup.py
-
-# UserInfo files
-usr/user.json
-
 # log files
 log
 

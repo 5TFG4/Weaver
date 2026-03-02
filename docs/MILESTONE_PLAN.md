@@ -6,7 +6,7 @@
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
 > **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned (CI Deployment)  
-> **Tests (latest verified)**: 933 backend + 90 frontend = 1023 total  
+> **Tests (latest verified)**: 1033 passed (latest local run)  
 > **Remaining Work**: M9 (CI Deployment Pipeline) → M10 (E2E Tests & Release Prep)  
 > **Estimated Total**: ~20–30 new tests remaining (M10), ~2–3 weeks total
 
@@ -17,14 +17,14 @@
 All pending tasks have been consolidated and reorganized into 6 milestones.
 M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is next, followed by M10 (E2E + release prep).
 
-| Milestone | Name               | Core Objective                                         | Tests  | Status               |
-| --------- | ------------------ | ------------------------------------------------------ | ------ | -------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture                  | 74     | ✅ DONE              |
-| **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)  |
-| **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)  |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (1023 total) |
-| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ⏳ PLANNED           |
-| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | ~20–30 | ⏳ PLANNED           |
+| Milestone | Name               | Core Objective                                         | Tests  | Status                                |
+| --------- | ------------------ | ------------------------------------------------------ | ------ | ------------------------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture                  | 74     | ✅ DONE                               |
+| **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)                   |
+| **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)                   |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (historical cumulative: 1023) |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ⏳ PLANNED                            |
+| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | ~20–30 | ⏳ PLANNED                            |
 
 **M6 Complete** (101 tests added):
 
@@ -708,8 +708,8 @@ M10: E2E & Release
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
 | M8        | 129       | 1023       |
-| M9        | -         | 1023       |
-| M10       | ~20–30    | ~1043–1053 |
+| M9        | -         | 1033       |
+| M10       | ~20–30    | ~1053–1063 |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
@@ -727,10 +727,10 @@ M10: E2E & Release
 
 ---
 
-_Last Updated: 2026-02-26_  
+_Last Updated: 2026-03-02_  
 _M7 Formally Closed: 2026-02-19_  
 _M8 Complete: 2026-02-26_  
-_Total Tests: 1023 (933 backend + 90 frontend)_  
+_Total Tests (latest local run): 1033 passed_  
 _M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
 _M9 Scope: CI deployment pipeline + merge gates (~1 week)_
 _M10 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_
