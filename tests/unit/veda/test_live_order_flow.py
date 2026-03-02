@@ -341,10 +341,12 @@ class TestOrderQueries:
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
         sample_intent: OrderIntent,
     ) -> None:
         """get_order() should return order from local state first."""
         from src.veda.veda_service import VedaService
+        from src.walle.models import FillRecord
         
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
@@ -357,9 +359,21 @@ class TestOrderQueries:
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
         
-        await service.place_order(sample_intent)
+        state = await service.place_order(sample_intent)
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-local-get-1",
+                order_id=state.id,
+                price=Decimal("100.00"),
+                quantity=Decimal("1.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
         
         # Should get from local state, not repository
         result = await service.get_order("order-abc")
@@ -367,6 +381,8 @@ class TestOrderQueries:
         assert result is not None
         assert result.client_order_id == "order-abc"
         mock_repository.get_by_client_order_id.assert_not_called()
+        mock_fill_repository.list_by_order.assert_called_once_with(state.id)
+        assert len(result.fills) == 1
 
     async def test_get_order_falls_back_to_repository(
         self,
@@ -660,5 +676,5 @@ class TestHandlePlaceOrderDefaults:
 
         # Verify the OrderIntent passed to place_order had day TIF
         call_args = mock_adapter.submit_order.call_args
-        submitted_intent = call_args[0][0]  # first positional arg
+        submitted_intent = call_args.args[0]
         assert submitted_intent.time_in_force == TimeInForce.DAY

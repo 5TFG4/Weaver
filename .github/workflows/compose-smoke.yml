@@ -47,7 +47,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source docker/.env
+          raw_backend_port="$(docker compose -f docker/docker-compose.yml port --index 1 backend 8000)"
+          HOST_PORT_PROD="${raw_backend_port##*:}"
+          [[ "$HOST_PORT_PROD" =~ ^[0-9]+$ ]] || { echo "Invalid backend host port: $raw_backend_port"; exit 1; }
           for i in {1..60}; do
             code="$(curl -sS -o /tmp/api.out -w "%{http_code}" "http://127.0.0.1:${HOST_PORT_PROD}/api/v1/healthz" || true)"
             if [[ "$code" == "200" ]]; then
@@ -64,7 +66,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source docker/.env
+          raw_frontend_port="$(docker compose -f docker/docker-compose.yml port --index 1 frontend 80)"
+          FRONTEND_PORT_PROD="${raw_frontend_port##*:}"
+          [[ "$FRONTEND_PORT_PROD" =~ ^[0-9]+$ ]] || { echo "Invalid frontend host port: $raw_frontend_port"; exit 1; }
           for i in {1..60}; do
             code="$(curl -sS -o /tmp/front.out -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT_PROD}/" || true)"
             if [[ "$code" == "200" ]]; then

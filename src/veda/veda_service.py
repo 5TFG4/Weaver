@@ -33,7 +33,6 @@ from src.veda.order_manager import OrderManager
 from src.veda.persistence import OrderRepository
 from src.veda.position_tracker import PositionTracker
 from src.walle.models import FillRecord
-from src.walle.repositories.fill_repository import FillRepository
 
 
 class VedaService:
@@ -192,7 +191,7 @@ class VedaService:
         # Check local state first (faster)
         state = self._order_manager.get_order(client_order_id)
         if state is not None:
-            return state
+            return await self._hydrate_fills(state)
 
         # Fall back to repository
         state = await self._repository.get_by_client_order_id(client_order_id)
@@ -218,14 +217,11 @@ class VedaService:
         """
         if run_id:
             states = await self._repository.list_by_run_id(run_id, status=status)
-            hydrated: list[OrderState] = []
-            for state in states:
-                hydrated.append(await self._hydrate_fills(state))
-            return hydrated
+        else:
+            states = self._order_manager.list_orders()
+            if status is not None:
+                states = [state for state in states if state.status == status]
 
-        states = self._order_manager.list_orders()
-        if status is not None:
-            states = [state for state in states if state.status == status]
         hydrated: list[OrderState] = []
         for state in states:
             hydrated.append(await self._hydrate_fills(state))
@@ -346,6 +342,9 @@ class VedaService:
 
         Canonical lookup key is Veda internal order ID (state.id), not
         client_order_id.
+
+        Note: FillRecord does not currently persist commission, so hydrated
+        Fill.commission defaults to Decimal("0") until schema support is added.
         """
         if self._fill_repository is None:
             return state

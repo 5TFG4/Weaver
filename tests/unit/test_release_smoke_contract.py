@@ -1,7 +1,7 @@
-"""Release smoke contract tests for M8-R0 deployment blockers.
+"""Release smoke contract tests for deployment-critical static contracts.
 
-These tests enforce deployment-critical contracts in production compose and
-backend Dockerfile wiring.
+Runtime/dependency wiring is validated by compose smoke execution in CI and
+local scripts. This file keeps only minimal static invariants.
 """
 
 from __future__ import annotations
@@ -27,39 +27,15 @@ def test_prod_compose_backend_uses_canonical_asgi_target() -> None:
     assert "main:app" not in content
 
 
-def test_backend_dockerfile_installs_same_requirements_file_it_copies() -> None:
-    """Backend Dockerfile must copy and install requirements from matching path."""
-    dockerfile_path = _repo_root() / "docker" / "backend" / "Dockerfile"
-    content = dockerfile_path.read_text(encoding="utf-8")
+def test_compose_smoke_workflow_checks_api_and_frontend() -> None:
+    """Compose smoke workflow should validate API and frontend over HTTP."""
+    workflow_path = _repo_root() / ".github" / "workflows" / "compose-smoke.yml"
+    content = workflow_path.read_text(encoding="utf-8")
 
-    assert "COPY docker/backend/requirements.txt /weaver/docker/backend/requirements.txt" in content
-    assert "pip install --no-cache-dir -r /weaver/docker/backend/requirements.txt" in content
-
-
-def test_backend_dockerfile_has_production_cmd() -> None:
-    """Backend Dockerfile must have a proper production CMD (not tail -f)."""
-    dockerfile_path = _repo_root() / "docker" / "backend" / "Dockerfile"
-    content = dockerfile_path.read_text(encoding="utf-8")
-
-    assert "tail" not in content, "Dockerfile CMD should not be 'tail -f /dev/null'"
-    assert "uvicorn" in content, "Dockerfile CMD should use uvicorn for production"
-    assert "weaver:app" in content, "Dockerfile CMD should target weaver:app"
-
-
-def test_backend_dockerfile_exposes_port() -> None:
-    """Backend Dockerfile must EXPOSE the correct port."""
-    dockerfile_path = _repo_root() / "docker" / "backend" / "Dockerfile"
-    content = dockerfile_path.read_text(encoding="utf-8")
-
-    assert "EXPOSE 8000" in content
-
-
-def test_uvicorn_in_production_requirements() -> None:
-    """Production requirements must include uvicorn for ASGI serving."""
-    requirements_path = _repo_root() / "docker" / "backend" / "requirements.txt"
-    content = requirements_path.read_text(encoding="utf-8")
-
-    assert "uvicorn" in content, "uvicorn must be in production requirements"
+    assert "Wait for API health" in content
+    assert "/api/v1/healthz" in content
+    assert "Wait for frontend" in content
+    assert "http://127.0.0.1:${FRONTEND_PORT_PROD}/" in content
 
 
 def test_weaver_entrypoint_exists() -> None:
@@ -70,16 +46,6 @@ def test_weaver_entrypoint_exists() -> None:
     content = weaver_path.read_text(encoding="utf-8")
     assert "create_app" in content, "weaver.py must call create_app()"
     assert "app = " in content, "weaver.py must export 'app'"
-
-
-def test_frontend_dockerfile_has_multistage_build() -> None:
-    """Frontend Dockerfile must have a multi-stage build."""
-    dockerfile_path = _repo_root() / "docker" / "frontend" / "Dockerfile"
-    content = dockerfile_path.read_text(encoding="utf-8")
-
-    assert "AS builder" in content, "Must have builder stage"
-    assert "npm run build" in content, "Must build frontend"
-    assert "nginx" in content.lower(), "Must serve via nginx"
 
 
 def test_nginx_conf_proxies_api() -> None:

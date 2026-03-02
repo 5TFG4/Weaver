@@ -6,6 +6,7 @@ D-3: Fills table + persistence for audit trail.
 
 from datetime import datetime, timezone
 from decimal import Decimal
+import inspect as py_inspect
 from typing import cast
 
 import pytest
@@ -103,9 +104,13 @@ class TestFillRepositoryInterface:
         from src.walle.repositories.fill_repository import FillRepository
 
         assert hasattr(FillRepository, "save")
+        assert callable(getattr(FillRepository, "save"))
+        assert py_inspect.iscoroutinefunction(getattr(FillRepository, "save"))
 
     def test_repository_has_list_by_order_method(self) -> None:
         """FillRepository has an async list_by_order() method."""
         from src.walle.repositories.fill_repository import FillRepository
 
         assert hasattr(FillRepository, "list_by_order")
+        assert callable(getattr(FillRepository, "list_by_order"))
+        assert py_inspect.iscoroutinefunction(getattr(FillRepository, "list_by_order"))

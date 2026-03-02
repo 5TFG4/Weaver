@@ -5,6 +5,7 @@ D-2: Runs table + repository for restart recovery.
 """
 
 from datetime import datetime, timezone
+import inspect as py_inspect
 from typing import Any, cast
 
 import pytest
@@ -107,6 +108,7 @@ class TestRunRepositoryInterface:
 
         assert hasattr(RunRepository, "save")
         assert callable(getattr(RunRepository, "save"))
+        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "save"))
 
     def test_repository_has_get_method(self) -> None:
         """RunRepository has an async get() method."""
@@ -114,6 +116,7 @@ class TestRunRepositoryInterface:
 
         assert hasattr(RunRepository, "get")
         assert callable(getattr(RunRepository, "get"))
+        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "get"))
 
     def test_repository_has_list_method(self) -> None:
         """RunRepository has an async list() method."""
@@ -121,3 +124,4 @@ class TestRunRepositoryInterface:
 
         assert hasattr(RunRepository, "list")
         assert callable(getattr(RunRepository, "list"))
+        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "list"))

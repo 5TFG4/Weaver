@@ -106,7 +106,19 @@ docker compose "${COMPOSE_ARGS[@]}" run --rm backend alembic upgrade head
 log "Start app services"
 docker compose "${COMPOSE_ARGS[@]}" up -d backend frontend
 
-source "$ENV_FILE"
+raw_backend_port="$(docker compose "${COMPOSE_ARGS[@]}" port --index 1 backend 8000)"
+HOST_PORT_PROD="${raw_backend_port##*:}"
+if [[ ! "$HOST_PORT_PROD" =~ ^[0-9]+$ ]]; then
+  echo "Invalid backend host port: $raw_backend_port"
+  exit 1
+fi
+
+raw_frontend_port="$(docker compose "${COMPOSE_ARGS[@]}" port --index 1 frontend 80)"
+FRONTEND_PORT_PROD="${raw_frontend_port##*:}"
+if [[ ! "$FRONTEND_PORT_PROD" =~ ^[0-9]+$ ]]; then
+  echo "Invalid frontend host port: $raw_frontend_port"
+  exit 1
+fi
 
 wait_http_200() {
   local name="$1"
