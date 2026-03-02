@@ -212,6 +212,8 @@ class FillRecord(Base):
     __tablename__ = "fills"
 
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    # Canonical key: Veda internal order ID (OrderState.id), not
+    # client_order_id shown in northbound API responses.
     order_id: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)

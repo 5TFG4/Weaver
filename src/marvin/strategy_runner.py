@@ -141,6 +141,10 @@ class StrategyRunner:
         if action.type == ActionType.FETCH_WINDOW:
             await self._emit_fetch_window(action)
         elif action.type == ActionType.PLACE_ORDER:
+            if action.symbol is None or action.side is None or action.qty is None:
+                raise ValueError(
+                    "PLACE_ORDER action requires symbol, side, and qty"
+                )
             await self._emit_place_request(action)
 
     async def _emit_fetch_window(self, action: StrategyAction) -> None:

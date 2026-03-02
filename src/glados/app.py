@@ -357,6 +357,8 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
 
         token = security.api_token
         if not token:
+            # Intentional: treat enabled-auth + missing token as server
+            # misconfiguration, not an authentication failure.
             return JSONResponse(
                 status_code=500,
                 content={

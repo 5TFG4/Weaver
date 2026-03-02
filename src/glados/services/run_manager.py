@@ -286,22 +286,22 @@ class RunManager:
         """
         if self._strategy_loader is None:
             raise RuntimeError("StrategyLoader required for live/paper run")
-        
-        # 1. Load strategy
-        strategy = self._strategy_loader.load(run.strategy_id)
-        
-        # 2. Create per-run instances (no GretaService for live - uses VedaService)
-        runner = StrategyRunner(
-            strategy=strategy,
-            event_log=self._event_log,
-        )
-        clock = RealtimeClock(timeframe=run.timeframe)
-        
-        # Store context
-        ctx = RunContext(greta=None, runner=runner, clock=clock)
-        self._run_contexts[run.id] = ctx
-        
+
         try:
+            # 1. Load strategy
+            strategy = self._strategy_loader.load(run.strategy_id)
+
+            # 2. Create per-run instances (no GretaService for live - uses VedaService)
+            runner = StrategyRunner(
+                strategy=strategy,
+                event_log=self._event_log,
+            )
+            clock = RealtimeClock(timeframe=run.timeframe)
+
+            # Store context
+            ctx = RunContext(greta=None, runner=runner, clock=clock)
+            self._run_contexts[run.id] = ctx
+
             # 3. Initialize runner
             await runner.initialize(run_id=run.id, symbols=run.symbols)
             

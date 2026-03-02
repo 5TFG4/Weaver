@@ -66,6 +66,17 @@ This appendix is the current contract baseline used for review and remediation.
 - `422 Unprocessable Entity`: Invalid input
 - `503 Service Unavailable`: VedaService not configured (no trading credentials)
 
+### Auth Middleware Behavior
+
+For `/api/v1/**` routes in environments where auth is required:
+
+- Missing/invalid API key or bearer token returns `401 Unauthorized`.
+- If auth is required but `SECURITY_API_TOKEN` is empty/missing, runtime returns
+  `500` with a configuration detail message.
+
+This `500` is intentional and treated as deployment misconfiguration,
+not a user authentication error.
+
 ### List Filtering Contract (M8-R3)
 
 `GET /api/v1/runs` supports:

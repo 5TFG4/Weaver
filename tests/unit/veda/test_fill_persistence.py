@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,6 +22,9 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
+
+if TYPE_CHECKING:
+    from src.veda.veda_service import VedaService
 
 
 # ============================================================================
@@ -132,7 +136,7 @@ class TestVedaServiceFillPersistence:
         return repo
 
     @pytest.fixture
-    def service(self, mock_fill_repo, mock_order_repo) -> "VedaService":
+    def service(self, mock_fill_repo, mock_order_repo) -> VedaService:
         """Create VedaService with mock fills repo."""
         from src.veda.veda_service import VedaService
 

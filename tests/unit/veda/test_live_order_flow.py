@@ -463,6 +463,51 @@ class TestOrderQueries:
         assert len(orders) == 1
         assert orders[0].client_order_id == "order-abc"
 
+    async def test_list_orders_without_run_id_hydrates_fills(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
+        sample_intent: OrderIntent,
+    ) -> None:
+        """list_orders() without run_id should also hydrate persisted fills."""
+        from src.veda.veda_service import VedaService
+        from src.walle.models import FillRecord
+
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=True,
+            exchange_order_id="exch-123",
+            status=OrderStatus.SUBMITTED,
+        )
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+            fill_repository=mock_fill_repository,
+        )
+
+        state = await service.place_order(sample_intent)
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-local-1",
+                order_id=state.id,
+                price=Decimal("100.00"),
+                quantity=Decimal("1.5"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
+
+        orders = await service.list_orders()
+
+        assert len(orders) == 1
+        assert len(orders[0].fills) == 1
+        mock_fill_repository.list_by_order.assert_called_once_with(state.id)
+
     async def test_list_orders_filters_by_run_id(
         self,
         mock_adapter: MagicMock,
@@ -472,8 +517,6 @@ class TestOrderQueries:
     ) -> None:
         """list_orders(run_id=...) should query repository."""
         from src.veda.veda_service import VedaService
-        
-        mock_repository.list_by_run_id.return_value = []
         
         from src.walle.models import FillRecord
 

@@ -2,7 +2,7 @@
 
 > Last updated: 2026-03-02  
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
-> **Current State**: M7 ✅ Closed · M8 ✅ Complete (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 1033 tests (latest local run)
+> **Current State**: M7 ✅ Closed · M8 ✅ Complete (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 1032 tests (latest local run)
 
 ## 1) Entry Layer (Start Here)
 

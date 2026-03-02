@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 import pytest_asyncio
 
 from src.glados.clock.base import ClockTick
@@ -199,6 +200,27 @@ class TestStrategyRunnerOnTick:
         await runner.on_tick(tick)
 
         assert mock_event_log.append.call_count == 2
+
+    async def test_place_order_requires_side_symbol_qty(self) -> None:
+        """PLACE_ORDER action must include symbol, side, and qty."""
+        strategy = DummyStrategy(
+            tick_actions=[
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol="BTC/USD",
+                    side=None,
+                    qty=Decimal("1"),
+                )
+            ]
+        )
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+
+        with pytest.raises(ValueError, match="requires symbol, side, and qty"):
+            await runner.on_tick(make_tick())
 
 
 class TestStrategyRunnerOnDataReady:

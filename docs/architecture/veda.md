@@ -345,6 +345,15 @@ class OrderState:
     updated_at: datetime
 ```
 
+### 5.2.1 Order Identifier Semantics
+
+- `OrderState.id` is Veda's canonical internal order identifier.
+- `client_order_id` is an idempotency key supplied by strategy/API callers.
+- Fill persistence (`fills.order_id`) and fill hydration queries use
+  `OrderState.id` as the join key.
+- Northbound order API responses may expose `client_order_id` as user-facing
+  order `id`; this does not change fill lookup semantics.
+
 ### 5.3 OrderStatus Enum
 
 ```python

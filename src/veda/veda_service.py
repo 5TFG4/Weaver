@@ -214,7 +214,8 @@ class VedaService:
             status: Optional status filter
 
         Returns:
-            List of OrderState
+            List of OrderState with persisted fills hydrated when fill_repository
+            is configured.
         """
         if run_id:
             states = await self._repository.list_by_run_id(run_id, status=status)
@@ -226,7 +227,10 @@ class VedaService:
         states = self._order_manager.list_orders()
         if status is not None:
             states = [state for state in states if state.status == status]
-        return states
+        hydrated: list[OrderState] = []
+        for state in states:
+            hydrated.append(await self._hydrate_fills(state))
+        return hydrated
 
     # =========================================================================
     # Fill Operations (N-03)
@@ -340,6 +344,9 @@ class VedaService:
         Attach persisted fill history to an OrderState.
 
         N-03: Ensures repository round-trip includes order fills.
+
+        Canonical lookup key is Veda internal order ID (state.id), not
+        client_order_id.
         """
         if self._fill_repository is None:
             return state

@@ -588,7 +588,7 @@ class GretaService:
         """Compute win/loss stats from fills using FIFO lot matching."""
         # Group by symbol and process fills chronologically with FIFO matching.
         # This handles same-side sequences and partial fills correctly.
-        from collections import defaultdict
+        from collections import defaultdict, deque
 
         symbol_fills: dict[str, list[SimulatedFill]] = defaultdict(list)
         for fill in self._fills:
@@ -603,8 +603,9 @@ class GretaService:
             ordered_fills = sorted(fills, key=lambda f: (f.timestamp, f.bar_index))
 
             # Each lot: (remaining_qty, entry_price, entry_commission_per_unit)
-            long_lots: list[tuple[Decimal, Decimal, Decimal]] = []
-            short_lots: list[tuple[Decimal, Decimal, Decimal]] = []
+            # Use deque for O(1) FIFO pops from the left during lot matching.
+            long_lots: deque[tuple[Decimal, Decimal, Decimal]] = deque()
+            short_lots: deque[tuple[Decimal, Decimal, Decimal]] = deque()
 
             for fill in ordered_fills:
                 if fill.qty <= Decimal("0"):
@@ -616,7 +617,7 @@ class GretaService:
                 if fill.side == OrderSide.BUY:
                     # Close open shorts first
                     while remaining > Decimal("0") and short_lots:
-                        lot_qty, lot_price, lot_commission_per_unit = short_lots[0]
+                        lot_qty, lot_price, lot_commission_per_unit = short_lots.popleft()
                         matched_qty = min(remaining, lot_qty)
 
                         # Short entry pnl: sell high, buy low
@@ -635,9 +636,7 @@ class GretaService:
                         remaining -= matched_qty
                         lot_qty -= matched_qty
                         if lot_qty > Decimal("0"):
-                            short_lots[0] = (lot_qty, lot_price, lot_commission_per_unit)
-                        else:
-                            short_lots.pop(0)
+                            short_lots.appendleft((lot_qty, lot_price, lot_commission_per_unit))
 
                     # Any unmatched buy opens/extends long
                     if remaining > Decimal("0"):
@@ -647,7 +646,7 @@ class GretaService:
                 else:
                     # Close open longs first
                     while remaining > Decimal("0") and long_lots:
-                        lot_qty, lot_price, lot_commission_per_unit = long_lots[0]
+                        lot_qty, lot_price, lot_commission_per_unit = long_lots.popleft()
                         matched_qty = min(remaining, lot_qty)
 
                         # Long entry pnl: buy low, sell high
@@ -666,9 +665,7 @@ class GretaService:
                         remaining -= matched_qty
                         lot_qty -= matched_qty
                         if lot_qty > Decimal("0"):
-                            long_lots[0] = (lot_qty, lot_price, lot_commission_per_unit)
-                        else:
-                            long_lots.pop(0)
+                            long_lots.appendleft((lot_qty, lot_price, lot_commission_per_unit))
 
                     # Any unmatched sell opens/extends short
                     if remaining > Decimal("0"):
@@ -689,7 +686,12 @@ class GretaService:
             stats.profit_factor = gross_profit / gross_loss
 
     def _compute_risk_metrics(self, stats: BacktestStats) -> None:
-        """Compute Sharpe ratio, Sortino ratio, and max drawdown from equity curve."""
+        """Compute non-annualized Sharpe/Sortino and max drawdown from equity curve.
+
+        Sharpe and Sortino are intentionally computed on per-period returns from
+        the in-sample equity curve. They are not annualized and should be
+        interpreted only relative to runs with the same sampling cadence.
+        """
         if len(self._equity_curve) < 2:
             return
 
@@ -712,11 +714,13 @@ class GretaService:
         variance = sum((r - mean_return) ** 2 for r in returns) / n
         std_return = variance.sqrt() if hasattr(variance, 'sqrt') else Decimal(str(variance ** Decimal("0.5")))
 
-        # Sharpe ratio (assuming risk-free rate = 0 for simplicity)
+        # Sharpe ratio on per-period returns (risk-free rate assumed zero).
+        # NOTE: This value is intentionally non-annualized.
         if std_return > Decimal("0"):
             stats.sharpe_ratio = mean_return / std_return
 
-        # Sortino ratio (downside deviation only)
+        # Sortino ratio on per-period returns (downside deviation only).
+        # NOTE: This value is intentionally non-annualized.
         downside_returns = [r for r in returns if r < Decimal("0")]
         if downside_returns:
             downside_variance = sum(r ** 2 for r in downside_returns) / Decimal(len(downside_returns))

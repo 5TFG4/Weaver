@@ -112,6 +112,9 @@ class BacktestStats:
     annualized_return: Decimal = Decimal("0")
 
     # Risk metrics
+    # NOTE:
+    #   sharpe_ratio and sortino_ratio are computed from per-period equity
+    #   returns and are intentionally non-annualized.
     sharpe_ratio: Decimal | None = None
     sortino_ratio: Decimal | None = None
     max_drawdown: Decimal = Decimal("0")
