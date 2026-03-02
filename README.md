@@ -109,6 +109,31 @@ npm run dev
 - M9: CI deployment pipeline (backend/frontend fast lanes + compose smoke + merge gates)
 - M10: end-to-end Playwright tests + deployment guide + release polish
 
+## Local CI Smoke (Compose)
+
+Run the same smoke flow as `.github/workflows/compose-smoke.yml` locally:
+
+```bash
+scripts/ci/compose-smoke-local.sh
+```
+
+Useful options:
+
+```bash
+# keep db/backend/frontend up for debugging after success
+scripts/ci/compose-smoke-local.sh --keep-up
+
+# faster rerun if images are already built
+scripts/ci/compose-smoke-local.sh --no-build
+```
+
+What this script does:
+- prepares `docker/.env` from `docker/example.env` (clears Alpaca keys for smoke)
+- validates compose config and builds images
+- starts `db`, runs `alembic upgrade head`, then starts `backend/frontend`
+- checks `GET /api/v1/healthz` and frontend root page for HTTP 200
+- tears down with `docker compose -f docker/docker-compose.yml down -v` (unless `--keep-up`)
+
 ## Testing Notes (Important)
 
 - In this workspace, `runTests` is most reliable with:

@@ -34,8 +34,14 @@ jobs:
       - name: Build backend/frontend images
         run: docker compose -f docker/docker-compose.yml build backend frontend
 
-      - name: Start stack
-        run: docker compose -f docker/docker-compose.yml up -d db backend frontend
+      - name: Start database
+        run: docker compose -f docker/docker-compose.yml up -d db
+
+      - name: Run DB migrations
+        run: docker compose -f docker/docker-compose.yml run --rm backend alembic upgrade head
+
+      - name: Start app services
+        run: docker compose -f docker/docker-compose.yml up -d backend frontend
 
       - name: Wait for API health
         shell: bash
