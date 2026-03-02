@@ -21,7 +21,7 @@ ADAPTER_META = {
 
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, AsyncIterator
+from typing import Any, AsyncIterator
 
 # Alpaca SDK imports (lazy imported in connect())
 try:

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import select
@@ -19,9 +18,6 @@ from src.events.log import PostgresEventLog
 from src.events.protocol import Envelope
 from src.walle.database import Database
 from src.walle.models import OutboxEvent
-
-if TYPE_CHECKING:
-    pass
 
 
 pytestmark = [

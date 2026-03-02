@@ -7,14 +7,10 @@ D-2: Used by RunManager for restart recovery.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.walle.models import RunRecord
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class RunRepository:

@@ -7,16 +7,10 @@ D-3: Each fill is an immutable record of order execution.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.walle.models import FillRecord
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class FillRepository:

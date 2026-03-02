@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -16,9 +15,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-
-if TYPE_CHECKING:
-    from src.config import DatabaseConfig
+from src.config import DatabaseConfig
 
 
 class Database:
@@ -28,7 +25,7 @@ class Database:
     Handles engine creation, session management, and cleanup.
     """
 
-    def __init__(self, config: "DatabaseConfig") -> None:
+    def __init__(self, config: DatabaseConfig) -> None:
         """
         Initialize database with configuration.
 

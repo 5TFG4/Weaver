@@ -11,7 +11,7 @@ import importlib.util
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from types import ModuleType
 
 from src.marvin.base_strategy import BaseStrategy
 from src.marvin.exceptions import (
@@ -20,9 +20,6 @@ from src.marvin.exceptions import (
     StrategyNotFoundError,
 )
 from src.marvin.strategy_meta import StrategyMeta
-
-if TYPE_CHECKING:
-    from types import ModuleType
 
 logger = logging.getLogger(__name__)
 

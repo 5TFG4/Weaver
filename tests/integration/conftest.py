@@ -10,18 +10,14 @@ from __future__ import annotations
 import os
 import subprocess
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING
 
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from src.config import DatabaseConfig
 from src.walle.database import Database
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 def _get_database_url() -> str | None:
@@ -130,8 +126,6 @@ async def db_session(
     Each test gets a fresh session with automatic rollback.
     This fixture can be used in any test file that needs database access.
     """
-    from sqlalchemy.ext.asyncio import AsyncSession
-    
     async with AsyncSession(async_engine, expire_on_commit=False) as session:
         yield session
         # Rollback any uncommitted changes

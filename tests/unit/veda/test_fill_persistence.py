@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from src.veda.veda_service import VedaService
 
 from src.veda.models import (
     OrderIntent,
@@ -23,28 +23,38 @@ from src.veda.models import (
     TimeInForce,
 )
 
-if TYPE_CHECKING:
-    from src.veda.veda_service import VedaService
-
 
 # ============================================================================
 # Helpers
 # ============================================================================
 
 
-def _make_intent(**overrides) -> OrderIntent:
+def _make_intent(
+    *,
+    run_id: str = "run-001",
+    client_order_id: str = "client-001",
+    symbol: str = "AAPL",
+    side: OrderSide = OrderSide.BUY,
+    order_type: OrderType = OrderType.MARKET,
+    qty: Decimal = Decimal("10"),
+    limit_price: Decimal | None = None,
+    stop_price: Decimal | None = None,
+    time_in_force: TimeInForce = TimeInForce.DAY,
+    extended_hours: bool = False,
+) -> OrderIntent:
     """Create a test OrderIntent with sensible defaults."""
-    defaults = dict(
-        run_id="run-001",
-        client_order_id="client-001",
-        symbol="AAPL",
-        side=OrderSide.BUY,
-        order_type=OrderType.MARKET,
-        qty=Decimal("10"),
-        time_in_force=TimeInForce.DAY,
+    return OrderIntent(
+        run_id=run_id,
+        client_order_id=client_order_id,
+        symbol=symbol,
+        side=side,
+        order_type=order_type,
+        qty=qty,
+        limit_price=limit_price,
+        stop_price=stop_price,
+        time_in_force=time_in_force,
+        extended_hours=extended_hours,
     )
-    defaults.update(overrides)
-    return OrderIntent(**defaults)
 
 
 def _make_filled_state(intent: OrderIntent) -> OrderState:
@@ -57,13 +67,19 @@ def _make_filled_state(intent: OrderIntent) -> OrderState:
         side=intent.side,
         order_type=intent.order_type,
         qty=intent.qty,
+        limit_price=intent.limit_price,
+        stop_price=intent.stop_price,
         time_in_force=intent.time_in_force,
         status=OrderStatus.FILLED,
         filled_qty=intent.qty,
         filled_avg_price=Decimal("150.00"),
         exchange_order_id="exch-001",
         created_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(timezone.utc),
         filled_at=datetime.now(timezone.utc),
+        cancelled_at=None,
+        reject_reason=None,
+        error_code=None,
     )
 
 

@@ -9,11 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import Any, Callable, Literal
 from uuid import uuid4
-
-if TYPE_CHECKING:
-    pass
 
 
 def _generate_id() -> str:

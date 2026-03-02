@@ -11,13 +11,11 @@ import importlib.util
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from types import ModuleType
+from typing import Any
 
 from src.veda.adapter_meta import AdapterMeta
 from src.veda.interfaces import ExchangeAdapter
-
-if TYPE_CHECKING:
-    from types import ModuleType
 
 logger = logging.getLogger(__name__)
 

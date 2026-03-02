@@ -12,8 +12,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from src.config import WeaverConfig
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
@@ -29,13 +32,8 @@ from src.veda.models import (
 from src.veda.order_manager import OrderManager
 from src.veda.persistence import OrderRepository
 from src.veda.position_tracker import PositionTracker
-
-if TYPE_CHECKING:
-    from src.config import WeaverConfig
-    from src.events.log import EventLog
-    from src.walle.models import FillRecord
-    from src.walle.repositories.fill_repository import FillRepository
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from src.walle.models import FillRecord
+from src.walle.repositories.fill_repository import FillRepository
 
 
 class VedaService:

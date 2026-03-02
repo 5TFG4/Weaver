@@ -10,22 +10,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import AsyncIterator
 
-if TYPE_CHECKING:
-    from src.veda.models import (
-        AccountInfo,
-        Bar,
-        OrderIntent,
-        OrderSide,
-        OrderStatus,
-        OrderType,
-        Position,
-        Quote,
-        Trade,
-    )
-
-from src.veda.models import OrderSide, OrderStatus, OrderType
+from src.veda.models import (
+    AccountInfo,
+    Bar,
+    OrderIntent,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    Position,
+    Quote,
+    Trade,
+)
 
 
 # =============================================================================

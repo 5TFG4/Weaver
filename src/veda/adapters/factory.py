@@ -6,14 +6,10 @@ Factory functions for creating exchange adapters from configuration.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from src.config import AlpacaCredentials
 from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.adapters.mock_adapter import MockExchangeAdapter
-
-if TYPE_CHECKING:
-    from src.config import AlpacaCredentials
-    from src.veda.interfaces import ExchangeAdapter
+from src.veda.interfaces import ExchangeAdapter
 
 
 def create_alpaca_adapter(credentials: "AlpacaCredentials") -> AlpacaAdapter:

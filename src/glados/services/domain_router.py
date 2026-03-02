@@ -6,14 +6,10 @@ Strategy events are mode-agnostic; the router determines
 whether to route to backtest or live handlers.
 """
 
-from typing import TYPE_CHECKING
-
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.glados.schemas import RunMode
-
-if TYPE_CHECKING:
-    from src.events.log import EventLog
-    from src.glados.services.run_manager import RunManager
+from src.glados.services.run_manager import RunManager
 
 
 # Mapping from strategy event types to routed event types

@@ -7,14 +7,10 @@ Mode-agnostic: doesn't know if backtest or live.
 
 import logging
 
-from typing import TYPE_CHECKING
-
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.glados.task_utils import spawn_tracked_task
 from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
-
-if TYPE_CHECKING:
-    from src.events.log import EventLog
 
 
 logger = logging.getLogger(__name__)

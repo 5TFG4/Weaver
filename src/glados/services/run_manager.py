@@ -15,9 +15,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import uuid4
 
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.events.types import RunEvents
 from src.glados.clock.backtest import BacktestClock
@@ -26,13 +27,10 @@ from src.glados.clock.realtime import RealtimeClock
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.greta.greta_service import GretaService
+from src.marvin.strategy_loader import StrategyLoader
 from src.marvin.strategy_runner import StrategyRunner
-
-if TYPE_CHECKING:
-    from src.events.log import EventLog
-    from src.marvin.strategy_loader import StrategyLoader
-    from src.walle.repositories.bar_repository import BarRepository
-    from src.walle.repositories.run_repository import RunRepository
+from src.walle.repositories.bar_repository import BarRepository
+from src.walle.repositories.run_repository import RunRepository
 
 
 @dataclass

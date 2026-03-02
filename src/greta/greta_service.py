@@ -10,9 +10,9 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.glados.task_utils import spawn_tracked_task
 from src.greta.fill_simulator import DefaultFillSimulator
@@ -25,10 +25,7 @@ from src.greta.models import (
 )
 from src.veda.models import OrderIntent, OrderSide, OrderStatus
 from src.veda.models import OrderType, TimeInForce
-
-if TYPE_CHECKING:
-    from src.events.log import EventLog
-    from src.walle.repositories.bar_repository import Bar, BarRepository
+from src.walle.repositories.bar_repository import Bar, BarRepository
 
 
 logger = logging.getLogger(__name__)

@@ -7,12 +7,8 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from fastapi import FastAPI
-
-if TYPE_CHECKING:
-    from src.config import WeaverConfig
+from src.config import WeaverConfig
 
 
 class TestCreateApp:

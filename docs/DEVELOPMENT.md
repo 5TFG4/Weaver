@@ -215,6 +215,27 @@ We use **sideloadable modules** instead of inline mocks for better reusability:
 4. **Type Hints**: Required on all public functions
 5. **Docstrings**: Required on all public classes/functions
 
+### TYPE_CHECKING Policy
+
+Default rule: **prefer direct imports** for typed symbols. Do **not** add `if TYPE_CHECKING:` by default.
+
+Use `TYPE_CHECKING` only when at least one of the following is true:
+
+1. **Import cycle prevention**: direct type import creates a circular import at runtime.
+2. **Type-only symbol not available at runtime**: symbol exists only in stubs / typing context.
+3. **Import side-effects or heavy startup cost**: module is expensive or has side effects and is needed only for annotations.
+
+When `TYPE_CHECKING` is used:
+
+- Keep runtime behavior unchanged (no business logic inside `if TYPE_CHECKING:`).
+- Keep annotations compatible with runtime (string annotations or postponed evaluation as needed).
+- Add a brief note near the block explaining which of the three cases applies.
+
+When none of the three cases applies:
+
+- Replace type-only guarded imports with direct imports.
+- Remove empty `if TYPE_CHECKING:` blocks and unused `TYPE_CHECKING` imports.
+
 ## 7. Anti-Patterns to Avoid
 
 | Don't                       | Do                                       |

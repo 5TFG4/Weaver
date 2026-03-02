@@ -7,10 +7,7 @@ Exception hierarchy for Veda module errors.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.veda.models import OrderStatus
+from src.veda.models import OrderStatus
 
 
 class VedaError(Exception):

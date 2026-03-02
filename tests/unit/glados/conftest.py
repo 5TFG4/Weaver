@@ -7,15 +7,11 @@ Provides shared fixtures for GLaDOS API testing.
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import TYPE_CHECKING
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-if TYPE_CHECKING:
-    from fastapi import FastAPI
-
-    from src.config import WeaverConfig
+from src.config import WeaverConfig
 
 
 @pytest.fixture

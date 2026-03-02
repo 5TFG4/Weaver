@@ -11,14 +11,12 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import sqlalchemy as sa
 
 from .protocol import Envelope, Subscription
-
-if TYPE_CHECKING:
-    from .types import AsyncConnectionPool
+from .types import AsyncConnectionPool
 
 logger = logging.getLogger(__name__)
 

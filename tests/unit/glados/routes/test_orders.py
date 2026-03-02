@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 
 from src.veda.models import (
     OrderSide,
@@ -21,9 +21,6 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
-if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
 
 
 # =============================================================================

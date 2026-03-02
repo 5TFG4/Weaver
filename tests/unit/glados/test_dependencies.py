@@ -4,13 +4,11 @@ Unit tests for GLaDOS dependency injection.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
-
-if TYPE_CHECKING:
-    from fastapi import Request
+from fastapi import Request
 
 from src.glados.dependencies import (
     get_broadcaster,
@@ -24,11 +22,11 @@ from src.glados.dependencies import (
 )
 
 
-def create_mock_request(app: MagicMock) -> "Request":
+def create_mock_request(app: MagicMock) -> Request:
     """Create a mock request with app.state access."""
     request = MagicMock()
     request.app = app
-    return cast("Request", request)
+    return cast(Request, request)
 
 
 class TestGetSettings:

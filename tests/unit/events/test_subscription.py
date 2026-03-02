@@ -7,16 +7,13 @@ TDD Phase: RED (Tests written before implementation)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 from unittest.mock import AsyncMock
 
 import pytest
 
 from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
-
-if TYPE_CHECKING:
-    pass
 
 
 class TestEventLogSubscription:
