@@ -286,6 +286,8 @@ class RunManager:
         """
         if self._strategy_loader is None:
             raise RuntimeError("StrategyLoader required for live/paper run")
+        if self._event_log is None:
+            raise RuntimeError("EventLog required for live/paper run")
 
         try:
             # 1. Load strategy
@@ -455,12 +457,16 @@ class RunManager:
                 if record.id in self._runs:
                     continue
 
+                symbols: list[str] = []
+                if isinstance(record.symbols, list):
+                    symbols = [s for s in record.symbols if isinstance(s, str)]
+
                 run = Run(
                     id=record.id,
                     strategy_id=record.strategy_id,
                     mode=RunMode(record.mode),
                     status=RunStatus(record.status),
-                    symbols=record.symbols or [],
+                    symbols=symbols,
                     timeframe=record.timeframe or "1h",
                     config=record.config,
                     created_at=record.created_at,

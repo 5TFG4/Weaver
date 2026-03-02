@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from src.events.protocol import Envelope
 from src.veda.interfaces import ExchangeAdapter
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from src.events.log import EventLog
     from src.walle.models import FillRecord
     from src.walle.repositories.fill_repository import FillRepository
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class VedaService:
@@ -374,7 +375,7 @@ class VedaService:
 def create_veda_service(
     adapter: ExchangeAdapter,
     event_log: "EventLog",
-    session_factory: Callable[[], Any],
+    session_factory: "async_sessionmaker[AsyncSession]",
     config: "WeaverConfig",
 ) -> VedaService:
     """

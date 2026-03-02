@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.glados.schemas import RunCreate, RunMode, RunStatus
+from src.glados.services.run_manager import RunManager
 
 
 # ============================================================================
@@ -22,9 +23,9 @@ from src.glados.schemas import RunCreate, RunMode, RunStatus
 # ============================================================================
 
 
-def _make_run_create(**overrides) -> RunCreate:
+def _make_run_create(**overrides: Any) -> RunCreate:
     """Create a RunCreate request with defaults."""
-    defaults = dict(
+    defaults: dict[str, Any] = dict(
         strategy_id="sma",
         mode=RunMode.BACKTEST,
         symbols=["AAPL"],
@@ -76,7 +77,7 @@ class TestRunManagerPersistence:
         return repo
 
     @pytest.fixture
-    def manager(self, mock_run_repo) -> "RunManager":
+    def manager(self, mock_run_repo: AsyncMock) -> RunManager:
         """Create RunManager with mock repository."""
         from src.glados.services.run_manager import RunManager
 

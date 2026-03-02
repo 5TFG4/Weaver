@@ -6,6 +6,7 @@ Provides shared fixtures for GLaDOS API testing.
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from typing import TYPE_CHECKING
 
 import pytest
@@ -36,7 +37,7 @@ def app(test_settings: WeaverConfig) -> FastAPI:
 
 
 @pytest.fixture
-def client(app: FastAPI) -> TestClient:
+def client(app: FastAPI) -> Generator[TestClient, None, None]:
     """Synchronous test client for HTTP requests.
     
     Uses context manager to trigger app lifespan events,
