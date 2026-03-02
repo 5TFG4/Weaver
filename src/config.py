@@ -264,7 +264,7 @@ def get_test_config() -> WeaverConfig:
             paper_api_secret="test_paper_secret",
         ),
         security=SecurityConfig(
-            auth_required=False,
+            auth_required=True,
             api_token="test-token",
         ),
     )

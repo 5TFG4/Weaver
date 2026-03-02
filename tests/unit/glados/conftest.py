@@ -46,6 +46,9 @@ def client(app: FastAPI) -> TestClient:
     from tests.factories.runs import create_run_manager_with_deps
 
     with TestClient(app) as client:
+        security = app.state.settings.security
+        client.headers[security.api_key_header] = security.api_token
+
         # Replace RunManager with one that has all deps mocked,
         # so routes like POST /runs/{id}/start actually work.
         app.state.run_manager = create_run_manager_with_deps(
