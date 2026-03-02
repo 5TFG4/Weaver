@@ -7,7 +7,6 @@ D-2: Used by RunManager for restart recovery.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select

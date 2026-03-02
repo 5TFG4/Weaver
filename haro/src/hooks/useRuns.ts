@@ -21,14 +21,18 @@ export const runKeys = {
 /**
  * Hook to fetch paginated list of runs
  */
-export function useRuns(params?: {
-  page?: number;
-  page_size?: number;
-  status?: string;
-}) {
+export function useRuns(
+  params?: {
+    page?: number;
+    page_size?: number;
+    status?: string;
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery<RunListResponse>({
     queryKey: runKeys.list(params),
     queryFn: () => fetchRuns(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

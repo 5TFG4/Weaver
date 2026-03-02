@@ -11,7 +11,7 @@
 > **Purpose**: Quality gate closeout for M8 (all phases complete)  
 > **Status**: M8 ✅ Complete (all R0/R1/R2/R3 phases delivered and verified)
 
-> **Closeout Note (2026-02-26)**: All M8 phases complete. R0 deployment blockers resolved (gunicorn added, Dockerfile CMD fixed, smoke tests added). Sections 2–8 retained as audit baseline. Next milestone: M9 (E2E Tests).
+> **Closeout Note (2026-02-26)**: All M8 phases complete. R0 deployment blockers resolved (replaced gunicorn command with uvicorn, Dockerfile CMD fixed, smoke tests added). Sections 2–8 retained as audit baseline. Next milestone: M9 (E2E Tests).
 
 ---
 
@@ -439,7 +439,7 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 - [x] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
 - [x] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
-- [x] **M-07**: Removed unused `/runs/:runId` route from App.tsx
+- [x] **M-07**: Kept `/runs/:runId` deep-link route and wired `useParams` handling in RunsPage
 - [x] **N-03**: Add Fills table + persist fill history (D-3) — FillRecord, FillRepository, VedaService wiring, migration
 - [x] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
 - [x] **N-06**: Add `run_id` query param to SSE endpoint (D-5)

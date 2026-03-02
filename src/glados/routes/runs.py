@@ -6,8 +6,6 @@ REST endpoints for run management.
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.glados.dependencies import get_run_manager

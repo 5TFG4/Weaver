@@ -212,7 +212,7 @@ class FillRecord(Base):
     __tablename__ = "fills"
 
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
-    order_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    order_id: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     side: Mapped[str] = mapped_column(String(10), nullable=False)  # buy | sell

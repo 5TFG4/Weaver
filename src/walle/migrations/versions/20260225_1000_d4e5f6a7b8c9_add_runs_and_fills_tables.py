@@ -58,13 +58,11 @@ def upgrade() -> None:
         sa.Column("exchange_fill_id", sa.String(100), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_fills_order_id", "fills", ["order_id"])
     op.create_index("idx_fills_order_filled", "fills", ["order_id", "filled_at"])
 
 
 def downgrade() -> None:
     op.drop_index("idx_fills_order_filled", table_name="fills")
-    op.drop_index("ix_fills_order_id", table_name="fills")
     op.drop_table("fills")
 
     op.drop_index("idx_runs_status_created", table_name="runs")

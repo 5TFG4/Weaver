@@ -27,7 +27,10 @@ export function RunsPage() {
   const isDeepLink = Boolean(runId);
 
   const [showForm, setShowForm] = useState(false);
-  const runsQuery = useRuns({ page: 1, page_size: 50 });
+  const runsQuery = useRuns(
+    { page: 1, page_size: 50 },
+    { enabled: !isDeepLink },
+  );
   const runQuery = useRun(runId ?? "");
   const createRunMutation = useCreateRun();
   const stopRunMutation = useStopRun();

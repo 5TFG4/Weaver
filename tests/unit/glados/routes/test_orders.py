@@ -7,7 +7,6 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -160,7 +159,7 @@ class TestListOrdersVedaPath:
 
         client.get("/api/v1/orders?run_id=run-x")
 
-        mock_veda.list_orders.assert_called_once_with(run_id="run-x")
+        mock_veda.list_orders.assert_called_once_with(run_id="run-x", status=None)
 
         client.app.state.veda_service = None  # type: ignore[union-attr]
 

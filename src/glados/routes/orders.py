@@ -160,10 +160,7 @@ async def list_orders(
     """
     if veda_service is not None:
         state_status = VedaOrderStatus(status.value) if status is not None else None
-        if state_status is None:
-            states = await veda_service.list_orders(run_id=run_id)
-        else:
-            states = await veda_service.list_orders(run_id=run_id, status=state_status)
+        states = await veda_service.list_orders(run_id=run_id, status=state_status)
         total = len(states)
         start = (page - 1) * page_size
         end = start + page_size

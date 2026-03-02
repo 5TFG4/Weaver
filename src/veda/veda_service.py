@@ -10,6 +10,7 @@ Main entry point for Veda module. Orchestrates:
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -344,7 +345,7 @@ class VedaService:
             return state
 
         fill_records = await self._fill_repository.list_by_order(state.id)
-        state.fills = [
+        fills = [
             Fill(
                 id=record.id,
                 order_id=record.order_id,
@@ -355,7 +356,7 @@ class VedaService:
             )
             for record in fill_records
         ]
-        return state
+        return replace(state, fills=fills)
 
 
 # =============================================================================

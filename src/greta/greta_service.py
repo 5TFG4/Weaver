@@ -575,9 +575,9 @@ class GretaService:
         return stats
 
     def _compute_trade_stats(self, stats: BacktestStats) -> None:
-        """Compute win/loss stats from paired buy/sell fills."""
-        # Pair fills into round-trip trades: buy→sell or sell→buy
-        # Group by symbol, pair in order
+        """Compute win/loss stats from fills using FIFO lot matching."""
+        # Group by symbol and process fills chronologically with FIFO matching.
+        # This handles same-side sequences and partial fills correctly.
         from collections import defaultdict
 
         symbol_fills: dict[str, list[SimulatedFill]] = defaultdict(list)
@@ -589,31 +589,82 @@ class GretaService:
         wins: list[Decimal] = []
         losses: list[Decimal] = []
 
-        for symbol, fills in symbol_fills.items():
-            i = 0
-            while i + 1 < len(fills):
-                entry = fills[i]
-                exit_ = fills[i + 1]
+        for fills in symbol_fills.values():
+            ordered_fills = sorted(fills, key=lambda f: (f.timestamp, f.bar_index))
 
-                # Calculate P&L for this round-trip
-                if entry.side == OrderSide.BUY:
-                    pnl = (exit_.fill_price - entry.fill_price) * entry.qty
+            # Each lot: (remaining_qty, entry_price, entry_commission_per_unit)
+            long_lots: list[tuple[Decimal, Decimal, Decimal]] = []
+            short_lots: list[tuple[Decimal, Decimal, Decimal]] = []
+
+            for fill in ordered_fills:
+                if fill.qty <= Decimal("0"):
+                    continue
+
+                remaining = fill.qty
+                fill_commission_per_unit = fill.commission / fill.qty
+
+                if fill.side == OrderSide.BUY:
+                    # Close open shorts first
+                    while remaining > Decimal("0") and short_lots:
+                        lot_qty, lot_price, lot_commission_per_unit = short_lots[0]
+                        matched_qty = min(remaining, lot_qty)
+
+                        # Short entry pnl: sell high, buy low
+                        pnl = (lot_price - fill.fill_price) * matched_qty
+                        pnl -= (lot_commission_per_unit + fill_commission_per_unit) * matched_qty
+
+                        if pnl > Decimal("0"):
+                            stats.winning_trades += 1
+                            gross_profit += pnl
+                            wins.append(pnl)
+                        elif pnl < Decimal("0"):
+                            stats.losing_trades += 1
+                            gross_loss += abs(pnl)
+                            losses.append(pnl)
+
+                        remaining -= matched_qty
+                        lot_qty -= matched_qty
+                        if lot_qty > Decimal("0"):
+                            short_lots[0] = (lot_qty, lot_price, lot_commission_per_unit)
+                        else:
+                            short_lots.pop(0)
+
+                    # Any unmatched buy opens/extends long
+                    if remaining > Decimal("0"):
+                        long_lots.append(
+                            (remaining, fill.fill_price, fill_commission_per_unit)
+                        )
                 else:
-                    pnl = (entry.fill_price - exit_.fill_price) * entry.qty
+                    # Close open longs first
+                    while remaining > Decimal("0") and long_lots:
+                        lot_qty, lot_price, lot_commission_per_unit = long_lots[0]
+                        matched_qty = min(remaining, lot_qty)
 
-                # Account for commissions
-                pnl -= entry.commission + exit_.commission
+                        # Long entry pnl: buy low, sell high
+                        pnl = (fill.fill_price - lot_price) * matched_qty
+                        pnl -= (lot_commission_per_unit + fill_commission_per_unit) * matched_qty
 
-                if pnl > Decimal("0"):
-                    stats.winning_trades += 1
-                    gross_profit += pnl
-                    wins.append(pnl)
-                elif pnl < Decimal("0"):
-                    stats.losing_trades += 1
-                    gross_loss += abs(pnl)
-                    losses.append(pnl)
+                        if pnl > Decimal("0"):
+                            stats.winning_trades += 1
+                            gross_profit += pnl
+                            wins.append(pnl)
+                        elif pnl < Decimal("0"):
+                            stats.losing_trades += 1
+                            gross_loss += abs(pnl)
+                            losses.append(pnl)
 
-                i += 2
+                        remaining -= matched_qty
+                        lot_qty -= matched_qty
+                        if lot_qty > Decimal("0"):
+                            long_lots[0] = (lot_qty, lot_price, lot_commission_per_unit)
+                        else:
+                            long_lots.pop(0)
+
+                    # Any unmatched sell opens/extends short
+                    if remaining > Decimal("0"):
+                        short_lots.append(
+                            (remaining, fill.fill_price, fill_commission_per_unit)
+                        )
 
         total_round_trips = stats.winning_trades + stats.losing_trades
         if total_round_trips > 0:
