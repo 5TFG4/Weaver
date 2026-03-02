@@ -33,6 +33,7 @@ from src.veda.order_manager import OrderManager
 from src.veda.persistence import OrderRepository
 from src.veda.position_tracker import PositionTracker
 from src.walle.models import FillRecord
+from src.walle.repositories.fill_repository import FillRepository
 
 
 class VedaService:
@@ -60,7 +61,7 @@ class VedaService:
         event_log: "EventLog",
         repository: OrderRepository,
         config: "WeaverConfig",
-        fill_repository: "FillRepository | None" = None,
+        fill_repository: FillRepository | None = None,
     ) -> None:
         """
         Initialize VedaService.
@@ -387,8 +388,6 @@ def create_veda_service(
     Returns:
         Configured VedaService instance
     """
-    from src.walle.repositories.fill_repository import FillRepository
-
     repository = OrderRepository(session_factory)
     fill_repository = FillRepository(session_factory)
     return VedaService(
