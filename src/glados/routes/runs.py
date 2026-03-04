@@ -36,7 +36,11 @@ def _run_to_response(run: Run) -> RunResponse:
 async def list_runs(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
-    status: RunStatus | None = Query(default=None, description="Optional status filter"),
+    run_status: RunStatus | None = Query(
+        default=None,
+        alias="status",
+        description="Optional status filter",
+    ),
     run_manager: RunManager = Depends(get_run_manager),
 ) -> RunListResponse:
     """
@@ -44,7 +48,7 @@ async def list_runs(
 
     N-10: Accepts page and page_size query params.
     """
-    runs, total = await run_manager.list(status=status)
+    runs, total = await run_manager.list(status=run_status)
     # Apply pagination
     start = (page - 1) * page_size
     end = start + page_size

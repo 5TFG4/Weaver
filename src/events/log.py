@@ -148,7 +148,7 @@ class InMemoryEventLog(EventLog):
             self._events.append(envelope)
 
         # Notify legacy subscribers (outside lock to prevent deadlock)
-        for callback in self._subscribers:
+        for callback in tuple(self._subscribers):
             try:
                 result = callback(envelope)
                 if asyncio.iscoroutine(result):
@@ -157,7 +157,7 @@ class InMemoryEventLog(EventLog):
                 logger.exception("Subscriber callback failed in InMemoryEventLog")
 
         # Notify filtered subscriptions
-        for sub in self._filtered_subscriptions.values():
+        for sub in tuple(self._filtered_subscriptions.values()):
             if sub.matches(envelope):
                 try:
                     result = sub.callback(envelope)
@@ -389,7 +389,7 @@ class PostgresEventLog(EventLog):
         Errors in individual subscribers are logged but do not block others.
         """
         # Notify legacy subscribers
-        for callback in self._subscribers:
+        for callback in tuple(self._subscribers):
             try:
                 result = callback(envelope)
                 if asyncio.iscoroutine(result):
@@ -398,7 +398,7 @@ class PostgresEventLog(EventLog):
                 logger.exception("Subscriber callback failed in PostgresEventLog")
 
         # Notify filtered subscriptions
-        for sub in self._filtered_subscriptions.values():
+        for sub in tuple(self._filtered_subscriptions.values()):
             if sub.matches(envelope):
                 try:
                     result = sub.callback(envelope)
@@ -457,7 +457,7 @@ class PostgresEventLog(EventLog):
         if events:
             _, envelope = events[0]
             # Notify legacy subscribers
-            for callback in self._subscribers:
+            for callback in tuple(self._subscribers):
                 try:
                     result = callback(envelope)
                     if asyncio.iscoroutine(result):
@@ -466,7 +466,7 @@ class PostgresEventLog(EventLog):
                     logger.exception("Subscriber callback failed in PostgresEventLog")
 
             # Notify filtered subscriptions
-            for sub in self._filtered_subscriptions.values():
+            for sub in tuple(self._filtered_subscriptions.values()):
                 if sub.matches(envelope):
                     try:
                         result = sub.callback(envelope)
