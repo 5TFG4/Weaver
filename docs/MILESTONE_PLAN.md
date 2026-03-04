@@ -5,25 +5,26 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 Active  
-> **Tests**: 808 backend + 86 frontend = 894 total  
-> **Remaining Work**: M8 (Critical Fixes & Improvements) → M9 (E2E Tests)  
-> **Estimated Total**: ~60–80 new tests remaining, ~3 weeks
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned (CI Deployment)  
+> **Tests (latest verified)**: 1033 passed (latest local run)  
+> **Remaining Work**: M9 (CI Deployment Pipeline) → M10 (E2E Tests & Release Prep)  
+> **Estimated Total**: ~20–30 new tests remaining (M10), ~2–3 weeks total
 
 ---
 
 ## Executive Summary
 
-All pending tasks have been consolidated and reorganized into 5 milestones.
-M7 is formally closed as of 2026-02-19. M8 is now the active milestone, focused on critical fixes and code improvements. E2E testing is separated into M9 for cleaner scope and delivery.
+All pending tasks have been consolidated and reorganized into 6 milestones.
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is next, followed by M10 (E2E + release prep).
 
-| Milestone | Name               | Core Objective                            | Tests  | Status              |
-| --------- | ------------------ | ----------------------------------------- | ------ | ------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture     | 74     | ✅ DONE             |
-| **M6**    | Live Trading       | Paper/Live trading flow                   | 101    | ✅ DONE (808 total) |
-| **M7**    | Haro Frontend      | React UI + SSE                            | 86     | ✅ DONE (894 total) |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality | ~40–50 | 🔄 ACTIVE           |
-| **M9**    | E2E & Release Prep | End-to-end tests + Final polish           | ~20–30 | ⏳ PLANNED          |
+| Milestone | Name               | Core Objective                                         | Tests  | Status                                |
+| --------- | ------------------ | ------------------------------------------------------ | ------ | ------------------------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture                  | 74     | ✅ DONE                               |
+| **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)                   |
+| **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)                   |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (historical cumulative: 1023) |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ⏳ PLANNED                            |
+| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | ~20–30 | ⏳ PLANNED                            |
 
 **M6 Complete** (101 tests added):
 
@@ -334,27 +335,27 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
 > **Prerequisite**: M7 ✅  
 > **Estimated Effort**: 1.5–2 weeks  
-> **Status**: 🔄 ACTIVE (started 2026-02-19)  
+> **Status**: ✅ COMPLETE  
 > **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
 
-- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
-- [ ] Design decisions D-1 through D-5 implemented
-- [ ] DomainRouter wired into runtime lifecycle
-- [ ] RunManager dependencies fully injected
-- [ ] Code coverage ≥80%
-- [ ] All TODO/FIXME cleaned up
-- [ ] Documentation complete and accurate
+- [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [x] Design decisions D-1 through D-5 implemented
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected
+- [x] Code coverage ≥80% (pytest-cov: 89.78%)
+- [x] All TODO/FIXME cleaned up
+- [x] Documentation complete and accurate
 
 ### 4.2 MVP Breakdown
 
 | MVP   | Focus                           | Est. Tests | Dependencies | Status |
 | ----- | ------------------------------- | ---------- | ------------ | ------ |
-| M8-P0 | Critical Contract Fixes         | ~15        | -            | ⏳     |
-| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ⏳     |
-| M8-Q  | Code Quality & P1 Fixes         | ~10        | M8-P0        | ⏳     |
-| M8-D  | Documentation                   | -          | M8-P1        | ⏳     |
+| M8-P0 | Critical Contract Fixes         | ~15        | -            | ✅     |
+| M8-P1 | Runtime Wiring (Packages A/B/C) | ~20        | M8-P0        | ✅     |
+| M8-Q  | Code Quality & P1 Fixes         | 17         | M8-P0        | ✅     |
+| M8-D  | Documentation                   | -          | M8-P1        | ✅     |
 
 ### 4.3 Detailed Tasks
 
@@ -363,16 +364,16 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Priority**: Must fix before any other M8 work.
 
 ```
-- [ ] C-01: Fix SSE event casing — align frontend useSSE.ts to PascalCase
+- [x] C-01: Fix SSE event casing — align frontend useSSE.ts to PascalCase
         (run.Started, run.Stopped, run.Completed, run.Error)
-- [ ] C-02: Add POST /api/v1/runs/{run_id}/start route + tests
-- [ ] C-03: Fix health endpoint path — add /api/v1 prefix or adjust frontend
-- [ ] C-04: Unify order read/write to VedaService (fallback to Mock when unconfigured)
-- [ ] N-02: Add error handling to _start_live (copy _start_backtest pattern)
-- [ ] N-09: Unify time_in_force defaults (schema vs handler)
-- [ ] M-01: Add missing events to ALL_EVENT_TYPES
+- [x] C-02: Add POST /api/v1/runs/{run_id}/start route + tests
+- [x] C-03: Fix health endpoint path — add /api/v1 prefix or adjust frontend
+- [x] C-04: Unify order read/write to VedaService (fallback to Mock when unconfigured)
+- [x] N-02: Add error handling to _start_live (copy _start_backtest pattern)
+- [x] N-09: Unify time_in_force defaults (schema vs handler)
+- [x] M-01: Add missing events to ALL_EVENT_TYPES
         (RunEvents.CREATED, RunEvents.COMPLETED, OrderEvents.CREATED)
-- [ ] M-03: Add orders.Cancelled listener to frontend useSSE.ts
+- [x] M-03: Add orders.Cancelled listener to frontend useSSE.ts
 ```
 
 #### M8-P1: Runtime Wiring — Packages A/B/C (~20 tests)
@@ -382,28 +383,28 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Package A — Run Lifecycle (chosen: A2 lifecycle-first):**
 
 ```
-- [ ] Inject RunManager runtime dependencies (strategy_loader, bar_repository)
-- [ ] Per-run cleanup guarantees (stop/complete/error paths)
-- [ ] Integration test: start → run → stop lifecycle
-- [ ] Integration test: error during run → proper cleanup
+- [x] Inject RunManager runtime dependencies (strategy_loader, bar_repository)
+- [x] Per-run cleanup guarantees (stop/complete/error paths)
+- [x] Integration test: start → run → stop lifecycle
+- [x] Integration test: error during run → proper cleanup
 ```
 
 **Package B — Event Pipeline Wiring (chosen: B2, with B1 fallback):**
 
 ```
-- [ ] D-1: Add direct subscriber dispatch in PostgresEventLog.append()
+- [x] D-1: Add direct subscriber dispatch in PostgresEventLog.append()
         (matching InMemoryEventLog behavior for in-process consumers)
-- [ ] D-4: Wire DomainRouter as standalone singleton in app lifespan
-- [ ] Integration test: append event → subscriber fires → SSEBroadcaster receives
-- [ ] Integration test: strategy.FetchWindow → DomainRouter → backtest.FetchWindow
+- [x] D-4: Wire DomainRouter as standalone singleton in app lifespan
+- [x] Integration test: append event → subscriber fires → SSEBroadcaster receives
+- [x] Integration test: strategy.FetchWindow → DomainRouter → backtest.FetchWindow
 ```
 
 **Package C — Data Source Unification (chosen: C1 hard unify):**
 
 ```
-- [ ] Unify orders list/get to VedaService in DB mode
-- [ ] Explicit non-durable semantics in no-DB mode
-- [ ] Integration test: write order → read order (same source)
+- [x] Unify orders list/get to VedaService in DB mode
+- [x] Explicit non-durable semantics in no-DB mode
+- [x] Integration test: write order → read order (same source)
 ```
 
 #### M8-Q: Code Quality & P1 Fixes (~10 tests)
@@ -411,40 +412,40 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 **Code Quality:**
 
 ```
-- [ ] L-01: Delete orphan files (src/models.py, src/constants.py, src/veda/base_api_handler.py)
-- [ ] L-02: Resolve 3 TODO/FIXME comments
-- [ ] M-04: Change SimulatedFill.side from str to OrderSide enum
-- [ ] N-05: Refactor StrategyAction to proper enum/union type
-- [ ] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
-- [ ] Fix Pylance/mypy warnings + strict type checking
-- [ ] Remove unused code
+- [x] L-01: Delete orphan files (src/models.py, src/constants.py, src/veda/base_api_handler.py)
+- [x] L-02: Resolve 3 TODO/FIXME comments
+- [x] M-04: Change SimulatedFill.side from str to OrderSide enum
+- [x] N-05: Refactor StrategyAction to proper enum/union type
+- [x] N-08: Compute advanced backtest stats (Sharpe, Sortino, max drawdown)
+- [x] Fix Pylance/mypy warnings + strict type checking
+- [x] Remove unused code
 ```
 
 **P1 Standalone Fixes:**
 
 ```
-- [ ] N-03: Add Fills table + persist fill history (D-3: separate fills table)
-- [ ] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
-- [ ] N-06: Add run_id query param to SSE endpoint (D-5)
-- [ ] N-10: Implement server-side pagination or remove pagination UI
-- [ ] D-2: Add Runs table for restart recovery
-- [ ] M-07: Either use runId param in RunsPage or remove route
+- [x] N-03: Add Fills table + persist fill history (D-3: separate fills table) ✅ FillRecord + FillRepository + VedaService wiring + migration
+- [x] N-04: Wrap AlpacaAdapter sync SDK in asyncio.to_thread()
+- [x] N-06: Add run_id query param to SSE endpoint (D-5)
+- [x] N-10: Implement server-side pagination or remove pagination UI
+- [x] D-2: Add Runs table for restart recovery ✅ RunRecord + RunRepository + RunManager persistence + recover() + migration
+- [x] M-07: Keep /runs/:runId deep-link route and wire RunsPage useParams handling
 ```
 
 #### M8-D: Documentation
 
 ```
-- [ ] Create docs/architecture/greta.md (promote from milestone doc)
-- [ ] Create docs/architecture/marvin.md (promote from milestone doc)
-- [ ] Create docs/architecture/walle.md (schema, repos, migrations)
-- [ ] Document SSE event wire format
-- [ ] Document error handling strategy (exception hierarchy, HTTP mapping)
-- [ ] Fix ARCHITECTURE.md §5 false claim about SSE run_id filtering
-- [ ] L-04: Fix env var names in veda.md to match config.py
-- [ ] L-05: Update OrderStatus enum docs to include submitting/submitted
-- [ ] Update README with usage instructions
-- [ ] Strategy development guide
-- [ ] Exchange adapter development guide
+- [x] Create docs/architecture/greta.md (promote from milestone doc)
+- [x] Create docs/architecture/marvin.md (promote from milestone doc)
+- [x] Create docs/architecture/walle.md (schema, repos, migrations)
+- [x] Document SSE event wire format (events.md §1.1)
+- [x] Document error handling strategy (api.md §6)
+- [x] Fix ARCHITECTURE.md §5 SSE run_id filtering (now accurate after D-5)
+- [x] L-04: Fix env var names in veda.md to match config.py
+- [x] L-05: Update OrderStatus enum docs to include submitting/submitted
+- [x] Update README with usage instructions
+- [ ] Strategy development guide (deferred to M10-4)
+- [ ] Exchange adapter development guide (deferred to M10-4)
 ```
 
 ### 4.4 Design Decisions (All Locked)
@@ -457,34 +458,124 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 | D-4 | DomainRouter: standalone or inline in RunManager? | **(a)** Separate wired singleton              | 🔒 Locked |
 | D-5 | SSE run_id filtering?                             | **(a)** Yes, via query param                  | 🔒 Locked |
 
+### 4.5 M8-R: Audit Closeout Plan (TDD + MVP, planning only)
+
+> **Purpose**: final closeout of deployment blockers + runtime/doc consistency before M9.  
+> **Style**: TDD + MVP phased execution (RED → GREEN → REFACTOR).  
+> **Detailed plan document**: [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only)  
+> **Audit baseline**: [M8_FINAL_PYRAMID_REVIEW.md](M8_FINAL_PYRAMID_REVIEW.md)
+
+#### 4.5.1 High-Level Phases
+
+| Phase | Focus                                        | Severity | Status |
+| ----- | -------------------------------------------- | -------- | ------ |
+| M8-R0 | Release blockers (compose/docker boot path)  | P0       | ✅     |
+| M8-R1 | Runtime consistency (run status persistence) | P1       | ✅     |
+| M8-R2 | Documentation authority sync                 | P1       | ✅     |
+| M8-R3 | Contract hardening decisions                 | P2       | ✅     |
+
+#### 4.5.2 M8-R Exit Gate (Summary)
+
+- [x] P0 deployment blockers closed and smoke-verified
+- [x] Run state persistence consistency verified by tests
+- [x] Execution-layer docs synchronized and stale markers cleared
+- [x] P2 items either implemented or formally deferred with rationale
+
+#### 4.5.3 M8-R3 Closeout Decisions (2026-02-26)
+
+- R-08 implemented: runs/orders list endpoints now enforce server-side `status` filtering contract (with existing pagination/filter semantics preserved).
+- R-09 implemented: `RunManager` teardown now uses explicit per-run cleanup order (clock stop → `StrategyRunner.cleanup()` → `GretaService.cleanup()` when present).
+
 ---
 
-## 5. M9: E2E Tests & Release Preparation
+## 5. M9: CI Deployment Pipeline
 
-> **Goal**: Full end-to-end test coverage + final release polish  
+> **Goal**: establish stable PR quality gates and container smoke verification before E2E expansion  
 > **Prerequisite**: M8 ✅  
-> **Estimated Effort**: 1–1.5 weeks  
+> **Estimated Effort**: 1 week  
 > **Status**: ⏳ PLANNED
 
 ### 5.1 Exit Gate (Definition of Done)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Full user workflow validated end-to-end
-- [ ] Deployment guide complete
-- [ ] All docs accurate post-M8 changes
+- [ ] Backend CI fast lane is green on PR (`ruff` + `mypy` + unit tests)
+- [ ] Frontend CI fast lane is green on PR (`lint` + `test` + `build`)
+- [ ] Compose smoke workflow runs in CI for docker/runtime-affecting changes
+- [ ] Branch protection requires core CI checks before merge
+- [ ] CI troubleshooting/runbook documented in README or DEVELOPMENT docs
 
 ### 5.2 MVP Breakdown
 
-| MVP  | Focus                 | Est. Tests | Dependencies |
-| ---- | --------------------- | ---------- | ------------ |
-| M9-1 | E2E Setup & Infra     | ~5         | -            |
-| M9-2 | E2E Backtest Flow     | ~8         | M9-1         |
-| M9-3 | E2E Live/Paper Flow   | ~8         | M9-1         |
-| M9-4 | Release Polish & Docs | ~5         | M9-2, M9-3   |
+| MVP  | Focus                              | Est. Tests | Dependencies |
+| ---- | ---------------------------------- | ---------- | ------------ |
+| M9-1 | Backend Fast CI (lint/type/unit)   | -          | -            |
+| M9-2 | Frontend Fast CI (lint/test/build) | -          | M9-1         |
+| M9-3 | Container Smoke CI Integration     | -          | M9-1, M9-2   |
+| M9-4 | Branch Protection + CI Governance  | -          | M9-3         |
 
 ### 5.3 Detailed Tasks
 
-#### M9-1: E2E Test Setup (~5 tests)
+#### M9-1: Backend Fast CI
+
+```
+- [ ] Add/verify backend CI workflow (Python 3.13)
+- [ ] Run ruff + mypy as required checks
+- [ ] Run pytest unit scope (exclude container marker)
+- [ ] Add dependency caching to reduce CI duration
+```
+
+#### M9-2: Frontend Fast CI
+
+```
+- [ ] Add/verify frontend CI workflow (Node 20)
+- [ ] Run npm lint + test + build
+- [ ] Cache npm dependencies
+- [ ] Fail fast on TypeScript or build regressions
+```
+
+#### M9-3: Container Smoke Integration
+
+```
+- [ ] Keep/extend compose-smoke workflow for runtime-affecting PRs
+- [ ] Ensure logs are surfaced as CI artifacts on failure
+- [ ] Validate API health + frontend availability checks in CI
+```
+
+#### M9-4: Branch Protection + Governance
+
+```
+- [ ] Define required checks for PR merge
+- [ ] Document rerun/debug process for failed jobs
+- [ ] Mark optional jobs (e.g., full integration suite) vs required checks
+```
+
+---
+
+## 6. M10: E2E Tests & Release Preparation
+
+> **Goal**: Full end-to-end test coverage + final release polish  
+> **Prerequisite**: M9 ✅  
+> **Estimated Effort**: 1–1.5 weeks  
+> **Status**: ⏳ PLANNED
+
+### 6.1 Exit Gate (Definition of Done)
+
+- [ ] E2E tests pass (Playwright)
+- [ ] Full user workflow validated end-to-end
+- [ ] Deployment guide complete
+- [ ] All docs accurate post-M9 changes
+
+### 6.2 MVP Breakdown
+
+| MVP   | Focus                 | Est. Tests | Dependencies |
+| ----- | --------------------- | ---------- | ------------ |
+| M10-1 | E2E Setup & Infra     | ~5         | -            |
+| M10-2 | E2E Backtest Flow     | ~8         | M10-1        |
+| M10-3 | E2E Live/Paper Flow   | ~8         | M10-1        |
+| M10-4 | Release Polish & Docs | ~5         | M10-2, M10-3 |
+
+### 6.3 Detailed Tasks
+
+#### M10-1: E2E Test Setup (~5 tests)
 
 ```
 - [ ] Configure Playwright (install, config, base helpers)
@@ -494,7 +585,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Health check E2E test
 ```
 
-#### M9-2: E2E Backtest Flow (~8 tests)
+#### M10-2: E2E Backtest Flow (~8 tests)
 
 ```
 - [ ] Create backtest run via UI
@@ -505,7 +596,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Multiple concurrent backtests
 ```
 
-#### M9-3: E2E Live/Paper Flow (~8 tests)
+#### M10-3: E2E Live/Paper Flow (~8 tests)
 
 ```
 - [ ] Create paper run via UI
@@ -516,11 +607,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [ ] Error state displayed correctly
 ```
 
-#### M9-4: Release Polish & Docs (~5 tests)
+#### M10-4: Release Polish & Docs (~5 tests)
 
 ```
 - [ ] Deployment guide (production Docker Compose)
-- [ ] Update all doc test counts post-M8/M9
+- [ ] Update all doc test counts post-M8/M9/M10
 - [ ] Final cross-doc consistency check
 - [ ] Smoke test: fresh deploy → create run → verify
 - [ ] Performance baseline (response times, SSE latency)
@@ -528,7 +619,7 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ---
 
-## 6. Backlog (Deferred Tasks)
+## 7. Backlog (Deferred Tasks)
 
 The following tasks have been incorporated into milestones or deferred:
 
@@ -545,7 +636,7 @@ The following tasks have been incorporated into milestones or deferred:
 | Sharpe ratio                       | greta TODO | M8-Q        |
 | Max drawdown                       | greta TODO | M8-Q        |
 
-### Deferred (M10+)
+### Deferred (M11+)
 
 | Task                             | Reason                              |
 | -------------------------------- | ----------------------------------- |
@@ -557,14 +648,15 @@ The following tasks have been incorporated into milestones or deferred:
 
 ---
 
-## 7. Timeline
+## 8. Timeline
 
 ```
 Week 1-2   │██████████████████████│ M5: Marvin Core          ✅
 Week 3-4   │██████████████████│     M6: Live Trading         ✅
 Week 5-6   │██████████████████│     M7: Haro Frontend        ✅
 Week 7-8   │██████████████████████│ M8: Fixes & Improve      🔄
-Week 9     │████████████│           M9: E2E & Release         ⏳
+Week 9     │████████████│           M9: CI Deployment         ⏳
+Week 10    │████████████│           M10: E2E & Release        ⏳
 ```
 
 ### Key Dependencies
@@ -585,23 +677,27 @@ M7: Haro Frontend ───┤
 M8: Fixes & Improve ─┤
     │                │
     ▼                ▼
-M9: E2E & Release
+M9: CI Deployment
+    │
+    ▼
+M10: E2E & Release
 ```
 
 ---
 
-## 8. Risks & Mitigations
+## 9. Risks & Mitigations
 
 | Risk                           | Probability | Impact | Mitigation                                    |
 | ------------------------------ | ----------- | ------ | --------------------------------------------- |
 | Alpaca API changes             | Low         | High   | Abstraction layer isolation, quick adaptation |
 | Frontend development delay     | Medium      | Medium | Backend can complete first, CLI as fallback   |
+| CI runtime too long            | Medium      | Medium | Split fast lanes + cache + selective triggers |
 | Flaky E2E tests                | Medium      | Low    | Retry mechanism, isolated test environment    |
 | Plugin architecture complexity | Low         | Medium | AST parsing has mature solutions              |
 
 ---
 
-## 9. Success Metrics
+## 10. Success Metrics
 
 ### Test Count
 
@@ -611,8 +707,9 @@ M9: E2E & Release
 | M5        | 74        | 705        |
 | M6        | 101       | 808 ¹      |
 | M7        | 86        | 894        |
-| M8        | ~40–50    | ~934–944   |
-| M9        | ~20–30    | ~954–974   |
+| M8        | 129       | 1023       |
+| M9        | -         | 1033       |
+| M10       | ~20–30    | ~1053–1063 |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
@@ -630,9 +727,10 @@ M9: E2E & Release
 
 ---
 
-_Last Updated: 2026-02-19_  
+_Last Updated: 2026-03-02_  
 _M7 Formally Closed: 2026-02-19_  
-_M8 Active Start: 2026-02-19_  
-_Total Tests: 894 (808 backend + 86 frontend)_  
-_M8 Scope: Critical fixes + Improvements (~40–50 tests, ~1.5–2 weeks)_  
-_M9 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_
+_M8 Complete: 2026-02-26_  
+_Total Tests (latest local run): 1033 passed_  
+_M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
+_M9 Scope: CI deployment pipeline + merge gates (~1 week)_
+_M10 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_

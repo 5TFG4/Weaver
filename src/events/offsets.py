@@ -10,10 +10,9 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from .types import AsyncConnectionPool
+from .types import AsyncConnectionPool
 
 
 class OffsetStore(ABC):

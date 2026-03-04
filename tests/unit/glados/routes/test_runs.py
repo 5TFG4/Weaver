@@ -7,10 +7,7 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient
 
 
 class TestListRunsEndpoint:
@@ -181,3 +178,142 @@ class TestStopRunEndpoint:
         response = client.post("/api/v1/runs/non-existent-id/stop")
 
         assert response.status_code == 404
+
+
+class TestStartRunEndpoint:
+    """Tests for POST /api/v1/runs/{id}/start.
+
+    M8-P0 / C-02: Start route was missing — frontend startRun() had no backend.
+    """
+
+    def test_start_run_returns_200(self, client: TestClient) -> None:
+        """POST /runs/{id}/start should return 200 with RunResponse."""
+        create_resp = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        )
+        run_id = create_resp.json()["id"]
+
+        response = client.post(f"/api/v1/runs/{run_id}/start")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == run_id
+        assert data["status"] == "running"
+
+    def test_start_unknown_run_returns_404(self, client: TestClient) -> None:
+        """POST /runs/{id}/start with unknown ID returns 404."""
+        response = client.post("/api/v1/runs/non-existent-id/start")
+
+        assert response.status_code == 404
+
+    def test_start_already_running_returns_409(self, client: TestClient) -> None:
+        """POST /runs/{id}/start on already-running run returns 409."""
+        create_resp = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        )
+        run_id = create_resp.json()["id"]
+
+        # Start once
+        client.post(f"/api/v1/runs/{run_id}/start")
+
+        # Start again — should be 409
+        response = client.post(f"/api/v1/runs/{run_id}/start")
+
+        assert response.status_code == 409
+
+
+class TestRunsPagination:
+    """N-10/M-02: Server-side pagination for runs."""
+
+    def _create_runs(self, client: TestClient, count: int) -> None:
+        """Helper: create N runs."""
+        for i in range(count):
+            client.post(
+                "/api/v1/runs",
+                json={
+                    "strategy_id": f"strategy-{i}",
+                    "mode": "paper",
+                    "symbols": ["BTC/USD"],
+                },
+            )
+
+    def test_default_pagination(self, client: TestClient) -> None:
+        """GET /runs without params returns page 1 with default page_size."""
+        self._create_runs(client, 3)
+
+        response = client.get("/api/v1/runs")
+        data = response.json()
+
+        assert data["page"] == 1
+        assert data["page_size"] == 20
+        assert len(data["items"]) == 3
+        assert data["total"] == 3
+
+    def test_page_size_limits_results(self, client: TestClient) -> None:
+        """GET /runs with page_size=2 returns at most 2 items."""
+        self._create_runs(client, 5)
+
+        response = client.get("/api/v1/runs?page_size=2")
+        data = response.json()
+
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+        assert data["page"] == 1
+        assert data["page_size"] == 2
+
+    def test_page_offset(self, client: TestClient) -> None:
+        """GET /runs with page=2&page_size=2 returns next slice."""
+        self._create_runs(client, 5)
+
+        response = client.get("/api/v1/runs?page=2&page_size=2")
+        data = response.json()
+
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+        assert data["page"] == 2
+
+
+class TestRunsStatusFiltering:
+    """M8-R3/R-08: status query param contract for run listing."""
+
+    def test_filters_runs_by_status(self, client: TestClient) -> None:
+        """GET /runs?status=running returns only running runs."""
+        # Run A stays running (paper mode)
+        run_a = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "s1",
+                "mode": "paper",
+                "symbols": ["BTC/USD"],
+            },
+        ).json()
+        client.post(f"/api/v1/runs/{run_a['id']}/start")
+
+        # Run B gets stopped
+        run_b = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "s2",
+                "mode": "paper",
+                "symbols": ["ETH/USD"],
+            },
+        ).json()
+        client.post(f"/api/v1/runs/{run_b['id']}/stop")
+
+        response = client.get("/api/v1/runs?status=running")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["status"] == "running"

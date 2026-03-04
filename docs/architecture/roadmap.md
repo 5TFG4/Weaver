@@ -5,7 +5,7 @@
 > **Document Charter**  
 > **Primary role**: high-level phase roadmap and architecture entry-gate framing.  
 > **Authoritative for**: roadmap phases and gate checklist framing only.  
-> **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`).
+> **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`) or latest test counts/coverage (use `../TEST_COVERAGE.md`).
 
 ---
 
@@ -30,9 +30,11 @@
 
 ## 1. Current State
 
+> Snapshot note: values in this section are historical roadmap checkpoints. For latest measured totals and coverage, use `docs/TEST_COVERAGE.md`.
+
 | Component           | Status                | Tests |
 | ------------------- | --------------------- | ----- |
-| Test Infrastructure | ✅ Complete           | 808   |
+| Test Infrastructure | ✅ Complete           | 904   |
 | Events Module       | ✅ Subscription added | 57    |
 | Clock Module        | ✅ Complete           | 93    |
 | Config Module       | ✅ Complete           | 24    |
@@ -41,13 +43,13 @@
 | Greta (backtest)    | ✅ Events wired       | 56    |
 | Marvin (strategy)   | ✅ Plugin complete    | 74    |
 | WallE (bars)        | ✅ Complete           | 16    |
-| Haro (frontend)     | ✅ Complete           | 86    |
+| Haro (frontend)     | ✅ Complete           | 88    |
 
-**Total**: 808 backend + 86 frontend = 894 tests
+**Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-**Active Milestone**: M8 (Critical Fixes & Improvements)
+**Active Milestone**: M9 (CI Deployment Pipeline)
 
-**Last State Update**: 2026-02-19
+**Last State Update**: 2026-02-25
 
 ## 2. Milestones (Revised 2026-02-19)
 
@@ -59,19 +61,21 @@
 | **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)  |
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
-| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | 🔄 ACTIVE           |
-| **M9**    | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
+| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | ✅ COMPLETE         |
+| **M9**    | CI Deployment Pipeline (PR quality gates + container smoke + branch protection)   | ⏳ PLANNED          |
+| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
 
-| Phase | Focus                         | Est. Tests | Status               |
-| ----- | ----------------------------- | ---------- | -------------------- |
-| 1–4   | Foundation → Greta            | 631        | ✅ DONE              |
-| **5** | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
-| **6** | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
-| **7** | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8** | Critical Fixes + Improvements | ~40–50     | 🔄 ACTIVE            |
-| **9** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
+| Phase  | Focus                         | Est. Tests | Status               |
+| ------ | ----------------------------- | ---------- | -------------------- |
+| 1–4    | Foundation → Greta            | 631        | ✅ DONE              |
+| **5**  | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
+| **6**  | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
+| **7**  | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
+| **8**  | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
+| **9**  | CI Deployment Pipeline        | -          | ⏳ PLANNED           |
+| **10** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
 
 ## 4. Architecture Invariants
 
@@ -124,18 +128,25 @@
 - [x] SSE real-time updates working ✅ 2026-02-06
 - [x] 86 new tests (target: 821+) → actual: 894 ✅
 
-### M8 Exit Gate (Fixes & Improvements Complete)
+### M8 Exit Gate (Fixes & Improvements)
 
-- [ ] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
-- [ ] Design decisions D-1–D-5 implemented
-- [ ] DomainRouter wired into runtime lifecycle
-- [ ] RunManager dependencies fully injected
-- [ ] Code coverage ≥80%
-- [ ] All TODO/FIXME cleaned
-- [ ] Documentation complete
-- [ ] ~40–50 new tests (target: 934+)
+- [x] All P0 critical issues resolved (C-01–C-04, N-01/N-02/N-07)
+- [x] Design decisions D-1–D-5 implemented
+- [x] DomainRouter wired into runtime lifecycle
+- [x] RunManager dependencies fully injected
+- [x] Code coverage ≥80% (see `docs/TEST_COVERAGE.md` for latest measured value)
+- [x] All TODO/FIXME cleaned
+- [x] Documentation complete
+- [x] ~96 new tests (target: 934+) → achieved; latest totals tracked in `docs/TEST_COVERAGE.md`
 
-### M9 Exit Gate (E2E & Release Ready)
+### M9 Exit Gate (CI Deployment Ready)
+
+- [ ] Backend fast CI checks are required and stable
+- [ ] Frontend fast CI checks are required and stable
+- [ ] Container smoke workflow integrated for runtime-affecting PRs
+- [ ] Branch protection rules enforce required CI checks
+
+### M10 Exit Gate (E2E & Release Ready)
 
 - [ ] E2E tests pass (Playwright)
 - [ ] Full user workflow validated end-to-end
@@ -205,4 +216,4 @@
 
 ---
 
-_Last updated: 2026-02-06 (M7 complete, 808 backend + 86 frontend = 894 total tests)_
+_Last updated: 2026-02-26 (roadmap snapshot sync; latest live metrics delegated to TEST_COVERAGE.md)_

@@ -10,18 +10,30 @@ Main entry point for Veda module. Orchestrates:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from dataclasses import replace
+from decimal import Decimal
+from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from src.config import WeaverConfig
+from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.veda.interfaces import ExchangeAdapter
-from src.veda.models import OrderIntent, OrderState, OrderStatus, Position
+from src.veda.models import (
+    Fill,
+    OrderIntent,
+    OrderSide,
+    OrderState,
+    OrderStatus,
+    OrderType,
+    Position,
+    TimeInForce,
+)
 from src.veda.order_manager import OrderManager
 from src.veda.persistence import OrderRepository
 from src.veda.position_tracker import PositionTracker
-
-if TYPE_CHECKING:
-    from src.config import WeaverConfig
-    from src.events.log import EventLog
+from src.walle.models import FillRecord
+from src.walle.repositories.fill_repository import FillRepository
 
 
 class VedaService:
@@ -49,6 +61,7 @@ class VedaService:
         event_log: "EventLog",
         repository: OrderRepository,
         config: "WeaverConfig",
+        fill_repository: FillRepository | None = None,
     ) -> None:
         """
         Initialize VedaService.
@@ -58,11 +71,13 @@ class VedaService:
             event_log: EventLog for emitting order events
             repository: OrderRepository for persistence
             config: Application configuration
+            fill_repository: Optional FillRepository for fill audit trail (N-03)
         """
         self._adapter = adapter
         self._event_log = event_log
         self._repository = repository
         self._config = config
+        self._fill_repository = fill_repository
 
         # Internal components
         self._order_manager = OrderManager(adapter)
@@ -177,24 +192,73 @@ class VedaService:
         # Check local state first (faster)
         state = self._order_manager.get_order(client_order_id)
         if state is not None:
-            return state
+            return await self._hydrate_fills(state)
 
         # Fall back to repository
-        return await self._repository.get_by_client_order_id(client_order_id)
+        state = await self._repository.get_by_client_order_id(client_order_id)
+        if state is None:
+            return None
+        return await self._hydrate_fills(state)
 
-    async def list_orders(self, run_id: str | None = None) -> list[OrderState]:
+    async def list_orders(
+        self,
+        run_id: str | None = None,
+        status: OrderStatus | None = None,
+    ) -> list[OrderState]:
         """
         List orders, optionally filtered by run_id.
 
         Args:
             run_id: Optional run ID filter
+            status: Optional status filter
 
         Returns:
-            List of OrderState
+            List of OrderState with persisted fills hydrated when fill_repository
+            is configured.
         """
         if run_id:
-            return await self._repository.list_by_run_id(run_id)
-        return self._order_manager.list_orders()
+            states = await self._repository.list_by_run_id(run_id, status=status)
+        else:
+            states = self._order_manager.list_orders()
+            if status is not None:
+                states = [state for state in states if state.status == status]
+
+        hydrated: list[OrderState] = []
+        for state in states:
+            hydrated.append(await self._hydrate_fills(state))
+        return hydrated
+
+    # =========================================================================
+    # Fill Operations (N-03)
+    # =========================================================================
+
+    async def record_fill(self, fill: "FillRecord") -> None:
+        """
+        Persist a fill record for audit trail.
+
+        No-op when fill_repository is not configured.
+
+        Args:
+            fill: FillRecord to persist
+        """
+        if self._fill_repository is not None:
+            await self._fill_repository.save(fill)
+
+    async def get_fills(self, order_id: str) -> "list[FillRecord]":
+        """
+        Get fills for an order.
+
+        Returns empty list when fill_repository is not configured.
+
+        Args:
+            order_id: The order identifier
+
+        Returns:
+            List of FillRecord
+        """
+        if self._fill_repository is not None:
+            return await self._fill_repository.list_by_order(order_id)
+        return []
 
     # =========================================================================
     # Position Operations
@@ -231,12 +295,12 @@ class VedaService:
             run_id=payload["run_id"],
             client_order_id=payload["client_order_id"],
             symbol=payload["symbol"],
-            side=payload["side"],
-            order_type=payload["order_type"],
-            qty=payload["qty"],
-            limit_price=payload.get("limit_price"),
-            stop_price=payload.get("stop_price"),
-            time_in_force=payload.get("time_in_force", "gtc"),
+            side=OrderSide(payload["side"]),
+            order_type=OrderType(payload["order_type"]),
+            qty=Decimal(str(payload["qty"])),
+            limit_price=Decimal(str(payload["limit_price"])) if payload.get("limit_price") else None,
+            stop_price=Decimal(str(payload["stop_price"])) if payload.get("stop_price") else None,
+            time_in_force=TimeInForce(payload.get("time_in_force", "day")),
         )
         await self.place_order(intent)
 
@@ -271,6 +335,35 @@ class VedaService:
         )
         await self._event_log.append(envelope)
 
+    async def _hydrate_fills(self, state: OrderState) -> OrderState:
+        """
+        Attach persisted fill history to an OrderState.
+
+        N-03: Ensures repository round-trip includes order fills.
+
+        Canonical lookup key is Veda internal order ID (state.id), not
+        client_order_id.
+
+        Note: FillRecord does not currently persist commission, so hydrated
+        Fill.commission defaults to Decimal("0") until schema support is added.
+        """
+        if self._fill_repository is None:
+            return state
+
+        fill_records = await self._fill_repository.list_by_order(state.id)
+        fills = [
+            Fill(
+                id=record.id,
+                order_id=record.order_id,
+                qty=record.quantity,
+                price=record.price,
+                commission=Decimal("0"),
+                timestamp=record.filled_at,
+            )
+            for record in fill_records
+        ]
+        return replace(state, fills=fills)
+
 
 # =============================================================================
 # Factory Functions
@@ -280,7 +373,7 @@ class VedaService:
 def create_veda_service(
     adapter: ExchangeAdapter,
     event_log: "EventLog",
-    session_factory: Callable[[], Any],
+    session_factory: "async_sessionmaker[AsyncSession]",
     config: "WeaverConfig",
 ) -> VedaService:
     """
@@ -296,9 +389,11 @@ def create_veda_service(
         Configured VedaService instance
     """
     repository = OrderRepository(session_factory)
+    fill_repository = FillRepository(session_factory)
     return VedaService(
         adapter=adapter,
         event_log=event_log,
         repository=repository,
         config=config,
+        fill_repository=fill_repository,
     )

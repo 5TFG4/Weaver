@@ -7,13 +7,10 @@ Simulates order fills with slippage and commission for backtesting.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from src.greta.models import FillSimulationConfig, SimulatedFill
 from src.veda.models import OrderIntent, OrderSide, OrderType
-
-if TYPE_CHECKING:
-    from src.walle.repositories.bar_repository import Bar
+from src.walle.repositories.bar_repository import Bar
 
 
 class DefaultFillSimulator:
@@ -66,7 +63,7 @@ class DefaultFillSimulator:
             order_id=intent.client_order_id,
             client_order_id=intent.client_order_id,
             symbol=intent.symbol,
-            side=intent.side.value,
+            side=intent.side,
             qty=intent.qty,
             fill_price=fill_price,
             commission=commission,

@@ -335,3 +335,94 @@ class TestRunManagerEventEmission:
         events = await event_log.read_from(offset=-1, limit=10)
         stopped_events = [e for _, e in events if e.type == RunEvents.STOPPED]
         assert len(stopped_events) == 1  # Only one Stopped event
+
+
+class TestStartLiveErrorHandling:
+    """N-02: _start_live should have error handling matching _start_backtest."""
+
+    async def test_live_start_failure_sets_error_status(self) -> None:
+        """If _start_live raises, run status should be ERROR."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from src.glados.services.run_manager import RunManager
+
+        # Strategy loader that raises during initialize
+        strategy_loader = MagicMock()
+        mock_strategy = MagicMock()
+        mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("connection failed"))
+        strategy_loader.load = MagicMock(return_value=mock_strategy)
+
+        run_manager = RunManager(
+            event_log=AsyncMock(),
+            strategy_loader=strategy_loader,
+        )
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.LIVE,
+            symbols=["AAPL"],
+        )
+        run = await run_manager.create(request)
+
+        with pytest.raises(RuntimeError, match="connection failed"):
+            await run_manager.start(run.id)
+
+        fetched = await run_manager.get(run.id)
+        assert fetched is not None
+        assert fetched.status == RunStatus.ERROR
+
+    async def test_live_start_failure_sets_stopped_at(self) -> None:
+        """If _start_live raises, stopped_at should be set."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from src.glados.services.run_manager import RunManager
+
+        strategy_loader = MagicMock()
+        mock_strategy = MagicMock()
+        mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("oops"))
+        strategy_loader.load = MagicMock(return_value=mock_strategy)
+
+        run_manager = RunManager(
+            event_log=AsyncMock(),
+            strategy_loader=strategy_loader,
+        )
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.LIVE,
+            symbols=["AAPL"],
+        )
+        run = await run_manager.create(request)
+
+        with pytest.raises(RuntimeError):
+            await run_manager.start(run.id)
+
+        fetched = await run_manager.get(run.id)
+        assert fetched is not None
+        assert fetched.stopped_at is not None
+
+    async def test_live_start_failure_cleans_up_context(self) -> None:
+        """If _start_live raises, RunContext should be cleaned up."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from src.glados.services.run_manager import RunManager
+
+        strategy_loader = MagicMock()
+        mock_strategy = MagicMock()
+        mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("boom"))
+        strategy_loader.load = MagicMock(return_value=mock_strategy)
+
+        run_manager = RunManager(
+            event_log=AsyncMock(),
+            strategy_loader=strategy_loader,
+        )
+        request = RunCreate(
+            strategy_id="test_strategy",
+            mode=RunMode.LIVE,
+            symbols=["AAPL"],
+        )
+        run = await run_manager.create(request)
+
+        with pytest.raises(RuntimeError):
+            await run_manager.start(run.id)
+
+        # Context should be cleaned up even after failure
+        assert run.id not in run_manager._run_contexts

@@ -7,31 +7,28 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient
 
 
 class TestHealthEndpoint:
-    """Tests for GET /healthz endpoint."""
+    """Tests for GET /api/v1/healthz endpoint."""
 
     def test_returns_200_ok(self, client: TestClient) -> None:
-        """GET /healthz should return HTTP 200."""
-        response = client.get("/healthz")
+        """GET /api/v1/healthz should return HTTP 200."""
+        response = client.get("/api/v1/healthz")
 
         assert response.status_code == 200
 
     def test_returns_status_ok(self, client: TestClient) -> None:
         """Response should contain status: ok."""
-        response = client.get("/healthz")
+        response = client.get("/api/v1/healthz")
         data = response.json()
 
         assert data["status"] == "ok"
 
     def test_returns_version(self, client: TestClient) -> None:
         """Response should contain version string."""
-        response = client.get("/healthz")
+        response = client.get("/api/v1/healthz")
         data = response.json()
 
         assert "version" in data
@@ -39,7 +36,7 @@ class TestHealthEndpoint:
 
     def test_response_matches_schema(self, client: TestClient) -> None:
         """Response should match HealthResponse schema."""
-        response = client.get("/healthz")
+        response = client.get("/api/v1/healthz")
         data = response.json()
 
         # Should have exactly these fields

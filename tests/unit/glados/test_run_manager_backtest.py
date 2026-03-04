@@ -243,6 +243,10 @@ class TestRunManagerStopWithContext:
         mock_ctx = MagicMock()
         mock_ctx.clock = AsyncMock()
         mock_ctx.clock.stop = AsyncMock()
+        mock_ctx.runner = AsyncMock()
+        mock_ctx.runner.cleanup = AsyncMock()
+        mock_ctx.greta = AsyncMock()
+        mock_ctx.greta.cleanup = AsyncMock()
         manager._run_contexts[run.id] = mock_ctx
 
         return manager, run.id
@@ -267,3 +271,25 @@ class TestRunManagerStopWithContext:
         await manager.stop(run_id)
 
         cast(AsyncMock, ctx.clock.stop).assert_called_once()
+
+    async def test_stop_cleans_runner_subscriptions(
+        self, manager_with_running_run: tuple[RunManager, str]
+    ) -> None:
+        """stop() calls StrategyRunner.cleanup() as explicit contract."""
+        manager, run_id = manager_with_running_run
+        ctx = manager._run_contexts[run_id]
+
+        await manager.stop(run_id)
+
+        cast(AsyncMock, ctx.runner.cleanup).assert_called_once()
+
+    async def test_stop_cleans_greta_subscriptions(
+        self, manager_with_running_run: tuple[RunManager, str]
+    ) -> None:
+        """stop() calls GretaService.cleanup() for backtest contexts."""
+        manager, run_id = manager_with_running_run
+        ctx = manager._run_contexts[run_id]
+
+        await manager.stop(run_id)
+
+        cast(AsyncMock, ctx.greta.cleanup).assert_called_once()

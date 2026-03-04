@@ -80,6 +80,42 @@ class TestEventTypes:
         assert RunEvents.STARTED in ALL_EVENT_TYPES
         assert UIEvents.ORDER_UPDATED in ALL_EVENT_TYPES
 
+    def test_all_event_types_contains_every_defined_constant(self) -> None:
+        """ALL_EVENT_TYPES must contain every event constant from all Event classes.
+
+        M8-P0 / M-01: Prevents drift between defined constants and validation set.
+        Collects all string constants from every *Events class and asserts inclusion.
+        """
+        from src.events.types import (
+            BacktestEvents,
+            DataEvents,
+            MarketEvents,
+        )
+
+        event_classes = [
+            StrategyEvents,
+            LiveEvents,
+            BacktestEvents,
+            DataEvents,
+            MarketEvents,
+            OrderEvents,
+            RunEvents,
+            ClockEvents,
+            UIEvents,
+        ]
+
+        missing: list[str] = []
+        for cls in event_classes:
+            for attr in dir(cls):
+                if attr.startswith("_"):
+                    continue
+                value = getattr(cls, attr)
+                if isinstance(value, str) and "." in value:
+                    if value not in ALL_EVENT_TYPES:
+                        missing.append(f"{cls.__name__}.{attr} = {value!r}")
+
+        assert missing == [], f"Missing from ALL_EVENT_TYPES: {missing}"
+
     def test_event_types_are_unique(self) -> None:
         """All event types should be unique."""
         all_types = list(ALL_EVENT_TYPES)

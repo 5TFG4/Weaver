@@ -76,15 +76,8 @@ class TestClockFixture:
         assert isinstance(tick, ProductionClockTick)
 
     def test_clock_tick_not_redefined_in_fixtures(self) -> None:
-        """ClockTick should be imported from production, not redefined."""
-        import inspect
+        """Fixture ClockTick symbol should be exactly the production ClockTick class."""
+        from src.glados.clock.base import ClockTick as ProductionClockTick
+        from tests.fixtures.clock import ClockTick as FixtureClockTick
 
-        from tests.fixtures import clock as clock_module
-
-        source = inspect.getsource(clock_module)
-
-        # Should NOT contain a class definition for ClockTick
-        # (it should import from src.glados.clock.base instead)
-        assert "class ClockTick" not in source
-        # The import statement should be present
-        assert "from src.glados.clock.base import ClockTick" in source
+        assert FixtureClockTick is ProductionClockTick

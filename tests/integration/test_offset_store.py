@@ -10,15 +10,11 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 
 from src.events.offsets import PostgresOffsetStore
 from src.walle.database import Database
-
-if TYPE_CHECKING:
-    pass
 
 
 pytestmark = [

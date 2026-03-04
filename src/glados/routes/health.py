@@ -10,7 +10,7 @@ from fastapi import APIRouter
 
 from src.glados.schemas import HealthResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1", tags=["health"])
 
 
 @router.get("/healthz", response_model=HealthResponse)

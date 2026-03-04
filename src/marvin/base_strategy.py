@@ -7,6 +7,30 @@ Abstract base class for trading strategies.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
+from enum import Enum
+
+
+class ActionType(str, Enum):
+    """Type of strategy action."""
+
+    FETCH_WINDOW = "fetch_window"
+    PLACE_ORDER = "place_order"
+
+
+class StrategyOrderSide(str, Enum):
+    """Order side for strategy actions."""
+
+    BUY = "buy"
+    SELL = "sell"
+
+
+class StrategyOrderType(str, Enum):
+    """Order type for strategy actions."""
+
+    MARKET = "market"
+    LIMIT = "limit"
+    STOP = "stop"
+    STOP_LIMIT = "stop_limit"
 
 
 @dataclass(frozen=True)
@@ -17,22 +41,22 @@ class StrategyAction:
     Represents either a data request or an order placement.
     
     Attributes:
-        type: Action type - "fetch_window" or "place_order"
+        type: Action type - FETCH_WINDOW or PLACE_ORDER
         symbol: Trading symbol
         lookback: Number of bars to fetch (for fetch_window)
-        side: Order side - "buy" or "sell" (for place_order)
+        side: Order side - BUY or SELL (for place_order)
         qty: Order quantity (for place_order)
-        order_type: Order type - "market", "limit", "stop" (for place_order)
+        order_type: Order type - MARKET, LIMIT, STOP (for place_order)
         limit_price: Limit price (for limit orders)
         stop_price: Stop price (for stop orders)
     """
 
-    type: str
+    type: ActionType
     symbol: str | None = None
     lookback: int | None = None
-    side: str | None = None
+    side: StrategyOrderSide | None = None
     qty: Decimal | None = None
-    order_type: str = "market"
+    order_type: StrategyOrderType = StrategyOrderType.MARKET
     limit_price: Decimal | None = None
     stop_price: Decimal | None = None
 

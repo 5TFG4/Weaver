@@ -13,32 +13,33 @@
 
 This appendix is the current contract baseline used for review and remediation.
 
-| Surface              | Baseline Contract                                   | Current Runtime State                                      |
-| -------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
-| Health               | `GET /healthz`                                      | Implemented and tested at `/healthz` (no `/api/v1` prefix) |
-| Runs start           | `POST /api/v1/runs/{id}/start`                      | **Not implemented yet** (documented target contract)       |
-| Runs stop            | `POST /api/v1/runs/{id}/stop`                       | Implemented                                                |
-| Runs list/create/get | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`    | Implemented                                                |
-| Orders list/get      | `GET /api/v1/orders`, `GET /api/v1/orders/{id}`     | Implemented via mock read path                             |
-| Orders create/cancel | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}` | Implemented via `VedaService`                              |
-| SSE stream           | `GET /api/v1/events/stream`                         | Implemented                                                |
+| Surface              | Baseline Contract                                   | Current Runtime State                                    |
+| -------------------- | --------------------------------------------------- | -------------------------------------------------------- |
+| Health               | `GET /api/v1/healthz`                               | Implemented and tested at `/api/v1/healthz`              |
+| Runs start           | `POST /api/v1/runs/{id}/start`                      | Implemented                                              |
+| Runs stop            | `POST /api/v1/runs/{id}/stop`                       | Implemented                                              |
+| Runs list/create/get | `GET/POST /api/v1/runs`, `GET /api/v1/runs/{id}`    | Implemented                                              |
+| Orders list/get      | `GET /api/v1/orders`, `GET /api/v1/orders/{id}`     | Implemented (`VedaService` first, fallback to mock path) |
+| Orders create/cancel | `POST /api/v1/orders`, `DELETE /api/v1/orders/{id}` | Implemented via `VedaService`                            |
+| SSE stream           | `GET /api/v1/events/stream`                         | Implemented                                              |
 
 **Drift decision (doc vs code):** this appendix records both the locked contract target and current runtime truth when they differ. Code remediation must move runtime to the locked contract, not silently rewrite the contract.
 
-### Implemented Endpoints (M6)
+### Implemented Endpoints (M8 Verified)
 
-| Method     | Endpoint                 | Description                                        |
-| ---------- | ------------------------ | -------------------------------------------------- |
-| GET        | `/healthz`               | Health check                                       |
-| GET        | `/api/v1/runs`           | List all runs                                      |
-| POST       | `/api/v1/runs`           | Create a new run                                   |
-| GET        | `/api/v1/runs/{id}`      | Get run details                                    |
-| POST       | `/api/v1/runs/{id}/stop` | Stop a running run                                 |
-| GET        | `/api/v1/orders`         | List orders (optional `run_id` filter)             |
-| **POST**   | `/api/v1/orders`         | **Create order via VedaService**                   |
-| GET        | `/api/v1/orders/{id}`    | Get order details                                  |
-| **DELETE** | `/api/v1/orders/{id}`    | **Cancel order via VedaService**                   |
-| GET        | `/api/v1/candles`        | Get OHLCV candles (`symbol`, `timeframe` required) |
+| Method     | Endpoint                  | Description                                        |
+| ---------- | ------------------------- | -------------------------------------------------- |
+| GET        | `/api/v1/healthz`         | Health check                                       |
+| GET        | `/api/v1/runs`            | List runs (optional `status` filter)               |
+| POST       | `/api/v1/runs`            | Create a new run                                   |
+| GET        | `/api/v1/runs/{id}`       | Get run details                                    |
+| POST       | `/api/v1/runs/{id}/start` | Start a pending run                                |
+| POST       | `/api/v1/runs/{id}/stop`  | Stop a running run                                 |
+| GET        | `/api/v1/orders`          | List orders (optional `run_id` + `status` filters) |
+| **POST**   | `/api/v1/orders`          | **Create order via VedaService**                   |
+| GET        | `/api/v1/orders/{id}`     | Get order details                                  |
+| **DELETE** | `/api/v1/orders/{id}`     | **Cancel order via VedaService**                   |
+| GET        | `/api/v1/candles`         | Get OHLCV candles (`symbol`, `timeframe` required) |
 
 ### Order Creation (M6-3)
 
@@ -65,6 +66,32 @@ This appendix is the current contract baseline used for review and remediation.
 - `422 Unprocessable Entity`: Invalid input
 - `503 Service Unavailable`: VedaService not configured (no trading credentials)
 
+### Auth Middleware Behavior
+
+For `/api/v1/**` routes in environments where auth is required:
+
+- Missing/invalid API key or bearer token returns `401 Unauthorized`.
+- If auth is required but `SECURITY_API_TOKEN` is empty/missing, runtime returns
+  `500` with a configuration detail message.
+
+This `500` is intentional and treated as deployment misconfiguration,
+not a user authentication error.
+
+### List Filtering Contract (M8-R3)
+
+`GET /api/v1/runs` supports:
+
+- `status`: `pending | running | stopped | completed | error`
+- `page`, `page_size`
+
+`GET /api/v1/orders` supports:
+
+- `run_id`
+- `status`: `pending | submitted | accepted | partial | filled | cancelled | rejected | expired`
+- `page`, `page_size`
+
+Filtering is applied server-side before pagination.
+
 ### API Documentation
 
 - **Swagger UI**: `/docs`
@@ -87,7 +114,7 @@ This appendix is the current contract baseline used for review and remediation.
 ### SSE Contract Appendix (Locked Baseline — Segment 5)
 
 - SSE `event` field is the exact backend event type (`Envelope.type`) and is case-sensitive.
-- Current emitted run/order domain names are PascalCase suffix style (for example `run.Started`, `orders.Created`, `orders.Filled`, `orders.Rejected`).
+- Current emitted run/order domain names are PascalCase suffix style (for example `run.Started`, `orders.Created`, `orders.Filled`, `orders.Rejected`, `orders.Cancelled`).
 - Current public stream forwards domain events directly (not `ui.*` projection events).
 - Browser-level reconnection is expected; resume from `Last-Event-ID` is not currently guaranteed by an offset replay contract at API boundary.
 
@@ -141,6 +168,17 @@ SSE sends **minimal notification events**; the frontend fetches full details via
 - SSE payloads stay small (< 1KB)
 - Frontend always has fresh data from REST
 - No need to version SSE payload schemas aggressively
+
+### Run Stop Cleanup Contract (M8-R3)
+
+When `POST /api/v1/runs/{id}/stop` is called for an active run, runtime cleanup is explicit and ordered:
+
+1. stop run clock,
+2. cleanup `StrategyRunner` subscriptions,
+3. cleanup backtest `GretaService` subscriptions/state (when present),
+4. remove run context from `RunManager`.
+
+This guarantees no per-run event subscription leak after stop/completion/error teardown.
 
 ## 3. Frontend API Client (Haro)
 
@@ -196,7 +234,7 @@ EventSource("/api/v1/events/stream")
   ├── onopen → isConnected = true
   ├── onerror → isConnected = false, reconnect after 3s
   │
-  └── addEventListener("run.started", ...) → {
+  └── addEventListener("run.Started", ...) → {
         queryClient.invalidateQueries({ queryKey: ["runs"] })
         addNotification({ type: "success", message: "Run started" })
       }
@@ -204,15 +242,16 @@ EventSource("/api/v1/events/stream")
 
 **Event mapping** (7 event types):
 
-| SSE Event         | Query Invalidated | Notification Type |
-| ----------------- | ----------------- | ----------------- |
-| `run.Started`     | `["runs"]`        | success           |
-| `run.Stopped`     | `["runs"]`        | info              |
-| `run.Completed`   | `["runs"]`        | success           |
-| `run.Error`       | `["runs"]`        | error             |
-| `orders.Created`  | `["orders"]`      | info              |
-| `orders.Filled`   | `["orders"]`      | success           |
-| `orders.Rejected` | `["orders"]`      | error             |
+| SSE Event          | Query Invalidated | Notification Type |
+| ------------------ | ----------------- | ----------------- |
+| `run.Started`      | `["runs"]`        | success           |
+| `run.Stopped`      | `["runs"]`        | info              |
+| `run.Completed`    | `["runs"]`        | success           |
+| `run.Error`        | `["runs"]`        | error             |
+| `orders.Created`   | `["orders"]`      | info              |
+| `orders.Filled`    | `["orders"]`      | success           |
+| `orders.Rejected`  | `["orders"]`      | error             |
+| `orders.Cancelled` | `["orders"]`      | info              |
 
 ### 3.4 Vite Proxy
 
@@ -248,3 +287,37 @@ frontend types must be updated.
 
 - If no timezone specified in inputs, fall back to system default.
 - Responses are UTC or include timezone explicitly.
+
+## 6. Error Handling Strategy
+
+### 6.1 REST Error Mapping
+
+Routes map domain and validation failures to explicit HTTP statuses:
+
+- `400 Bad Request`: malformed business input (for example invalid order payload)
+- `404 Not Found`: missing resource (`Run`/`Order` not found)
+- `409 Conflict`: invalid state transition (for example starting non-pending run)
+- `422 Unprocessable Entity`: schema validation failure
+- `503 Service Unavailable`: dependent subsystem unavailable (for example trading adapter unconfigured)
+
+Error payloads follow FastAPI `HTTPException` shape (`detail`), and frontend client normalizes into `ApiClientError` with `status/message/details`.
+
+### 6.2 Exception Boundaries
+
+Current pattern is route-level translation:
+
+- domain exceptions are raised in service layer,
+- routes catch and convert to HTTP exceptions,
+- unexpected exceptions bubble to framework default 500 handling.
+
+Representative domain exceptions are defined in `src/glados/exceptions.py` (`RunNotFoundError`, `RunNotStartableError`, `RunNotStoppableError`).
+
+### 6.3 Event Pipeline Error Semantics
+
+Event pipeline handling is best-effort with isolation between subscribers:
+
+- one subscriber callback failure does not stop other subscribers,
+- callback errors are logged,
+- delivery guarantees remain at-least-once in DB mode and non-durable best-effort in no-DB mode.
+
+Run lifecycle failures should emit `run.Error` events for UI/operator visibility.

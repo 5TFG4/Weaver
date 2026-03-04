@@ -5,13 +5,15 @@ Runs strategy code in response to clock ticks.
 Mode-agnostic: doesn't know if backtest or live.
 """
 
-from typing import TYPE_CHECKING
+import logging
 
+from src.events.log import EventLog
 from src.events.protocol import Envelope
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.glados.task_utils import spawn_tracked_task
+from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
 
-if TYPE_CHECKING:
-    from src.events.log import EventLog
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyRunner:
@@ -91,9 +93,11 @@ class StrategyRunner:
         Since EventLog callbacks are sync, we need to schedule
         the async handler.
         """
-        import asyncio
-
-        asyncio.create_task(self.on_data_ready(envelope))
+        spawn_tracked_task(
+            self.on_data_ready(envelope),
+            logger=logger,
+            context=f"marvin.window_ready run_id={self._run_id}",
+        )
 
     async def on_tick(self, tick) -> None:
         """
@@ -130,9 +134,13 @@ class StrategyRunner:
         Args:
             action: The strategy action to emit
         """
-        if action.type == "fetch_window":
+        if action.type == ActionType.FETCH_WINDOW:
             await self._emit_fetch_window(action)
-        elif action.type == "place_order":
+        elif action.type == ActionType.PLACE_ORDER:
+            if action.symbol is None or action.side is None or action.qty is None:
+                raise ValueError(
+                    "PLACE_ORDER action requires symbol, side, and qty"
+                )
             await self._emit_place_request(action)
 
     async def _emit_fetch_window(self, action: StrategyAction) -> None:
@@ -168,9 +176,9 @@ class StrategyRunner:
             type="strategy.PlaceRequest",
             payload={
                 "symbol": action.symbol,
-                "side": action.side,
+                "side": action.side.value if action.side else None,
                 "qty": str(action.qty),
-                "order_type": action.order_type,
+                "order_type": action.order_type.value,
                 "limit_price": str(action.limit_price) if action.limit_price else None,
                 "stop_price": str(action.stop_price) if action.stop_price else None,
             },

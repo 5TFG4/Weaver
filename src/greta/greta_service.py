@@ -7,12 +7,14 @@ Each backtest run gets its own GretaService instance.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from src.events.log import EventLog
 from src.events.protocol import Envelope
+from src.glados.task_utils import spawn_tracked_task
 from src.greta.fill_simulator import DefaultFillSimulator
 from src.greta.models import (
     BacktestResult,
@@ -22,10 +24,11 @@ from src.greta.models import (
     SimulatedPosition,
 )
 from src.veda.models import OrderIntent, OrderSide, OrderStatus
+from src.veda.models import OrderType, TimeInForce
+from src.walle.repositories.bar_repository import Bar, BarRepository
 
-if TYPE_CHECKING:
-    from src.events.log import EventLog
-    from src.walle.repositories.bar_repository import Bar, BarRepository
+
+logger = logging.getLogger(__name__)
 
 
 class GretaService:
@@ -89,7 +92,7 @@ class GretaService:
         self._equity_curve: list[tuple[datetime, Decimal]] = []
         self._current_bars: dict[str, Bar] = {}
         self._cash: Decimal = initial_cash
-        self._subscription_id: str | None = None
+        self._subscription_ids: list[str] = []
 
     # =========================================================================
     # Properties
@@ -177,11 +180,31 @@ class GretaService:
             self._bar_cache[symbol] = {bar.timestamp: bar for bar in bars}
 
         # Subscribe to backtest.FetchWindow events for this run
-        self._subscription_id = await self._event_log.subscribe_filtered(
+        fetch_window_sub_id = await self._event_log.subscribe_filtered(
             event_types=["backtest.FetchWindow"],
             callback=self._on_fetch_window,
             filter_fn=lambda e: e.run_id == self._run_id,
         )
+
+        # Subscribe to backtest.PlaceOrder events for this run
+        place_order_sub_id = await self._event_log.subscribe_filtered(
+            event_types=["backtest.PlaceOrder"],
+            callback=self._on_place_order,
+            filter_fn=lambda e: e.run_id == self._run_id,
+        )
+        self._subscription_ids = [fetch_window_sub_id, place_order_sub_id]
+
+    async def cleanup(self) -> None:
+        """Cleanup runtime subscriptions for this run.
+
+        Safe to call multiple times.
+        """
+        if not self._subscription_ids:
+            return
+
+        for sub_id in self._subscription_ids:
+            await self._event_log.unsubscribe_by_id(sub_id)
+        self._subscription_ids = []
 
     async def advance_to(self, timestamp: datetime) -> None:
         """
@@ -219,9 +242,11 @@ class GretaService:
         Fetches bars from cache and emits data.WindowReady.
         Since EventLog callbacks are sync, we schedule the async work.
         """
-        import asyncio
-
-        asyncio.create_task(self._handle_fetch_window(envelope))
+        spawn_tracked_task(
+            self._handle_fetch_window(envelope),
+            logger=logger,
+            context=f"greta.fetch_window run_id={self._run_id}",
+        )
 
     async def _handle_fetch_window(self, envelope: Envelope) -> None:
         """
@@ -283,6 +308,53 @@ class GretaService:
             causation_id=envelope.id,
         )
         await self._event_log.append(window_ready)
+
+    def _on_place_order(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.PlaceOrder event (sync callback wrapper).
+
+        Since EventLog callbacks are sync, we schedule async work.
+        """
+        spawn_tracked_task(
+            self._handle_place_order(envelope),
+            logger=logger,
+            context=f"greta.place_order run_id={self._run_id}",
+        )
+
+    async def _handle_place_order(self, envelope: Envelope) -> None:
+        """
+        Handle backtest.PlaceOrder event.
+
+        Converts routed order payload into OrderIntent and queues it
+        through place_order() for simulation.
+        """
+        payload = envelope.payload
+
+        try:
+            side = OrderSide(payload["side"])
+            order_type = OrderType(payload["order_type"])
+            qty = Decimal(str(payload["qty"]))
+        except (KeyError, ValueError):
+            return
+
+        client_order_id = payload.get("client_order_id") or f"backtest-{uuid4()}"
+        time_in_force = TimeInForce(payload.get("time_in_force", TimeInForce.DAY.value))
+
+        limit_price = payload.get("limit_price")
+        stop_price = payload.get("stop_price")
+
+        intent = OrderIntent(
+            run_id=envelope.run_id or self._run_id,
+            client_order_id=client_order_id,
+            symbol=payload.get("symbol", ""),
+            side=side,
+            order_type=order_type,
+            qty=qty,
+            limit_price=Decimal(str(limit_price)) if limit_price is not None else None,
+            stop_price=Decimal(str(stop_price)) if stop_price is not None else None,
+            time_in_force=time_in_force,
+        )
+        await self.place_order(intent)
 
     def get_result(self) -> BacktestResult:
         """
@@ -364,7 +436,7 @@ class GretaService:
                         "order_id": order_id,
                         "client_order_id": intent.client_order_id,
                         "symbol": fill.symbol,
-                        "side": fill.side,
+                        "side": fill.side.value,
                         "qty": str(fill.qty),
                         "fill_price": str(fill.fill_price),
                         "commission": str(fill.commission),
@@ -408,7 +480,7 @@ class GretaService:
     def _apply_fill(self, fill: SimulatedFill) -> None:
         """Apply a fill to update positions and cash."""
         symbol = fill.symbol
-        is_buy = fill.side == OrderSide.BUY.value
+        is_buy = fill.side == OrderSide.BUY
         qty_change = fill.qty if is_buy else -fill.qty
         notional = fill.qty * fill.fill_price
 
@@ -501,9 +573,172 @@ class GretaService:
             (f.slippage for f in self._fills), Decimal("0")
         )
 
-        # TODO: Calculate more advanced stats (Sharpe, drawdown, etc.)
+        # Win/loss analysis from round-trip trades
+        self._compute_trade_stats(stats)
+
+        # Risk metrics from equity curve
+        self._compute_risk_metrics(stats)
 
         return stats
+
+    def _compute_trade_stats(self, stats: BacktestStats) -> None:
+        """Compute win/loss stats from fills using FIFO lot matching."""
+        # Group by symbol and process fills chronologically with FIFO matching.
+        # This handles same-side sequences and partial fills correctly.
+        from collections import defaultdict, deque
+
+        symbol_fills: dict[str, list[SimulatedFill]] = defaultdict(list)
+        for fill in self._fills:
+            symbol_fills[fill.symbol].append(fill)
+
+        gross_profit = Decimal("0")
+        gross_loss = Decimal("0")
+        wins: list[Decimal] = []
+        losses: list[Decimal] = []
+
+        for fills in symbol_fills.values():
+            ordered_fills = sorted(fills, key=lambda f: (f.timestamp, f.bar_index))
+
+            # Each lot: (remaining_qty, entry_price, entry_commission_per_unit)
+            # Use deque for O(1) FIFO pops from the left during lot matching.
+            long_lots: deque[tuple[Decimal, Decimal, Decimal]] = deque()
+            short_lots: deque[tuple[Decimal, Decimal, Decimal]] = deque()
+
+            for fill in ordered_fills:
+                if fill.qty <= Decimal("0"):
+                    continue
+
+                remaining = fill.qty
+                fill_commission_per_unit = fill.commission / fill.qty
+
+                if fill.side == OrderSide.BUY:
+                    # Close open shorts first
+                    while remaining > Decimal("0") and short_lots:
+                        lot_qty, lot_price, lot_commission_per_unit = short_lots.popleft()
+                        matched_qty = min(remaining, lot_qty)
+
+                        # Short entry pnl: sell high, buy low
+                        pnl = (lot_price - fill.fill_price) * matched_qty
+                        pnl -= (lot_commission_per_unit + fill_commission_per_unit) * matched_qty
+
+                        if pnl > Decimal("0"):
+                            stats.winning_trades += 1
+                            gross_profit += pnl
+                            wins.append(pnl)
+                        elif pnl < Decimal("0"):
+                            stats.losing_trades += 1
+                            gross_loss += abs(pnl)
+                            losses.append(pnl)
+
+                        remaining -= matched_qty
+                        lot_qty -= matched_qty
+                        if lot_qty > Decimal("0"):
+                            short_lots.appendleft((lot_qty, lot_price, lot_commission_per_unit))
+
+                    # Any unmatched buy opens/extends long
+                    if remaining > Decimal("0"):
+                        long_lots.append(
+                            (remaining, fill.fill_price, fill_commission_per_unit)
+                        )
+                else:
+                    # Close open longs first
+                    while remaining > Decimal("0") and long_lots:
+                        lot_qty, lot_price, lot_commission_per_unit = long_lots.popleft()
+                        matched_qty = min(remaining, lot_qty)
+
+                        # Long entry pnl: buy low, sell high
+                        pnl = (fill.fill_price - lot_price) * matched_qty
+                        pnl -= (lot_commission_per_unit + fill_commission_per_unit) * matched_qty
+
+                        if pnl > Decimal("0"):
+                            stats.winning_trades += 1
+                            gross_profit += pnl
+                            wins.append(pnl)
+                        elif pnl < Decimal("0"):
+                            stats.losing_trades += 1
+                            gross_loss += abs(pnl)
+                            losses.append(pnl)
+
+                        remaining -= matched_qty
+                        lot_qty -= matched_qty
+                        if lot_qty > Decimal("0"):
+                            long_lots.appendleft((lot_qty, lot_price, lot_commission_per_unit))
+
+                    # Any unmatched sell opens/extends short
+                    if remaining > Decimal("0"):
+                        short_lots.append(
+                            (remaining, fill.fill_price, fill_commission_per_unit)
+                        )
+
+        total_round_trips = stats.winning_trades + stats.losing_trades
+        if total_round_trips > 0:
+            stats.win_rate = (Decimal(stats.winning_trades) / Decimal(total_round_trips)) * 100
+
+        if wins:
+            stats.avg_win = gross_profit / Decimal(len(wins))
+        if losses:
+            stats.avg_loss = gross_loss / Decimal(len(losses))
+
+        if gross_loss > Decimal("0"):
+            stats.profit_factor = gross_profit / gross_loss
+
+    def _compute_risk_metrics(self, stats: BacktestStats) -> None:
+        """Compute non-annualized Sharpe/Sortino and max drawdown from equity curve.
+
+        Sharpe and Sortino are intentionally computed on per-period returns from
+        the in-sample equity curve. They are not annualized and should be
+        interpreted only relative to runs with the same sampling cadence.
+        """
+        if len(self._equity_curve) < 2:
+            return
+
+        # Period returns from equity curve
+        returns: list[Decimal] = []
+        for i in range(1, len(self._equity_curve)):
+            prev_equity = self._equity_curve[i - 1][1]
+            curr_equity = self._equity_curve[i][1]
+            if prev_equity != Decimal("0"):
+                ret = (curr_equity - prev_equity) / abs(prev_equity)
+                returns.append(ret)
+
+        if not returns:
+            return
+
+        # Mean and std of returns
+        n = Decimal(len(returns))
+        mean_return = sum(returns) / n
+
+        variance = sum((r - mean_return) ** 2 for r in returns) / n
+        std_return = variance.sqrt() if hasattr(variance, 'sqrt') else Decimal(str(variance ** Decimal("0.5")))
+
+        # Sharpe ratio on per-period returns (risk-free rate assumed zero).
+        # NOTE: This value is intentionally non-annualized.
+        if std_return > Decimal("0"):
+            stats.sharpe_ratio = mean_return / std_return
+
+        # Sortino ratio on per-period returns (downside deviation only).
+        # NOTE: This value is intentionally non-annualized.
+        downside_returns = [r for r in returns if r < Decimal("0")]
+        if downside_returns:
+            downside_variance = sum(r ** 2 for r in downside_returns) / Decimal(len(downside_returns))
+            downside_std = Decimal(str(downside_variance ** Decimal("0.5")))
+            if downside_std > Decimal("0"):
+                stats.sortino_ratio = mean_return / downside_std
+
+        # Max drawdown from equity curve
+        peak = self._equity_curve[0][1]
+        max_dd = Decimal("0")
+
+        for _, equity in self._equity_curve:
+            if equity > peak:
+                peak = equity
+            dd = equity - peak  # negative when below peak
+            if dd < max_dd:
+                max_dd = dd
+
+        stats.max_drawdown = max_dd
+        if peak > Decimal("0"):
+            stats.max_drawdown_pct = (max_dd / peak) * 100
 
     # =========================================================================
     # Event Emission

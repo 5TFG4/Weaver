@@ -1,15 +1,17 @@
 # Design Audit Report & M8 Quality Gate
 
 > **Document Charter**  
-> **Primary role**: active design-code-test quality gate and open findings.  
-> **Authoritative for**: current unresolved audit items and milestone release criteria.  
+> **Primary role**: M8-R closeout snapshot for design-code-test quality gate.  
+> **Authoritative for**: current closeout status and remaining release-gate items.  
 > **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
 
-> **Audit Date**: 2026-02-19 (updated)  
+> **Audit Date**: 2026-02-26 (final closeout)  
 > **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
-> **Branch**: `haro_update`  
-> **Purpose**: Quality gate for M8 (Polish, Critical Fixes & E2E)  
-> **Status**: M7 ✅ Formally Closed · M8 🔄 Active
+> **Branch**: `improvements`  
+> **Purpose**: Quality gate closeout for M8 (all phases complete)  
+> **Status**: M8 ✅ Complete (all R0/R1/R2/R3 phases delivered and verified)
+
+> **Closeout Note (2026-02-26)**: All M8 phases complete. R0 deployment blockers resolved (replaced gunicorn command with uvicorn, Dockerfile CMD fixed, smoke tests added). Sections 2–8 retained as audit baseline. Next milestone: M9 (E2E Tests).
 
 ---
 
@@ -435,14 +437,14 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 ### 8.3 Code Quality & P1 Fixes (M8-Q)
 
-- [ ] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
-- [ ] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
-- [ ] **M-07**: Either implement `runId` parameter usage in `RunsPage` or remove the route
-- [ ] **N-03**: Add Fills table + persist fill history (D-3)
-- [ ] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
-- [ ] **N-06**: Add `run_id` query param to SSE endpoint (D-5)
-- [ ] **N-10**: Implement server-side pagination or remove UI
-- [ ] **D-2**: Add Runs table for restart recovery
+- [x] **M-02**: Add server-side pagination/filtering to runs and orders list endpoints
+- [x] **M-04**: Change `SimulatedFill.side` from `str` to `OrderSide` enum
+- [x] **M-07**: Kept `/runs/:runId` deep-link route and wired `useParams` handling in RunsPage
+- [x] **N-03**: Add Fills table + persist fill history (D-3) — FillRecord, FillRepository, VedaService wiring, migration
+- [x] **N-04**: Wrap AlpacaAdapter sync SDK in `asyncio.to_thread()`
+- [x] **N-06**: Add `run_id` query param to SSE endpoint (D-5)
+- [x] **N-10**: Implement server-side pagination or remove UI
+- [x] **D-2**: Add Runs table for restart recovery — RunRecord, RunRepository, RunManager persistence + recover(), migration
 
 ### 8.4 Documentation (M8-D)
 

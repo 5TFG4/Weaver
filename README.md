@@ -49,20 +49,19 @@
 
 ```bash
 # from repository root
-cp .env.example .env
-cp .env.dev.example .env.dev
+cp docker/example.env docker/.env
 
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
-# API:     http://localhost:8000
-# Frontend http://localhost:3000
+docker compose -f docker/docker-compose.dev.yml up --build
+# API:     http://localhost:18919
+# Frontend http://localhost:13579
 ```
 
 ### 2) “Prod-like” locally
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
-# API:     http://localhost:8000
-# Frontend http://localhost:8080
+# API:     http://localhost:28919
+# Frontend http://localhost:23579
 ```
 
 ### 3) Local (no Docker)
@@ -71,12 +70,11 @@ docker compose -f docker/docker-compose.yml up -d --build
 # Requires Python 3.13+
 # backend
 pip install -r docker/backend/requirements.txt
-# TODO: Update entrypoint once GLaDOS main module is implemented
-# uvicorn GLaDOS.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn weaver:app --host 0.0.0.0 --port 8000 --reload
 
 # frontend (in ./haro)
 npm install
-npm run dev   # http://localhost:3000
+npm run dev
 ```
 
 ## Development Status
@@ -92,30 +90,63 @@ npm run dev   # http://localhost:3000
 | M5: Marvin Core            | ✅ Complete | +74   |
 | M6: Live Trading           | ✅ Complete | +101  |
 | **M7: Haro Frontend**      | ✅ Complete | +86   |
-| M8: Polish & E2E           | ⏳ Pending  | ~40   |
+| **M8: Fixes & Improve**    | ✅ Complete | +129  |
 
-**Current Snapshot**: 894 tests (808 backend + 86 frontend) · Python 3.13 · pytest 9.x · FastAPI · SQLAlchemy 2.x
+**Current Snapshot**: 1023 tests (933 backend + 90 frontend) · Coverage 89.61% · Python 3.13 · FastAPI · SQLAlchemy 2.x
 **Authoritative milestone status**: [docs/MILESTONE_PLAN.md](docs/MILESTONE_PLAN.md)
 
-### Recent Changes (2026-02-04)
+### Recent Changes (2026-02-26)
 
-- ✅ **M6 Complete**: Live trading system with plugin adapter architecture (808 total tests)
-- ✅ PluginAdapterLoader with AST-based discovery (40 tests)
-- ✅ AlpacaAdapter connection management with connect/disconnect/is_connected (23 tests)
-- ✅ VedaService wired to order routes for live order creation (13 tests)
-- ✅ Live order flow with persistence and event emission (15 tests)
-- ✅ RealtimeClock integration for live/paper runs (10 tests)
-- ✅ Comprehensive Veda trading documentation (`docs/architecture/veda.md`)
+- ✅ **M8 Complete**: Critical fixes, runtime wiring, code quality, and documentation (1023 total tests)
+- ✅ All P0 critical issues resolved (SSE casing, start route, health path, order unification)
+- ✅ Runtime pipeline wired (DomainRouter, PostgresEventLog dispatch, RunManager cleanup)
+- ✅ Fills persistence + Runs recovery + AlpacaAdapter async wrapping
+- ✅ Docker deployment blockers resolved (gunicorn, Dockerfile CMD, smoke tests)
+- ✅ Architecture docs created (greta.md, marvin.md, walle.md)
 
-### Next: M8 Polish & E2E (~40 tests)
+### Next: M9 CI Deployment → M10 E2E & Release
 
-- React app scaffold with Vite + TypeScript
-- Dashboard page (system status, active runs)
-- Runs page (list + detail view)
-- Orders page
-- SSE client integration for real-time updates
+- M9: CI deployment pipeline (backend/frontend fast lanes + compose smoke + merge gates)
+- M10: end-to-end Playwright tests + deployment guide + release polish
+
+## Local CI Smoke (Compose)
+
+Run the same smoke flow as `.github/workflows/compose-smoke.yml` locally:
+
+```bash
+scripts/ci/compose-smoke-local.sh
+```
+
+Useful options:
+
+```bash
+# keep db/backend/frontend up for debugging after success
+scripts/ci/compose-smoke-local.sh --keep-up
+
+# faster rerun if images are already built
+scripts/ci/compose-smoke-local.sh --no-build
+
+# override compose project name (default is weaver_smoke)
+COMPOSE_PROJECT_NAME=my_smoke scripts/ci/compose-smoke-local.sh
+```
+
+What this script does:
+- prepares `docker/.env` from `docker/example.env` (clears Alpaca keys for smoke)
+- uses isolated compose project `weaver_smoke` by default (override with `COMPOSE_PROJECT_NAME`)
+- validates compose config and builds images
+- starts `db`, runs `alembic upgrade head`, then starts `backend/frontend`
+- checks `GET /api/v1/healthz` and frontend root page for HTTP 200
+- tears down the same smoke project with `down -v` (unless `--keep-up`)
+
+## Testing Notes (Important)
+
+- In this workspace, `runTests` is most reliable with:
+  - relative paths (e.g., `tests/unit/glados/routes/test_runs.py`), or
+  - `testNames` selectors.
+- Absolute paths like `/weaver/tests/...` may return `No tests found` depending on runner path resolution.
+- This is a tooling path-resolution behavior, not a project test failure.
 
 ## Endpoints (essentials)
 
-- REST: `GET /healthz`, `GET/POST /runs`, `GET /orders`, `GET /candles`
-- Realtime: `GET /events/stream` (SSE) · Alternative: `/events/tail` (REST incremental)
+- REST: `GET /api/v1/healthz`, `GET/POST /api/v1/runs`, `POST /api/v1/runs/{id}/start`, `GET /api/v1/orders`, `GET /api/v1/candles`
+- Realtime: `GET /api/v1/events/stream` (SSE, supports `?run_id=` filtering)

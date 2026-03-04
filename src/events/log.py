@@ -11,14 +11,12 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import sqlalchemy as sa
 
 from .protocol import Envelope, Subscription
-
-if TYPE_CHECKING:
-    from .types import AsyncConnectionPool
+from .types import AsyncConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +148,7 @@ class InMemoryEventLog(EventLog):
             self._events.append(envelope)
 
         # Notify legacy subscribers (outside lock to prevent deadlock)
-        for callback in self._subscribers:
+        for callback in tuple(self._subscribers):
             try:
                 result = callback(envelope)
                 if asyncio.iscoroutine(result):
@@ -159,7 +157,7 @@ class InMemoryEventLog(EventLog):
                 logger.exception("Subscriber callback failed in InMemoryEventLog")
 
         # Notify filtered subscriptions
-        for sub in self._filtered_subscriptions.values():
+        for sub in tuple(self._filtered_subscriptions.values()):
             if sub.matches(envelope):
                 try:
                     result = sub.callback(envelope)
@@ -303,6 +301,10 @@ class PostgresEventLog(EventLog):
         - An existing SQLAlchemy session (passed via connection)
         - The session factory to create a new session
 
+        D-1: After DB write, dispatches to in-process subscribers directly
+        (matching InMemoryEventLog behavior). pg_notify is still used for
+        cross-process notification.
+
         Returns the sequence number (offset) of the appended event.
         """
         from src.walle.models import OutboxEvent
@@ -323,6 +325,10 @@ class PostgresEventLog(EventLog):
                 sa.text("SELECT pg_notify(:channel, :payload)"),
                 {"channel": self.CHANNEL, "payload": str(offset)},
             )
+
+            # D-1: Direct in-process subscriber dispatch
+            await self._dispatch_to_subscribers(envelope)
+
             return offset
 
         # Otherwise, create a new session
@@ -344,7 +350,11 @@ class PostgresEventLog(EventLog):
                 {"channel": self.CHANNEL, "payload": str(offset)},
             )
             await session.commit()
-            return offset
+
+        # D-1: Direct in-process subscriber dispatch (after commit)
+        await self._dispatch_to_subscribers(envelope)
+
+        return offset
 
     async def read_from(
         self,
@@ -369,6 +379,36 @@ class PostgresEventLog(EventLog):
                 (event.id, Envelope.from_dict(event.payload))
                 for event in events
             ]
+
+    async def _dispatch_to_subscribers(self, envelope: Envelope) -> None:
+        """
+        Dispatch event to all in-process subscribers.
+
+        D-1: Shared dispatch logic for direct subscriber notification.
+        Called after DB write to ensure behavioral parity with InMemoryEventLog.
+        Errors in individual subscribers are logged but do not block others.
+        """
+        # Notify legacy subscribers
+        for callback in tuple(self._subscribers):
+            try:
+                result = callback(envelope)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:
+                logger.exception("Subscriber callback failed in PostgresEventLog")
+
+        # Notify filtered subscriptions
+        for sub in tuple(self._filtered_subscriptions.values()):
+            if sub.matches(envelope):
+                try:
+                    result = sub.callback(envelope)
+                    if asyncio.iscoroutine(result):
+                        await result
+                except Exception:
+                    logger.exception(
+                        "Filtered subscriber callback failed",
+                        extra={"subscription_id": sub.id},
+                    )
 
     async def subscribe(
         self,
@@ -417,7 +457,7 @@ class PostgresEventLog(EventLog):
         if events:
             _, envelope = events[0]
             # Notify legacy subscribers
-            for callback in self._subscribers:
+            for callback in tuple(self._subscribers):
                 try:
                     result = callback(envelope)
                     if asyncio.iscoroutine(result):
@@ -426,7 +466,7 @@ class PostgresEventLog(EventLog):
                     logger.exception("Subscriber callback failed in PostgresEventLog")
 
             # Notify filtered subscriptions
-            for sub in self._filtered_subscriptions.values():
+            for sub in tuple(self._filtered_subscriptions.values()):
                 if sub.matches(envelope):
                     try:
                         result = sub.callback(envelope)

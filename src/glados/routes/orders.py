@@ -25,6 +25,7 @@ from src.veda import VedaService
 from src.veda.models import (
     OrderIntent,
     OrderSide,
+    OrderStatus as VedaOrderStatus,
     OrderState,
     OrderType,
     TimeInForce,
@@ -144,26 +145,65 @@ async def cancel_order(
 @router.get("", response_model=OrderListResponse)
 async def list_orders(
     run_id: str | None = Query(default=None),
+    order_status: SchemaStatus | None = Query(default=None, alias="status"),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=50, ge=1, le=200, description="Items per page"),
+    veda_service: VedaService | None = Depends(get_veda_service),
     order_service: MockOrderService = Depends(get_order_service),
 ) -> OrderListResponse:
     """
-    List orders with optional filters.
-    
-    MVP-4: Only run_id filter supported.
+    List orders with optional filters and pagination.
+
+    C-04: Uses VedaService when available (live/paper trading),
+    falls back to MockOrderService for demo/test mode.
+    N-10: Accepts page and page_size query params.
     """
-    orders, total = await order_service.list(run_id=run_id)
+    if veda_service is not None:
+        state_status = VedaOrderStatus(order_status.value) if order_status is not None else None
+        states = await veda_service.list_orders(run_id=run_id, status=state_status)
+        total = len(states)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = states[start:end]
+        return OrderListResponse(
+            items=[_state_to_response(s) for s in paginated],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    orders, total = await order_service.list(run_id=run_id, status=order_status)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = orders[start:end]
     return OrderListResponse(
-        items=[_order_to_response(o) for o in orders],
+        items=[_order_to_response(o) for o in paginated],
         total=total,
+        page=page,
+        page_size=page_size,
     )
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: str,
+    veda_service: VedaService | None = Depends(get_veda_service),
     order_service: MockOrderService = Depends(get_order_service),
 ) -> OrderResponse:
-    """Get order by ID."""
+    """
+    Get order by ID.
+
+    C-04: Uses VedaService when available, falls back to MockOrderService.
+    """
+    if veda_service is not None:
+        state = await veda_service.get_order(order_id)
+        if state is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order not found: {order_id}",
+            )
+        return _state_to_response(state)
+
     order = await order_service.get(order_id)
     if order is None:
         raise HTTPException(

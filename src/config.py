@@ -180,6 +180,35 @@ class TradingConfig(BaseSettings):
     rate_limit_per_minute: int = Field(default=200, ge=1, le=1000)
 
 
+class SecurityConfig(BaseSettings):
+    """Security and authentication configuration."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="SECURITY_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+    auth_required: bool | None = Field(
+        default=None,
+        description="Require authentication for /api/v1 routes. If None, defaults to production-only.",
+    )
+    api_token: str = Field(
+        default="",
+        description="Shared bearer/API key token for backend authentication.",
+    )
+    api_key_header: str = Field(
+        default="X-API-Key",
+        description="Header name accepted for API key authentication.",
+    )
+
+    def is_auth_required(self, environment: str) -> bool:
+        """Resolve whether auth is required for the current environment."""
+        if self.auth_required is not None:
+            return self.auth_required
+        return environment == "production"
+
+
 class WeaverConfig(BaseSettings):
     """Main Weaver configuration aggregating all sub-configs."""
 
@@ -194,6 +223,7 @@ class WeaverConfig(BaseSettings):
     server: ServerConfig = Field(default_factory=ServerConfig)
     events: EventConfig = Field(default_factory=EventConfig)
     trading: TradingConfig = Field(default_factory=TradingConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
 
     # Global settings
     environment: Literal["development", "production", "test"] = Field(
@@ -232,5 +262,9 @@ def get_test_config() -> WeaverConfig:
             live_api_secret="test_live_secret",
             paper_api_key="test_paper_key",
             paper_api_secret="test_paper_secret",
+        ),
+        security=SecurityConfig(
+            auth_required=True,
+            api_token="test-token",
         ),
     )

@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING
 
 
 # =============================================================================
@@ -189,7 +188,13 @@ class Position:
 
 @dataclass(frozen=True)
 class Bar:
-    """OHLCV bar (candle) data."""
+    """OHLCV bar (candle) data from exchange / market data source.
+
+    Note: The system primarily uses ``walle.repositories.bar_repository.Bar``
+    for persistence and backtest consumption.  This class carries extra
+    exchange-specific fields (``trade_count``, ``vwap``) and is intended for
+    future live-data pipelines.  See L-03 in the design audit for context.
+    """
 
     symbol: str
     timestamp: datetime  # Bar open time (UTC)

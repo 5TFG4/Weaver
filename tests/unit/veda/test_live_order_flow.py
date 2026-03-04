@@ -14,6 +14,7 @@ import pytest
 
 from src.veda.interfaces import OrderSubmitResult
 from src.veda.models import (
+    Fill,
     OrderIntent,
     OrderSide,
     OrderState,
@@ -57,6 +58,15 @@ def mock_repository() -> MagicMock:
     repo.save = AsyncMock()
     repo.get_by_client_order_id = AsyncMock(return_value=None)
     repo.list_by_run_id = AsyncMock(return_value=[])
+    return repo
+
+
+@pytest.fixture
+def mock_fill_repository() -> MagicMock:
+    """Create mock fill repository."""
+    repo = MagicMock()
+    repo.save = AsyncMock()
+    repo.list_by_order = AsyncMock(return_value=[])
     return repo
 
 
@@ -331,10 +341,12 @@ class TestOrderQueries:
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
         sample_intent: OrderIntent,
     ) -> None:
         """get_order() should return order from local state first."""
         from src.veda.veda_service import VedaService
+        from src.walle.models import FillRecord
         
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
@@ -347,9 +359,21 @@ class TestOrderQueries:
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
         
-        await service.place_order(sample_intent)
+        state = await service.place_order(sample_intent)
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-local-get-1",
+                order_id=state.id,
+                price=Decimal("100.00"),
+                quantity=Decimal("1.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
         
         # Should get from local state, not repository
         result = await service.get_order("order-abc")
@@ -357,12 +381,15 @@ class TestOrderQueries:
         assert result is not None
         assert result.client_order_id == "order-abc"
         mock_repository.get_by_client_order_id.assert_not_called()
+        mock_fill_repository.list_by_order.assert_called_once_with(state.id)
+        assert len(result.fills) == 1
 
     async def test_get_order_falls_back_to_repository(
         self,
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
     ) -> None:
         """get_order() should fall back to repository if not in local state."""
         from src.veda.veda_service import VedaService
@@ -396,13 +423,31 @@ class TestOrderQueries:
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
+
+        from src.walle.models import FillRecord
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-1",
+                order_id="db-order-id",
+                price=Decimal("3000.00"),
+                quantity=Decimal("2.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
         
         result = await service.get_order("stored-order")
         
         assert result is not None
         assert result.client_order_id == "stored-order"
+        assert len(result.fills) == 1
+        assert isinstance(result.fills[0], Fill)
+        assert result.fills[0].order_id == "db-order-id"
         mock_repository.get_by_client_order_id.assert_called_once_with("stored-order")
+        mock_fill_repository.list_by_order.assert_called_once_with("db-order-id")
 
     async def test_list_orders_returns_local_orders(
         self,
@@ -434,27 +479,112 @@ class TestOrderQueries:
         assert len(orders) == 1
         assert orders[0].client_order_id == "order-abc"
 
-    async def test_list_orders_filters_by_run_id(
+    async def test_list_orders_without_run_id_hydrates_fills(
         self,
         mock_adapter: MagicMock,
         mock_event_log: MagicMock,
         mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
+        sample_intent: OrderIntent,
     ) -> None:
-        """list_orders(run_id=...) should query repository."""
+        """list_orders() without run_id should also hydrate persisted fills."""
         from src.veda.veda_service import VedaService
-        
-        mock_repository.list_by_run_id.return_value = []
-        
+        from src.walle.models import FillRecord
+
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=True,
+            exchange_order_id="exch-123",
+            status=OrderStatus.SUBMITTED,
+        )
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
+            fill_repository=mock_fill_repository,
+        )
+
+        state = await service.place_order(sample_intent)
+
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-local-1",
+                order_id=state.id,
+                price=Decimal("100.00"),
+                quantity=Decimal("1.5"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
+
+        orders = await service.list_orders()
+
+        assert len(orders) == 1
+        assert len(orders[0].fills) == 1
+        mock_fill_repository.list_by_order.assert_called_once_with(state.id)
+
+    async def test_list_orders_filters_by_run_id(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
+    ) -> None:
+        """list_orders(run_id=...) should query repository."""
+        from src.veda.veda_service import VedaService
+        
+        from src.walle.models import FillRecord
+
+        mock_repository.list_by_run_id.return_value = [
+            OrderState(
+                id="repo-order-1",
+                client_order_id="repo-order-1",
+                exchange_order_id="exch-repo-1",
+                run_id="run-456",
+                symbol="AAPL",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                qty=Decimal("1.0"),
+                limit_price=None,
+                stop_price=None,
+                time_in_force=TimeInForce.DAY,
+                status=OrderStatus.FILLED,
+                filled_qty=Decimal("1.0"),
+                filled_avg_price=Decimal("150.00"),
+                created_at=datetime.now(UTC),
+                submitted_at=datetime.now(UTC),
+                filled_at=datetime.now(UTC),
+                cancelled_at=None,
+                reject_reason=None,
+                error_code=None,
+            )
+        ]
+        mock_fill_repository.list_by_order.return_value = [
+            FillRecord(
+                id="fill-repo-1",
+                order_id="repo-order-1",
+                price=Decimal("150.00"),
+                quantity=Decimal("1.0"),
+                side="buy",
+                filled_at=datetime.now(UTC),
+            )
+        ]
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+            fill_repository=mock_fill_repository,
         )
         
-        await service.list_orders(run_id="run-456")
+        result = await service.list_orders(run_id="run-456")
         
-        mock_repository.list_by_run_id.assert_called_once_with("run-456")
+        mock_repository.list_by_run_id.assert_called_once_with("run-456", status=None)
+        mock_fill_repository.list_by_order.assert_called_once_with("repo-order-1")
+        assert len(result) == 1
+        assert len(result[0].fills) == 1
 
 
 # =============================================================================
@@ -499,3 +629,52 @@ class TestIdempotency:
         assert mock_adapter.submit_order.call_count == 1
         assert mock_repository.save.call_count == 1  # Saved only once
         assert mock_event_log.append.call_count == 1  # Event emitted once
+
+
+class TestHandlePlaceOrderDefaults:
+    """N-09: handle_place_order should default time_in_force to 'day'."""
+
+    async def test_time_in_force_defaults_to_day(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+    ) -> None:
+        """When payload omits time_in_force, it should default to 'day'."""
+        from src.events.protocol import Envelope
+        from src.veda.veda_service import VedaService
+
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=True,
+            exchange_order_id="exch-1",
+            status=OrderStatus.SUBMITTED,
+        )
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+        )
+
+        envelope = Envelope(
+            type="live.PlaceOrder",
+            producer="test",
+            run_id="run-1",
+            payload={
+                "run_id": "run-1",
+                "client_order_id": "test-order-1",
+                "symbol": "AAPL",
+                "side": "buy",
+                "order_type": "market",
+                "qty": "10",
+                # time_in_force intentionally omitted
+            },
+        )
+
+        await service.handle_place_order(envelope)
+
+        # Verify the OrderIntent passed to place_order had day TIF
+        call_args = mock_adapter.submit_order.call_args
+        submitted_intent = call_args.args[0]
+        assert submitted_intent.time_in_force == TimeInForce.DAY

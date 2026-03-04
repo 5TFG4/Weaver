@@ -6,15 +6,12 @@ Provides shared fixtures for GLaDOS API testing.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Generator
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-if TYPE_CHECKING:
-    from fastapi import FastAPI
-
-    from src.config import WeaverConfig
+from src.config import WeaverConfig
 
 
 @pytest.fixture
@@ -36,11 +33,25 @@ def app(test_settings: WeaverConfig) -> FastAPI:
 
 
 @pytest.fixture
-def client(app: FastAPI) -> TestClient:
+def client(app: FastAPI) -> Generator[TestClient, None, None]:
     """Synchronous test client for HTTP requests.
     
     Uses context manager to trigger app lifespan events,
     which initializes services in app.state.
+    Replaces RunManager with a fully-wired version for route testing.
     """
+    from tests.factories.runs import create_run_manager_with_deps
+
     with TestClient(app) as client:
+        security = app.state.settings.security
+        client.headers[security.api_key_header] = security.api_token
+
+        # Replace RunManager with one that has all deps mocked,
+        # so routes like POST /runs/{id}/start actually work.
+        app.state.run_manager = create_run_manager_with_deps(
+            event_log=getattr(app.state, "event_log", None),
+        )
+        # Ensure VedaService is None by default in unit tests.
+        # Tests that need VedaService inject it explicitly via app.state.
+        app.state.veda_service = None
         yield client

@@ -107,7 +107,7 @@ class TestAlpacaAdapterSubmitOrder:
         mock_order.side = "buy"
         mock_order.type = "market"
         mock_order.qty = "10"
-        mock.submit_order = AsyncMock(return_value=mock_order)
+        mock.submit_order = MagicMock(return_value=mock_order)
         return mock
 
     async def test_submit_order_calls_alpaca_api(
@@ -196,9 +196,9 @@ class TestAlpacaAdapterOrderManagement:
         mock_order.side = "buy"
         mock_order.type = "market"
         mock_order.qty = "10"
-        mock.get_order_by_id = AsyncMock(return_value=mock_order)
-        mock.cancel_order_by_id = AsyncMock(return_value=None)
-        mock.get_orders = AsyncMock(return_value=[mock_order])
+        mock.get_order_by_id = MagicMock(return_value=mock_order)
+        mock.cancel_order_by_id = MagicMock(return_value=None)
+        mock.get_orders = MagicMock(return_value=[mock_order])
         
         return mock
 
@@ -285,7 +285,7 @@ class TestAlpacaAdapterAccount:
         mock_account.portfolio_value = "150000.00"
         mock_account.currency = "USD"
         mock_account.status = "ACTIVE"
-        mock.get_account = AsyncMock(return_value=mock_account)
+        mock.get_account = MagicMock(return_value=mock_account)
         
         # Mock positions
         mock_position = MagicMock()
@@ -296,8 +296,8 @@ class TestAlpacaAdapterAccount:
         mock_position.market_value = "15500.00"
         mock_position.unrealized_pl = "500.00"
         mock_position.unrealized_plpc = "0.0333"
-        mock.get_all_positions = AsyncMock(return_value=[mock_position])
-        mock.get_open_position = AsyncMock(return_value=mock_position)
+        mock.get_all_positions = MagicMock(return_value=[mock_position])
+        mock.get_open_position = MagicMock(return_value=mock_position)
         
         return mock
 
@@ -387,8 +387,8 @@ class TestAlpacaAdapterMarketData:
         mock_bar.volume = 1000000
         mock_bar.trade_count = 5000
         mock_bar.vwap = 150.5
-        mock.get_stock_bars = AsyncMock(return_value={"AAPL": [mock_bar]})
-        mock.get_stock_latest_bar = AsyncMock(return_value={"AAPL": mock_bar})
+        mock.get_stock_bars = MagicMock(return_value={"AAPL": [mock_bar]})
+        mock.get_stock_latest_bar = MagicMock(return_value={"AAPL": mock_bar})
         
         # Mock quote
         mock_quote = MagicMock()
@@ -398,7 +398,7 @@ class TestAlpacaAdapterMarketData:
         mock_quote.bid_size = 100
         mock_quote.ask_price = 151.05
         mock_quote.ask_size = 200
-        mock.get_stock_latest_quote = AsyncMock(return_value={"AAPL": mock_quote})
+        mock.get_stock_latest_quote = MagicMock(return_value={"AAPL": mock_quote})
         
         # Mock trade
         mock_trade = MagicMock()
@@ -407,7 +407,7 @@ class TestAlpacaAdapterMarketData:
         mock_trade.price = 151.00
         mock_trade.size = 100
         mock_trade.exchange = "NASDAQ"
-        mock.get_stock_latest_trade = AsyncMock(return_value={"AAPL": mock_trade})
+        mock.get_stock_latest_trade = MagicMock(return_value={"AAPL": mock_trade})
         
         return mock
 
@@ -517,7 +517,7 @@ class TestAlpacaAdapterErrorHandling:
         
         # Mock rejection
         mock_client = MagicMock()
-        mock_client.submit_order = AsyncMock(
+        mock_client.submit_order = MagicMock(
             side_effect=Exception("Insufficient buying power")
         )
         adapter._trading_client = mock_client
@@ -539,3 +539,69 @@ class TestAlpacaAdapterErrorHandling:
         
         assert result.success is False
         assert result.status == OrderStatus.REJECTED
+
+
+# ============================================================================
+# Test: Async Thread Wrapping (N-04)
+# ============================================================================
+
+
+class TestAlpacaAdapterAsyncWrapping:
+    """Sync Alpaca SDK calls must run in asyncio.to_thread to avoid blocking."""
+
+    @pytest.fixture
+    def adapter(self) -> "AlpacaAdapter":
+        from src.veda.adapters.alpaca_adapter import AlpacaAdapter
+
+        a = AlpacaAdapter(api_key="k", api_secret="s", paper=True)
+        a._connected = True
+        return a
+
+    async def test_submit_order_runs_in_thread_pool(self, adapter) -> None:
+        """submit_order delegates the sync SDK call to asyncio.to_thread."""
+        from src.veda.adapters.alpaca_adapter import AlpacaAdapter
+
+        mock_response = MagicMock()
+        mock_response.id = "order-1"
+        mock_response.status = "accepted"
+        mock_client = MagicMock()
+        mock_client.submit_order = MagicMock(return_value=mock_response)
+        adapter._trading_client = mock_client
+
+        intent = OrderIntent(
+            run_id="run-1",
+            client_order_id="cid-1",
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("1"),
+            limit_price=None,
+            stop_price=None,
+            time_in_force=TimeInForce.DAY,
+        )
+
+        with patch("src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
+            mock_to_thread.return_value = mock_response
+            await adapter.submit_order(intent)
+            mock_to_thread.assert_called_once()
+            # First positional arg must be the SDK method
+            assert mock_to_thread.call_args[0][0] is mock_client.submit_order
+
+    async def test_get_account_runs_in_thread_pool(self, adapter) -> None:
+        """get_account delegates the sync SDK call to asyncio.to_thread."""
+        mock_response = MagicMock()
+        mock_response.id = "acct-1"
+        mock_response.buying_power = "100000"
+        mock_response.cash = "50000"
+        mock_response.portfolio_value = "150000"
+        mock_response.currency = "USD"
+        mock_response.status = "ACTIVE"
+        mock_client = MagicMock()
+        mock_client.get_account = MagicMock(return_value=mock_response)
+        adapter._trading_client = mock_client
+
+        with patch("src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
+            mock_to_thread.return_value = mock_response
+            await adapter.get_account()
+            mock_to_thread.assert_called_once()
+            assert mock_to_thread.call_args[0][0] is mock_client.get_account

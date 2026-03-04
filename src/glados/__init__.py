@@ -9,7 +9,3 @@ The central orchestrator for Weaver, responsible for:
 - Dependency wiring
 - Publishing thin events to the frontend
 """
-
-from .app import create_app
-
-__all__ = ["create_app"]

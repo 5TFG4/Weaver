@@ -196,15 +196,10 @@ cython_debug/
 # Docker swp files
 setup/*.swp
 
-# TestYard
-TestYard/
-
-# Docker swp files
-setup/
-setup.py
-
-# UserInfo files
-usr/user.json
-
 # log files
 log
+
+# Frontend (haro)
+haro/.vite/
+haro/node_modules/
+haro/dist/

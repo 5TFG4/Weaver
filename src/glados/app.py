@@ -11,10 +11,12 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from src.config import WeaverConfig, get_config
+from src.events.protocol import Envelope
 from src.glados.routes.candles import router as candles_router
 from src.glados.routes.health import router as health_router
 from src.glados.routes.orders import router as orders_router
@@ -54,8 +56,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.broadcaster = SSEBroadcaster()
     logger.info("SSEBroadcaster initialized")
     
-    # Initialize event_log placeholder (may be set to real EventLog below)
+    # Initialize placeholders (may be set to real implementations below)
     event_log = None
+    database = None
 
     # =========================================================================
     # Startup - DB-dependent services
@@ -120,17 +123,142 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         logger.warning("DB_URL not set - running without database (in-memory mode)")
         app.state.database = None
-        app.state.event_log = None
         app.state.veda_service = None
+
+        # B.3: Create InMemoryEventLog for no-DB mode (degraded but functional)
+        from src.events.log import InMemoryEventLog
+
+        event_log = InMemoryEventLog()
+        app.state.event_log = event_log
+        logger.info("InMemoryEventLog initialized (no-DB mode)")
+
+        # Subscribe SSEBroadcaster to InMemoryEventLog
+        broadcaster = app.state.broadcaster
+
+        async def on_event(envelope):
+            """Forward events from EventLog to SSE clients."""
+            await broadcaster.publish(envelope.type, envelope.payload)
+
+        unsubscribe = await event_log.subscribe(on_event)
+        app.state.event_log_unsubscribe = unsubscribe
+        logger.info("SSEBroadcaster subscribed to InMemoryEventLog")
+
+    if event_log is None:
+        raise RuntimeError("EventLog must be initialized before runtime wiring")
 
     # =========================================================================
     # Startup - Services that may use EventLog
     # =========================================================================
     
-    # RunManager (in-memory, optionally with EventLog for event emission)
+    # RunManager runtime dependencies
     from src.glados.services.run_manager import RunManager
-    app.state.run_manager = RunManager(event_log=event_log)
-    logger.info("RunManager initialized%s", " with EventLog" if event_log else "")
+    from src.marvin.strategy_loader import PluginStrategyLoader
+
+    strategy_loader = PluginStrategyLoader()
+    bar_repository = None
+    run_repository = None
+
+    if database is not None:
+        from src.walle.repositories.bar_repository import BarRepository
+        from src.walle.repositories.run_repository import RunRepository
+
+        bar_repository = BarRepository(database.session_factory)
+        run_repository = RunRepository(database.session_factory)
+
+    run_manager = RunManager(
+        event_log=event_log,
+        bar_repository=bar_repository,
+        strategy_loader=strategy_loader,
+        run_repository=run_repository,
+    )
+    app.state.run_manager = run_manager
+    app.state.strategy_loader = strategy_loader
+    app.state.bar_repository = bar_repository
+    app.state.run_repository = run_repository
+
+    recovered_count = await run_manager.recover()
+    if recovered_count > 0:
+        logger.info("Recovered %d runs from persistence", recovered_count)
+
+    logger.info("RunManager initialized with runtime dependencies")
+
+    # D-4: Wire DomainRouter as standalone singleton
+    from src.glados.services.domain_router import DomainRouter
+
+    domain_router = DomainRouter(event_log=event_log, run_manager=run_manager)
+    app.state.domain_router = domain_router
+
+    domain_router_subscription_id = await event_log.subscribe_filtered(
+        event_types=["strategy.FetchWindow", "strategy.PlaceRequest"],
+        callback=domain_router.route,
+    )
+    app.state.domain_router_subscription_id = domain_router_subscription_id
+    logger.info("DomainRouter wired to strategy.* events")
+
+    # Wire live.PlaceOrder to VedaService handler when VedaService is available
+    app.state.veda_place_order_subscription_id = None
+    veda_service = getattr(app.state, "veda_service", None)
+    if veda_service is not None:
+        veda_place_order_subscription_id = await event_log.subscribe_filtered(
+            event_types=["live.PlaceOrder"],
+            callback=veda_service.handle_place_order,
+        )
+        app.state.veda_place_order_subscription_id = veda_place_order_subscription_id
+        logger.info("VedaService wired to live.PlaceOrder events")
+
+    # Wire live.FetchWindow to market data service and emit data.WindowReady
+    async def on_live_fetch_window(envelope: Envelope) -> None:
+        payload = envelope.payload
+        symbol = payload.get("symbol")
+        if not symbol:
+            return
+
+        lookback = int(payload.get("lookback", 10))
+        timeframe = payload.get("timeframe")
+
+        if timeframe is None and envelope.run_id is not None:
+            run = await run_manager.get(envelope.run_id)
+            if run is not None:
+                timeframe = run.timeframe
+        if timeframe is None:
+            timeframe = "1m"
+
+        candles = await app.state.market_data_service.get_candles(
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=lookback,
+        )
+
+        window_ready = Envelope(
+            type="data.WindowReady",
+            producer="glados.market_data",
+            run_id=envelope.run_id,
+            corr_id=envelope.corr_id,
+            causation_id=envelope.id,
+            payload={
+                "symbol": symbol,
+                "bars": [
+                    {
+                        "timestamp": candle.timestamp.isoformat(),
+                        "open": str(candle.open),
+                        "high": str(candle.high),
+                        "low": str(candle.low),
+                        "close": str(candle.close),
+                        "volume": str(candle.volume),
+                    }
+                    for candle in candles
+                ],
+                "lookback": lookback,
+            },
+        )
+        await event_log.append(window_ready)
+
+    live_fetch_window_subscription_id = await event_log.subscribe_filtered(
+        event_types=["live.FetchWindow"],
+        callback=on_live_fetch_window,
+    )
+    app.state.live_fetch_window_subscription_id = live_fetch_window_subscription_id
+    logger.info("MarketDataService wired to live.FetchWindow events")
 
     yield
 
@@ -142,6 +270,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if hasattr(app.state, "event_log_unsubscribe") and app.state.event_log_unsubscribe:
         app.state.event_log_unsubscribe()
         logger.info("SSEBroadcaster unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "domain_router_subscription_id")
+        and app.state.domain_router_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.domain_router_subscription_id)
+        logger.info("DomainRouter unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "veda_place_order_subscription_id")
+        and app.state.veda_place_order_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.veda_place_order_subscription_id)
+        logger.info("VedaService unsubscribed from EventLog")
+
+    if (
+        hasattr(app.state, "live_fetch_window_subscription_id")
+        and app.state.live_fetch_window_subscription_id
+        and hasattr(app.state, "event_log")
+        and app.state.event_log is not None
+    ):
+        await app.state.event_log.unsubscribe_by_id(app.state.live_fetch_window_subscription_id)
+        logger.info("MarketDataService unsubscribed from EventLog")
 
     # Close database connection
     if hasattr(app.state, "database") and app.state.database:
@@ -185,6 +340,47 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
 
     # Store settings in app state for dependency injection
     app.state.settings = settings
+
+    @app.middleware("http")
+    async def auth_middleware(request: Request, call_next):
+        """Enforce token auth on API routes when configured."""
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
+        path = request.url.path
+        if not path.startswith("/api/v1"):
+            return await call_next(request)
+
+        security = settings.security
+        if not security.is_auth_required(settings.environment):
+            return await call_next(request)
+
+        token = security.api_token
+        if not token:
+            # Intentional: treat enabled-auth + missing token as server
+            # misconfiguration, not an authentication failure.
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "detail": "Authentication is enabled but SECURITY_API_TOKEN is not configured",
+                },
+            )
+
+        expected_header = security.api_key_header
+        api_key_value = request.headers.get(expected_header)
+        auth_header = request.headers.get("Authorization")
+        bearer_value = ""
+        if auth_header and auth_header.lower().startswith("bearer "):
+            bearer_value = auth_header[7:].strip()
+
+        if api_key_value == token or bearer_value == token:
+            return await call_next(request)
+
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Register routes
     app.include_router(health_router)

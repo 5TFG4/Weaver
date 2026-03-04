@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
+from src.veda.models import OrderSide
+
 
 @dataclass(frozen=True)
 class FillSimulationConfig:
@@ -46,7 +48,7 @@ class SimulatedFill:
     order_id: str
     client_order_id: str
     symbol: str
-    side: str  # "buy" | "sell" - TODO(M5): Change to OrderSide enum
+    side: OrderSide
     qty: Decimal
     fill_price: Decimal  # Price after slippage applied
     commission: Decimal  # Total commission for this fill
@@ -110,6 +112,9 @@ class BacktestStats:
     annualized_return: Decimal = Decimal("0")
 
     # Risk metrics
+    # NOTE:
+    #   sharpe_ratio and sortino_ratio are computed from per-period equity
+    #   returns and are intentionally non-annualized.
     sharpe_ratio: Decimal | None = None
     sortino_ratio: Decimal | None = None
     max_drawdown: Decimal = Decimal("0")

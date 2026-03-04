@@ -118,6 +118,7 @@ class MockOrderService:
     async def list(
         self,
         run_id: str | None = None,
+        status: OrderStatus | None = None,
     ) -> tuple[list[Order], int]:
         """
         List orders with optional filter.
@@ -126,6 +127,7 @@ class MockOrderService:
         
         Args:
             run_id: Filter by run ID
+            status: Filter by order status
             
         Returns:
             Tuple of (orders list, total count)
@@ -134,5 +136,8 @@ class MockOrderService:
         
         if run_id is not None:
             orders = [o for o in orders if o.run_id == run_id]
+
+        if status is not None:
+            orders = [o for o in orders if o.status == status]
         
         return orders, len(orders)

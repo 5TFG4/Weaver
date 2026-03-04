@@ -9,10 +9,11 @@ from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 import pytest_asyncio
 
 from src.glados.clock.base import ClockTick
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
+from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction, StrategyOrderSide
 from src.marvin.strategy_runner import StrategyRunner
 
 
@@ -122,7 +123,7 @@ class TestStrategyRunnerOnTick:
         """Create initialized runner."""
         strategy = DummyStrategy(
             tick_actions=[
-                StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=10),
+                StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=10),
             ]
         )
         mock_event_log = AsyncMock()
@@ -162,7 +163,7 @@ class TestStrategyRunnerOnTick:
         strategy = DummyStrategy(
             tick_actions=[
                 StrategyAction(
-                    type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("1")
+                    type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
                 ),
             ]
         )
@@ -183,9 +184,9 @@ class TestStrategyRunnerOnTick:
         """on_tick() handles multiple actions from strategy."""
         strategy = DummyStrategy(
             tick_actions=[
-                StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=10),
+                StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=10),
                 StrategyAction(
-                    type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("1")
+                    type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
                 ),
             ]
         )
@@ -199,6 +200,27 @@ class TestStrategyRunnerOnTick:
         await runner.on_tick(tick)
 
         assert mock_event_log.append.call_count == 2
+
+    async def test_place_order_requires_side_symbol_qty(self) -> None:
+        """PLACE_ORDER action must include symbol, side, and qty."""
+        strategy = DummyStrategy(
+            tick_actions=[
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol="BTC/USD",
+                    side=None,
+                    qty=Decimal("1"),
+                )
+            ]
+        )
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+
+        with pytest.raises(ValueError, match="requires symbol, side, and qty"):
+            await runner.on_tick(make_tick())
 
 
 class TestStrategyRunnerOnDataReady:
@@ -232,7 +254,7 @@ class TestStrategyRunnerOnDataReady:
         strategy = DummyStrategy()
         strategy.data_actions = [
             StrategyAction(
-                type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("1")
+                type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
             ),
         ]
         mock_event_log = AsyncMock()

@@ -4,16 +4,15 @@ Unit tests for GLaDOS dependency injection.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
-
-if TYPE_CHECKING:
-    from fastapi import Request
+from fastapi import Request
 
 from src.glados.dependencies import (
     get_broadcaster,
+    get_domain_router,
     get_event_log,
     get_market_data_service,
     get_order_service,
@@ -23,11 +22,11 @@ from src.glados.dependencies import (
 )
 
 
-def create_mock_request(app: MagicMock) -> "Request":
+def create_mock_request(app: MagicMock) -> Request:
     """Create a mock request with app.state access."""
     request = MagicMock()
     request.app = app
-    return cast("Request", request)
+    return cast(Request, request)
 
 
 class TestGetSettings:
@@ -144,5 +143,29 @@ class TestGetVedaService:
         request = create_mock_request(app)
 
         result = get_veda_service(request)
+
+        assert result is None
+
+
+class TestGetDomainRouter:
+    """Tests for get_domain_router dependency."""
+
+    def test_returns_domain_router_from_app_state(self) -> None:
+        """get_domain_router returns app.state.domain_router when set."""
+        app = MagicMock()
+        app.state.domain_router = MagicMock(name="domain_router")
+        request = create_mock_request(app)
+
+        result = get_domain_router(request)
+
+        assert result is app.state.domain_router
+
+    def test_returns_none_when_not_configured(self) -> None:
+        """get_domain_router returns None when domain_router not in state."""
+        app = MagicMock(spec=["state"])
+        app.state = MagicMock(spec=[])
+        request = create_mock_request(app)
+
+        result = get_domain_router(request)
 
         assert result is None

@@ -7,8 +7,8 @@
  */
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useRuns, useCreateRun, useStopRun } from "../hooks/useRuns";
+import { Link, useParams } from "react-router-dom";
+import { useRuns, useCreateRun, useStopRun, useRun } from "../hooks/useRuns";
 import { StatusBadge } from "../components/common/StatusBadge";
 import { CreateRunForm } from "../components/runs/CreateRunForm";
 import type { Run, RunCreate, RunMode } from "../api/types";
@@ -23,16 +23,23 @@ function canStop(status: string): boolean {
 }
 
 export function RunsPage() {
+  const { runId } = useParams<{ runId?: string }>();
+  const isDeepLink = Boolean(runId);
+
   const [showForm, setShowForm] = useState(false);
-  const runsQuery = useRuns({ page: 1, page_size: 50 });
+  const runsQuery = useRuns(
+    { page: 1, page_size: 50 },
+    { enabled: !isDeepLink },
+  );
+  const runQuery = useRun(runId ?? "");
   const createRunMutation = useCreateRun();
   const stopRunMutation = useStopRun();
 
   // Track locally-stopped run IDs for optimistic UI update
   const [stoppedIds, setStoppedIds] = useState<Set<string>>(new Set());
 
-  const isLoading = runsQuery.isLoading;
-  const isError = runsQuery.isError;
+  const isLoading = isDeepLink ? runQuery.isLoading : runsQuery.isLoading;
+  const isError = isDeepLink ? runQuery.isError : runsQuery.isError;
 
   function handleCreate(data: RunCreate) {
     createRunMutation.mutate(data, {
@@ -66,7 +73,9 @@ export function RunsPage() {
         >
           <p className="font-medium">Failed to load runs</p>
           <p className="text-sm mt-1">
-            {runsQuery.error?.message ?? "Unknown error"}
+            {(isDeepLink
+              ? runQuery.error?.message
+              : runsQuery.error?.message) ?? "Unknown error"}
           </p>
         </div>
       </div>
@@ -100,7 +109,11 @@ export function RunsPage() {
   // ---------------------------------------------------------------------------
   // Data State
   // ---------------------------------------------------------------------------
-  const runs = runsQuery.data?.items ?? [];
+  const runs = isDeepLink
+    ? runQuery.data
+      ? [runQuery.data]
+      : []
+    : (runsQuery.data?.items ?? []);
 
   /** Get effective status considering optimistic stop updates */
   function effectiveStatus(run: Run): string {

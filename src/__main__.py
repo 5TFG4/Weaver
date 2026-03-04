@@ -10,7 +10,7 @@ def main() -> int:
     This is the main entry point when running as a module:
         python -m src
     """
-    # TODO: Implement proper startup once modules are ready
+    # Startup deferred to weaver.py / GLaDOS app lifespan
     print("Weaver - Automated Trading System")
     print("Use 'python weaver.py' to start GLaDOS")
     return 0

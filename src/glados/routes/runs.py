@@ -6,13 +6,11 @@ REST endpoints for run management.
 
 from __future__ import annotations
 
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.glados.dependencies import get_run_manager
-from src.glados.exceptions import RunNotFoundError
-from src.glados.schemas import RunCreate, RunListResponse, RunResponse
+from src.glados.exceptions import RunNotFoundError, RunNotStartableError
+from src.glados.schemas import RunCreate, RunListResponse, RunResponse, RunStatus
 from src.glados.services.run_manager import Run, RunManager
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -36,17 +34,30 @@ def _run_to_response(run: Run) -> RunResponse:
 
 @router.get("", response_model=RunListResponse)
 async def list_runs(
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+    run_status: RunStatus | None = Query(
+        default=None,
+        alias="status",
+        description="Optional status filter",
+    ),
     run_manager: RunManager = Depends(get_run_manager),
 ) -> RunListResponse:
     """
-    List all runs.
-    
-    MVP-2: No pagination, returns all runs.
+    List all runs with pagination.
+
+    N-10: Accepts page and page_size query params.
     """
-    runs, total = await run_manager.list()
+    runs, total = await run_manager.list(status=run_status)
+    # Apply pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = runs[start:end]
     return RunListResponse(
-        items=[_run_to_response(r) for r in runs],
+        items=[_run_to_response(r) for r in paginated],
         total=total,
+        page=page,
+        page_size=page_size,
     )
 
 
@@ -88,4 +99,36 @@ async def stop_run(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Run not found: {run_id}",
+        )
+
+
+@router.post("/{run_id}/start", response_model=RunResponse)
+async def start_run(
+    run_id: str,
+    run_manager: RunManager = Depends(get_run_manager),
+) -> RunResponse:
+    """
+    Start a pending run.
+
+    M8-P0 / C-02: This route was missing — frontend startRun() always 404'd.
+
+    Returns:
+        RunResponse with RUNNING status
+
+    Raises:
+        404: Run not found
+        409: Run is not in PENDING status (already started)
+    """
+    try:
+        run = await run_manager.start(run_id)
+        return _run_to_response(run)
+    except RunNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run not found: {run_id}",
+        )
+    except RunNotStartableError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id} cannot be started (not in pending status)",
         )

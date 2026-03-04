@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
