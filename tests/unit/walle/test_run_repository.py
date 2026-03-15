@@ -4,15 +4,13 @@ Tests for RunRecord model and RunRepository.
 D-2: Runs table + repository for restart recovery.
 """
 
-from datetime import datetime, timezone
 import inspect as py_inspect
-from typing import Any, cast
+from datetime import UTC, datetime
+from typing import cast
 
-import pytest
 from sqlalchemy import Table, inspect
 
 from src.walle.models import Base, RunRecord
-
 
 # ============================================================================
 # Test: RunRecord Model Structure
@@ -55,9 +53,7 @@ class TestRunRecordModel:
     def test_status_is_indexed(self) -> None:
         """status column is indexed for filtering."""
         table = cast(Table, RunRecord.__table__)
-        status_indexed = any(
-            "status" in list(idx.columns.keys()) for idx in table.indexes
-        )
+        status_indexed = any("status" in list(idx.columns.keys()) for idx in table.indexes)
         assert status_indexed
 
     def test_repr(self) -> None:
@@ -67,7 +63,7 @@ class TestRunRecordModel:
             strategy_id="sma",
             mode="backtest",
             status="running",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         repr_str = repr(record)
         assert "RunRecord" in repr_str
@@ -107,21 +103,21 @@ class TestRunRepositoryInterface:
         from src.walle.repositories.run_repository import RunRepository
 
         assert hasattr(RunRepository, "save")
-        assert callable(getattr(RunRepository, "save"))
-        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "save"))
+        assert callable(RunRepository.save)
+        assert py_inspect.iscoroutinefunction(RunRepository.save)
 
     def test_repository_has_get_method(self) -> None:
         """RunRepository has an async get() method."""
         from src.walle.repositories.run_repository import RunRepository
 
         assert hasattr(RunRepository, "get")
-        assert callable(getattr(RunRepository, "get"))
-        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "get"))
+        assert callable(RunRepository.get)
+        assert py_inspect.iscoroutinefunction(RunRepository.get)
 
     def test_repository_has_list_method(self) -> None:
         """RunRepository has an async list() method."""
         from src.walle.repositories.run_repository import RunRepository
 
         assert hasattr(RunRepository, "list")
-        assert callable(getattr(RunRepository, "list"))
-        assert py_inspect.iscoroutinefunction(getattr(RunRepository, "list"))
+        assert callable(RunRepository.list)
+        assert py_inspect.iscoroutinefunction(RunRepository.list)

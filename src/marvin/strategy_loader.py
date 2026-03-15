@@ -47,9 +47,7 @@ class SimpleStrategyLoader(StrategyLoader):
         """Load a strategy by ID."""
         if strategy_id not in self._strategies:
             available = ", ".join(self._strategies.keys()) or "(none)"
-            raise StrategyNotFoundError(
-                f"{strategy_id}. Available: {available}"
-            )
+            raise StrategyNotFoundError(f"{strategy_id}. Available: {available}")
         return self._strategies[strategy_id]()
 
 
@@ -127,9 +125,7 @@ class PluginStrategyLoader(StrategyLoader):
                             if isinstance(meta_dict, dict):
                                 return StrategyMeta.from_dict(meta_dict, path)
                         except (ValueError, TypeError) as e:
-                            logger.warning(
-                                f"Invalid STRATEGY_META in {path}: {e}"
-                            )
+                            logger.warning(f"Invalid STRATEGY_META in {path}: {e}")
                             return None
         return None
 
@@ -190,9 +186,7 @@ class PluginStrategyLoader(StrategyLoader):
             raise StrategyNotFoundError(meta.id)
 
         # Load module from file path
-        spec = importlib.util.spec_from_file_location(
-            f"strategy_{meta.id}", meta.module_path
-        )
+        spec = importlib.util.spec_from_file_location(f"strategy_{meta.id}", meta.module_path)
         if spec is None or spec.loader is None:
             raise StrategyNotFoundError(meta.id)
 
@@ -207,8 +201,6 @@ class PluginStrategyLoader(StrategyLoader):
         # Get the strategy class
         strategy_class = getattr(module, meta.class_name, None)
         if strategy_class is None:
-            raise StrategyNotFoundError(
-                f"{meta.id} (class {meta.class_name} not found)"
-            )
+            raise StrategyNotFoundError(f"{meta.id} (class {meta.class_name} not found)")
 
         return strategy_class

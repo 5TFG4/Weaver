@@ -8,7 +8,7 @@ Validates that RunManager correctly selects clock type based on run mode:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -26,7 +26,7 @@ class TestClockSelection:
         from tests.factories.runs import create_run_manager_with_deps
 
         rm = create_run_manager_with_deps()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.BACKTEST,
@@ -99,16 +99,16 @@ class TestRealtimeClockBehavior:
         """RealtimeClock.current_time() should return wall clock time."""
         clock = RealtimeClock(timeframe="1m")
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         current = clock.current_time()
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert before <= current <= after
 
     async def test_backtest_clock_uses_simulated_time(self) -> None:
         """BacktestClock.current_time() should return simulated time."""
-        start = datetime(2024, 1, 1, 9, 30, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 1, 10, 30, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
+        end = datetime(2024, 1, 1, 10, 30, tzinfo=UTC)
         clock = BacktestClock(start_time=start, end_time=end, timeframe="1m")
 
         # Before start, current time is start time
@@ -120,8 +120,9 @@ class TestRunModeEvents:
 
     async def test_run_started_event_includes_mode(self) -> None:
         """run.Started event should include mode field."""
-        from src.events.log import InMemoryEventLog
         from tests.factories.runs import create_run_manager_with_deps
+
+        from src.events.log import InMemoryEventLog
 
         event_log = InMemoryEventLog()
         rm = create_run_manager_with_deps(event_log=event_log)
@@ -176,8 +177,9 @@ class TestStopRun:
 
     async def test_cannot_start_already_running_run(self) -> None:
         """Starting an already running run should raise error."""
-        from src.glados.exceptions import RunNotStartableError
         from tests.factories.runs import create_run_manager_with_deps
+
+        from src.glados.exceptions import RunNotStartableError
 
         rm = create_run_manager_with_deps()
         request = RunCreate(

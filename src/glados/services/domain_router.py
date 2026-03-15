@@ -11,7 +11,6 @@ from src.events.protocol import Envelope
 from src.glados.schemas import RunMode
 from src.glados.services.run_manager import RunManager
 
-
 # Mapping from strategy event types to routed event types
 # The domain prefix (backtest. or live.) is prepended by the router
 EVENT_TYPE_MAPPING = {
@@ -23,15 +22,15 @@ EVENT_TYPE_MAPPING = {
 class DomainRouter:
     """
     Routes strategy events to appropriate domain.
-    
+
     For backtest runs:
         strategy.FetchWindow → backtest.FetchWindow
         strategy.PlaceRequest → backtest.PlaceOrder
-        
+
     For live/paper runs:
         strategy.FetchWindow → live.FetchWindow
         strategy.PlaceRequest → live.PlaceOrder
-    
+
     The router preserves event chain (causation_id, corr_id).
     """
 
@@ -42,7 +41,7 @@ class DomainRouter:
     ) -> None:
         """
         Initialize DomainRouter.
-        
+
         Args:
             event_log: Event log for emitting routed events
             run_manager: Run manager for looking up run mode
@@ -53,10 +52,10 @@ class DomainRouter:
     async def route(self, event: Envelope) -> None:
         """
         Route a strategy event to the correct domain.
-        
+
         Only processes events with type starting with "strategy.".
         Other events are ignored.
-        
+
         Args:
             event: The event to potentially route
         """

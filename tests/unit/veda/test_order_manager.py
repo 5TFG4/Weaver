@@ -3,20 +3,18 @@ Unit tests for OrderManager
 
 MVP-3: OrderManager Core
 - Wraps ExchangeAdapter
-- Manages local OrderState instances  
+- Manages local OrderState instances
 - Emits OrderEvent when state changes
 - Idempotent submit (tracks by client_order_id)
 """
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 
 from src.veda.adapters.mock_adapter import MockExchangeAdapter
-from src.veda.interfaces import ExchangeAdapter, OrderSubmitResult
 from src.veda.models import (
     OrderIntent,
     OrderSide,
@@ -26,10 +24,10 @@ from src.veda.models import (
     TimeInForce,
 )
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def mock_adapter() -> MockExchangeAdapter:
@@ -73,52 +71,49 @@ def limit_order_intent() -> OrderIntent:
 # Test: OrderManager Interface
 # ============================================================================
 
+
 class TestOrderManagerInterface:
     """Test that OrderManager has the expected interface."""
 
     def test_order_manager_exists(self) -> None:
         """OrderManager class exists."""
         from src.veda.order_manager import OrderManager
+
         assert OrderManager is not None
 
-    def test_accepts_adapter_in_constructor(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    def test_accepts_adapter_in_constructor(self, mock_adapter: MockExchangeAdapter) -> None:
         """OrderManager accepts an adapter in constructor."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         assert manager is not None
 
-    def test_has_submit_order_method(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    def test_has_submit_order_method(self, mock_adapter: MockExchangeAdapter) -> None:
         """OrderManager has submit_order method."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         assert hasattr(manager, "submit_order")
         assert callable(manager.submit_order)
 
-    def test_has_cancel_order_method(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    def test_has_cancel_order_method(self, mock_adapter: MockExchangeAdapter) -> None:
         """OrderManager has cancel_order method."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         assert hasattr(manager, "cancel_order")
 
-    def test_has_get_order_method(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    def test_has_get_order_method(self, mock_adapter: MockExchangeAdapter) -> None:
         """OrderManager has get_order method."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         assert hasattr(manager, "get_order")
 
-    def test_has_list_orders_method(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    def test_has_list_orders_method(self, mock_adapter: MockExchangeAdapter) -> None:
         """OrderManager has list_orders method."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         assert hasattr(manager, "list_orders")
 
@@ -126,6 +121,7 @@ class TestOrderManagerInterface:
 # ============================================================================
 # Test: Order Submission
 # ============================================================================
+
 
 class TestOrderManagerSubmit:
     """Test order submission through OrderManager."""
@@ -137,10 +133,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """submit_order returns an OrderState."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert isinstance(result, OrderState)
 
     async def test_submit_order_populates_client_order_id(
@@ -150,10 +147,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Returned OrderState has correct client_order_id."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.client_order_id == sample_intent.client_order_id
 
     async def test_submit_order_populates_exchange_order_id(
@@ -163,10 +161,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Returned OrderState has exchange_order_id set."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.exchange_order_id is not None
         assert len(result.exchange_order_id) > 0
 
@@ -177,10 +176,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Returned OrderState has symbol and side from intent."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.symbol == sample_intent.symbol
         assert result.side == sample_intent.side
 
@@ -191,10 +191,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Returned OrderState has qty and order_type from intent."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.qty == sample_intent.qty
         assert result.order_type == sample_intent.order_type
 
@@ -205,10 +206,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Market order gets FILLED status (mock fills immediately)."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.status == OrderStatus.FILLED
 
     async def test_submit_limit_order_has_accepted_status(
@@ -218,10 +220,11 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Limit order gets ACCEPTED status (mock doesn't fill)."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(limit_order_intent)
-        
+
         assert result.status == OrderStatus.ACCEPTED
 
     async def test_submit_order_has_timestamps(
@@ -231,11 +234,12 @@ class TestOrderManagerSubmit:
     ) -> None:
         """Returned OrderState has created_at and submitted_at."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
         before = datetime.now(UTC)
-        
+
         result = await manager.submit_order(sample_intent)
-        
+
         after = datetime.now(UTC)
         assert before <= result.created_at <= after
         assert result.submitted_at is not None
@@ -245,6 +249,7 @@ class TestOrderManagerSubmit:
 # ============================================================================
 # Test: Order Idempotency
 # ============================================================================
+
 
 class TestOrderManagerIdempotency:
     """Test idempotent order submission."""
@@ -256,11 +261,12 @@ class TestOrderManagerIdempotency:
     ) -> None:
         """Submitting same client_order_id returns same OrderState."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result1 = await manager.submit_order(sample_intent)
         result2 = await manager.submit_order(sample_intent)
-        
+
         assert result1.exchange_order_id == result2.exchange_order_id
         assert result1.client_order_id == result2.client_order_id
 
@@ -270,8 +276,9 @@ class TestOrderManagerIdempotency:
     ) -> None:
         """Different client_order_ids produce different states."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         intent1 = OrderIntent(
             run_id="test-run-001",
             client_order_id=str(uuid4()),
@@ -294,10 +301,10 @@ class TestOrderManagerIdempotency:
             stop_price=None,
             time_in_force=TimeInForce.GTC,
         )
-        
+
         result1 = await manager.submit_order(intent1)
         result2 = await manager.submit_order(intent2)
-        
+
         assert result1.exchange_order_id != result2.exchange_order_id
 
     async def test_orders_tracked_locally(
@@ -307,11 +314,12 @@ class TestOrderManagerIdempotency:
     ) -> None:
         """Submitted orders are tracked in manager's local state."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.submit_order(sample_intent)
         local_state = manager.get_order(sample_intent.client_order_id)
-        
+
         assert local_state is not None
         assert local_state.client_order_id == result.client_order_id
 
@@ -319,6 +327,7 @@ class TestOrderManagerIdempotency:
 # ============================================================================
 # Test: Order Query
 # ============================================================================
+
 
 class TestOrderManagerQuery:
     """Test order queries through OrderManager."""
@@ -330,11 +339,12 @@ class TestOrderManagerQuery:
     ) -> None:
         """get_order returns the tracked OrderState."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         submitted = await manager.submit_order(sample_intent)
         result = manager.get_order(sample_intent.client_order_id)
-        
+
         assert result is not None
         assert result.exchange_order_id == submitted.exchange_order_id
 
@@ -343,19 +353,19 @@ class TestOrderManagerQuery:
     ) -> None:
         """get_order returns None for unknown client_order_id."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = manager.get_order("unknown-id")
-        
+
         assert result is None
 
-    async def test_list_orders_returns_all_tracked(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_list_orders_returns_all_tracked(self, mock_adapter: MockExchangeAdapter) -> None:
         """list_orders returns all tracked orders."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         intents = [
             OrderIntent(
                 run_id="test-run-001",
@@ -370,29 +380,29 @@ class TestOrderManagerQuery:
             )
             for _ in range(3)
         ]
-        
+
         for intent in intents:
             await manager.submit_order(intent)
-        
+
         result = manager.list_orders()
-        
+
         assert len(result) == 3
 
-    async def test_list_orders_empty_initially(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_list_orders_empty_initially(self, mock_adapter: MockExchangeAdapter) -> None:
         """list_orders returns empty list when no orders."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = manager.list_orders()
-        
+
         assert result == []
 
 
 # ============================================================================
 # Test: Order Cancellation
 # ============================================================================
+
 
 class TestOrderManagerCancel:
     """Test order cancellation through OrderManager."""
@@ -404,11 +414,12 @@ class TestOrderManagerCancel:
     ) -> None:
         """cancel_order returns True for pending order."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         await manager.submit_order(limit_order_intent)
         result = await manager.cancel_order(limit_order_intent.client_order_id)
-        
+
         assert result is True
 
     async def test_cancel_updates_local_state(
@@ -418,11 +429,12 @@ class TestOrderManagerCancel:
     ) -> None:
         """cancel_order updates local OrderState to CANCELLED."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         await manager.submit_order(limit_order_intent)
         await manager.cancel_order(limit_order_intent.client_order_id)
-        
+
         state = manager.get_order(limit_order_intent.client_order_id)
         assert state is not None
         assert state.status == OrderStatus.CANCELLED
@@ -432,10 +444,11 @@ class TestOrderManagerCancel:
     ) -> None:
         """cancel_order returns False for unknown order."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         result = await manager.cancel_order("unknown-id")
-        
+
         assert result is False
 
     async def test_cancel_filled_order_returns_false(
@@ -445,18 +458,20 @@ class TestOrderManagerCancel:
     ) -> None:
         """cancel_order returns False for filled order."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         # Market orders fill immediately in mock
         await manager.submit_order(sample_intent)
         result = await manager.cancel_order(sample_intent.client_order_id)
-        
+
         assert result is False
 
 
 # ============================================================================
 # Test: Rejection Handling
 # ============================================================================
+
 
 class TestOrderManagerRejection:
     """Test order rejection handling."""
@@ -468,11 +483,12 @@ class TestOrderManagerRejection:
     ) -> None:
         """Rejected order has REJECTED status in local state."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         mock_adapter.set_reject_next_order(True, "Insufficient funds")
         result = await manager.submit_order(sample_intent)
-        
+
         assert result.status == OrderStatus.REJECTED
 
     async def test_rejected_order_tracked_locally(
@@ -482,11 +498,12 @@ class TestOrderManagerRejection:
     ) -> None:
         """Rejected orders are tracked in local state."""
         from src.veda.order_manager import OrderManager
+
         manager = OrderManager(adapter=mock_adapter)
-        
+
         mock_adapter.set_reject_next_order(True, "Insufficient funds")
         await manager.submit_order(sample_intent)
-        
+
         local_state = manager.get_order(sample_intent.client_order_id)
         assert local_state is not None
         assert local_state.status == OrderStatus.REJECTED

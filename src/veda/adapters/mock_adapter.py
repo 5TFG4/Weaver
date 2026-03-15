@@ -6,6 +6,7 @@ Simulates exchange behavior without making real API calls.
 """
 
 from __future__ import annotations
+
 ADAPTER_META = {
     "id": "mock",
     "name": "Mock Exchange",
@@ -15,9 +16,9 @@ ADAPTER_META = {
     "class": "MockExchangeAdapter",
     "features": ["paper_trading", "testing"],
 }
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import AsyncIterator
 from uuid import uuid4
 
 from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
@@ -25,13 +26,10 @@ from src.veda.models import (
     AccountInfo,
     Bar,
     OrderIntent,
-    OrderSide,
     OrderStatus,
     OrderType,
     Position,
-    PositionSide,
     Quote,
-    TimeInForce,
     Trade,
 )
 
@@ -102,9 +100,7 @@ class MockExchangeAdapter(ExchangeAdapter):
         """Set mock price for a symbol."""
         self._mock_prices[symbol] = price
 
-    def set_reject_next_order(
-        self, reject: bool, reason: str | None = None
-    ) -> None:
+    def set_reject_next_order(self, reject: bool, reason: str | None = None) -> None:
         """Configure next order to be rejected."""
         self._reject_next_order = reject
         self._reject_reason = reason

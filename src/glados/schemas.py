@@ -12,7 +12,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # =============================================================================
 # Enums
 # =============================================================================
@@ -202,4 +201,3 @@ class CandleListResponse(BaseModel):
     symbol: str
     timeframe: str
     items: list[CandleResponse]
-

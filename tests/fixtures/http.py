@@ -4,9 +4,11 @@ HTTP Mocking Fixtures
 Provides utilities for mocking HTTP calls to external services like Alpaca.
 Uses respx for httpx-based mocking.
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -16,14 +18,14 @@ import pytest
 @dataclass
 class MockBar:
     """Mock OHLCV bar data."""
-    
+
     timestamp: datetime
     open: Decimal
     high: Decimal
     low: Decimal
     close: Decimal
     volume: Decimal
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to API response format."""
         return {
@@ -39,7 +41,7 @@ class MockBar:
 @dataclass
 class MockOrder:
     """Mock order data."""
-    
+
     id: str
     client_order_id: str
     symbol: str
@@ -49,10 +51,8 @@ class MockOrder:
     status: str
     filled_qty: Decimal = Decimal("0")
     filled_avg_price: Decimal | None = None
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to API response format."""
         return {
@@ -72,7 +72,7 @@ class MockOrder:
 @dataclass
 class MockAccount:
     """Mock account data."""
-    
+
     id: str = "test-account-id"
     account_number: str = "TEST123456"
     status: str = "ACTIVE"
@@ -80,7 +80,7 @@ class MockAccount:
     cash: Decimal = Decimal("100000.00")
     portfolio_value: Decimal = Decimal("100000.00")
     buying_power: Decimal = Decimal("400000.00")  # 4x for margin
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to API response format."""
         return {
@@ -97,28 +97,28 @@ class MockAccount:
 class AlpacaMockBuilder:
     """
     Builder for configuring Alpaca API mock responses.
-    
+
     Usage:
         with respx.mock:
             builder = AlpacaMockBuilder()
             builder.with_account(cash=Decimal("50000"))
             builder.with_bars("AAPL", [...])
-            
+
             # Make API calls - they will use mock responses
     """
-    
+
     def __init__(self) -> None:
         self._account = MockAccount()
         self._bars: dict[str, list[MockBar]] = {}
         self._orders: dict[str, MockOrder] = {}
         self._next_order_responses: list[MockOrder] = []
-    
+
     def with_account(
         self,
         cash: Decimal | None = None,
         portfolio_value: Decimal | None = None,
         buying_power: Decimal | None = None,
-    ) -> "AlpacaMockBuilder":
+    ) -> AlpacaMockBuilder:
         """Configure account mock data."""
         if cash is not None:
             self._account.cash = cash
@@ -127,28 +127,28 @@ class AlpacaMockBuilder:
         if buying_power is not None:
             self._account.buying_power = buying_power
         return self
-    
-    def with_bars(self, symbol: str, bars: list[MockBar]) -> "AlpacaMockBuilder":
+
+    def with_bars(self, symbol: str, bars: list[MockBar]) -> AlpacaMockBuilder:
         """Configure bar data for a symbol."""
         self._bars[symbol] = bars
         return self
-    
-    def with_order_response(self, order: MockOrder) -> "AlpacaMockBuilder":
+
+    def with_order_response(self, order: MockOrder) -> AlpacaMockBuilder:
         """Queue an order response for the next order submission."""
         self._next_order_responses.append(order)
         return self
-    
+
     def get_account_response(self) -> dict[str, Any]:
         """Get the mock account response."""
         return self._account.to_dict()
-    
+
     def get_bars_response(self, symbol: str) -> dict[str, Any]:
         """Get the mock bars response for a symbol."""
         bars = self._bars.get(symbol, [])
         return {
             "bars": {symbol: [bar.to_dict() for bar in bars]},
         }
-    
+
     def get_next_order_response(self) -> dict[str, Any] | None:
         """Get and consume the next queued order response."""
         if self._next_order_responses:
@@ -159,6 +159,7 @@ class AlpacaMockBuilder:
 # =============================================================================
 # Pytest Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_account() -> MockAccount:
@@ -175,7 +176,7 @@ def alpaca_mock_builder() -> AlpacaMockBuilder:
 @pytest.fixture
 def sample_bars() -> list[MockBar]:
     """Provide sample bar data for testing."""
-    base_time = datetime(2024, 1, 15, 9, 30, tzinfo=timezone.utc)
+    base_time = datetime(2024, 1, 15, 9, 30, tzinfo=UTC)
     return [
         MockBar(
             timestamp=base_time,

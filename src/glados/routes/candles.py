@@ -6,8 +6,6 @@ REST endpoints for market data queries.
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Query
 
 from src.glados.dependencies import get_market_data_service
@@ -41,7 +39,7 @@ async def get_candles(
 ) -> CandleListResponse:
     """
     Get OHLCV candles.
-    
+
     MVP-5: Returns mock data.
     """
     candles = await market_data_service.get_candles(

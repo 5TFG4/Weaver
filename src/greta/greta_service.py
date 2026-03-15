@@ -23,10 +23,8 @@ from src.greta.models import (
     SimulatedFill,
     SimulatedPosition,
 )
-from src.veda.models import OrderIntent, OrderSide, OrderStatus
-from src.veda.models import OrderType, TimeInForce
+from src.veda.models import OrderIntent, OrderSide, OrderStatus, OrderType, TimeInForce
 from src.walle.repositories.bar_repository import Bar, BarRepository
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +32,15 @@ logger = logging.getLogger(__name__)
 class GretaService:
     """
     Backtest execution environment for a SINGLE run.
-    
+
     IMPORTANT: This is a PER-RUN instance, NOT a singleton!
-    
+
     Each backtest run gets its own GretaService instance because:
     - Simulated positions must be isolated between runs
     - Equity curves are per-run
     - Pending orders are per-run
     - Multiple backtests can run in parallel
-    
+
     Lifecycle:
     1. RunManager creates GretaService for a new backtest run
     2. GretaService.initialize() sets up symbols and timeframe
@@ -61,7 +59,7 @@ class GretaService:
     ) -> None:
         """
         Initialize GretaService for a specific run.
-        
+
         Args:
             run_id: Unique identifier for this backtest run
             bar_repository: Shared singleton for historical bar data
@@ -81,10 +79,10 @@ class GretaService:
         self._timeframe: str = ""
         self._start: datetime | None = None
         self._end: datetime | None = None
-        
+
         # Preloaded bar data: symbol -> {timestamp -> Bar}
         self._bar_cache: dict[str, dict[datetime, Bar]] = {}
-        
+
         # Current state
         self._positions: dict[str, SimulatedPosition] = {}
         self._pending_orders: dict[str, OrderIntent] = {}
@@ -151,9 +149,9 @@ class GretaService:
     ) -> None:
         """
         Initialize for a backtest run.
-        
+
         Preloads historical data and resets state.
-        
+
         Args:
             symbols: List of symbols to trade
             timeframe: Bar timeframe (e.g., "1m", "5m")
@@ -209,13 +207,13 @@ class GretaService:
     async def advance_to(self, timestamp: datetime) -> None:
         """
         Advance simulation to a specific timestamp.
-        
+
         Called by the clock on each tick. Processes:
         1. Update current bars
         2. Fill pending orders
         3. Update position marks
         4. Record equity curve
-        
+
         Args:
             timestamp: The timestamp to advance to
         """
@@ -238,7 +236,7 @@ class GretaService:
     def _on_fetch_window(self, envelope: Envelope) -> None:
         """
         Handle backtest.FetchWindow event (sync callback wrapper).
-        
+
         Fetches bars from cache and emits data.WindowReady.
         Since EventLog callbacks are sync, we schedule the async work.
         """
@@ -251,10 +249,9 @@ class GretaService:
     async def _handle_fetch_window(self, envelope: Envelope) -> None:
         """
         Handle backtest.FetchWindow event.
-        
+
         Fetches bars from cache and emits data.WindowReady.
         """
-        from datetime import datetime as dt
         from dateutil.parser import isoparse
 
         payload = envelope.payload
@@ -269,7 +266,7 @@ class GretaService:
         bars: list[Bar] = []
         if symbol in self._bar_cache:
             symbol_bars = self._bar_cache[symbol]
-            
+
             # Sort by timestamp and get last N bars up to as_of
             if as_of_str:
                 as_of = isoparse(as_of_str)
@@ -280,7 +277,7 @@ class GretaService:
                 )
             else:
                 available_bars = sorted(symbol_bars.values(), key=lambda b: b.timestamp)
-            
+
             # Take last N bars
             bars = available_bars[-lookback:] if len(available_bars) >= lookback else available_bars
 
@@ -359,12 +356,12 @@ class GretaService:
     def get_result(self) -> BacktestResult:
         """
         Get the backtest result after completion.
-        
+
         Returns:
             BacktestResult with stats, fills, and equity curve
         """
         stats = self._calculate_stats()
-        
+
         return BacktestResult(
             run_id=self._run_id,
             start_time=self._start or datetime.now(),
@@ -385,9 +382,9 @@ class GretaService:
     async def place_order(self, intent: OrderIntent) -> None:
         """
         Submit an order for simulation.
-        
+
         Orders are queued and filled on the next advance_to() call.
-        
+
         Args:
             intent: Order intent from strategy
         """
@@ -420,7 +417,7 @@ class GretaService:
 
             # Try to simulate fill
             fill = self._fill_simulator.simulate_fill(intent, bar, self._fill_config)
-            
+
             if fill is not None:
                 # Record fill
                 self._fills.append(fill)
@@ -455,7 +452,7 @@ class GretaService:
     def _is_adding_to_position(old_qty: Decimal, qty_change: Decimal) -> bool:
         """
         Check if a trade adds to an existing position (same direction).
-        
+
         Both quantities have the same sign means we're adding:
         - Long position (old_qty > 0) + buy (qty_change > 0) = adding
         - Short position (old_qty < 0) + sell (qty_change < 0) = adding
@@ -466,11 +463,11 @@ class GretaService:
     def _is_position_reversal(old_qty: Decimal, new_qty: Decimal) -> bool:
         """
         Check if a trade reverses the position direction.
-        
+
         Signs differ means we crossed zero:
         - Long→Short: old_qty > 0, new_qty < 0
         - Short→Long: old_qty < 0, new_qty > 0
-        
+
         Note:
             Caller must handle new_qty == 0 (position closed) before calling.
             When new_qty is zero, old_qty * new_qty == 0, returning False.
@@ -510,7 +507,7 @@ class GretaService:
                     # The "excess" quantity forms new position at fill price
                     pos.avg_entry_price = fill.fill_price
                 # else: Reducing position (partial close) - avg_entry_price unchanged
-                
+
                 pos.qty = new_qty
                 pos.market_value = new_qty * fill.fill_price
         else:
@@ -537,9 +534,7 @@ class GretaService:
 
     def _calculate_equity(self) -> Decimal:
         """Calculate total equity (cash + positions)."""
-        position_value = sum(
-            pos.market_value for pos in self._positions.values()
-        )
+        position_value = sum(pos.market_value for pos in self._positions.values())
         return self._cash + position_value
 
     def _record_equity(self, timestamp: datetime) -> None:
@@ -550,14 +545,14 @@ class GretaService:
     def _calculate_stats(self) -> BacktestStats:
         """Calculate backtest statistics from fills and equity curve."""
         stats = BacktestStats()
-        
+
         if not self._equity_curve:
             return stats
 
         # Basic stats
         stats.total_trades = len(self._fills)
         stats.total_bars = len(self._equity_curve)
-        
+
         # Calculate return
         initial = self._initial_cash
         final = self._calculate_equity()
@@ -566,12 +561,8 @@ class GretaService:
             stats.total_return_pct = (stats.total_return / initial) * 100
 
         # Calculate total costs
-        stats.total_commission = sum(
-            (f.commission for f in self._fills), Decimal("0")
-        )
-        stats.total_slippage = sum(
-            (f.slippage for f in self._fills), Decimal("0")
-        )
+        stats.total_commission = sum((f.commission for f in self._fills), Decimal("0"))
+        stats.total_slippage = sum((f.slippage for f in self._fills), Decimal("0"))
 
         # Win/loss analysis from round-trip trades
         self._compute_trade_stats(stats)
@@ -637,9 +628,7 @@ class GretaService:
 
                     # Any unmatched buy opens/extends long
                     if remaining > Decimal("0"):
-                        long_lots.append(
-                            (remaining, fill.fill_price, fill_commission_per_unit)
-                        )
+                        long_lots.append((remaining, fill.fill_price, fill_commission_per_unit))
                 else:
                     # Close open longs first
                     while remaining > Decimal("0") and long_lots:
@@ -666,9 +655,7 @@ class GretaService:
 
                     # Any unmatched sell opens/extends short
                     if remaining > Decimal("0"):
-                        short_lots.append(
-                            (remaining, fill.fill_price, fill_commission_per_unit)
-                        )
+                        short_lots.append((remaining, fill.fill_price, fill_commission_per_unit))
 
         total_round_trips = stats.winning_trades + stats.losing_trades
         if total_round_trips > 0:
@@ -709,7 +696,11 @@ class GretaService:
         mean_return = sum(returns) / n
 
         variance = sum((r - mean_return) ** 2 for r in returns) / n
-        std_return = variance.sqrt() if hasattr(variance, 'sqrt') else Decimal(str(variance ** Decimal("0.5")))
+        std_return = (
+            variance.sqrt()
+            if hasattr(variance, "sqrt")
+            else Decimal(str(variance ** Decimal("0.5")))
+        )
 
         # Sharpe ratio on per-period returns (risk-free rate assumed zero).
         # NOTE: This value is intentionally non-annualized.
@@ -720,7 +711,7 @@ class GretaService:
         # NOTE: This value is intentionally non-annualized.
         downside_returns = [r for r in returns if r < Decimal("0")]
         if downside_returns:
-            downside_variance = sum(r ** 2 for r in downside_returns) / Decimal(len(downside_returns))
+            downside_variance = sum(r**2 for r in downside_returns) / Decimal(len(downside_returns))
             downside_std = Decimal(str(downside_variance ** Decimal("0.5")))
             if downside_std > Decimal("0"):
                 stats.sortino_ratio = mean_return / downside_std

@@ -41,9 +41,9 @@ class Order:
 class MockOrderService:
     """
     Mock order service for MVP-4.
-    
+
     Returns fake order data for testing and development.
-    
+
     Future (M3+):
     - Real data from Veda/WallE
     - Complex filtering (status, date range)
@@ -58,7 +58,7 @@ class MockOrderService:
     def _init_mock_data(self) -> None:
         """Initialize mock order data."""
         now = datetime.now(UTC)
-        
+
         # Order 1: Filled buy order
         self._orders["order-123"] = Order(
             id="order-123",
@@ -80,7 +80,7 @@ class MockOrderService:
             filled_at=now,
             reject_reason=None,
         )
-        
+
         # Order 2: Pending limit order
         self._orders["order-456"] = Order(
             id="order-456",
@@ -106,10 +106,10 @@ class MockOrderService:
     async def get(self, order_id: str) -> Order | None:
         """
         Get order by ID.
-        
+
         Args:
             order_id: The order ID to fetch
-            
+
         Returns:
             Order if found, None otherwise
         """
@@ -122,22 +122,22 @@ class MockOrderService:
     ) -> tuple[list[Order], int]:
         """
         List orders with optional filter.
-        
+
         MVP-4: Only run_id filter supported.
-        
+
         Args:
             run_id: Filter by run ID
             status: Filter by order status
-            
+
         Returns:
             Tuple of (orders list, total count)
         """
         orders = list(self._orders.values())
-        
+
         if run_id is not None:
             orders = [o for o in orders if o.run_id == run_id]
 
         if status is not None:
             orders = [o for o in orders if o.status == status]
-        
+
         return orders, len(orders)

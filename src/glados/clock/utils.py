@@ -6,7 +6,7 @@ Bar alignment calculations and timeframe parsing utilities.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import NamedTuple
 
 
@@ -44,8 +44,7 @@ def parse_timeframe(timeframe: str) -> TimeframeDuration:
     """
     if timeframe not in TIMEFRAME_SECONDS:
         raise ValueError(
-            f"Unknown timeframe: {timeframe}. "
-            f"Supported: {', '.join(TIMEFRAME_SECONDS.keys())}"
+            f"Unknown timeframe: {timeframe}. Supported: {', '.join(TIMEFRAME_SECONDS.keys())}"
         )
     return TimeframeDuration(code=timeframe, seconds=TIMEFRAME_SECONDS[timeframe])
 
@@ -82,9 +81,9 @@ def calculate_next_bar_start(
 
     # Ensure we have a timezone-aware datetime in UTC
     if current_time.tzinfo is None:
-        current_time = current_time.replace(tzinfo=timezone.utc)
+        current_time = current_time.replace(tzinfo=UTC)
     else:
-        current_time = current_time.astimezone(timezone.utc)
+        current_time = current_time.astimezone(UTC)
 
     if timeframe == "1d":
         # Daily bars start at midnight UTC
@@ -96,7 +95,7 @@ def calculate_next_bar_start(
             0,
             0,
             0,
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         )
 
     # For intraday timeframes, calculate based on seconds since midnight
@@ -104,9 +103,7 @@ def calculate_next_bar_start(
     seconds_since_midnight = (current_time - midnight).total_seconds()
 
     # Find the current bar boundary
-    current_bar_start_seconds = (
-        int(seconds_since_midnight) // tf.seconds
-    ) * tf.seconds
+    current_bar_start_seconds = (int(seconds_since_midnight) // tf.seconds) * tf.seconds
 
     # Next bar starts one interval later
     next_bar_start_seconds = current_bar_start_seconds + tf.seconds
@@ -122,7 +119,7 @@ def calculate_next_bar_start(
             0,
             0,
             0,
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         )
 
     # Calculate the next bar start time
@@ -153,9 +150,9 @@ def calculate_bar_start(
 
     # Ensure UTC
     if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
+        timestamp = timestamp.replace(tzinfo=UTC)
     else:
-        timestamp = timestamp.astimezone(timezone.utc)
+        timestamp = timestamp.astimezone(UTC)
 
     if timeframe == "1d":
         return timestamp.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -183,7 +180,7 @@ def seconds_until_next_bar(
     """
     # Normalize to UTC if naive (same logic as calculate_next_bar_start)
     if current_time.tzinfo is None:
-        current_time = current_time.replace(tzinfo=timezone.utc)
-    
+        current_time = current_time.replace(tzinfo=UTC)
+
     next_bar = calculate_next_bar_start(current_time, timeframe)
     return (next_bar - current_time).total_seconds()

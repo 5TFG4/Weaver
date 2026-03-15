@@ -7,6 +7,7 @@ Exception hierarchy for Veda module errors.
 from __future__ import annotations
 
 from decimal import Decimal
+
 from src.veda.models import OrderStatus
 
 
@@ -44,9 +45,7 @@ class OrderNotCancellableError(VedaError):
     def __init__(self, client_order_id: str, status: OrderStatus) -> None:
         self.client_order_id = client_order_id
         self.status = status
-        super().__init__(
-            f"Order {client_order_id} cannot be cancelled (status: {status.value})"
-        )
+        super().__init__(f"Order {client_order_id} cannot be cancelled (status: {status.value})")
 
 
 class InsufficientFundsError(VedaError):

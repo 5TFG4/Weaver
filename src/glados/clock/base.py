@@ -11,9 +11,10 @@ import asyncio
 import inspect
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Awaitable, Callable, Union
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class BaseClock(ABC):
     async def _emit_tick(self, tick: ClockTick) -> None:
         """
         Emit a tick to all registered callbacks (supports async).
-        
+
         Includes timeout protection to prevent hung callbacks from
         blocking the entire clock/backtest.
         """
@@ -165,7 +166,7 @@ class BaseClock(ABC):
                 # If callback is async, await it with timeout
                 if inspect.isawaitable(result):
                     await asyncio.wait_for(result, timeout=self._callback_timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(
                     "Tick callback timed out after %.1fs (tick %d)",
                     self._callback_timeout,

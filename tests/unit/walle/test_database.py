@@ -5,15 +5,16 @@ Unit tests for Database class and session factory.
 These tests verify the database layer without requiring a real database.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.config import DatabaseConfig
 from src.walle.database import (
     Database,
+    close_database,
     get_database,
     init_database,
-    close_database,
 )
 
 
@@ -22,9 +23,7 @@ class TestDatabaseConfig:
 
     def test_sync_url_converts_driver(self):
         """sync_url converts asyncpg to psycopg2."""
-        config = DatabaseConfig(
-            url="postgresql+asyncpg://user:pass@localhost:5432/db"
-        )
+        config = DatabaseConfig(url="postgresql+asyncpg://user:pass@localhost:5432/db")
         assert config.sync_url == "postgresql+psycopg2://user:pass@localhost:5432/db"
 
     def test_sync_url_handles_default(self):
@@ -60,12 +59,12 @@ class TestDatabaseClass:
         """Accessing engine property creates it."""
         mock_engine = MagicMock()
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         db = Database(config)
-        
+
         engine = db.engine
-        
+
         assert engine is mock_engine
         mock_create_engine.assert_called_once()
 
@@ -74,14 +73,14 @@ class TestDatabaseClass:
         """Engine is created only once."""
         mock_engine = MagicMock()
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         db = Database(config)
-        
+
         # Access twice
         engine1 = db.engine
         engine2 = db.engine
-        
+
         assert engine1 is engine2
         assert mock_create_engine.call_count == 1
 
@@ -93,12 +92,12 @@ class TestDatabaseClass:
         mock_create_engine.return_value = mock_engine
         mock_factory = MagicMock()
         mock_sessionmaker.return_value = mock_factory
-        
+
         config = DatabaseConfig()
         db = Database(config)
-        
+
         factory = db.session_factory
-        
+
         assert factory is mock_factory
         mock_sessionmaker.assert_called_once()
 
@@ -108,15 +107,15 @@ class TestDatabaseClass:
         """close() disposes the engine."""
         mock_engine = AsyncMock()
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         db = Database(config)
-        
+
         # Access engine to create it
         _ = db.engine
-        
+
         await db.close()
-        
+
         mock_engine.dispose.assert_called_once()
         assert db._engine is None
         assert db._session_factory is None
@@ -129,34 +128,37 @@ class TestGlobalDatabaseFunctions:
         """get_database raises RuntimeError when not initialized."""
         # Ensure clean state
         import src.walle.database as db_module
+
         db_module._db = None
-        
+
         with pytest.raises(RuntimeError, match="Database not initialized"):
             get_database()
 
     def test_init_database_returns_database(self):
         """init_database returns Database instance."""
         import src.walle.database as db_module
+
         db_module._db = None
-        
+
         config = DatabaseConfig()
         db = init_database(config)
-        
+
         assert isinstance(db, Database)
-        
+
         # Cleanup
         db_module._db = None
 
     def test_init_database_sets_global(self):
         """init_database sets global _db."""
         import src.walle.database as db_module
+
         db_module._db = None
-        
+
         config = DatabaseConfig()
         db = init_database(config)
-        
+
         assert get_database() is db
-        
+
         # Cleanup
         db_module._db = None
 
@@ -164,13 +166,13 @@ class TestGlobalDatabaseFunctions:
     async def test_close_database_clears_global(self):
         """close_database clears global _db."""
         import src.walle.database as db_module
-        
+
         config = DatabaseConfig()
         db = init_database(config)
-        
+
         # Mock the engine so close doesn't fail
         db._engine = None
-        
+
         await close_database()
-        
+
         assert db_module._db is None

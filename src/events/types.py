@@ -5,9 +5,9 @@ Defines all event type namespaces and specific event types used in the system.
 Event types follow the pattern: namespace.EventName[.version]
 """
 
-from asyncpg import Connection, Pool
 from typing import Final
 
+from asyncpg import Connection, Pool
 
 # =============================================================================
 # Database Types
@@ -21,6 +21,7 @@ AsyncConnectionPool = Pool
 # =============================================================================
 # Namespaces
 # =============================================================================
+
 
 class Namespace:
     """Event namespace constants."""
@@ -40,6 +41,7 @@ class Namespace:
 # Strategy Events (emitted by Marvin)
 # =============================================================================
 
+
 class StrategyEvents:
     """Events emitted by strategy execution."""
 
@@ -52,6 +54,7 @@ class StrategyEvents:
 # Live Events (handled by Veda)
 # =============================================================================
 
+
 class LiveEvents:
     """Events for live trading domain."""
 
@@ -63,6 +66,7 @@ class LiveEvents:
 # Backtest Events (handled by Greta)
 # =============================================================================
 
+
 class BacktestEvents:
     """Events for backtesting domain."""
 
@@ -73,6 +77,7 @@ class BacktestEvents:
 # =============================================================================
 # Data Events
 # =============================================================================
+
 
 class DataEvents:
     """Events related to market data."""
@@ -86,6 +91,7 @@ class DataEvents:
 # Market Events
 # =============================================================================
 
+
 class MarketEvents:
     """Real-time market events."""
 
@@ -97,6 +103,7 @@ class MarketEvents:
 # =============================================================================
 # Order Events
 # =============================================================================
+
 
 class OrderEvents:
     """Order lifecycle events."""
@@ -115,6 +122,7 @@ class OrderEvents:
 # Run Events
 # =============================================================================
 
+
 class RunEvents:
     """Run lifecycle events."""
 
@@ -131,6 +139,7 @@ class RunEvents:
 # Clock Events
 # =============================================================================
 
+
 class ClockEvents:
     """Clock/timing events."""
 
@@ -140,6 +149,7 @@ class ClockEvents:
 # =============================================================================
 # UI Events (thin events for frontend)
 # =============================================================================
+
 
 class UIEvents:
     """Thin events for UI updates."""

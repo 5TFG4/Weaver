@@ -7,7 +7,6 @@ Tests that PluginAdapterLoader correctly discovers AlpacaAdapter and MockExchang
 import pytest
 
 from src.veda.adapter_loader import PluginAdapterLoader
-from src.veda.adapter_meta import AdapterMeta
 
 
 class TestRealAdapterDiscovery:
@@ -53,9 +52,7 @@ class TestRealAdapterDiscovery:
         assert adapter is not None
         assert isinstance(adapter, ExchangeAdapter)
 
-    def test_load_alpaca_adapter_with_credentials(
-        self, loader: PluginAdapterLoader
-    ) -> None:
+    def test_load_alpaca_adapter_with_credentials(self, loader: PluginAdapterLoader) -> None:
         """Can load AlpacaAdapter with credentials via loader."""
         from src.veda.interfaces import ExchangeAdapter
 

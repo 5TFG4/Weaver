@@ -245,9 +245,10 @@ class TestRunManagerEventEmission:
 
     async def test_start_emits_runs_started_event(self) -> None:
         """start() should emit runs.Started event when event_log provided."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
@@ -272,9 +273,10 @@ class TestRunManagerEventEmission:
 
     async def test_stop_emits_runs_stopped_event(self) -> None:
         """stop() should emit runs.Stopped event when event_log provided."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
@@ -315,9 +317,10 @@ class TestRunManagerEventEmission:
 
     async def test_stop_idempotent_no_duplicate_event(self) -> None:
         """stop() called twice should only emit one Stopped event."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.events.types import RunEvents
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)

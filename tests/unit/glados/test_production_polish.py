@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from src.glados.app import create_app
 
-
 # =============================================================================
 # Test Fixtures
 # =============================================================================

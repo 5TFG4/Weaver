@@ -208,9 +208,7 @@ class TestBarRepository:
         assert latest is not None
         assert latest.close == Decimal("102")
 
-    async def test_get_latest_bar_returns_none_when_empty(
-        self, repo: BarRepository
-    ) -> None:
+    async def test_get_latest_bar_returns_none_when_empty(self, repo: BarRepository) -> None:
         """Returns None when no bars exist."""
         result = await repo.get_latest_bar("NONEXISTENT/USD", "1m")
         assert result is None

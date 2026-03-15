@@ -11,7 +11,6 @@ import pytest_asyncio
 
 from src.glados.clock.base import ClockTick
 from src.marvin.strategies.sample_strategy import SampleStrategy
-from src.marvin.base_strategy import StrategyAction
 from src.walle.repositories.bar_repository import Bar
 
 
@@ -101,9 +100,7 @@ class TestSampleStrategyOnData:
         await s.initialize(["BTC/USD"])
         return s
 
-    async def test_no_action_with_insufficient_bars(
-        self, strategy: SampleStrategy
-    ) -> None:
+    async def test_no_action_with_insufficient_bars(self, strategy: SampleStrategy) -> None:
         """Returns no action with fewer than 2 bars."""
         data = {"bars": [make_bar()]}
 
@@ -111,9 +108,7 @@ class TestSampleStrategyOnData:
 
         assert len(actions) == 0
 
-    async def test_buys_when_price_below_average(
-        self, strategy: SampleStrategy
-    ) -> None:
+    async def test_buys_when_price_below_average(self, strategy: SampleStrategy) -> None:
         """Buys when current price < 99% of average."""
         # Average of 42000 and 40000 = 41000
         # Current at 40000 is < 41000 * 0.99 = 40590
@@ -135,9 +130,7 @@ class TestSampleStrategyOnData:
         assert actions[0].type == "place_order"
         assert actions[0].side == "buy"
 
-    async def test_no_buy_when_already_has_position(
-        self, strategy: SampleStrategy
-    ) -> None:
+    async def test_no_buy_when_already_has_position(self, strategy: SampleStrategy) -> None:
         """Does not buy when already has position."""
         strategy._has_position = True
         bars = [
@@ -150,9 +143,7 @@ class TestSampleStrategyOnData:
 
         assert len(actions) == 0
 
-    async def test_sells_when_price_above_average(
-        self, strategy: SampleStrategy
-    ) -> None:
+    async def test_sells_when_price_above_average(self, strategy: SampleStrategy) -> None:
         """Sells when current price > 101% of average and has position."""
         strategy._has_position = True
         # Average of 40000 and 42000 = 41000
@@ -182,9 +173,7 @@ class TestSampleStrategyOnData:
         # No position, so no sell
         assert len(actions) == 0
 
-    async def test_no_action_when_price_in_range(
-        self, strategy: SampleStrategy
-    ) -> None:
+    async def test_no_action_when_price_in_range(self, strategy: SampleStrategy) -> None:
         """No action when price within 1% of average."""
         # Average close to current
         bars = [

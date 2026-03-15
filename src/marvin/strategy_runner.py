@@ -12,18 +12,17 @@ from src.events.protocol import Envelope
 from src.glados.task_utils import spawn_tracked_task
 from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
 
-
 logger = logging.getLogger(__name__)
 
 
 class StrategyRunner:
     """
     Runs strategy code in response to clock ticks.
-    
+
     Mode-agnostic: works identically for live and backtest runs.
     The runner translates strategy actions into events that are
     routed appropriately based on run mode.
-    
+
     Attributes:
         run_id: Current run identifier (set during initialize)
         symbols: Trading symbols for this run
@@ -36,7 +35,7 @@ class StrategyRunner:
     ) -> None:
         """
         Initialize StrategyRunner.
-        
+
         Args:
             strategy: The strategy to run
             event_log: Event log for emitting events
@@ -60,7 +59,7 @@ class StrategyRunner:
     async def initialize(self, run_id: str, symbols: list[str]) -> None:
         """
         Initialize for a run.
-        
+
         Args:
             run_id: Unique run identifier
             symbols: List of symbols to trade
@@ -79,7 +78,7 @@ class StrategyRunner:
     async def cleanup(self) -> None:
         """
         Cleanup resources.
-        
+
         Unsubscribes from event log.
         """
         if self._subscription_id:
@@ -89,7 +88,7 @@ class StrategyRunner:
     def _on_window_ready(self, envelope: Envelope) -> None:
         """
         Handle data.WindowReady event (sync callback wrapper).
-        
+
         Since EventLog callbacks are sync, we need to schedule
         the async handler.
         """
@@ -102,9 +101,9 @@ class StrategyRunner:
     async def on_tick(self, tick) -> None:
         """
         Handle clock tick.
-        
+
         Delegates to strategy and emits resulting events.
-        
+
         Args:
             tick: Clock tick with timestamp
         """
@@ -116,9 +115,9 @@ class StrategyRunner:
     async def on_data_ready(self, envelope: Envelope) -> None:
         """
         Handle data.WindowReady event.
-        
+
         Passes data to strategy and emits any resulting events.
-        
+
         Args:
             envelope: Event envelope with data payload
         """
@@ -130,7 +129,7 @@ class StrategyRunner:
     async def _emit_action(self, action: StrategyAction) -> None:
         """
         Emit event for a strategy action.
-        
+
         Args:
             action: The strategy action to emit
         """
@@ -138,15 +137,13 @@ class StrategyRunner:
             await self._emit_fetch_window(action)
         elif action.type == ActionType.PLACE_ORDER:
             if action.symbol is None or action.side is None or action.qty is None:
-                raise ValueError(
-                    "PLACE_ORDER action requires symbol, side, and qty"
-                )
+                raise ValueError("PLACE_ORDER action requires symbol, side, and qty")
             await self._emit_place_request(action)
 
     async def _emit_fetch_window(self, action: StrategyAction) -> None:
         """
         Emit strategy.FetchWindow event.
-        
+
         Args:
             action: Fetch window action
         """
@@ -164,10 +161,10 @@ class StrategyRunner:
     async def _emit_place_request(self, action: StrategyAction) -> None:
         """
         Emit strategy.PlaceRequest event.
-        
+
         Args:
             action: Place order action
-            
+
         Note:
             Decimal values are serialized as strings to preserve precision.
             Consumers should use Decimal(str_value) to deserialize.

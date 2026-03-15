@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+
 from src.config import DatabaseConfig
 
 
@@ -60,7 +61,7 @@ class Database:
         return self._session_factory
 
     @asynccontextmanager
-    async def session(self) -> AsyncGenerator[AsyncSession, None]:
+    async def session(self) -> AsyncGenerator[AsyncSession]:
         """
         Get a database session as async context manager.
 
@@ -95,7 +96,7 @@ def get_database() -> Database:
     return _db
 
 
-def init_database(config: "DatabaseConfig") -> Database:
+def init_database(config: DatabaseConfig) -> Database:
     """
     Initialize the global database instance.
 

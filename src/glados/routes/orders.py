@@ -7,7 +7,6 @@ REST endpoints for order management.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -16,8 +15,14 @@ from src.glados.schemas import (
     OrderCreate,
     OrderListResponse,
     OrderResponse,
+)
+from src.glados.schemas import (
     OrderSide as SchemaSide,
+)
+from src.glados.schemas import (
     OrderStatus as SchemaStatus,
+)
+from src.glados.schemas import (
     OrderType as SchemaType,
 )
 from src.glados.services.order_service import MockOrderService, Order
@@ -25,10 +30,12 @@ from src.veda import VedaService
 from src.veda.models import (
     OrderIntent,
     OrderSide,
-    OrderStatus as VedaOrderStatus,
     OrderState,
     OrderType,
     TimeInForce,
+)
+from src.veda.models import (
+    OrderStatus as VedaOrderStatus,
 )
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
@@ -101,7 +108,7 @@ async def create_order(
 ) -> OrderResponse:
     """
     Create a new order.
-    
+
     Requires VedaService to be configured (live/paper trading enabled).
     """
     # Map request to OrderIntent
@@ -117,10 +124,10 @@ async def create_order(
         time_in_force=TimeInForce(body.time_in_force),
         extended_hours=body.extended_hours,
     )
-    
+
     # Place order via VedaService
     state = await veda_service.place_order(intent)
-    
+
     return _state_to_response(state)
 
 
@@ -131,7 +138,7 @@ async def cancel_order(
 ) -> None:
     """
     Cancel an order by client_order_id.
-    
+
     Requires VedaService to be configured.
     """
     success = await veda_service.cancel_order(order_id)

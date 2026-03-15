@@ -16,7 +16,7 @@ from src.walle.repositories.bar_repository import Bar
 class DefaultFillSimulator:
     """
     Default fill simulator with slippage and fees.
-    
+
     Fill Models:
     - MARKET orders: Fill at bar open/close + slippage
     - LIMIT BUY: Fill if low <= limit_price
@@ -33,24 +33,24 @@ class DefaultFillSimulator:
     ) -> SimulatedFill | None:
         """
         Simulate a fill given current bar.
-        
+
         Args:
             intent: Order intent from strategy
             current_bar: Current OHLCV bar
             config: Fill simulation configuration
-            
+
         Returns:
             SimulatedFill if order can be filled, None otherwise
         """
         # Determine base fill price based on order type
         base_price = self._get_base_price(intent, current_bar, config)
-        
+
         if base_price is None:
             return None  # Order cannot fill
 
         # Apply slippage (always unfavorable to trader)
         slippage_amount = self._calculate_slippage(base_price, intent.side, config)
-        
+
         if intent.side == OrderSide.BUY:
             fill_price = base_price + slippage_amount
         else:
@@ -80,7 +80,7 @@ class DefaultFillSimulator:
     ) -> Decimal | None:
         """
         Get base fill price based on order type.
-        
+
         Returns None if order cannot fill.
         """
         if intent.order_type == OrderType.MARKET:
@@ -116,7 +116,7 @@ class DefaultFillSimulator:
         """Check if limit order can fill given bar's range."""
         if intent.limit_price is None:
             return False
-            
+
         if intent.side == OrderSide.BUY:
             # Limit buy fills if price drops to or below limit
             return bar.low <= intent.limit_price
@@ -128,7 +128,7 @@ class DefaultFillSimulator:
         """Check if stop order is triggered."""
         if intent.stop_price is None:
             return False
-            
+
         if intent.side == OrderSide.BUY:
             # Stop buy triggers when price rises to stop
             return bar.high >= intent.stop_price
@@ -144,7 +144,7 @@ class DefaultFillSimulator:
     ) -> Decimal:
         """
         Calculate slippage amount.
-        
+
         Slippage is always unfavorable:
         - BUY: pay more (positive slippage)
         - SELL: receive less (positive slippage that's subtracted)

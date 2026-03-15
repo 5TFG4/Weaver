@@ -7,7 +7,7 @@ TDD Phase: RED (Tests written before implementation)
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import AsyncMock
 
 import pytest
@@ -25,7 +25,7 @@ class TestEventLogSubscription:
         return InMemoryEventLog()
 
     @pytest.fixture
-    def make_envelope(self) -> "Callable[..., Envelope]":
+    def make_envelope(self) -> Callable[..., Envelope]:
         """Factory for creating test envelopes."""
 
         def _make(
@@ -106,9 +106,7 @@ class TestEventLogSubscription:
 
     # --- Test 4: Custom filter function ---
     @pytest.mark.asyncio
-    async def test_subscribe_with_filter_fn(
-        self, event_log: InMemoryEventLog, make_envelope
-    ):
+    async def test_subscribe_with_filter_fn(self, event_log: InMemoryEventLog, make_envelope):
         """Subscriber can filter by custom function."""
         received: list[Envelope] = []
 
@@ -216,9 +214,7 @@ class TestEventLogSubscription:
 
     # --- Test 8: Wildcard subscription ---
     @pytest.mark.asyncio
-    async def test_wildcard_subscription(
-        self, event_log: InMemoryEventLog, make_envelope
-    ):
+    async def test_wildcard_subscription(self, event_log: InMemoryEventLog, make_envelope):
         """Subscriber with ['*'] receives all events."""
         received: list[Envelope] = []
 
@@ -238,9 +234,7 @@ class TestEventLogSubscription:
 
     # --- Test 9: Subscription with multiple types ---
     @pytest.mark.asyncio
-    async def test_subscription_multiple_types(
-        self, event_log: InMemoryEventLog, make_envelope
-    ):
+    async def test_subscription_multiple_types(self, event_log: InMemoryEventLog, make_envelope):
         """Subscriber can listen to multiple event types."""
         received: list[Envelope] = []
 
@@ -285,9 +279,7 @@ class TestEventLogSubscription:
 
     # --- Test 12: Filter function with payload check ---
     @pytest.mark.asyncio
-    async def test_filter_fn_with_payload_check(
-        self, event_log: InMemoryEventLog, make_envelope
-    ):
+    async def test_filter_fn_with_payload_check(self, event_log: InMemoryEventLog, make_envelope):
         """Filter function can check payload contents."""
         received: list[Envelope] = []
 
@@ -302,14 +294,10 @@ class TestEventLogSubscription:
         )
 
         await event_log.append(
-            make_envelope(
-                event_type="data.WindowReady", payload={"symbol": "BTC/USD", "bars": []}
-            )
+            make_envelope(event_type="data.WindowReady", payload={"symbol": "BTC/USD", "bars": []})
         )
         await event_log.append(
-            make_envelope(
-                event_type="data.WindowReady", payload={"symbol": "ETH/USD", "bars": []}
-            )
+            make_envelope(event_type="data.WindowReady", payload={"symbol": "ETH/USD", "bars": []})
         )
 
         assert len(received) == 1

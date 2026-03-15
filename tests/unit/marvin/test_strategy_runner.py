@@ -133,9 +133,7 @@ class TestStrategyRunnerOnTick:
         await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
         return runner
 
-    async def test_passes_tick_to_strategy(
-        self, initialized_runner: StrategyRunner
-    ) -> None:
+    async def test_passes_tick_to_strategy(self, initialized_runner: StrategyRunner) -> None:
         """on_tick() passes tick to strategy."""
         tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
@@ -144,9 +142,7 @@ class TestStrategyRunnerOnTick:
         strategy = cast(DummyStrategy, initialized_runner._strategy)
         assert tick in strategy.received_ticks
 
-    async def test_emits_fetch_window_event(
-        self, initialized_runner: StrategyRunner
-    ) -> None:
+    async def test_emits_fetch_window_event(self, initialized_runner: StrategyRunner) -> None:
         """on_tick() emits strategy.FetchWindow for fetch_window action."""
         tick = make_tick(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
@@ -163,7 +159,10 @@ class TestStrategyRunnerOnTick:
         strategy = DummyStrategy(
             tick_actions=[
                 StrategyAction(
-                    type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
+                    type=ActionType.PLACE_ORDER,
+                    symbol="BTC/USD",
+                    side=StrategyOrderSide.BUY,
+                    qty=Decimal("1"),
                 ),
             ]
         )
@@ -186,7 +185,10 @@ class TestStrategyRunnerOnTick:
             tick_actions=[
                 StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=10),
                 StrategyAction(
-                    type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
+                    type=ActionType.PLACE_ORDER,
+                    symbol="BTC/USD",
+                    side=StrategyOrderSide.BUY,
+                    qty=Decimal("1"),
                 ),
             ]
         )
@@ -237,9 +239,7 @@ class TestStrategyRunnerOnDataReady:
         await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
         return runner
 
-    async def test_passes_data_to_strategy(
-        self, initialized_runner: StrategyRunner
-    ) -> None:
+    async def test_passes_data_to_strategy(self, initialized_runner: StrategyRunner) -> None:
         """on_data_ready() passes data payload to strategy."""
         envelope = MagicMock()
         envelope.payload = {"bars": []}
@@ -254,7 +254,10 @@ class TestStrategyRunnerOnDataReady:
         strategy = DummyStrategy()
         strategy.data_actions = [
             StrategyAction(
-                type=ActionType.PLACE_ORDER, symbol="BTC/USD", side=StrategyOrderSide.BUY, qty=Decimal("1")
+                type=ActionType.PLACE_ORDER,
+                symbol="BTC/USD",
+                side=StrategyOrderSide.BUY,
+                qty=Decimal("1"),
             ),
         ]
         mock_event_log = AsyncMock()

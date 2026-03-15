@@ -10,9 +10,9 @@ from decimal import Decimal
 import pytest
 
 from src.marvin.base_strategy import (
+    ActionType,
     BaseStrategy,
     StrategyAction,
-    ActionType,
     StrategyOrderSide,
     StrategyOrderType,
 )

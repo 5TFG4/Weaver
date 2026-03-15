@@ -44,9 +44,7 @@ class ClockConfig:
         has_end = self.backtest_end is not None
 
         if has_start != has_end:
-            raise ValueError(
-                "Must provide both backtest_start and backtest_end, or neither"
-            )
+            raise ValueError("Must provide both backtest_start and backtest_end, or neither")
 
         # End must be >= start
         if has_start and has_end:

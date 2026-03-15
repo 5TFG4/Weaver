@@ -11,11 +11,11 @@ import pytest
 
 # These imports will fail until we implement the models
 from src.greta.models import (
+    BacktestResult,
+    BacktestStats,
     FillSimulationConfig,
     SimulatedFill,
     SimulatedPosition,
-    BacktestStats,
-    BacktestResult,
 )
 from src.veda.models import OrderSide
 
@@ -26,7 +26,7 @@ class TestFillSimulationConfig:
     def test_default_values(self) -> None:
         """Default config has reasonable values."""
         config = FillSimulationConfig()
-        
+
         assert config.slippage_bps == Decimal("0")
         assert config.commission_bps == Decimal("0")
         assert config.min_commission == Decimal("0")
@@ -65,7 +65,7 @@ class TestSimulatedFill:
             timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
             bar_index=0,
         )
-        
+
         assert fill.order_id == "order-123"
         assert fill.symbol == "BTC/USD"
         assert fill.fill_price == Decimal("42000.00")
@@ -84,7 +84,7 @@ class TestSimulatedFill:
             timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
             bar_index=0,
         )
-        
+
         with pytest.raises(AttributeError):
             fill.fill_price = Decimal("50000")  # type: ignore[misc]
 
@@ -102,7 +102,7 @@ class TestSimulatedFill:
             timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
             bar_index=0,
         )
-        
+
         assert fill.notional == Decimal("84000.00")
 
     def test_side_accepts_order_side_enum_only(self) -> None:
@@ -151,7 +151,7 @@ class TestSimulatedPosition:
             unrealized_pnl=Decimal("0"),
             realized_pnl=Decimal("0"),
         )
-        
+
         assert pos.symbol == "BTC/USD"
         assert pos.qty == Decimal("1.0")
         assert pos.is_long is True
@@ -167,7 +167,7 @@ class TestSimulatedPosition:
             unrealized_pnl=Decimal("0"),
             realized_pnl=Decimal("0"),
         )
-        
+
         assert pos.is_long is False
         assert pos.is_short is True
 
@@ -181,9 +181,9 @@ class TestSimulatedPosition:
             unrealized_pnl=Decimal("0"),
             realized_pnl=Decimal("0"),
         )
-        
+
         pos.update_mark(Decimal("43000.00"))
-        
+
         assert pos.market_value == Decimal("43000.00")
         assert pos.unrealized_pnl == Decimal("1000.00")
 
@@ -197,10 +197,10 @@ class TestSimulatedPosition:
             unrealized_pnl=Decimal("0"),
             realized_pnl=Decimal("0"),
         )
-        
+
         # Price drops = profit for short
         pos.update_mark(Decimal("41000.00"))
-        
+
         # market_value = qty * price = -1 * 41000 = -41000
         assert pos.market_value == Decimal("-41000.00")
         # unrealized = market_value - (qty * avg_entry) = -41000 - (-1 * 42000) = -41000 + 42000 = 1000
@@ -213,7 +213,7 @@ class TestBacktestStats:
     def test_default_values(self) -> None:
         """Default stats are zero."""
         stats = BacktestStats()
-        
+
         assert stats.total_return == Decimal("0")
         assert stats.total_trades == 0
         assert stats.win_rate == Decimal("0")
@@ -226,7 +226,7 @@ class TestBacktestStats:
             winning_trades=6,
             losing_trades=4,
         )
-        
+
         # win_rate should be calculated or set
         assert stats.winning_trades == 6
 
@@ -246,7 +246,7 @@ class TestBacktestResult:
             final_equity=Decimal("110000.00"),
             equity_curve=[],
         )
-        
+
         assert result.run_id == "run-123"
         assert result.final_equity == Decimal("110000.00")
         assert result.symbols == ["BTC/USD"]

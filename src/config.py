@@ -226,9 +226,7 @@ class WeaverConfig(BaseSettings):
     security: SecurityConfig = Field(default_factory=SecurityConfig)
 
     # Global settings
-    environment: Literal["development", "production", "test"] = Field(
-        default="development"
-    )
+    environment: Literal["development", "production", "test"] = Field(default="development")
     debug: bool = Field(default=False)
 
 

@@ -8,7 +8,7 @@ Tests written BEFORE implementation — expect RED initially.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,7 +16,6 @@ import pytest
 
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.glados.services.run_manager import RunManager
-
 
 # ============================================================================
 # Helpers
@@ -143,15 +142,14 @@ class TestRunManagerPersistence:
         manager._start_live = AsyncMock(return_value=None)  # type: ignore[attr-defined]
         await manager.start(run.id)
 
-        statuses = [
-            call_args[0][0].status
-            for call_args in mock_run_repo.save.await_args_list
-        ]
+        statuses = [call_args[0][0].status for call_args in mock_run_repo.save.await_args_list]
         assert "running" in statuses
         assert statuses[0] == "running"
 
     @pytest.mark.asyncio
-    async def test_start_persists_started_at_in_running_record(self, manager, mock_run_repo) -> None:
+    async def test_start_persists_started_at_in_running_record(
+        self, manager, mock_run_repo
+    ) -> None:
         """RUNNING transition persistence includes started_at timestamp."""
         request = _make_run_create(mode=RunMode.PAPER)
         run = await manager.create(request)
@@ -172,8 +170,8 @@ class TestRunManagerPersistence:
         """start() persists COMPLETED transition after backtest finishes."""
         request = _make_run_create(
             mode=RunMode.BACKTEST,
-            start_time=datetime.now(timezone.utc),
-            end_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
+            end_time=datetime.now(UTC),
         )
         run = await manager.create(request)
 
@@ -186,10 +184,7 @@ class TestRunManagerPersistence:
         manager._start_backtest = fake_start_backtest  # type: ignore[method-assign]
         await manager.start(run.id)
 
-        statuses = [
-            call_args[0][0].status
-            for call_args in mock_run_repo.save.await_args_list
-        ]
+        statuses = [call_args[0][0].status for call_args in mock_run_repo.save.await_args_list]
         assert "completed" in statuses
 
     @pytest.mark.asyncio
@@ -197,8 +192,8 @@ class TestRunManagerPersistence:
         """COMPLETED transition persistence includes stopped_at timestamp."""
         request = _make_run_create(
             mode=RunMode.BACKTEST,
-            start_time=datetime.now(timezone.utc),
-            end_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
+            end_time=datetime.now(UTC),
         )
         run = await manager.create(request)
 
@@ -237,10 +232,7 @@ class TestRunManagerPersistence:
         with pytest.raises(RuntimeError, match="startup failed"):
             await manager.start(run.id)
 
-        statuses = [
-            call_args[0][0].status
-            for call_args in mock_run_repo.save.await_args_list
-        ]
+        statuses = [call_args[0][0].status for call_args in mock_run_repo.save.await_args_list]
         assert "error" in statuses
 
     @pytest.mark.asyncio
@@ -301,8 +293,8 @@ class TestRunManagerRecovery:
             strategy_id="sma",
             mode="paper",
             status="running",
-            created_at=datetime.now(timezone.utc),
-            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            started_at=datetime.now(UTC),
         )
         mock_run_repo.list.return_value = [running_record]
 
@@ -330,8 +322,8 @@ class TestRunManagerRecovery:
             strategy_id="sma",
             mode="paper",
             status="running",
-            created_at=datetime.now(timezone.utc),
-            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            started_at=datetime.now(UTC),
         )
         mock_run_repo.list.return_value = [stale_record]
 
@@ -366,7 +358,7 @@ class TestRunManagerRecovery:
             strategy_id="sma",
             mode="backtest",
             status="pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         mock_run_repo.list.return_value = [pending_record]
 
@@ -392,9 +384,7 @@ class TestRunManagerRecovery:
         assert count == 0
 
     @pytest.mark.asyncio
-    async def test_recover_does_not_duplicate_existing_runs(
-        self, mock_run_repo
-    ) -> None:
+    async def test_recover_does_not_duplicate_existing_runs(self, mock_run_repo) -> None:
         """recover() skips runs that are already in memory."""
         from src.glados.services.run_manager import RunManager
         from src.walle.models import RunRecord
@@ -414,7 +404,7 @@ class TestRunManagerRecovery:
             strategy_id="sma",
             mode="backtest",
             status="pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         mock_run_repo.list.return_value = [existing_record]
 

@@ -22,7 +22,6 @@ from src.veda.models import (
     TimeInForce,
 )
 
-
 # ============================================================================
 # Test: VedaOrder SQLAlchemy Model
 # ============================================================================
@@ -34,56 +33,67 @@ class TestVedaOrderModel:
     def test_veda_order_model_exists(self) -> None:
         """VedaOrder model exists."""
         from src.veda.persistence import VedaOrder
+
         assert VedaOrder is not None
 
     def test_veda_order_has_tablename(self) -> None:
         """VedaOrder has correct tablename."""
         from src.veda.persistence import VedaOrder
+
         assert VedaOrder.__tablename__ == "veda_orders"
 
     def test_veda_order_has_id_column(self) -> None:
         """VedaOrder has id primary key."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "id")
 
     def test_veda_order_has_client_order_id_column(self) -> None:
         """VedaOrder has client_order_id column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "client_order_id")
 
     def test_veda_order_has_exchange_order_id_column(self) -> None:
         """VedaOrder has exchange_order_id column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "exchange_order_id")
 
     def test_veda_order_has_run_id_column(self) -> None:
         """VedaOrder has run_id column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "run_id")
 
     def test_veda_order_has_symbol_column(self) -> None:
         """VedaOrder has symbol column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "symbol")
 
     def test_veda_order_has_status_column(self) -> None:
         """VedaOrder has status column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "status")
 
     def test_veda_order_has_qty_column(self) -> None:
         """VedaOrder has qty column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "qty")
 
     def test_veda_order_has_filled_qty_column(self) -> None:
         """VedaOrder has filled_qty column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "filled_qty")
 
     def test_veda_order_has_created_at_column(self) -> None:
         """VedaOrder has created_at column."""
         from src.veda.persistence import VedaOrder
+
         assert hasattr(VedaOrder, "created_at")
 
 
@@ -98,13 +108,16 @@ class TestOrderRepositoryInterface:
     def test_order_repository_exists(self) -> None:
         """OrderRepository class exists."""
         from src.veda.persistence import OrderRepository
+
         assert OrderRepository is not None
 
     def test_order_repository_accepts_session_factory(self) -> None:
         """OrderRepository accepts session factory."""
-        from src.veda.persistence import OrderRepository
         # Just test the interface exists
         import inspect
+
+        from src.veda.persistence import OrderRepository
+
         sig = inspect.signature(OrderRepository.__init__)
         params = list(sig.parameters.keys())
         assert "session_factory" in params or len(params) == 2  # self + factory
@@ -112,26 +125,31 @@ class TestOrderRepositoryInterface:
     def test_order_repository_has_save_method(self) -> None:
         """OrderRepository has save method."""
         from src.veda.persistence import OrderRepository
+
         assert hasattr(OrderRepository, "save")
 
     def test_order_repository_has_get_by_id_method(self) -> None:
         """OrderRepository has get_by_id method."""
         from src.veda.persistence import OrderRepository
+
         assert hasattr(OrderRepository, "get_by_id")
 
     def test_order_repository_has_get_by_client_order_id_method(self) -> None:
         """OrderRepository has get_by_client_order_id method."""
         from src.veda.persistence import OrderRepository
+
         assert hasattr(OrderRepository, "get_by_client_order_id")
 
     def test_order_repository_has_list_by_run_id_method(self) -> None:
         """OrderRepository has list_by_run_id method."""
         from src.veda.persistence import OrderRepository
+
         assert hasattr(OrderRepository, "list_by_run_id")
 
     def test_order_repository_has_list_by_status_method(self) -> None:
         """OrderRepository has list_by_status method."""
         from src.veda.persistence import OrderRepository
+
         assert hasattr(OrderRepository, "list_by_status")
 
 
@@ -146,7 +164,7 @@ class TestOrderStateConversion:
     def test_veda_order_to_order_state(self) -> None:
         """VedaOrder can convert to OrderState."""
         from src.veda.persistence import VedaOrder, veda_order_to_order_state
-        
+
         now = datetime.now(UTC)
         veda_order = VedaOrder(
             id=str(uuid4()),
@@ -170,9 +188,9 @@ class TestOrderStateConversion:
             reject_reason=None,
             error_code=None,
         )
-        
+
         order_state = veda_order_to_order_state(veda_order)
-        
+
         assert order_state.id == veda_order.id
         assert order_state.client_order_id == veda_order.client_order_id
         assert order_state.symbol == "BTC/USD"
@@ -181,8 +199,8 @@ class TestOrderStateConversion:
     def test_order_state_to_veda_order(self) -> None:
         """order_state_to_veda_order creates VedaOrder from OrderState."""
         from src.veda.models import OrderState
-        from src.veda.persistence import VedaOrder, order_state_to_veda_order
-        
+        from src.veda.persistence import order_state_to_veda_order
+
         now = datetime.now(UTC)
         order_state = OrderState(
             id=str(uuid4()),
@@ -206,9 +224,9 @@ class TestOrderStateConversion:
             reject_reason=None,
             error_code=None,
         )
-        
+
         veda_order = order_state_to_veda_order(order_state)
-        
+
         assert veda_order.id == order_state.id
         assert veda_order.client_order_id == order_state.client_order_id
         assert veda_order.symbol == "BTC/USD"
@@ -224,15 +242,13 @@ class TestOrderStateConversion:
 class TestOrderRepositorySave:
     """Integration tests for OrderRepository.save."""
 
-    async def test_save_order_persists_to_db(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_save_order_persists_to_db(self, db_session: AsyncSession) -> None:
         """save() persists order to database."""
         from src.veda.models import OrderState
         from src.veda.persistence import OrderRepository, VedaOrder
-        
+
         repo = OrderRepository(session_factory=lambda: db_session)
-        
+
         now = datetime.now(UTC)
         order_state = OrderState(
             id=str(uuid4()),
@@ -256,13 +272,11 @@ class TestOrderRepositorySave:
             reject_reason=None,
             error_code=None,
         )
-        
+
         await repo.save(order_state)
-        
+
         # Verify persisted
-        result = await db_session.execute(
-            select(VedaOrder).where(VedaOrder.id == order_state.id)
-        )
+        result = await db_session.execute(select(VedaOrder).where(VedaOrder.id == order_state.id))
         row = result.scalar_one_or_none()
         assert row is not None
         assert row.symbol == "BTC/USD"
@@ -272,15 +286,13 @@ class TestOrderRepositorySave:
 class TestOrderRepositoryQuery:
     """Integration tests for OrderRepository queries."""
 
-    async def test_get_by_id_returns_order(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_get_by_id_returns_order(self, db_session: AsyncSession) -> None:
         """get_by_id returns the saved order."""
         from src.veda.models import OrderState
         from src.veda.persistence import OrderRepository
-        
+
         repo = OrderRepository(session_factory=lambda: db_session)
-        
+
         now = datetime.now(UTC)
         order_id = str(uuid4())
         order_state = OrderState(
@@ -305,23 +317,21 @@ class TestOrderRepositoryQuery:
             reject_reason=None,
             error_code=None,
         )
-        
+
         await repo.save(order_state)
         result = await repo.get_by_id(order_id)
-        
+
         assert result is not None
         assert result.symbol == "ETH/USD"
         assert result.status == OrderStatus.ACCEPTED
 
-    async def test_get_by_client_order_id_returns_order(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_get_by_client_order_id_returns_order(self, db_session: AsyncSession) -> None:
         """get_by_client_order_id returns correct order."""
         from src.veda.models import OrderState
         from src.veda.persistence import OrderRepository
-        
+
         repo = OrderRepository(session_factory=lambda: db_session)
-        
+
         now = datetime.now(UTC)
         client_order_id = str(uuid4())
         order_state = OrderState(
@@ -346,25 +356,23 @@ class TestOrderRepositoryQuery:
             reject_reason=None,
             error_code=None,
         )
-        
+
         await repo.save(order_state)
         result = await repo.get_by_client_order_id(client_order_id)
-        
+
         assert result is not None
         assert result.client_order_id == client_order_id
 
-    async def test_list_by_run_id_returns_matching_orders(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_list_by_run_id_returns_matching_orders(self, db_session: AsyncSession) -> None:
         """list_by_run_id returns orders for specific run."""
         from src.veda.models import OrderState
         from src.veda.persistence import OrderRepository
-        
+
         repo = OrderRepository(session_factory=lambda: db_session)
-        
+
         now = datetime.now(UTC)
         run_id = "test-run-xyz"
-        
+
         # Create orders for this run
         for i in range(3):
             order_state = OrderState(
@@ -390,7 +398,7 @@ class TestOrderRepositoryQuery:
                 error_code=None,
             )
             await repo.save(order_state)
-        
+
         # Create order for different run
         other_order = OrderState(
             id=str(uuid4()),
@@ -415,9 +423,9 @@ class TestOrderRepositoryQuery:
             error_code=None,
         )
         await repo.save(other_order)
-        
+
         results = await repo.list_by_run_id(run_id)
-        
+
         assert len(results) == 3
         for order in results:
             assert order.run_id == run_id

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .base import BaseClock, ClockTick
 from .utils import calculate_next_bar_start
@@ -56,7 +56,7 @@ class RealtimeClock(BaseClock):
 
     def current_time(self) -> datetime:
         """Return the current wall clock time (UTC)."""
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     async def _tick_loop(self) -> None:
         """Main loop that emits ticks at bar boundaries."""

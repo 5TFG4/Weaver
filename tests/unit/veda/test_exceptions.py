@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
-
 from src.veda.exceptions import (
     ExchangeConnectionError,
     InsufficientFundsError,

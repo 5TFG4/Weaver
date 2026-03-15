@@ -11,6 +11,7 @@ from collections.abc import Generator
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from src.config import WeaverConfig
 
 
@@ -33,9 +34,9 @@ def app(test_settings: WeaverConfig) -> FastAPI:
 
 
 @pytest.fixture
-def client(app: FastAPI) -> Generator[TestClient, None, None]:
+def client(app: FastAPI) -> Generator[TestClient]:
     """Synchronous test client for HTTP requests.
-    
+
     Uses context manager to trigger app lifespan events,
     which initializes services in app.state.
     Replaces RunManager with a fully-wired version for route testing.

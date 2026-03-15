@@ -12,7 +12,6 @@ import pytest
 from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.models import OrderIntent, OrderSide, OrderType, TimeInForce
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -91,9 +90,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should create TradingClient."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -111,12 +108,8 @@ class TestConnect:
     ) -> None:
         """connect() should create StockHistoricalDataClient."""
         with (
-            patch(
-                "src.veda.adapters.alpaca_adapter.TradingClient"
-            ) as mock_trading,
-            patch(
-                "src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"
-            ) as mock_stock,
+            patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading,
+            patch("src.veda.adapters.alpaca_adapter.StockHistoricalDataClient") as mock_stock,
         ):
             mock_client = MagicMock()
             mock_account = MagicMock()
@@ -135,12 +128,8 @@ class TestConnect:
     ) -> None:
         """connect() should create CryptoHistoricalDataClient."""
         with (
-            patch(
-                "src.veda.adapters.alpaca_adapter.TradingClient"
-            ) as mock_trading,
-            patch(
-                "src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"
-            ) as mock_crypto,
+            patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading,
+            patch("src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient") as mock_crypto,
         ):
             mock_client = MagicMock()
             mock_account = MagicMock()
@@ -158,9 +147,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should verify account status is ACTIVE."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -176,9 +163,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should raise ConnectionError if account not ACTIVE."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACCOUNT_BLOCKED"
@@ -195,9 +180,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should set is_connected to True."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -213,9 +196,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should be idempotent (no error if already connected)."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -233,9 +214,7 @@ class TestConnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """connect() should pass paper=True to TradingClient."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -254,9 +233,7 @@ class TestConnect:
             api_secret="test-secret",
             paper=False,
         )
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -274,12 +251,8 @@ class TestConnect:
     ) -> None:
         """connect() should pass API key to StockHistoricalDataClient."""
         with (
-            patch(
-                "src.veda.adapters.alpaca_adapter.TradingClient"
-            ) as mock_trading,
-            patch(
-                "src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"
-            ) as mock_stock,
+            patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading,
+            patch("src.veda.adapters.alpaca_adapter.StockHistoricalDataClient") as mock_stock,
         ):
             mock_client = MagicMock()
             mock_account = MagicMock()
@@ -301,12 +274,8 @@ class TestConnect:
     ) -> None:
         """connect() should pass API key to CryptoHistoricalDataClient."""
         with (
-            patch(
-                "src.veda.adapters.alpaca_adapter.TradingClient"
-            ) as mock_trading,
-            patch(
-                "src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"
-            ) as mock_crypto,
+            patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading,
+            patch("src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient") as mock_crypto,
         ):
             mock_client = MagicMock()
             mock_account = MagicMock()
@@ -336,9 +305,7 @@ class TestDisconnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """disconnect() should clear _trading_client."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"
@@ -357,15 +324,9 @@ class TestDisconnect:
     ) -> None:
         """disconnect() should clear data clients."""
         with (
-            patch(
-                "src.veda.adapters.alpaca_adapter.TradingClient"
-            ) as mock_trading,
-            patch(
-                "src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"
-            ),
-            patch(
-                "src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"
-            ),
+            patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading,
+            patch("src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"),
+            patch("src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"),
         ):
             mock_client = MagicMock()
             mock_account = MagicMock()
@@ -384,9 +345,7 @@ class TestDisconnect:
         adapter: AlpacaAdapter,
     ) -> None:
         """disconnect() should set is_connected to False."""
-        with patch(
-            "src.veda.adapters.alpaca_adapter.TradingClient"
-        ) as mock_trading:
+        with patch("src.veda.adapters.alpaca_adapter.TradingClient") as mock_trading:
             mock_client = MagicMock()
             mock_account = MagicMock()
             mock_account.status = "ACTIVE"

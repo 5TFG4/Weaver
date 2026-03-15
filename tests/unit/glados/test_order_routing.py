@@ -6,7 +6,7 @@ M6-3: Wire VedaService to order routes.
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,7 +16,6 @@ from fastapi.testclient import TestClient
 
 from src.glados.routes.orders import router
 from src.glados.schemas import OrderCreate, OrderSide, OrderType
-
 
 # =============================================================================
 # Fixtures
@@ -85,6 +84,7 @@ class TestOrderCreateSchema:
     def test_schema_exists(self) -> None:
         """OrderCreate schema should exist."""
         from src.glados.schemas import OrderCreate
+
         assert OrderCreate is not None
 
     def test_valid_market_order(self) -> None:
@@ -117,6 +117,7 @@ class TestOrderCreateSchema:
     def test_missing_required_field_raises(self) -> None:
         """Missing required field should raise ValidationError."""
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             OrderCreate(  # type: ignore[call-arg]  # Intentionally missing client_order_id
                 run_id="run-123",
@@ -130,6 +131,7 @@ class TestOrderCreateSchema:
     def test_empty_run_id_raises(self) -> None:
         """Empty run_id should raise ValidationError."""
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             OrderCreate(
                 run_id="",  # Empty not allowed
@@ -155,8 +157,8 @@ class TestCreateOrder:
         mock_veda_service: MagicMock,
     ) -> None:
         """POST /orders should call VedaService.place_order."""
-        from src.veda.models import OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
-        
+        from src.veda.models import OrderSide, OrderState, OrderStatus, OrderType, TimeInForce
+
         # Setup mock response - OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
         mock_state.run_id = "run-123"
@@ -199,8 +201,15 @@ class TestCreateOrder:
         mock_veda_service: MagicMock,
     ) -> None:
         """POST /orders should map request fields to OrderIntent correctly."""
-        from src.veda.models import OrderIntent, OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
-        
+        from src.veda.models import (
+            OrderIntent,
+            OrderSide,
+            OrderState,
+            OrderStatus,
+            OrderType,
+            TimeInForce,
+        )
+
         # Setup mock - OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
         mock_state.run_id = "run-123"
@@ -239,7 +248,7 @@ class TestCreateOrder:
         # Verify intent was created correctly
         call_args = mock_veda_service.place_order.call_args
         intent = call_args[0][0]  # First positional argument
-        
+
         assert isinstance(intent, OrderIntent)
         assert intent.run_id == "run-123"
         assert intent.client_order_id == "order-abc"
@@ -256,8 +265,8 @@ class TestCreateOrder:
         mock_veda_service: MagicMock,
     ) -> None:
         """POST /orders should return OrderResponse."""
-        from src.veda.models import OrderState, OrderStatus, OrderSide, OrderType, TimeInForce
-        
+        from src.veda.models import OrderSide, OrderState, OrderStatus, OrderType, TimeInForce
+
         # OrderState has flat attributes, not nested under intent
         mock_state = MagicMock(spec=OrderState)
         mock_state.run_id = "run-123"

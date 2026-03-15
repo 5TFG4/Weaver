@@ -10,7 +10,6 @@ from decimal import Decimal
 import pytest
 
 from src.glados.clock.base import ClockTick
-from src.marvin.base_strategy import StrategyAction
 
 
 def make_tick(run_id: str = "run-001") -> ClockTick:

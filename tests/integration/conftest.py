@@ -46,7 +46,7 @@ def db_config(database_url: str) -> DatabaseConfig:
 
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def async_engine(database_url: str) -> AsyncGenerator[AsyncEngine, None]:
+async def async_engine(database_url: str) -> AsyncGenerator[AsyncEngine]:
     """Create an async engine for the test database."""
     engine = create_async_engine(database_url, echo=False)
     yield engine
@@ -73,9 +73,7 @@ def init_tables(database_url: str) -> None:
 
 
 @pytest_asyncio.fixture
-async def database(
-    db_config: DatabaseConfig, init_tables: None
-) -> AsyncGenerator[Database, None]:
+async def database(db_config: DatabaseConfig, init_tables: None) -> AsyncGenerator[Database]:
     """
     Create a Database instance connected to db_dev.
 
@@ -87,7 +85,7 @@ async def database(
 
 
 @pytest_asyncio.fixture
-async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
+async def clean_tables(database: Database) -> AsyncGenerator[None]:
     """
     Clean all tables before and after test.
 
@@ -117,12 +115,10 @@ async def clean_tables(database: Database) -> AsyncGenerator[None, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session(
-    async_engine: "AsyncEngine", init_tables: None
-) -> AsyncGenerator["AsyncSession", None]:
+async def db_session(async_engine: AsyncEngine, init_tables: None) -> AsyncGenerator[AsyncSession]:
     """
     Provide an AsyncSession for integration tests.
-    
+
     Each test gets a fresh session with automatic rollback.
     This fixture can be used in any test file that needs database access.
     """

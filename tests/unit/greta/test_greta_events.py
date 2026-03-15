@@ -52,9 +52,7 @@ class TestGretaServiceEventSubscription:
         return repo
 
     @pytest.fixture
-    def greta(
-        self, event_log: InMemoryEventLog, bar_repository: MagicMock
-    ) -> GretaService:
+    def greta(self, event_log: InMemoryEventLog, bar_repository: MagicMock) -> GretaService:
         """Create GretaService for tests."""
         return GretaService(
             run_id="run-001",
@@ -97,7 +95,7 @@ class TestGretaServiceEventSubscription:
         """backtest.FetchWindow → emit data.WindowReady with bars."""
         # Setup bar cache
         bar = make_bar("BTC/USD")
-        
+
         await greta.initialize(
             symbols=["BTC/USD"],
             timeframe="1m",
@@ -248,7 +246,7 @@ class TestGretaServiceEventSubscription:
         events = await event_log.read_from(-1)
         window_ready = [e for _, e in events if e.type == DataEvents.WINDOW_READY]
         assert len(window_ready) == 1
-        
+
         bars = window_ready[0].payload["bars"]
         assert len(bars) == 2
 

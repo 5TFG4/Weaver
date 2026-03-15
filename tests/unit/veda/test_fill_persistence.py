@@ -7,12 +7,11 @@ Tests written BEFORE implementation — expect RED initially.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.veda.veda_service import VedaService
 
 from src.veda.models import (
     OrderIntent,
@@ -22,7 +21,7 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
+from src.veda.veda_service import VedaService
 
 # ============================================================================
 # Helpers
@@ -74,9 +73,9 @@ def _make_filled_state(intent: OrderIntent) -> OrderState:
         filled_qty=intent.qty,
         filled_avg_price=Decimal("150.00"),
         exchange_order_id="exch-001",
-        created_at=datetime.now(timezone.utc),
-        submitted_at=datetime.now(timezone.utc),
-        filled_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        submitted_at=datetime.now(UTC),
+        filled_at=datetime.now(UTC),
         cancelled_at=None,
         reject_reason=None,
         error_code=None,
@@ -171,9 +170,7 @@ class TestVedaServiceFillPersistence:
         )
 
     @pytest.mark.asyncio
-    async def test_record_fill_persists_to_repository(
-        self, service, mock_fill_repo
-    ) -> None:
+    async def test_record_fill_persists_to_repository(self, service, mock_fill_repo) -> None:
         """record_fill() saves a FillRecord via FillRepository."""
         from src.walle.models import FillRecord
 
@@ -183,7 +180,7 @@ class TestVedaServiceFillPersistence:
             price=Decimal("150.25"),
             quantity=Decimal("10"),
             side="buy",
-            filled_at=datetime.now(timezone.utc),
+            filled_at=datetime.now(UTC),
         )
 
         await service.record_fill(fill)
@@ -191,9 +188,7 @@ class TestVedaServiceFillPersistence:
         mock_fill_repo.save.assert_awaited_once_with(fill)
 
     @pytest.mark.asyncio
-    async def test_record_fill_noop_when_no_repository(
-        self, mock_order_repo
-    ) -> None:
+    async def test_record_fill_noop_when_no_repository(self, mock_order_repo) -> None:
         """record_fill() is a no-op when fill_repository is None."""
         from src.veda.veda_service import VedaService
         from src.walle.models import FillRecord
@@ -212,16 +207,14 @@ class TestVedaServiceFillPersistence:
             price=Decimal("150.25"),
             quantity=Decimal("10"),
             side="buy",
-            filled_at=datetime.now(timezone.utc),
+            filled_at=datetime.now(UTC),
         )
 
         # Should not raise
         await service.record_fill(fill)
 
     @pytest.mark.asyncio
-    async def test_get_fills_delegates_to_repository(
-        self, service, mock_fill_repo
-    ) -> None:
+    async def test_get_fills_delegates_to_repository(self, service, mock_fill_repo) -> None:
         """get_fills() delegates to FillRepository.list_by_order()."""
         from src.walle.models import FillRecord
 
@@ -232,7 +225,7 @@ class TestVedaServiceFillPersistence:
                 price=Decimal("150.25"),
                 quantity=Decimal("10"),
                 side="buy",
-                filled_at=datetime.now(timezone.utc),
+                filled_at=datetime.now(UTC),
             )
         ]
         mock_fill_repo.list_by_order.return_value = expected_fills
@@ -243,9 +236,7 @@ class TestVedaServiceFillPersistence:
         assert result == expected_fills
 
     @pytest.mark.asyncio
-    async def test_get_fills_returns_empty_when_no_repository(
-        self, mock_order_repo
-    ) -> None:
+    async def test_get_fills_returns_empty_when_no_repository(self, mock_order_repo) -> None:
         """get_fills() returns empty list when fill_repository is None."""
         from src.veda.veda_service import VedaService
 

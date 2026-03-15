@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,22 +40,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # =========================================================================
     # Startup - Always-initialized services (no DB required)
     # =========================================================================
-    
+
     # OrderService (mock, always available)
     from src.glados.services.order_service import MockOrderService
+
     app.state.order_service = MockOrderService()
     logger.info("OrderService initialized")
-    
+
     # MarketDataService (mock, always available)
     from src.glados.services.market_data_service import MockMarketDataService
+
     app.state.market_data_service = MockMarketDataService()
     logger.info("MarketDataService initialized")
-    
+
     # SSEBroadcaster (always available)
     from src.glados.sse_broadcaster import SSEBroadcaster
+
     app.state.broadcaster = SSEBroadcaster()
     logger.info("SSEBroadcaster initialized")
-    
+
     # Initialize placeholders (may be set to real implementations below)
     event_log = None
     database = None
@@ -149,7 +152,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # =========================================================================
     # Startup - Services that may use EventLog
     # =========================================================================
-    
+
     # RunManager runtime dependencies
     from src.glados.services.run_manager import RunManager
     from src.marvin.strategy_loader import PluginStrategyLoader
@@ -307,10 +310,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     """
     Create and configure the FastAPI application.
-    
+
     Args:
         settings: Optional WeaverConfig. If None, uses default config.
-    
+
     Returns:
         Configured FastAPI application instance.
     """

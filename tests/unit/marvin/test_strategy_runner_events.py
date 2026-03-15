@@ -10,15 +10,15 @@ from decimal import Decimal
 
 import pytest
 
+# Import DummyStrategy from fixtures instead of defining inline
+from tests.fixtures.strategies import DummyStrategy
+
 from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
 from src.events.types import DataEvents, StrategyEvents
 from src.glados.clock.base import ClockTick
 from src.marvin.base_strategy import ActionType, StrategyAction, StrategyOrderSide
 from src.marvin.strategy_runner import StrategyRunner
-
-# Import DummyStrategy from fixtures instead of defining inline
-from tests.fixtures.strategies import DummyStrategy
 
 
 def make_tick(run_id: str = "run-001") -> ClockTick:
@@ -46,9 +46,7 @@ class TestStrategyRunnerEventSubscription:
         return DummyStrategy()
 
     @pytest.fixture
-    def runner(
-        self, strategy: DummyStrategy, event_log: InMemoryEventLog
-    ) -> StrategyRunner:
+    def runner(self, strategy: DummyStrategy, event_log: InMemoryEventLog) -> StrategyRunner:
         """Create StrategyRunner with test dependencies."""
         return StrategyRunner(strategy=strategy, event_log=event_log)
 

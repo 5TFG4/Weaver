@@ -5,7 +5,7 @@ Unit tests for SQLAlchemy models (OutboxEvent, ConsumerOffset).
 These tests verify model structure without requiring a real database.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import cast
 
 from sqlalchemy import Table, inspect
@@ -24,7 +24,7 @@ class TestOutboxEvent:
         """OutboxEvent has all required columns."""
         mapper = inspect(OutboxEvent)
         column_names = {c.key for c in mapper.columns}
-        
+
         assert "id" in column_names
         assert "type" in column_names
         assert "payload" in column_names
@@ -51,7 +51,7 @@ class TestOutboxEvent:
 
     def test_repr(self):
         """__repr__ returns readable string."""
-        event = OutboxEvent(id=1, type="orders.Placed", payload={}, created_at=datetime.now(timezone.utc))
+        event = OutboxEvent(id=1, type="orders.Placed", payload={}, created_at=datetime.now(UTC))
         repr_str = repr(event)
         assert "OutboxEvent" in repr_str
         assert "id=1" in repr_str
@@ -69,7 +69,7 @@ class TestConsumerOffset:
         """ConsumerOffset has all required columns."""
         mapper = inspect(ConsumerOffset)
         column_names = {c.key for c in mapper.columns}
-        
+
         assert "consumer_id" in column_names
         assert "last_offset" in column_names
         assert "updated_at" in column_names
@@ -85,7 +85,7 @@ class TestConsumerOffset:
         offset = ConsumerOffset(
             consumer_id="sse_broadcaster",
             last_offset=42,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         repr_str = repr(offset)
         assert "ConsumerOffset" in repr_str

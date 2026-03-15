@@ -19,17 +19,18 @@ ADAPTER_META = {
     "features": ["paper_trading", "live_trading", "crypto", "stocks"],
 }
 
+from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, AsyncIterator
+from typing import Any
 
 # Alpaca SDK imports (lazy imported in connect())
 try:
-    from alpaca.trading.client import TradingClient
     from alpaca.data.historical import (
         CryptoHistoricalDataClient,
         StockHistoricalDataClient,
     )
+    from alpaca.trading.client import TradingClient
 except ImportError:
     # SDK not installed - will fail at connect() time
     TradingClient = None  # type: ignore
@@ -127,10 +128,7 @@ class AlpacaAdapter(ExchangeAdapter):
             return  # Already connected (idempotent)
 
         if TradingClient is None:
-            raise ImportError(
-                "alpaca-py SDK is not installed. "
-                "Install with: pip install alpaca-py"
-            )
+            raise ImportError("alpaca-py SDK is not installed. Install with: pip install alpaca-py")
 
         # Verify all SDK classes are available (they're imported together,
         # but explicit check is safer than assert which can be disabled with -O)
@@ -164,9 +162,7 @@ class AlpacaAdapter(ExchangeAdapter):
             self._trading_client = None
             self._stock_data_client = None
             self._crypto_data_client = None
-            raise ConnectionError(
-                f"Account status is {account.status}, expected ACTIVE"
-            )
+            raise ConnectionError(f"Account status is {account.status}, expected ACTIVE")
 
         self._connected = True
 
@@ -190,9 +186,7 @@ class AlpacaAdapter(ExchangeAdapter):
             ConnectionError: If adapter is not connected
         """
         if not self._connected:
-            raise ConnectionError(
-                "Adapter is not connected. Call connect() first."
-            )
+            raise ConnectionError("Adapter is not connected. Call connect() first.")
 
     # =========================================================================
     # Order Management
@@ -236,9 +230,7 @@ class AlpacaAdapter(ExchangeAdapter):
                 order_params["extended_hours"] = True
 
             # Submit to Alpaca
-            response = await asyncio.to_thread(
-                self._trading_client.submit_order, **order_params
-            )
+            response = await asyncio.to_thread(self._trading_client.submit_order, **order_params)
 
             return OrderSubmitResult(
                 success=True,
@@ -270,9 +262,7 @@ class AlpacaAdapter(ExchangeAdapter):
         """
         self._require_connection()
         try:
-            await asyncio.to_thread(
-                self._trading_client.cancel_order_by_id, exchange_order_id
-            )
+            await asyncio.to_thread(self._trading_client.cancel_order_by_id, exchange_order_id)
             return True
         except Exception:
             return False
@@ -327,9 +317,7 @@ class AlpacaAdapter(ExchangeAdapter):
             if symbols is not None:
                 params["symbols"] = symbols
 
-            response = await asyncio.to_thread(
-                self._trading_client.get_orders, **params
-            )
+            response = await asyncio.to_thread(self._trading_client.get_orders, **params)
             return [self._map_alpaca_order(o) for o in response]
         except Exception:
             return []
@@ -370,9 +358,7 @@ class AlpacaAdapter(ExchangeAdapter):
     async def get_position(self, symbol: str) -> Position | None:
         """Get position for a symbol."""
         try:
-            response = await asyncio.to_thread(
-                self._trading_client.get_open_position, symbol
-            )
+            response = await asyncio.to_thread(self._trading_client.get_open_position, symbol)
             return self._map_alpaca_position(response)
         except Exception:
             return None
@@ -400,18 +386,14 @@ class AlpacaAdapter(ExchangeAdapter):
         if limit is not None:
             params["limit"] = limit
 
-        response = await asyncio.to_thread(
-            self._stock_data_client.get_stock_bars, **params
-        )
+        response = await asyncio.to_thread(self._stock_data_client.get_stock_bars, **params)
         bars_data = response.get(symbol, [])
         return [self._map_alpaca_bar(symbol, b) for b in bars_data]
 
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get latest bar for a symbol."""
         try:
-            response = await asyncio.to_thread(
-                self._stock_data_client.get_stock_latest_bar, symbol
-            )
+            response = await asyncio.to_thread(self._stock_data_client.get_stock_latest_bar, symbol)
             bar_data = response.get(symbol)
             if bar_data:
                 return self._map_alpaca_bar(symbol, bar_data)
