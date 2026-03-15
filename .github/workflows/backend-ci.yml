@@ -1,0 +1,46 @@
+name: Backend CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "weaver.py"
+      - "alembic.ini"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('docker/backend/requirements.dev.txt') }}
+          restore-keys: pip-
+
+      - name: Install dependencies
+        run: pip install -r docker/backend/requirements.dev.txt
+
+      - name: Ruff lint check
+        run: ruff check src/ tests/
+
+      - name: Ruff format check
+        run: ruff format --check src/ tests/
+
+      - name: MyPy type check
+        run: mypy src/
+
+      - name: Pytest (unit tests + coverage)
+        run: pytest -m "not container" --cov=src --cov-report=term-missing
