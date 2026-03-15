@@ -325,4 +325,4 @@ Run `scripts/ci/check-local.sh` before pushing to catch errors locally. This scr
 
 **Compose smoke timeout**: The health check retries 60 times with 2-second intervals (2 min total). If the backend or frontend takes longer to boot, check the Docker build logs.
 
-**Downloading failure artifacts**: When compose-smoke fails, go to the workflow run page → Artifacts section → download `compose-smoke-logs`. The ZIP contains container logs and HTTP response bodies.
+**Downloading failure artifacts**: When compose-smoke fails, go to the workflow run page → Artifacts section → download `compose-smoke-logs`. The ZIP contains container logs, API response body, and frontend response body.

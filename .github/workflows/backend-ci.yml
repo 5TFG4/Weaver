@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-${{ hashFiles('docker/backend/requirements.dev.txt') }}
+          key: pip-${{ hashFiles('docker/backend/requirements.txt', 'docker/backend/requirements.dev.txt') }}
           restore-keys: pip-
 
       - name: Install dependencies
