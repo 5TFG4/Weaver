@@ -493,7 +493,8 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: establish stable PR quality gates and container smoke verification before E2E expansion  
 > **Prerequisite**: M8 ✅  
 > **Estimated Effort**: 1 week  
-> **Status**: ⏳ PLANNED
+> **Status**: ⏳ PLANNED  
+> **Design Doc**: [m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)
 
 ### 5.1 Exit Gate (Definition of Done)
 

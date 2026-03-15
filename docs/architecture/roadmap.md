@@ -55,17 +55,17 @@
 
 ## 2. Milestones (Revised 2026-02-19)
 
-| Milestone | Definition of Done                                                                | Status              |
-| --------- | --------------------------------------------------------------------------------- | ------------------- |
-| M0–M3     | Foundation, API, Trading                                                          | ✅ DONE             |
-| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)             | ✅ DONE             |
-| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                        | ✅ DONE             |
-| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)      | ✅ DONE (74 tests)  |
-| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow) | ✅ DONE (101 tests) |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)      | ✅ DONE (86 tests)  |
-| **M8**    | Critical Fixes & Improvements (P0 fixes + Runtime wiring + Quality)               | ✅ COMPLETE         |
-| **M9**    | CI Deployment Pipeline (PR quality gates + container smoke + branch protection)   | ⏳ PLANNED          |
-| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                       | ⏳ PLANNED          |
+| Milestone | Definition of Done                                                                                                                | Status              |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| M0–M3     | Foundation, API, Trading                                                                                                          | ✅ DONE             |
+| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)                                                             | ✅ DONE             |
+| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                                                                        | ✅ DONE             |
+| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)                                                      | ✅ DONE (74 tests)  |
+| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests) |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)  |
+| **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE         |
+| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ⏳ PLANNED          |
+| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                                                                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
 
@@ -205,16 +205,18 @@
 
 ## Appendix: Design Documents
 
-| Milestone | Design Doc                                                        |
-| --------- | ----------------------------------------------------------------- |
-| M1        | [Foundation](../archive/milestone-details/m1-foundation.md)       |
-| M2        | [GLaDOS API](../archive/milestone-details/m2-glados-api.md)       |
-| M3        | [Veda Trading](../archive/milestone-details/m3-veda.md)           |
-| M3.5      | [Integration](../archive/milestone-details/m3.5-integration.md)   |
-| M4        | [Greta Backtest](../archive/milestone-details/m4-greta.md)        |
-| M5        | [Marvin Full](../archive/milestone-details/m5-marvin.md)          |
-| M6        | [Live Trading](../archive/milestone-details/m6-live-trading.md)   |
-| M7        | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) |
+| Milestone | Design Doc                                                                    |
+| --------- | ----------------------------------------------------------------------------- |
+| M1        | [Foundation](../archive/milestone-details/m1-foundation.md)                   |
+| M2        | [GLaDOS API](../archive/milestone-details/m2-glados-api.md)                   |
+| M3        | [Veda Trading](../archive/milestone-details/m3-veda.md)                       |
+| M3.5      | [Integration](../archive/milestone-details/m3.5-integration.md)               |
+| M4        | [Greta Backtest](../archive/milestone-details/m4-greta.md)                    |
+| M5        | [Marvin Full](../archive/milestone-details/m5-marvin.md)                      |
+| M6        | [Live Trading](../archive/milestone-details/m6-live-trading.md)               |
+| M7        | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md)             |
+| M8        | [Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) |
+| M9        | [CI Pipeline](../archive/milestone-details/m9-ci-pipeline.md)                 |
 
 ---
 

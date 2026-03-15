@@ -32,6 +32,7 @@
 | -------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
 | [MILESTONE_PLAN.md](MILESTONE_PLAN.md)                                                                   | Current and upcoming milestone execution plan | This is the authoritative milestone status         |
 | [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md) | M8/M8-R detailed TDD/MVP execution plan       | Keep detailed tasks here, not in milestone summary |
+| [archive/milestone-details/m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)               | M9 CI pipeline detailed implementation plan   | Keep detailed tasks here, not in milestone summary |
 | [DESIGN_AUDIT.md](DESIGN_AUDIT.md)                                                                       | Active quality gate and open findings         | Keep only current actionable findings              |
 | [TEST_COVERAGE.md](TEST_COVERAGE.md)                                                                     | Current test coverage snapshot and gaps       | Avoid duplicating roadmap logic                    |
 
