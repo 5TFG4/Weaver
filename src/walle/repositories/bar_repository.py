@@ -100,7 +100,7 @@ class BarRepository:
             result = await session.execute(stmt)
             await session.commit()
 
-            return result.rowcount  # type: ignore[return-value]
+            return result.rowcount  # type: ignore[no-any-return, attr-defined]
 
     async def get_bars(
         self,

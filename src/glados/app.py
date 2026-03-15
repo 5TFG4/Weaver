@@ -10,6 +10,7 @@ import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -88,7 +89,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # 3. Subscribe SSEBroadcaster to EventLog for real-time events
         broadcaster = app.state.broadcaster
 
-        async def on_event(envelope):
+        async def on_event(envelope: Envelope) -> None:
             """Forward events from EventLog to SSE clients."""
             await broadcaster.publish(envelope.type, envelope.payload)
 
@@ -103,7 +104,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
             # Use paper credentials by default for safety
             mode = "paper" if settings.alpaca.has_paper_credentials else "live"
-            credentials = settings.alpaca.get_credentials(mode)
+            credentials = settings.alpaca.get_credentials(mode)  # type: ignore[arg-type]
             adapter = create_adapter_for_mode(credentials)
 
             try:
@@ -131,18 +132,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # B.3: Create InMemoryEventLog for no-DB mode (degraded but functional)
         from src.events.log import InMemoryEventLog
 
-        event_log = InMemoryEventLog()
+        event_log = InMemoryEventLog()  # type: ignore[assignment]
         app.state.event_log = event_log
         logger.info("InMemoryEventLog initialized (no-DB mode)")
 
         # Subscribe SSEBroadcaster to InMemoryEventLog
         broadcaster = app.state.broadcaster
 
-        async def on_event(envelope):
+        async def on_event(envelope: Envelope) -> None:
             """Forward events from EventLog to SSE clients."""
             await broadcaster.publish(envelope.type, envelope.payload)
 
-        unsubscribe = await event_log.subscribe(on_event)
+        unsubscribe = await event_log.subscribe(on_event)  # type: ignore[union-attr]
         app.state.event_log_unsubscribe = unsubscribe
         logger.info("SSEBroadcaster subscribed to InMemoryEventLog")
 
@@ -200,7 +201,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Wire live.PlaceOrder to VedaService handler when VedaService is available
     app.state.veda_place_order_subscription_id = None
-    veda_service = getattr(app.state, "veda_service", None)
+    veda_service = getattr(app.state, "veda_service", None)  # type: ignore[assignment]
     if veda_service is not None:
         veda_place_order_subscription_id = await event_log.subscribe_filtered(
             event_types=["live.PlaceOrder"],
@@ -345,7 +346,7 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     app.state.settings = settings
 
     @app.middleware("http")
-    async def auth_middleware(request: Request, call_next):
+    async def auth_middleware(request: Request, call_next: Any) -> Any:
         """Enforce token auth on API routes when configured."""
         if request.method == "OPTIONS":
             return await call_next(request)

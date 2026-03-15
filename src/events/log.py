@@ -137,7 +137,7 @@ class InMemoryEventLog(EventLog):
         self._filtered_subscriptions: dict[str, Subscription] = {}
         self._lock = asyncio.Lock()
 
-    async def append(
+    async def append(  # type: ignore[override]
         self,
         envelope: Envelope,
         *,

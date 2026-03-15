@@ -6,6 +6,7 @@ Mode-agnostic: doesn't know if backtest or live.
 """
 
 import logging
+from typing import Any
 
 from src.events.log import EventLog
 from src.events.protocol import Envelope
@@ -98,7 +99,7 @@ class StrategyRunner:
             context=f"marvin.window_ready run_id={self._run_id}",
         )
 
-    async def on_tick(self, tick) -> None:
+    async def on_tick(self, tick: Any) -> None:
         """
         Handle clock tick.
 

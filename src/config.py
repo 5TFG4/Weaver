@@ -121,13 +121,13 @@ class AlpacaConfig(BaseSettings):
                 is_paper=True,
             )
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def has_live_credentials(self) -> bool:
         """Check if live credentials are configured."""
         return bool(self.live_api_key and self.live_api_secret)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def has_paper_credentials(self) -> bool:
         """Check if paper credentials are configured."""

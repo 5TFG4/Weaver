@@ -346,13 +346,13 @@ class MockExchangeAdapter(ExchangeAdapter):
     # Streaming (Stub implementations)
     # =========================================================================
 
-    async def stream_bars(self, _symbols: list[str]) -> AsyncIterator[Bar]:
+    async def stream_bars(self, _symbols: list[str]) -> AsyncIterator[Bar]:  # type: ignore[override]
         """Stream bars (not implemented in mock)."""
         # Yield nothing - streaming not needed for unit tests
         if False:
             yield  # Make this an async generator that yields nothing
 
-    async def stream_quotes(self, _symbols: list[str]) -> AsyncIterator[Quote]:
+    async def stream_quotes(self, _symbols: list[str]) -> AsyncIterator[Quote]:  # type: ignore[override]
         """Stream quotes (not implemented in mock)."""
         # Yield nothing - streaming not needed for unit tests
         if False:

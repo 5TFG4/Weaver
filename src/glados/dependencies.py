@@ -21,27 +21,27 @@ from src.veda import VedaService
 
 def get_settings(request: Request) -> WeaverConfig:
     """Get application settings from app state."""
-    return request.app.state.settings
+    return request.app.state.settings  # type: ignore[no-any-return]
 
 
 def get_run_manager(request: Request) -> RunManager:
     """Get RunManager from app state."""
-    return request.app.state.run_manager
+    return request.app.state.run_manager  # type: ignore[no-any-return]
 
 
 def get_order_service(request: Request) -> MockOrderService:
     """Get OrderService from app state."""
-    return request.app.state.order_service
+    return request.app.state.order_service  # type: ignore[no-any-return]
 
 
 def get_market_data_service(request: Request) -> MockMarketDataService:
     """Get MarketDataService from app state."""
-    return request.app.state.market_data_service
+    return request.app.state.market_data_service  # type: ignore[no-any-return]
 
 
 def get_broadcaster(request: Request) -> SSEBroadcaster:
     """Get SSEBroadcaster from app state."""
-    return request.app.state.broadcaster
+    return request.app.state.broadcaster  # type: ignore[no-any-return]
 
 
 def get_event_log(request: Request) -> EventLog | None:

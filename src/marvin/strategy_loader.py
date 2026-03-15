@@ -203,4 +203,4 @@ class PluginStrategyLoader(StrategyLoader):
         if strategy_class is None:
             raise StrategyNotFoundError(f"{meta.id} (class {meta.class_name} not found)")
 
-        return strategy_class
+        return strategy_class  # type: ignore[no-any-return]

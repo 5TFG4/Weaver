@@ -210,7 +210,7 @@ class EventConsumer:
             self._current_offset,
             limit=self._batch_size,
         )
-        return events
+        return events  # type: ignore[no-any-return]
 
     async def commit(self, offset: int) -> None:
         """

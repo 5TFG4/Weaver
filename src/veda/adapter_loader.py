@@ -182,4 +182,4 @@ class PluginAdapterLoader(AdapterLoader):
         if adapter_class is None:
             raise AdapterNotFoundError(f"{meta.id} (class {meta.class_name} not found)")
 
-        return adapter_class
+        return adapter_class  # type: ignore[no-any-return]

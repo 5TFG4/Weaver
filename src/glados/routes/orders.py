@@ -182,9 +182,9 @@ async def list_orders(
     orders, total = await order_service.list(run_id=run_id, status=order_status)
     start = (page - 1) * page_size
     end = start + page_size
-    paginated = orders[start:end]
+    paginated = orders[start:end]  # type: ignore[assignment]
     return OrderListResponse(
-        items=[_order_to_response(o) for o in paginated],
+        items=[_order_to_response(o) for o in paginated],  # type: ignore[arg-type]
         total=total,
         page=page,
         page_size=page_size,

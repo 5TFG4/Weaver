@@ -6,6 +6,7 @@ Logic: Buy when price drops 1% below average, sell when up 1%.
 """
 
 from decimal import Decimal
+from typing import Any
 
 from src.marvin.base_strategy import (
     ActionType,
@@ -48,7 +49,7 @@ class SampleStrategy(BaseStrategy):
         super().__init__()
         self._lookback = lookback
 
-    async def on_tick(self, _tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
 

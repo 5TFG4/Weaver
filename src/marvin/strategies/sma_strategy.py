@@ -7,6 +7,7 @@ Buys when fast SMA crosses above slow SMA, sells when it crosses below.
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from src.marvin.base_strategy import (
     ActionType,
@@ -74,7 +75,7 @@ class SMAStrategy(BaseStrategy):
         self._config = config or SMAConfig()
         self._prev_fast_above_slow: bool | None = None
 
-    async def on_tick(self, _tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
 

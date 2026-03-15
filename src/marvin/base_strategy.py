@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any
 
 
 class ActionType(StrEnum):
@@ -97,7 +98,7 @@ class BaseStrategy(ABC):
         self._symbols = symbols
 
     @abstractmethod
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick event.
 

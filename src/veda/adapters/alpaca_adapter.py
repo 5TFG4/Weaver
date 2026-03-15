@@ -510,7 +510,7 @@ class AlpacaAdapter(ExchangeAdapter):
         }
         return mapping.get(status, "all")
 
-    def _map_alpaca_order(self, response) -> ExchangeOrder:
+    def _map_alpaca_order(self, response: Any) -> ExchangeOrder:
         """Map Alpaca order response to ExchangeOrder."""
         filled_price = None
         if response.filled_avg_price is not None:
@@ -542,7 +542,7 @@ class AlpacaAdapter(ExchangeAdapter):
         return mapping.get(type_str, OrderType.MARKET)
 
     @staticmethod
-    def _map_alpaca_position(response) -> Position:
+    def _map_alpaca_position(response: Any) -> Position:
         """Map Alpaca position response to Position."""
         return Position(
             symbol=response.symbol,
@@ -555,7 +555,7 @@ class AlpacaAdapter(ExchangeAdapter):
         )
 
     @staticmethod
-    def _map_alpaca_bar(symbol: str, bar) -> Bar:
+    def _map_alpaca_bar(symbol: str, bar: Any) -> Bar:
         """Map Alpaca bar response to Bar."""
         return Bar(
             symbol=symbol,
