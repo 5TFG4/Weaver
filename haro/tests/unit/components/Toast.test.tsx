@@ -5,7 +5,7 @@
  * Tests for toast notification display + connection status indicator.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, act } from "../../../tests/utils";
 import { Toast } from "../../../src/components/common/Toast";
 import { ConnectionStatus } from "../../../src/components/common/ConnectionStatus";

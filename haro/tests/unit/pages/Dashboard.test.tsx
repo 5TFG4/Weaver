@@ -9,10 +9,6 @@ import { render, screen, waitFor } from "../../utils";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { Dashboard } from "../../../src/pages/Dashboard";
-import type {
-  RunListResponse,
-  OrderListResponse,
-} from "../../../src/api/types";
 
 describe("Dashboard", () => {
   it("shows loading skeleton initially", () => {

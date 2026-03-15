@@ -6,10 +6,11 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "../../utils";
+import { render, screen } from "../../utils";
 import { OrderTable } from "../../../src/components/orders/OrderTable";
 import { mockOrders } from "../../mocks/handlers";
 import type { Order } from "../../../src/api/types";
+import userEvent from "@testing-library/user-event";
 
 describe("OrderTable", () => {
   it("renders order rows with correct data", () => {
@@ -59,7 +60,6 @@ describe("OrderTable", () => {
 
 // Helper to render with userEvent
 function renderWithUser(orders: Order[], onClick: (order: Order) => void) {
-  const userEvent = require("@testing-library/user-event").default;
   const user = userEvent.setup();
   const result = render(<OrderTable orders={orders} onOrderClick={onClick} />);
   return { ...result, user };
