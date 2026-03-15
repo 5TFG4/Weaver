@@ -34,54 +34,54 @@ All results measured locally on 2026-03-15; these are facts, not assumptions.
 
 ### 1.1 Existing E2E Infrastructure
 
-| Asset                         | Location                        | Status                                             |
-| ----------------------------- | ------------------------------- | -------------------------------------------------- |
-| E2E test directory            | `tests/e2e/__init__.py`         | ✅ Exists — empty (no test files)                  |
-| E2E pytest marker             | `pyproject.toml` + `conftest.py`| ✅ Registered (`@pytest.mark.e2e`)                 |
-| Auto-collection hook          | `tests/conftest.py`             | ✅ Tests in `tests/e2e/*` auto-marked `e2e`        |
-| Playwright                    | `requirements.dev.txt`          | ❌ Not installed                                    |
-| Docker Compose (prod)         | `docker/docker-compose.yml`     | ✅ Working (backend + frontend + db)               |
-| Compose smoke script          | `scripts/ci/compose-smoke-local.sh` | ✅ Working (`--keep-up` keeps stack for testing) |
-| DB migration                  | Alembic (`alembic upgrade head`) | ✅ Working                                         |
-| Integration test fixtures     | `tests/integration/conftest.py` | ✅ Pattern available (DB setup, clean_tables)      |
+| Asset                     | Location                            | Status                                           |
+| ------------------------- | ----------------------------------- | ------------------------------------------------ |
+| E2E test directory        | `tests/e2e/__init__.py`             | ✅ Exists — empty (no test files)                |
+| E2E pytest marker         | `pyproject.toml` + `conftest.py`    | ✅ Registered (`@pytest.mark.e2e`)               |
+| Auto-collection hook      | `tests/conftest.py`                 | ✅ Tests in `tests/e2e/*` auto-marked `e2e`      |
+| Playwright                | `requirements.dev.txt`              | ❌ Not installed                                 |
+| Docker Compose (prod)     | `docker/docker-compose.yml`         | ✅ Working (backend + frontend + db)             |
+| Compose smoke script      | `scripts/ci/compose-smoke-local.sh` | ✅ Working (`--keep-up` keeps stack for testing) |
+| DB migration              | Alembic (`alembic upgrade head`)    | ✅ Working                                       |
+| Integration test fixtures | `tests/integration/conftest.py`     | ✅ Pattern available (DB setup, clean_tables)    |
 
 ### 1.2 System Under Test — Endpoints
 
-| Endpoint                         | Method | Purpose                                | E2E Relevance |
-| -------------------------------- | ------ | -------------------------------------- | ------------- |
-| `GET /api/v1/healthz`            | GET    | Health check                           | ✅ Smoke      |
-| `GET /api/v1/runs`               | GET    | List runs (paginated, filterable)      | ✅ Core       |
-| `POST /api/v1/runs`              | POST   | Create run                             | ✅ Core       |
-| `GET /api/v1/runs/{run_id}`      | GET    | Get run details                        | ✅ Core       |
-| `POST /api/v1/runs/{run_id}/start` | POST | Start run                              | ✅ Core       |
-| `POST /api/v1/runs/{run_id}/stop`  | POST | Stop run                               | ✅ Core       |
-| `GET /api/v1/orders`             | GET    | List orders (paginated, filterable)    | ✅ Core       |
-| `POST /api/v1/orders`            | POST   | Create order                           | ⚠️ Requires VedaService |
-| `GET /api/v1/orders/{order_id}`  | GET    | Get order details                      | ✅ Core       |
-| `DELETE /api/v1/orders/{order_id}` | DELETE | Cancel order                          | ⚠️ Requires VedaService |
-| `GET /api/v1/candles`            | GET    | Get candle data                        | ✅ Data       |
-| `GET /api/v1/events/stream`      | GET    | SSE event stream                       | ✅ Realtime   |
+| Endpoint                           | Method | Purpose                             | E2E Relevance           |
+| ---------------------------------- | ------ | ----------------------------------- | ----------------------- |
+| `GET /api/v1/healthz`              | GET    | Health check                        | ✅ Smoke                |
+| `GET /api/v1/runs`                 | GET    | List runs (paginated, filterable)   | ✅ Core                 |
+| `POST /api/v1/runs`                | POST   | Create run                          | ✅ Core                 |
+| `GET /api/v1/runs/{run_id}`        | GET    | Get run details                     | ✅ Core                 |
+| `POST /api/v1/runs/{run_id}/start` | POST   | Start run                           | ✅ Core                 |
+| `POST /api/v1/runs/{run_id}/stop`  | POST   | Stop run                            | ✅ Core                 |
+| `GET /api/v1/orders`               | GET    | List orders (paginated, filterable) | ✅ Core                 |
+| `POST /api/v1/orders`              | POST   | Create order                        | ⚠️ Requires VedaService |
+| `GET /api/v1/orders/{order_id}`    | GET    | Get order details                   | ✅ Core                 |
+| `DELETE /api/v1/orders/{order_id}` | DELETE | Cancel order                        | ⚠️ Requires VedaService |
+| `GET /api/v1/candles`              | GET    | Get candle data                     | ✅ Data                 |
+| `GET /api/v1/events/stream`        | GET    | SSE event stream                    | ✅ Realtime             |
 
 ### 1.3 Frontend Routes — Test Targets
 
-| Route            | Component     | Key Elements to Test                                           |
-| ---------------- | ------------- | -------------------------------------------------------------- |
-| `/`              | (redirect)    | Redirects to `/dashboard`                                      |
-| `/dashboard`     | Dashboard     | 4 stat cards, activity feed, health status, navigation         |
-| `/runs`          | RunsPage      | Runs table, create form, start/stop buttons, status badges     |
-| `/runs/:runId`   | RunsPage      | Deep link to specific run, run details view                    |
-| `/orders`        | OrdersPage    | Orders table, status filter, run_id filter, detail modal       |
-| `/*`             | NotFound      | 404 page renders properly                                     |
+| Route          | Component  | Key Elements to Test                                       |
+| -------------- | ---------- | ---------------------------------------------------------- |
+| `/`            | (redirect) | Redirects to `/dashboard`                                  |
+| `/dashboard`   | Dashboard  | 4 stat cards, activity feed, health status, navigation     |
+| `/runs`        | RunsPage   | Runs table, create form, start/stop buttons, status badges |
+| `/runs/:runId` | RunsPage   | Deep link to specific run, run details view                |
+| `/orders`      | OrdersPage | Orders table, status filter, run_id filter, detail modal   |
+| `/*`           | NotFound   | 404 page renders properly                                  |
 
 ### 1.4 Frontend Components Inventory
 
-| Category     | Components                                          | E2E Testable Actions                |
-| ------------ | --------------------------------------------------- | ----------------------------------- |
-| Layout       | Header, Sidebar, Layout                             | Navigation clicks, active state     |
-| Common       | ConnectionStatus, StatCard, StatusBadge, Toast       | Visibility, content correctness     |
-| Dashboard    | ActivityFeed                                        | Event list rendering                |
-| Runs         | CreateRunForm                                       | Form fill, submit, validation       |
-| Orders       | OrderTable, OrderStatusBadge, OrderDetailModal      | Table rows, filter, modal open/close|
+| Category  | Components                                     | E2E Testable Actions                 |
+| --------- | ---------------------------------------------- | ------------------------------------ |
+| Layout    | Header, Sidebar, Layout                        | Navigation clicks, active state      |
+| Common    | ConnectionStatus, StatCard, StatusBadge, Toast | Visibility, content correctness      |
+| Dashboard | ActivityFeed                                   | Event list rendering                 |
+| Runs      | CreateRunForm                                  | Form fill, submit, validation        |
+| Orders    | OrderTable, OrderStatusBadge, OrderDetailModal | Table rows, filter, modal open/close |
 
 ### 1.5 Docker Service Topology (E2E Target)
 
@@ -117,16 +117,169 @@ All results measured locally on 2026-03-15; these are facts, not assumptions.
         Total: 1037                      Total: ~1062
 ```
 
+### 1.7 Critical Architecture Constraints for E2E Testing
+
+> **Purpose**: This section documents facts discovered via code reading that DIRECTLY affect what tests are valid. Every E2E test MUST be designed around these constraints to avoid fake or misleading results.
+
+#### 1.7.1 Orders API Data Source — MockOrderService Fallback
+
+**The Problem**: Without Alpaca credentials (E2E stack has none), `VedaService = None`. The orders route then falls back to `MockOrderService`, which returns **2 hardcoded mock orders** regardless of any actual trading activity:
+
+| Mock Order | Symbol | Side | Type | Status | run_id |
+|------------|--------|------|------|--------|--------|
+| order-123 | BTC/USD | BUY | MARKET | **FILLED** | run-123 |
+| order-456 | ETH/USD | SELL | LIMIT | **SUBMITTED** | run-123 |
+
+**Impact on tests**: Any test that asserts "orders appear after backtest" by checking GET /orders would be a **FALSE test** — the orders page ALWAYS shows these 2 mock orders, whether or not a backtest ran. The data is completely unrelated to actual trading activity.
+
+**Fallback logic (code trace)**:
+```
+GET /api/v1/orders → orders_router.list_orders()
+  → if veda_service is not None:  (False in E2E — no Alpaca creds)
+      return VedaService.list_orders()
+  → else:
+      return MockOrderService.list()  ← ALWAYS these 2 hardcoded orders
+```
+
+**Valid orders tests**: Test that the orders UI renders correctly with the data it receives (mock data). Do NOT claim it shows "real backtest orders".
+
+#### 1.7.2 Backtest Order Persistence Gap
+
+**Backtest fills live only in GretaService memory**. There is NO persistence path from backtest orders to a queryable API:
+
+```
+Strategy → PLACE_ORDER → DomainRouter → backtest.PlaceOrder
+  → GretaService.place_order()
+    → _pending_orders dict (in-memory)
+    → emits "orders.Placed" event
+  → GretaService.advance_to()
+    → DefaultFillSimulator.simulate_fill()
+    → fills stored in self._fills list (in-memory)
+    → emits "orders.Filled" event
+  → BacktestResult.fills (returned to RunManager, NOT persisted to DB)
+```
+
+**No database write**: GretaService never inserts into `veda_orders` table.
+**No API exposure**: GET /orders never reads from GretaService's fills.
+
+#### 1.7.3 SSE Event Type Names — Backend vs Frontend Mismatch
+
+| Backend Emitter | Event Type String | Frontend Listener | Match? |
+|-----------------|-------------------|-------------------|--------|
+| RunManager | `run.Started` | `addEventListener("run.Started")` | ✅ |
+| RunManager | `run.Completed` | `addEventListener("run.Completed")` | ✅ |
+| RunManager | `run.Stopped` | `addEventListener("run.Stopped")` | ✅ |
+| RunManager | `run.Error` | `addEventListener("run.Error")` | ✅ |
+| VedaService | `orders.Created` | `addEventListener("orders.Created")` | ✅ |
+| GretaService | **`orders.Placed`** | ❌ No listener for `orders.Placed` | **❌ MISMATCH** |
+| GretaService | `orders.Filled` | `addEventListener("orders.Filled")` | ✅ |
+| VedaService | `orders.Rejected` | `addEventListener("orders.Rejected")` | ✅ |
+
+**Impact**: During a backtest, when GretaService emits `orders.Placed`, the frontend has **no listener** for it — no cache invalidation, no toast. The `orders.Filled` event IS received, which triggers `invalidateQueries(["orders"])`, but the refetch hits MockOrderService (see §1.7.1).
+
+**SSE events the frontend WILL receive during a backtest**:
+1. `run.Started` → toast "Run {id} started", invalidates `["runs"]`
+2. `orders.Filled` → toast "Order filled", invalidates `["orders"]` (but fetches mock data)
+3. `run.Completed` → toast "Run {id} completed", invalidates `["runs"]`
+
+#### 1.7.4 CreateRunForm Limitations
+
+The `CreateRunForm` component has 4 fields:
+
+| Field | HTML ID | Type | Mapped to RunCreate field |
+|-------|---------|------|--------------------------|
+| Strategy | `strategy-id` | text input | `strategy_id` |
+| Mode | `run-mode` | select (backtest/paper/live) | `mode` |
+| Symbols | `symbols` | text input (comma-separated) | `symbols` |
+| Timeframe | `timeframe` | select (1m/5m/15m/1h/4h/1d) | `timeframe` |
+
+**Missing**: `start_time` and `end_time` fields. These are required for backtest execution.
+
+**Consequence**: Creating a backtest run via UI creates a `PENDING` run but **cannot set start/end times**. Calling POST /runs/{id}/start will fail because `_start_backtest` requires `start_time` and `end_time` to create a `BacktestClock`.
+
+**For E2E tests**: Creating backtest runs that need to RUN must use the API (POST /runs with start_time/end_time). The UI form can only create pending runs without time bounds.
+
+#### 1.7.5 React Query Cache Behavior
+
+| Setting | Value | Impact on E2E |
+|---------|-------|---------------|
+| `staleTime` | 60,000ms (60s) | After first fetch, data is "fresh" for 60s; won't refetch on remount |
+| `retry` | 1 | Failed queries retry once before showing error |
+| SSE invalidation | `invalidateQueries()` | Forces refetch regardless of staleTime |
+| `refetchInterval` (health) | 30,000ms (30s) | Health endpoint polls every 30s |
+
+**Impact on tests**: After an API action (e.g., create run), the runs page may NOT show the new data immediately if the cache is still "fresh". Tests must either:
+1. Wait for SSE event to invalidate the cache (preferred, tests real behavior)
+2. Use `page.reload()` (forces fresh query)
+3. Navigate away and back (new mount triggers fetch if stale)
+
+#### 1.7.6 Strategy Behavior — Exact Bar Data Requirements
+
+**Strategy "sample"** (preferred for E2E — simpler, more controllable):
+- Lookback window: 10 bars
+- Buy condition: `current_close < avg_close_10bars * 0.99` AND no position
+- Sell condition: `current_close > avg_close_10bars * 1.01` AND has position
+- Order type: MARKET, qty=1.0
+- **Minimum bars for 1 BUY**: 11 (10 for history + 1 with price dip)
+- **Minimum bars for 1 BUY + 1 SELL**: 13 bars (see calculated seed data in §4)
+
+**Strategy "sma-crossover"** (NOT recommended for E2E — harder to control):
+- Lookback window: `slow_period + 1` = 21 bars (default)
+- Requires actual crossover pattern in data → harder to guarantee
+- Configurable fast_period/slow_period adds complexity
+- **Decision**: Use "sample" for all backtest E2E tests
+
+#### 1.7.7 Paper Run Without VedaService
+
+Without Alpaca credentials, paper and live runs have this behavior:
+
+```
+Strategy → PLACE_ORDER → strategy.PlaceRequest event
+  → DomainRouter → live.PlaceOrder event
+    → VedaService subscriber? NO (VedaService = None → not subscribed)
+    → Event is SILENTLY DROPPED (no handler, no error)
+```
+
+**Result**: Paper run starts, clock ticks, strategy processes data and emits order intents, but NO orders are ever placed or filled. The run just "runs" with wall-clock ticks until stopped.
+
+**Valid paper tests**: Lifecycle only (create → start → running status → stop → stopped status). Do NOT expect orders.
+
+#### 1.7.8 Nginx Reverse Proxy in E2E Stack
+
+The production frontend (Nginx) proxies API requests:
+- `/api/*` → `proxy_pass http://backend:8000`
+- `/api/v1/events/stream` → special SSE config: `proxy_buffering off`, `proxy_read_timeout 86400s`
+- All other paths → serve static files, fallback to `index.html` (SPA routing)
+
+**In the E2E Docker stack**: The Playwright browser connects to the frontend (Nginx) on port 33579. All API calls from the React app go through Nginx to the backend. This is the same path production uses — which is what E2E should test.
+
+#### 1.7.9 Valid vs Invalid Test Summary
+
+| Test Idea | Valid? | Why |
+|-----------|--------|-----|
+| Dashboard loads with stat cards | ✅ | Reads from GET /runs and /orders — data exists (in-memory + mock) |
+| Create backtest run via UI form | ✅ | POST /runs works; run visible in list |
+| Start backtest via API → completes | ✅ | Synchronous execution; status changes are real |
+| Orders appear after backtest | ❌ **FALSE** | GET /orders returns MockOrderService, not backtest fills |
+| Dashboard "Total Runs" increments | ✅ | GET /runs data is real (in-memory RunManager) |
+| SSE delivers run.Completed | ✅ | Event chain: RunManager → EventLog → SSEBroadcaster → browser |
+| SSE delivers orders.Created (backtest) | ❌ **MISMATCH** | GretaService emits "orders.Placed", frontend listens "orders.Created" |
+| Orders page shows data | ✅ (mock) | MockOrderService always returns 2 orders; tests UI rendering |
+| Paper run start → running → stop | ✅ | Clock + status work; just no order execution |
+| Connection status shows Connected | ✅ | EventSource connects to SSE endpoint through Nginx |
+| SSE reconnect after offline | ✅ | useSSE.ts has 3s reconnect; Playwright can simulate offline |
+| Create run via UI → status pending in table | ✅ | Real data flow: POST /runs → RunManager → in-memory → GET /runs |
+
 ---
 
 ## 2. Goal & Non-Goals
 
 ### Goals
 
-1. **E2E Coverage**: Full browser-based end-to-end tests covering critical user workflows (dashboard, runs, orders)
-2. **SSE Verification**: Verify real-time event delivery from backend → frontend in a live system
-3. **Backtest Flow**: End-to-end: create run → start → view results → verify orders
-4. **Navigation**: All routes load, render, and link correctly
+1. **E2E Coverage**: Browser-based tests covering critical user workflows — constrained to what the current architecture actually supports (see §1.7)
+2. **SSE Verification**: Verify `run.*` event delivery from backend → frontend; document `orders.Placed` mismatch
+3. **Backtest Flow**: Create run → start → verify status transition (PENDING → COMPLETED) via UI
+4. **Navigation**: All routes load, render, and link correctly; sidebar navigation works
 5. **Deployment Guide**: Complete, tested production deployment documentation
 6. **Doc Accuracy**: All test counts, coverage numbers, and API docs reflect final state
 7. **Performance Baseline**: Measure and document response times and SSE latency
@@ -134,6 +287,7 @@ All results measured locally on 2026-03-15; these are facts, not assumptions.
 ### Non-Goals
 
 - Real exchange API integration testing (requires real credentials)
+- Verifying backtest orders on the orders page (architectural gap — see §1.7.2)
 - Load/stress testing (future milestone)
 - Visual regression testing (screenshot comparison)
 - Mobile/responsive layout testing
@@ -176,15 +330,15 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
 
 **Why Playwright over Selenium/Cypress**:
 
-| Factor             | Playwright (Python)                    | Selenium               | Cypress                |
-| ------------------ | -------------------------------------- | ---------------------- | ---------------------- |
-| Language match     | ✅ Python (same as backend tests)      | ✅ Python              | ❌ JS only            |
-| pytest integration | ✅ `pytest-playwright` built-in        | ⚠️ Custom setup        | ❌ Mocha-based        |
-| Auto-wait          | ✅ Smart auto-wait for elements        | ❌ Manual waits         | ✅ Auto-wait          |
-| Headless CI        | ✅ First-class headless                | ⚠️ Works, less polished | ✅ Good               |
-| SSE testing        | ✅ `page.evaluate` + EventSource API   | ⚠️ Complex              | ⚠️ Tricky            |
-| Speed              | ✅ Fast (Chromium CDP)                 | ❌ Slower               | ✅ Fast               |
-| Existing ecosystem | ✅ Fits pytest markers/conftest        | ⚠️ Different fixtures   | ❌ Separate framework |
+| Factor             | Playwright (Python)                  | Selenium                | Cypress               |
+| ------------------ | ------------------------------------ | ----------------------- | --------------------- |
+| Language match     | ✅ Python (same as backend tests)    | ✅ Python               | ❌ JS only            |
+| pytest integration | ✅ `pytest-playwright` built-in      | ⚠️ Custom setup         | ❌ Mocha-based        |
+| Auto-wait          | ✅ Smart auto-wait for elements      | ❌ Manual waits         | ✅ Auto-wait          |
+| Headless CI        | ✅ First-class headless              | ⚠️ Works, less polished | ✅ Good               |
+| SSE testing        | ✅ `page.evaluate` + EventSource API | ⚠️ Complex              | ⚠️ Tricky             |
+| Speed              | ✅ Fast (Chromium CDP)               | ❌ Slower               | ✅ Fast               |
+| Existing ecosystem | ✅ Fits pytest markers/conftest      | ⚠️ Different fixtures   | ❌ Separate framework |
 
 **Decision**: Playwright Python with `pytest-playwright` plugin — integrates directly with our existing pytest infrastructure, auto-collection hooks, and test markers.
 
@@ -193,6 +347,7 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
 **File changes**:
 
 1. **`docker/backend/requirements.dev.txt`** — Add:
+
    ```
    # E2E Testing (Browser Automation)
    playwright>=1.40.0
@@ -200,6 +355,7 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
    ```
 
 2. **`pyproject.toml`** — Add Playwright base URL config under pytest options:
+
    ```toml
    [tool.pytest.ini_options]
    # ... existing config ...
@@ -214,6 +370,7 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
    ```
 
 **Verification**:
+
 ```bash
 pip install -r docker/backend/requirements.dev.txt
 playwright install chromium --with-deps
@@ -250,7 +407,7 @@ services:
       timeout: 5s
       retries: 10
     tmpfs:
-      - /var/lib/postgresql/data  # RAM-based for speed
+      - /var/lib/postgresql/data # RAM-based for speed
 
   backend_e2e:
     build:
@@ -279,6 +436,7 @@ services:
 ```
 
 **Design decisions**:
+
 - **Fixed ports** (35432, 38919, 33579): Predictable URLs for Playwright base URL; no port conflicts with dev/prod stacks.
 - **`tmpfs` for Postgres**: RAM-based data directory for speed (E2E data is ephemeral).
 - **No Alpaca credentials**: E2E tests use mock/degraded mode (no real exchange calls).
@@ -528,6 +686,7 @@ def clean_e2e_db(e2e_stack: None) -> None:
 ```
 
 **Design decisions**:
+
 - **Session-scoped stack**: Start Docker Compose once per session (expensive operation), not per test.
 - **`--wait` flag**: Docker Compose v2 natively waits for health checks before returning.
 - **`tmpfs` in compose**: RAM-based Postgres — fast table truncation for isolation.
@@ -595,6 +754,7 @@ echo "=========================================="
 ```
 
 **Usage**:
+
 ```bash
 chmod +x scripts/ci/e2e-local.sh
 ./scripts/ci/e2e-local.sh              # Run and teardown
@@ -689,21 +849,41 @@ class TestNavigation:
         expect(page).to_have_url(f"{e2e_base_url}/dashboard")
 ```
 
-### 5.2 Implementation Notes
+### 5.2 Per-Test Data Flow & Validity Proof
+
+| # | Test | Prerequisite Data | Data Source | Exact Assertion | Validity Proof | False-Pass Risk |
+|---|------|-------------------|-------------|-----------------|----------------|-----------------|
+| 1 | root redirects | None | Nginx config (`try_files → /index.html`) | URL changes to `/dashboard` | React Router `<Navigate to="/dashboard" replace />` in App.tsx | None — redirect is deterministic |
+| 2 | dashboard loads | Stack running, MockOrderService active | GET /healthz → `{"status":"ok"}`, GET /runs → `{"items":[],"total":0}`, GET /orders → `{"items":[mock1,mock2],"total":2}` | Text "Active Runs", "Total Runs", "Total Orders" visible as StatCard titles | Dashboard.tsx renders 4 StatCards with hardcoded title props | Low — could fail if backend is slow (use auto-wait) |
+| 3 | runs page loads | Stack running | GET /runs → `{"items":[],"total":0}` (no runs created yet) | Page at `/runs` URL; has heading "Runs" | RunsPage.tsx renders h1 "Runs"; empty state shows `data-testid="runs-empty"` with "No runs yet" | None — static text |
+| 4 | orders page loads | Stack running, MockOrderService active | GET /orders → 2 mock orders | Page at `/orders` URL | OrdersPage.tsx renders table with OrderTable component | Low — mock data always exists |
+| 5 | 404 page | None | Client-side React Router | Text "404" visible | App.tsx has `<Route path="*" element={<NotFound />} />`; NotFound renders "Page Not Found" | None — static text, client-side only |
+| 6 | sidebar navigation | All route components loaded | Client-side React Router | URL changes correctly on each click | Sidebar.tsx has `<NavLink to="/runs">`, etc. | Low — Playwright waits for navigation |
+
+**Empty state behavior**: On first run with a fresh stack, the runs page shows `data-testid="runs-empty"` with the `text "No runs yet"` and `"Create a new run to get started"`. The orders page shows 2 mock orders from MockOrderService (NOT empty state).
+
+**Data-testid selectors available** (for resilient locators):
+- `data-testid="dashboard-loading"` — dashboard skeleton
+- `data-testid="dashboard-error"` — dashboard error state
+- `data-testid="runs-loading"` / `data-testid="runs-error"` / `data-testid="runs-empty"`
+- `data-testid="orders-loading"` / `data-testid="orders-error"`
+- `data-testid="connection-dot"` — SSE connection indicator
+
+### 5.3 Implementation Notes
 
 - These tests **do not require database setup** beyond having the stack running.
 - `expect()` from `pytest-playwright` provides auto-wait + clear error messages.
 - `page` fixture is auto-provided by `pytest-playwright` (each test gets a fresh browser context).
 - The `e2e_base_url` fixture ensures the stack is started before tests run (session-scoped dependency chain).
 
-### 5.3 Locator Strategy
+### 5.4 Locator Strategy
 
-| Priority | Locator Type               | Example                                 | When to Use                     |
-| -------- | -------------------------- | --------------------------------------- | ------------------------------- |
-| 1        | `get_by_role()`            | `get_by_role("link", name="Runs")`      | Most accessible, resilient      |
-| 2        | `get_by_text()`            | `get_by_text("Active Runs")`            | When content is user-visible    |
-| 3        | `get_by_test_id()`         | `get_by_test_id("create-run-form")`     | When DOM structure may change   |
-| 4        | `locator("css selector")`  | `locator("table tbody tr")`             | Last resort, fragile            |
+| Priority | Locator Type              | Example                             | When to Use                   |
+| -------- | ------------------------- | ----------------------------------- | ----------------------------- |
+| 1        | `get_by_role()`           | `get_by_role("link", name="Runs")`  | Most accessible, resilient    |
+| 2        | `get_by_text()`           | `get_by_text("Active Runs")`        | When content is user-visible  |
+| 3        | `get_by_test_id()`        | `get_by_test_id("create-run-form")` | When DOM structure may change |
+| 4        | `locator("css selector")` | `locator("table tbody tr")`         | Last resort, fragile          |
 
 **Convention**: If a component needs a stable locator, add `data-testid` attributes to the React component. Track these additions as M10-5 cleanup tasks.
 
@@ -718,265 +898,199 @@ pytest tests/e2e/test_navigation.py -v --timeout=30
 
 ---
 
-## 6. M10-2: E2E Backtest Flow (~7 tests)
+## 6. M10-2: E2E Backtest Flow (~6 tests)
 
-**Goal**: Test the complete backtest lifecycle through the UI — create run, start, view results, verify orders appear.
+**Goal**: Test the backtest run lifecycle through the UI — create run via API, start, verify status transitions (PENDING → COMPLETED), verify run data on dashboard and runs page.
+
+> **⚠️ Scope constraint (see §1.7.2)**: Backtest orders are NOT accessible via GET /orders API. This phase tests run lifecycle only, NOT order generation visibility.
 
 ### 6.1 Pre-Condition: Seed Bar Data
 
-Backtest requires historical bar data in the database. We need a seeding mechanism.
+Backtest requires historical bar data in the `bars` table. Without seed data, `GretaService.initialize()` loads zero bars → strategy receives empty windows → no signals → no orders → but run still "completes" (just does nothing).
 
-**File**: `tests/e2e/seed.py`
+**Strategy choice**: Use `"sample"` strategy (NOT `"sma-crossover"`).
+- `"sample"` needs only 10-bar lookback — smaller seed data
+- Simpler buy/sell logic — easier to guarantee signals
+- `"sma-crossover"` needs 21 bars minimum and harder-to-control crossover patterns
 
-```python
-"""
-E2E Database Seeding
+**Exact seed data specification for "sample" strategy** (20 bars, BTC/USD 1m):
 
-Seeds the E2E database with test data for backtest scenarios.
-Called via docker compose exec to run inside the backend container.
-"""
+We need bars where `current_close < avg_close_10bars * 0.99` triggers a BUY, then `current_close > avg_close_10bars * 1.01` triggers a SELL.
 
-from __future__ import annotations
+| Bar # | Timestamp (UTC) | Open | High | Low | Close | Purpose |
+|-------|-----------------|------|------|-----|-------|---------|
+| 1-10 | 2024-01-15 09:30 – 09:39 | 42000 | 42100 | 41900 | 42000 | Establish baseline average = 42000 |
+| 11 | 2024-01-15 09:40 | 41200 | 41300 | 40900 | **41000** | **BUY trigger**: 41000 < 41900 × 0.99 = 41481 ✓ |
+| 12 | 2024-01-15 09:41 | 41500 | 42100 | 41400 | 42000 | Recovery, no signal |
+| 13 | 2024-01-15 09:42 | 42200 | 42600 | 42100 | **42500** | **SELL trigger**: 42500 > 41950 × 1.01 = 42369.5 ✓ |
+| 14-20 | 2024-01-15 09:43 – 09:49 | 42000 | 42100 | 41900 | 42000 | Stable tail, no signals |
 
-import asyncio
-import os
-from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+**Mathematical proof of 2 orders**:
 
+```
+Bar 11 tick → lookback window = bars 2-11
+  avg_close = (42000×9 + 41000) / 10 = 41900
+  current_close = 41000
+  41000 < 41900 × 0.99 (= 41481)? YES → BUY market qty=1.0
+  position = True
 
-async def seed_bars() -> None:
-    """Seed bars table with BTC/USD 1m data for backtest testing."""
-    from src.walle.database import Database
-    from src.config import DatabaseConfig
-    from src.walle.repositories.bar_repository import Bar, BarRepository
+Bar 12 tick → lookback window = bars 3-12
+  avg_close = (42000×8 + 41000 + 42000) / 10 = 41900
+  current_close = 42000
+  42000 > 41900 × 1.01 (= 42319)? NO → no sell
 
-    db_url = os.environ["DB_URL"]
-    db = Database(DatabaseConfig(url=db_url))
-    repo = BarRepository(db.session_factory)
+Bar 13 tick → lookback window = bars 4-13
+  avg_close = (42000×7 + 41000 + 42000 + 42500) / 10 = 41950
+  current_close = 42500
+  42500 > 41950 × 1.01 (= 42369.5)? YES → SELL market qty=1.0
+  position = False
 
-    start = datetime(2024, 1, 15, 9, 30, tzinfo=UTC)
-    bars: list[Bar] = []
-
-    # Generate 60 bars (1 hour of 1-minute data)
-    # Price pattern: oscillating to trigger SMA crossover signals
-    base_price = Decimal("42000")
-    for i in range(60):
-        # Create a sine-like pattern to trigger strategy signals
-        offset = Decimal(str(50 * (1 if i % 10 < 5 else -1)))
-        price = base_price + offset + Decimal(i)
-        bars.append(
-            Bar(
-                symbol="BTC/USD",
-                timeframe="1m",
-                timestamp=start + timedelta(minutes=i),
-                open=price,
-                high=price + Decimal("20"),
-                low=price - Decimal("20"),
-                close=price + Decimal("5"),
-                volume=Decimal("100"),
-            )
-        )
-
-    await repo.save_bars(bars)
-    await db.close()
-    print(f"Seeded {len(bars)} bars for BTC/USD 1m")
-
-
-if __name__ == "__main__":
-    asyncio.run(seed_bars())
+Bars 14-20 → no position, prices stable → no action
 ```
 
-**Seeding command** (added to `E2EApiClient` or conftest):
-```python
-subprocess.run(
-    [*COMPOSE_ARGS, "exec", "-T", "backend_e2e", "python", "-m", "tests.e2e.seed"],
-    check=True, timeout=30,
-)
+**Fill prices**: MARKET orders fill at `bar.open` (DefaultFillSimulator default).
+- BUY fills at bar 12's open = 41500 (order placed at bar 11, filled next advance_to)
+- SELL fills at bar 14's open = 42000 (order placed at bar 13, filled next advance_to)
+
+**Seed data is idempotent**: Use `ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING` or check before insert. Safe to run seed script multiple times.
+
+**Run config for E2E**:
+```json
+{
+  "strategy_id": "sample",
+  "mode": "backtest",
+  "symbols": ["BTC/USD"],
+  "timeframe": "1m",
+  "start_time": "2024-01-15T09:30:00Z",
+  "end_time": "2024-01-15T09:50:00Z"
+}
+```
+This covers bars 1-20 (09:30-09:49), 20 clock ticks, and guarantees exactly 2 orders.
+
+### 6.2 Complete Data Flow for One Backtest Run
+
+```
+① POST /runs → RunManager.create()
+   → Run(status=PENDING) stored in RunManager._runs dict
+   → emits "run.Created" event → SSEBroadcaster → browser (no frontend listener)
+   → HTTP 201 returns {"id":"<uuid>","status":"pending",...}
+
+② POST /runs/{id}/start → RunManager.start()
+   → StrategyLoader.load("sample") → SampleStrategy instance
+   → GretaService() created per-run
+   → greta.initialize(["BTC/USD"], "1m", start, end) → loads 20 bars from DB into memory
+   → BacktestClock(start, end, "1m") created
+   → emits "run.Started" → SSE → frontend invalidates ["runs"] cache → toast "Run {id} started"
+   → clock.start() runs synchronously:
+     Bar 1 tick → strategy.on_tick → FetchWindow → greta.data.WindowReady (only 1 bar, < 10) → no action
+     Bar 2-10 ticks → same (building up window)
+     Bar 11 tick → strategy.on_tick → FetchWindow → greta provides 10 bars → strategy.on_data
+       → BUY signal → PlaceRequest → DomainRouter → backtest.PlaceOrder → greta.place_order()
+       → emits "orders.Placed" (frontend NO listener)
+     Bar 12 tick → greta.advance_to() processes pending order → fill at open=41500
+       → emits "orders.Filled" → SSE → frontend invalidates ["orders"] (refetches MockOrderService)
+     Bar 13 tick → SELL signal (similar flow)
+     Bar 14-20 → process orders, no new signals
+   → clock exhausted → run.status = COMPLETED
+   → emits "run.Completed" → SSE → frontend invalidates ["runs"] cache → toast "Run {id} completed"
+   → HTTP 200 returns {"id":"<uuid>","status":"completed",...}
+
+③ GET /runs → RunManager.list()
+   → Returns all runs from in-memory dict
+   → Run is now status=completed, with started_at and stopped_at set
+
+④ GET /orders → MockOrderService.list()
+   → Returns 2 hardcoded mock orders (NOT backtest fills!)
+   → Always the same regardless of backtest activity
 ```
 
-### 6.2 TDD: Test Specification
+### 6.3 Per-Test Specification (6 tests)
 
-**File**: `tests/e2e/test_backtest_flow.py`
+#### Test 1: Create backtest run via UI → PENDING status
 
-```python
-"""
-E2E Tests: Backtest Flow
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | Stack running, no prior runs needed |
+| **Steps** | 1. Navigate to `/runs` 2. Click "+ New Run" button 3. Fill Strategy = "sample" (via `#strategy-id` input) 4. Set Mode = "backtest" (via `#run-mode` select) 5. Fill Symbols = "BTC/USD" (via `#symbols` input) 6. Set Timeframe = "1 Minute" (via `#timeframe` select) 7. Click "Create" button |
+| **Selector detail** | `page.locator("#strategy-id").fill("sample")` (NOT `get_by_label` — verify `htmlFor` attribute first); `page.locator("#run-mode").select_option("backtest")`; `page.get_by_role("button", name="+ New Run").click()` to open form |
+| **Expected result** | New row in runs table with status text "pending", mode text "backtest", strategy "sample" |
+| **Assertion** | `expect(page.get_by_text("pending")).to_be_visible()` (relies on StatusBadge rendering) |
+| **Data flow proof** | POST /runs → RunManager.create() → run in memory → form reset → RunsPage useCreateRun mutation → onSuccess invalidates ["runs"] → refetch GET /runs → new row appears |
+| **False-pass risk** | LOW. The run IS real. Only caveat: this run has no start_time/end_time → cannot be started (see §1.7.4). This is fine — we're only testing creation. |
+| **Note** | CreateRunForm does NOT send start_time/end_time. The created run is valid as PENDING but would fail on start. |
 
-Tests the complete backtest lifecycle:
-1. Create a backtest run via UI
-2. Start the run
-3. Verify run completes
-4. Verify orders appear
-5. Verify dashboard reflects results
-"""
+#### Test 2: Create run via API → visible in UI
 
-import pytest
-from playwright.sync_api import Page, expect
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | Stack running |
+| **Steps** | 1. Create run via E2EApiClient (POST /runs with start/end times) 2. Navigate to `/runs` page |
+| **API call** | `api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"], timeframe="1m", start_time="2024-01-15T09:30:00Z", end_time="2024-01-15T09:50:00Z")` |
+| **Expected** | Run ID appears in table (first 8 chars of UUID shown in `font-mono` span) |
+| **Assertion** | `expect(page.get_by_text(run["id"][:8])).to_be_visible()` |
+| **Data flow proof** | POST /runs → 201 → page.goto triggers GET /runs → RunManager.list() returns the run → table row rendered with `data-testid="run-row-{id}"` |
+| **False-pass risk** | NONE. API creates real run; GET /runs reads from same in-memory store. |
 
-from tests.e2e.helpers import E2EApiClient, DEFAULT_TIMEOUT_MS
+#### Test 3: Start backtest → COMPLETED status (SSE-verified)
 
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | **Seed data MUST be present** (20 bars in `bars` table). Run created via API with start/end times. |
+| **Steps** | 1. Navigate to `/runs` page 2. Wait for SSE connection (2s) 3. Start run via E2EApiClient 4. Wait for "completed" badge to appear (via SSE cache invalidation) |
+| **Why SSE-first**: Instead of `page.reload()`, we wait for the `run.Completed` SSE event to invalidate the `["runs"]` query cache → React Query refetches → UI updates automatically. This tests the real SSE→UI flow. |
+| **Expected result** | Run status badge changes from "pending" to "completed" WITHOUT manual page reload |
+| **Assertion** | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)` (generous timeout for backtest execution + SSE delivery) |
+| **Data flow proof** | POST /start → RunManager._start_backtest() → BacktestClock runs 20 ticks → emits "run.Completed" → SSEBroadcaster → EventSource → useSSE handler → invalidateQueries(["runs"]) → auto-refetch → StatusBadge re-renders |
+| **False-pass risk** | MEDIUM. If seed data is missing, the backtest still "completes" (runs 0 or few ticks, no orders but status=COMPLETED). This is technically correct behavior. The test should also verify the run completed with both started_at and stopped_at set via API check: `run = api_client.get_run(id); assert run["started_at"] is not None`. |
+| **Fallback** | If SSE event doesn't arrive within timeout, `page.reload()` as fallback — but this should be logged as a potential SSE issue. |
 
-@pytest.mark.e2e
-class TestBacktestFlow:
-    """End-to-end backtest lifecycle tests."""
+#### Test 4: Backtest run detail deep-link
 
-    @pytest.fixture(autouse=True)
-    def _seed_data(self, api_client: E2EApiClient, e2e_stack: None) -> None:
-        """Ensure bar data is seeded for backtest tests."""
-        # Seeding is idempotent — safe to call multiple times
-        # (In practice, call seed script via compose exec in conftest)
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | Run created via API |
+| **Steps** | 1. Navigate directly to `/runs/{run_id}` |
+| **Expected** | Page shows run ID (first 8 chars), mode "backtest", strategy "sample" |
+| **Assertion** | `expect(page.get_by_text(run["id"][:8])).to_be_visible()` and `expect(page.get_by_text("backtest")).to_be_visible()` |
+| **Data flow proof** | URL `/runs/:runId` → React Router → RunsPage component → `useRun(runId)` hook → GET /runs/{id} → RunManager.get() → render |
+| **False-pass risk** | NONE. Direct URL → direct API call → render. |
 
-    def test_create_backtest_run_via_ui(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
-        """Create a backtest run using the CreateRunForm."""
-        page.goto(f"{e2e_base_url}/runs")
+#### Test 5: Dashboard "Total Runs" reflects created runs
 
-        # Fill in the create run form
-        page.get_by_label("Strategy").fill("sma")
-        page.get_by_label("Mode").select_option("backtest")
-        page.get_by_label("Symbols").fill("BTC/USD")
-        page.get_by_label("Timeframe").fill("1m")
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | Stack clean (or known run count) |
+| **Steps** | 1. Navigate to `/dashboard` 2. Note initial Total Runs value 3. Create run via API 4. Reload page (or wait for SSE) 5. Verify Total Runs incremented |
+| **Expected** | StatCard "Total Runs" value increases by 1 |
+| **Assertion** | After reload: the Total Runs card shows the run count from `GET /runs` response's `total` field. Since we know we created 1 run, check `total >= 1`. Use `expect(page.locator('[data-testid] >> text=/\\d+/').first).to_be_visible()` to verify a number is rendered. |
+| **Data flow proof** | Dashboard.tsx: `useRuns({ page: 1, page_size: 50 })` → GET /runs → `data.total` → StatCard value |
+| **False-pass risk** | LOW. Run counter is real. The `total` value from RunManager.list() is accurate. The risk is only if `page.reload()` happens before the POST /runs response returns — add a small wait. |
 
-        # Submit
-        page.get_by_role("button", name="Create").click()
+#### Test 6: Multiple runs listed in table
 
-        # Verify run appears in the table with PENDING status
-        expect(page.get_by_text("pending")).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+| Aspect | Detail |
+|--------|--------|
+| **Prerequisite** | No prior runs (or use `clean_e2e_db`) |
+| **Steps** | 1. Create 3 runs via API 2. Navigate to `/runs` 3. Count table rows |
+| **Expected** | At least 3 rows in table body |
+| **Assertion** | `expect(page.locator("table tbody tr")).to_have_count(3)` (exact count, or `>= 3` if prior tests created runs) |
+| **Note on test isolation** | Runs persist in memory across tests within the same session. Using `clean_e2e_db` only cleans DB tables, NOT RunManager's in-memory dict. For cross-test isolation, either: (a) use `>= N` assertions, or (b) accept cumulative state. Recommended: use `>= 3` since run data is additive. |
 
-    def test_create_backtest_run_via_api_visible_in_ui(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Run created via API is visible on the runs page."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            timeframe="1m",
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T09:45:00Z",
-        )
+### 6.4 ~~Removed: test_backtest_generates_orders~~
 
-        page.goto(f"{e2e_base_url}/runs")
-        expect(page.get_by_text(run["id"][:8])).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+> **DELETED from plan** (was in original §6.2). This test would have checked orders page after backtest — this is a FALSE test because GET /orders returns MockOrderService data, not backtest fills (see §1.7.1, §1.7.2). Including it would produce misleading test results.
 
-    def test_start_backtest_completes(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Starting a backtest run transitions it to COMPLETED."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            timeframe="1m",
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T09:35:00Z",
-        )
-
-        page.goto(f"{e2e_base_url}/runs")
-        # Start the run via API (UI start button may also work)
-        api_client.start_run(run["id"])
-
-        # Reload and verify status
-        page.reload()
-        expect(page.get_by_text("completed")).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-
-    def test_backtest_run_detail_view(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Deep-linking to a specific run shows run details."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            timeframe="1m",
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T09:35:00Z",
-        )
-
-        page.goto(f"{e2e_base_url}/runs/{run['id']}")
-        expect(page.get_by_text(run["id"][:8])).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-        expect(page.get_by_text("backtest")).to_be_visible()
-
-    def test_backtest_generates_orders(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """After backtest completion, orders appear on the orders page."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            timeframe="1m",
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T10:30:00Z",  # 60 bars
-        )
-        api_client.start_run(run["id"])
-
-        # Navigate to orders page and filter by run_id
-        page.goto(f"{e2e_base_url}/orders")
-        orders = api_client.list_orders(run_id=run["id"])
-
-        # If the SMA strategy generated trades, verify they appear
-        if orders["total"] > 0:
-            # Filter orders by run on the UI
-            expect(page.locator("table tbody tr")).to_have_count(
-                orders["total"], timeout=DEFAULT_TIMEOUT_MS
-            )
-
-    def test_dashboard_reflects_backtest_run(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Dashboard total runs counter updates after creating a run."""
-        # Get initial count
-        page.goto(f"{e2e_base_url}/dashboard")
-        page.wait_for_load_state("networkidle")
-
-        # Create a run via API
-        api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-        )
-
-        # Reload dashboard and verify total count increased
-        page.reload()
-        expect(page.get_by_text("Total Runs")).to_be_visible()
-
-    def test_multiple_backtests_listed(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Multiple backtest runs are listed on the runs page."""
-        # Create 3 runs
-        for i in range(3):
-            api_client.create_run(
-                strategy_id=f"sma-{i}",
-                mode="backtest",
-                symbols=["BTC/USD"],
-            )
-
-        page.goto(f"{e2e_base_url}/runs")
-        # Should have at least 3 rows in the table
-        rows = page.locator("table tbody tr")
-        expect(rows).to_have_count_greater_than(2, timeout=DEFAULT_TIMEOUT_MS)
-```
-
-### 6.3 Implementation Notes
-
-- **API-assisted setup**: Use `E2EApiClient` for data setup, browser for verification. This is the recommended Playwright pattern ("API-first setup, UI-first verification").
-- **Backtest completion**: The SMA strategy may or may not generate trades depending on seeded data patterns. Tests should handle both cases gracefully.
-- **Locator stability**: Use text content and role-based locators. If UI text changes unexpectedly, tests will break — this is intentional (tests should reflect user-visible behavior).
-
-### 6.4 Potential `data-testid` Additions (Frontend)
+### 6.5 Potential `data-testid` Additions (Frontend)
 
 If existing locators prove too fragile, add these to React components:
 
-| Component        | Attribute                          | Element         |
-| ---------------- | ---------------------------------- | --------------- |
-| CreateRunForm    | `data-testid="create-run-form"`    | `<form>`        |
-| CreateRunForm    | `data-testid="create-run-submit"`  | Submit button   |
-| RunsPage         | `data-testid="runs-table"`         | `<table>`       |
-| OrdersPage       | `data-testid="orders-table"`       | `<table>`       |
-| StatCard         | `data-testid="stat-{label}"`       | Card container  |
+| Component     | Attribute                         | Element        |
+| ------------- | --------------------------------- | -------------- |
+| CreateRunForm | `data-testid="create-run-form"`   | `<form>`       |
+| CreateRunForm | `data-testid="create-run-submit"` | Submit button  |
+| RunsPage      | `data-testid="runs-table"`        | `<table>`      |
+| OrdersPage    | `data-testid="orders-table"`      | `<table>`      |
+| StatCard      | `data-testid="stat-{label}"`      | Card container |
 
 ### 6.5 Verification
 
@@ -991,133 +1105,95 @@ pytest tests/e2e/test_backtest_flow.py -v --timeout=60
 
 ## 7. M10-3: E2E Live/Paper Flow (~5 tests)
 
-**Goal**: Test the live/paper run lifecycle — create, monitor status, stop mid-run.
+**Goal**: Test the paper run lifecycle — create, start (enters RUNNING), verify active status, stop, verify stopped status, and error state display.
 
-### 7.1 Key Difference from Backtest
+> **⚠️ Scope constraint (see §1.7.7)**: Without Alpaca credentials, VedaService = None. Paper runs start and the clock ticks, but strategy order intents are silently dropped. Tests should focus on **lifecycle state transitions**, NOT order generation.
 
-- **Backtest** runs to completion synchronously. Status goes `PENDING → RUNNING → COMPLETED`.
-- **Paper/Live** runs stay `RUNNING` until manually stopped. Status goes `PENDING → RUNNING → (wait) → STOPPED`.
-- Paper runs use `RealtimeClock` and persist until stopped.
-- No Alpaca credentials needed — system falls back to `MockExchangeAdapter` in degraded mode.
+### 7.1 Paper Run Architecture in E2E (No VedaService)
 
-### 7.2 TDD: Test Specification
-
-**File**: `tests/e2e/test_paper_flow.py`
-
-```python
-"""
-E2E Tests: Paper/Live Trading Flow
-
-Tests the paper trading lifecycle:
-1. Create a paper run
-2. Start the run (stays running)
-3. Verify active status on dashboard
-4. Stop the run
-5. Verify stopped status
-"""
-
-import time
-
-import pytest
-from playwright.sync_api import Page, expect
-
-from tests.e2e.helpers import E2EApiClient, DEFAULT_TIMEOUT_MS
-
-
-@pytest.mark.e2e
-class TestPaperFlow:
-    """End-to-end paper trading lifecycle tests."""
-
-    def test_create_paper_run(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Create a paper run via API, verify on runs page."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="paper",
-            symbols=["BTC/USD"],
-        )
-        assert run["status"] == "pending"
-
-        page.goto(f"{e2e_base_url}/runs")
-        expect(page.get_by_text(run["id"][:8])).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-
-    def test_start_paper_run_shows_running(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Starting a paper run transitions to RUNNING status."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="paper",
-            symbols=["BTC/USD"],
-        )
-        api_client.start_run(run["id"])
-
-        page.goto(f"{e2e_base_url}/runs")
-        expect(page.get_by_text("running")).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-
-    def test_dashboard_shows_active_run_count(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Dashboard Active Runs counter increments for running paper run."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="paper",
-            symbols=["BTC/USD"],
-        )
-        api_client.start_run(run["id"])
-
-        page.goto(f"{e2e_base_url}/dashboard")
-        # The "Active Runs" stat card should show at least 1
-        expect(page.get_by_text("Active Runs")).to_be_visible()
-
-    def test_stop_paper_run(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Stopping a running paper run transitions to STOPPED status."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="paper",
-            symbols=["BTC/USD"],
-        )
-        api_client.start_run(run["id"])
-
-        # Let it run briefly
-        time.sleep(2)
-
-        # Stop via API
-        stopped = api_client.stop_run(run["id"])
-        assert stopped["status"] == "stopped"
-
-        # Verify in UI
-        page.goto(f"{e2e_base_url}/runs")
-        page.reload()
-        expect(page.get_by_text("stopped")).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-
-    def test_error_state_displayed(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Run with error state is displayed correctly in UI."""
-        # Create a run with an invalid strategy to trigger error
-        run = api_client.create_run(
-            strategy_id="nonexistent-strategy",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T09:35:00Z",
-        )
-
-        # Starting should fail due to unknown strategy
-        try:
-            api_client.start_run(run["id"])
-        except Exception:
-            pass  # Expected — strategy not found
-
-        page.goto(f"{e2e_base_url}/runs")
-        # Run should show error or pending status
-        run_data = api_client.get_run(run["id"])
-        expect(page.get_by_text(run_data["status"])).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
 ```
+POST /runs/{id}/start (mode=paper)
+  → RunManager._start_live()
+    → StrategyLoader.load("sample") → SampleStrategy
+    → RealtimeClock() created (wall-clock aligned ticks)
+    → runner.initialize()
+    → clock.start() runs in BACKGROUND (async, returns immediately)
+    → HTTP 200 returns {"status":"running"}
+
+Background loop:
+  RealtimeClock ticks every 1m (at wall-clock bar boundaries)
+  → strategy.on_tick() → FetchWindow action
+  → DomainRouter → "live.FetchWindow" event
+    → MockMarketDataService receives → emits data.WindowReady
+  → strategy.on_data() → may emit PLACE_ORDER action
+  → DomainRouter → "live.PlaceOrder" event
+    → VedaService subscriber? NO → EVENT DROPPED SILENTLY
+
+POST /runs/{id}/stop
+  → RunManager.stop()
+    → clock.stop() → background loop exits
+    → status = STOPPED, stopped_at = now
+    → emits "run.Stopped" → SSE → frontend
+```
+
+**Key implication**: The paper run WILL stay in RUNNING status indefinitely until stopped. The clock actually ticks (every 1 minute, aligned to wall-clock). The strategy actually processes data. But no orders are placed because VedaService is absent.
+
+### 7.2 Per-Test Specification (5 tests)
+
+#### Test 1: Create paper run → visible in UI
+
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create paper run via API: `strategy_id="sample", mode="paper", symbols=["BTC/USD"]` 2. Navigate to `/runs` |
+| **Expected** | Run appears in table with status "pending", mode badge "paper" (purple badge) |
+| **Assertion** | `page.get_by_test_id(f"run-row-{run['id']}")` visible; text "pending" and "paper" within that row |
+| **Data flow** | POST /runs → RunManager.create() → in-memory → GET /runs → table row |
+| **Validity** | ✅ Real run creation, real data. No false-pass risk. |
+
+#### Test 2: Start paper run → RUNNING status
+
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create paper run via API 2. Navigate to `/runs` 3. Wait for SSE connection 4. Start via API 5. Wait for SSE "run.Started" to update UI |
+| **Expected** | Status badge changes to "running" (green badge `bg-green-500/20 text-green-400`) |
+| **Assertion** | `expect(page.get_by_text("running")).to_be_visible(timeout=10000)` |
+| **Data flow** | POST /start → RunManager._start_live() → run.status = RUNNING → emits "run.Started" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
+| **Validity** | ✅ Real state transition. RealtimeClock actually starts (but we don't need to wait for ticks). |
+| **Timing** | The start API returns synchronously with status=running. SSE event arrives shortly after. Generous timeout needed. |
+
+#### Test 3: Dashboard Active Runs counter
+
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create and start paper run 2. Navigate to `/dashboard` |
+| **Expected** | "Active Runs" StatCard shows value ≥ 1 |
+| **Assertion** | The Active Runs card computes: `runs.items.filter(r => r.status === "running").length`. After starting 1 paper run, this should be ≥ 1. Since StatCard renders value as `<span class="text-3xl font-bold">`, assert that text near "Active Runs" contains a digit ≥ 1. |
+| **Data flow** | Dashboard.tsx: `useRuns()` → GET /runs → count items where status="running" → StatCard value |
+| **Validity** | ✅ Real. The run IS running. Counter IS computed from real data. |
+| **Note** | If multiple prior tests left runs in "running" state, counter may be > 1. This is fine — assert `>= 1`, not `== 1`. |
+
+#### Test 4: Stop paper run → STOPPED status (via SSE)
+
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create and start paper run 2. Navigate to `/runs` 3. Wait for SSE connection 4. Stop via API 5. Wait for SSE "run.Stopped" to update UI |
+| **Expected** | Status badge changes to "stopped" (yellow badge `bg-yellow-500/20 text-yellow-400`) |
+| **Assertion** | `expect(page.get_by_text("stopped")).to_be_visible(timeout=10000)` |
+| **Data flow** | POST /stop → RunManager.stop() → clock.stop() → run.status = STOPPED → emits "run.Stopped" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
+| **Validity** | ✅ Real state transition. Clock actually stops. `stopped_at` gets set. |
+| **API verification** | After stop, call `api_client.get_run(id)` and assert `status == "stopped"` and `stopped_at is not None` — double-check the UI isn't lying. |
+
+#### Test 5: Error state display (invalid strategy)
+
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create backtest run with `strategy_id="nonexistent-xyz-strategy"` (start/end times set) 2. Start via API (expect HTTP error or status change) 3. Navigate to `/runs` |
+| **Expected** | Run shows "error" status badge (red badge `bg-red-500/20 text-red-400`) |
+| **Behavior** | RunManager.start() → StrategyLoader.load("nonexistent-xyz-strategy") → raises exception → RunManager catches → sets run.status = ERROR, run.error = message → emits "run.Error" → SSE |
+| **API response** | POST /start may return 200 with status="error" (internal catch) or 500 (unhandled). Test should handle both: catch exception from `api_client.start_run()`, then check `api_client.get_run(id)["status"] == "error"`. |
+| **Assertion** | `expect(page.get_by_text("error")).to_be_visible()` |
+| **Validity** | ✅ Tests real error handling path. Strategy not found → ERROR status is the actual system behavior. |
+| **False-pass risk** | LOW. The error badge text "error" must match the StatusBadge component's rendering. Verify the badge renders the status string directly. |
 
 ### 7.3 Verification
 
@@ -1130,185 +1206,143 @@ pytest tests/e2e/test_paper_flow.py -v --timeout=60
 
 ---
 
-## 8. M10-4: E2E Orders & SSE (~7 tests)
+## 8. M10-4: E2E Orders & SSE (~6 tests)
 
-**Goal**: Test the orders page functionality and Server-Sent Events delivery.
+**Goal**: Test the orders page UI rendering and Server-Sent Events delivery for real-time updates.
 
-### 8.1 TDD: Orders Page Tests
+> **⚠️ Scope constraints (see §1.7)**:
+> - GET /orders returns **MockOrderService** data (2 hardcoded orders) when VedaService = None. Orders tests verify UI rendering, NOT real trading results.
+> - GretaService emits `orders.Placed` but frontend listens for `orders.Created` — SSE order-creation tests for backtest would be **FALSE tests** (see §1.7.3).
+> - SSE tests focus on `run.*` events which ARE delivered end-to-end and proven to trigger UI updates.
+
+### 8.1 Orders Page Data Flow (MockOrderService)
+
+```
+Browser navigates to /orders
+  → React Router renders OrdersPage
+  → useOrders() hook fires
+  → GET /api/v1/orders (query params: limit=50, offset=0)
+  → Nginx proxy_pass → FastAPI
+  → orders_router.list_orders()
+    → VedaService injected? NO (no Alpaca creds)
+    → Fallback: MockOrderService.list_orders()
+    → Returns: {
+        items: [
+          { id: "order-123", symbol: "BTC/USD", side: "buy",
+            quantity: 1.0, status: "filled", ... },
+          { id: "order-456", symbol: "ETH/USD", side: "sell",
+            quantity: 0.5, status: "submitted", ... }
+        ],
+        total: 2
+      }
+  → React Query caches response (staleTime=60s)
+  → OrdersPage renders <table> with 2 rows
+```
+
+**What we CAN test**: UI rendering of the 2 mock orders (table, columns, badges, detail modal).
+**What we CANNOT test**: Orders generated by backtest/paper runs appearing on this page.
+
+### 8.2 Per-Test Specification — Orders Page (2 tests)
 
 **File**: `tests/e2e/test_orders.py`
 
-```python
-"""
-E2E Tests: Orders Page
+#### Test 1: Orders page renders mock data
 
-Tests order listing, filtering, and detail modal.
-"""
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Navigate to `/orders` 2. Wait for table to render |
+| **Expected** | Table shows 2 rows (mock orders). First row contains "BTC/USD", "buy", "filled". Second row contains "ETH/USD", "sell", "submitted". |
+| **Assertion** | `expect(page.locator("table tbody tr")).to_have_count(2)`. Check first row text includes "BTC/USD". Check second row text includes "ETH/USD". |
+| **Data flow** | GET /orders → MockOrderService → 2 hardcoded orders → table rows |
+| **False-pass risk** | LOW. MockOrderService ALWAYS returns these 2 orders. The test is stable but tests mock data, not real trading. This is the honest scope. |
+| **Note** | If the orders page has an empty state message instead of a table when MockOrderService is disabled, this test needs adjustment. Verify by reading the OrdersPage component at implementation time. |
 
-import pytest
-from playwright.sync_api import Page, expect
+#### Test 2: Order detail expands on click
 
-from tests.e2e.helpers import E2EApiClient, DEFAULT_TIMEOUT_MS
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Navigate to `/orders` 2. Click first order row 3. Verify detail view appears |
+| **Expected** | Order detail panel/modal shows: order ID "order-123", symbol "BTC/USD", side "buy", quantity "1.0", status "filled" |
+| **Assertion** | After click: `expect(page.get_by_text("order-123")).to_be_visible()` and `expect(page.get_by_text("1.0")).to_be_visible()` |
+| **Data flow** | Click row → frontend state change → renders OrderDetail component with order data from cache |
+| **False-pass risk** | MEDIUM. Depends on how detail view renders. Need to verify OrderDetail component exists and renders these fields at implementation time. |
 
-
-@pytest.mark.e2e
-class TestOrdersPage:
-    """End-to-end orders page tests."""
-
-    def test_orders_page_empty_state(
-        self, page: Page, e2e_base_url: str, clean_e2e_db: None
-    ) -> None:
-        """Orders page shows empty state when no orders exist."""
-        page.goto(f"{e2e_base_url}/orders")
-        page.wait_for_load_state("networkidle")
-        # Should show empty table or "no orders" message
-        # (exact text depends on implementation)
-
-    def test_orders_appear_after_backtest(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Orders generated by a completed backtest appear on orders page."""
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T10:30:00Z",
-        )
-        api_client.start_run(run["id"])
-
-        page.goto(f"{e2e_base_url}/orders")
-        page.wait_for_load_state("networkidle")
-
-        orders = api_client.list_orders(run_id=run["id"])
-        if orders["total"] > 0:
-            # Verify at least one order row is visible
-            expect(page.locator("table tbody tr").first).to_be_visible(
-                timeout=DEFAULT_TIMEOUT_MS
-            )
-
-    def test_orders_filter_by_status(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Orders can be filtered by status on the orders page."""
-        page.goto(f"{e2e_base_url}/orders")
-        page.wait_for_load_state("networkidle")
-
-        # If status filter dropdown exists, interact with it
-        status_filter = page.get_by_label("Status")
-        if status_filter.is_visible():
-            status_filter.select_option("filled")
-            page.wait_for_load_state("networkidle")
-```
-
-### 8.2 TDD: SSE Delivery Tests
+### 8.3 Per-Test Specification — SSE Delivery (4 tests)
 
 **File**: `tests/e2e/test_sse.py`
 
-```python
-"""
-E2E Tests: Server-Sent Events
+> **SSE event flow verification**: The following events are emitted by the backend and have matching frontend listeners:
+> - `run.Created` → listener ✓ → invalidateQueries(["runs"])
+> - `run.Started` → listener ✓ → invalidateQueries(["runs"])
+> - `run.Stopped` → listener ✓ → invalidateQueries(["runs"])
+> - `run.Completed` → listener ✓ → invalidateQueries(["runs"])
+> - `run.Error` → listener ✓ → invalidateQueries(["runs"])
+> - `orders.Filled` → listener ✓ → invalidateQueries(["orders"])
+> - `orders.Placed` → NO listener ✗ (backtest orders invisible to frontend)
 
-Verifies that SSE events are delivered from backend to browser
-and cause real-time UI updates.
-"""
+#### Test 3: ConnectionStatus shows "Connected"
 
-import pytest
-from playwright.sync_api import Page, expect
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Navigate to `/dashboard` 2. Wait for SSE handshake (up to 5s) |
+| **Expected** | ConnectionStatus component shows text "Connected" with green indicator |
+| **Assertion** | `expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)` |
+| **Data flow** | Page load → `useSSE()` hook creates `EventSource("/api/v1/events/stream")` → Nginx proxy_pass → FastAPI SSE endpoint → `onopen` callback → `setIsConnected(true)` → ConnectionStatus renders "Connected" |
+| **False-pass risk** | LOW. The SSE endpoint exists, Nginx is configured with `proxy_buffering off`. If this test fails, the entire SSE subsystem is broken. |
+| **Prerequisite** | Nginx config must have: `location /api/v1/events/stream { proxy_buffering off; ... }`. Already in existing `nginx.conf`. |
 
-from tests.e2e.helpers import E2EApiClient, DEFAULT_TIMEOUT_MS, SSE_TIMEOUT_MS
+#### Test 4: SSE delivers run.Started → UI updates without reload
 
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create backtest run via API (with seed data, so strategy="sample", start/end times within seed range) 2. Navigate to `/runs` 3. Verify "pending" status visible 4. Wait for SSE connection (2s) 5. Start run via API 6. Do NOT reload page 7. Wait for status to change |
+| **Expected** | Run status changes from "pending" → "completed" (backtest completes synchronously) WITHOUT page reload. |
+| **Assertion** | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)` |
+| **Data flow** | POST /start → RunManager → backtest runs → emits "run.Started" + "run.Completed" → SSEBroadcaster → EventSource → `addEventListener("run.Completed", ...)` → `invalidateQueries(["runs"])` → React Query refetches GET /runs → StatusBadge re-renders "completed" |
+| **False-pass risk** | LOW. This is the core SSE integration test. If runs page auto-updates, SSE is working end-to-end. |
+| **Timing consideration** | Backtest with 20 seed bars completes in <1s. SSE delivery adds ~100ms. React Query invalidation + refetch adds ~200ms. Combined: should complete within 5s, use 15s timeout for safety. |
 
-@pytest.mark.e2e
-class TestSSEDelivery:
-    """End-to-end SSE event delivery tests."""
+#### Test 5: SSE reconnects after network interruption
 
-    def test_connection_status_shows_connected(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
-        """ConnectionStatus component shows connected state."""
-        page.goto(f"{e2e_base_url}/dashboard")
-        # Wait for SSE connection to establish
-        page.wait_for_timeout(3000)
-        # Connection indicator should show connected (green dot or text)
-        expect(page.get_by_text("Connected")).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Navigate to `/dashboard` 2. Wait for "Connected" indicator (5s) 3. `page.context.set_offline(True)` 4. Wait 1s (force disconnection, EventSource fires onerror) 5. `page.context.set_offline(False)` 6. Wait for reconnection (up to 10s) |
+| **Expected** | ConnectionStatus returns to "Connected" after going offline and back online |
+| **Assertion** | After step 3: ConnectionStatus may show "Disconnected" or "Connecting..." (optional assert). After step 5: `expect(page.get_by_text("Connected")).to_be_visible(timeout=15000)` |
+| **Data flow** | Offline → EventSource.onerror → `useSSE` cleanup → RECONNECT_DELAY=3000ms → `new EventSource(...)` → handshake → `onopen` → "Connected" |
+| **False-pass risk** | MEDIUM. Browser `set_offline()` may not perfectly simulate SSE disconnection. If EventSource doesn't fire `onerror` synchronously, the reconnect path may not trigger within timeout. |
+| **Alternative approach** | If `set_offline` is flaky: instead of simulating network failure, verify that SSE delivers MULTIPLE events (create two runs in sequence, verify both status updates appear). This proves the connection stays alive and delivers repeatedly. |
 
-    def test_sse_event_triggers_ui_update(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Creating a run via API triggers SSE → UI update without page reload."""
-        page.goto(f"{e2e_base_url}/dashboard")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(2000)  # Wait for SSE connection
+#### Test 6: SSE delivers run.Stopped → real-time UI update
 
-        # Create a run via API (not UI) — should trigger SSE event
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-        )
+| Aspect | Detail |
+|--------|--------|
+| **Steps** | 1. Create and start a paper run (stays in RUNNING) 2. Navigate to `/runs` 3. Verify "running" visible 4. Wait for SSE connection (2s) 5. Stop run via API 6. Do NOT reload page 7. Wait for status to change |
+| **Expected** | Run status changes from "running" → "stopped" WITHOUT page reload |
+| **Assertion** | `expect(page.get_by_text("stopped")).to_be_visible(timeout=15000)` |
+| **Data flow** | POST /stop → RunManager.stop() → emits "run.Stopped" → SSE → frontend `addEventListener("run.Stopped", ...)` → `invalidateQueries(["runs"])` → refetch → "stopped" badge |
+| **Validity** | ✅ Real state transition via SSE. Complements Test 4 (which tests backtest completion). Together they prove SSE works for both run.Completed and run.Stopped events. |
+| **False-pass risk** | LOW. Paper run genuinely enters RUNNING → stop genuinely transitions to STOPPED → SSE event genuinely fires. |
 
-        # The activity feed or total runs count should update without page reload
-        # Wait for SSE to deliver the event and React Query to invalidate
-        page.wait_for_timeout(3000)
+### 8.4 Tests intentionally NOT included
 
-        # Verify the activity feed shows the new event
-        # (exact assertion depends on what the Activity Feed renders)
+| Removed Test | Reason |
+|---|---|
+| "Orders appear after backtest" | GET /orders returns MockOrderService data regardless of backtest results. Backtest fills live in GretaService memory only. See §1.7.2. |
+| "Orders filter by status" | MockOrderService has only 2 orders with fixed statuses. Filter test would be trivially true or depend on UI implementation details not yet finalized. |
+| "SSE delivers orders.Created during backtest" | GretaService emits "orders.Placed" but frontend has NO listener for this event. Test would never see the event. See §1.7.3. |
+| "SSE event triggers Activity Feed update" | Activity Feed component implementation not verified to listen to SSE events. Assertion would be vague. |
 
-    def test_sse_reconnects_after_interruption(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
-        """SSE connection reconnects after network interruption."""
-        page.goto(f"{e2e_base_url}/dashboard")
-        page.wait_for_timeout(2000)
-
-        # Simulate offline mode
-        page.context.set_offline(True)
-        page.wait_for_timeout(1000)
-
-        # Back online
-        page.context.set_offline(False)
-
-        # Wait for reconnection (useSSE.ts has 3s reconnect delay)
-        page.wait_for_timeout(5000)
-
-        # Connection status should recover
-        expect(page.get_by_text("Connected")).to_be_visible(timeout=SSE_TIMEOUT_MS)
-
-    def test_sse_delivers_run_status_change(
-        self, page: Page, e2e_base_url: str, api_client: E2EApiClient
-    ) -> None:
-        """Run status change events are delivered via SSE and reflected in UI."""
-        # Create and navigate to runs page
-        run = api_client.create_run(
-            strategy_id="sma",
-            mode="backtest",
-            symbols=["BTC/USD"],
-            start_time="2024-01-15T09:30:00Z",
-            end_time="2024-01-15T09:35:00Z",
-        )
-
-        page.goto(f"{e2e_base_url}/runs")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(2000)  # SSE connection
-
-        # Start the run via API — SSE should deliver status change
-        api_client.start_run(run["id"])
-
-        # Wait for SSE event → React Query cache invalidation → re-render
-        # The run status should change from "pending" to "completed" (backtest)
-        expect(page.get_by_text("completed")).to_be_visible(timeout=SSE_TIMEOUT_MS)
-```
-
-### 8.3 Verification
+### 8.5 Verification
 
 ```bash
 pytest tests/e2e/test_orders.py tests/e2e/test_sse.py -v --timeout=60
-# Expected: 7 passed
+# Expected: 6 passed (2 orders + 4 SSE)
 ```
 
 **Commits**:
-- `test(e2e): add orders page E2E tests (3 tests)`
+
+- `test(e2e): add orders page E2E tests (2 tests)`
 - `test(e2e): add SSE delivery E2E tests (4 tests)`
 
 ---
@@ -1327,55 +1361,68 @@ Add a comprehensive deployment section to `docs/architecture/deployment.md`.
 ## Production Deployment Guide
 
 ### Prerequisites
+
 - Docker Engine 24+ with Docker Compose v2
 - PostgreSQL 16 (or use the bundled containerized DB)
 - Alpaca Trading API credentials (paper or live)
 
 ### 1. Clone & Configure
+
 \`\`\`bash
 git clone <repo-url>
 cd weaver
 cp docker/example.env docker/.env
+
 # Edit docker/.env with your Alpaca credentials and port preferences
+
 \`\`\`
 
 ### 2. Start Services
+
 \`\`\`bash
 docker compose -f docker/docker-compose.yml up -d --build
 \`\`\`
 
 ### 3. Run Database Migrations
+
 \`\`\`bash
 docker compose -f docker/docker-compose.yml run --rm backend alembic upgrade head
 \`\`\`
 
 ### 4. Verify Health
+
 \`\`\`bash
 curl http://localhost:28919/api/v1/healthz
+
 # Expected: {"status":"ok","version":"0.1.0"}
 
 curl -s http://localhost:23579/ | head -5
+
 # Expected: HTML content (React SPA)
+
 \`\`\`
 
 ### 5. Access
+
 - **Frontend**: http://localhost:23579
 - **API**: http://localhost:28919/api/v1
 
 ### Environment Variables
-| Variable                  | Required | Default                        | Description                                    |
-| ------------------------- | -------- | ------------------------------ | ---------------------------------------------- |
-| `POSTGRES_DB`             | yes      | `weaverdb`                     | Database name                                  |
-| `POSTGRES_USER`           | yes      | `weaver`                       | Database user                                  |
-| `POSTGRES_PASSWORD`       | yes      | -                              | Database password                              |
-| `HOST_PORT_PROD`          | no       | `28919`                        | Backend API port on host                       |
-| `FRONTEND_PORT_PROD`      | no       | `23579`                        | Frontend port on host                          |
-| `ALPACA_PAPER_API_KEY`    | no       | -                              | Alpaca paper trading API key                   |
-| `ALPACA_PAPER_API_SECRET` | no       | -                              | Alpaca paper trading API secret                |
-| `ALPACA_LIVE_API_KEY`     | no       | -                              | Alpaca live trading API key (real money)        |
-| `ALPACA_LIVE_API_SECRET`  | no       | -                              | Alpaca live trading API secret (real money)     |
+
+| Variable                  | Required | Default    | Description                                 |
+| ------------------------- | -------- | ---------- | ------------------------------------------- |
+| `POSTGRES_DB`             | yes      | `weaverdb` | Database name                               |
+| `POSTGRES_USER`           | yes      | `weaver`   | Database user                               |
+| `POSTGRES_PASSWORD`       | yes      | -          | Database password                           |
+| `HOST_PORT_PROD`          | no       | `28919`    | Backend API port on host                    |
+| `FRONTEND_PORT_PROD`      | no       | `23579`    | Frontend port on host                       |
+| `ALPACA_PAPER_API_KEY`    | no       | -          | Alpaca paper trading API key                |
+| `ALPACA_PAPER_API_SECRET` | no       | -          | Alpaca paper trading API secret             |
+| `ALPACA_LIVE_API_KEY`     | no       | -          | Alpaca live trading API key (real money)    |
+| `ALPACA_LIVE_API_SECRET`  | no       | -          | Alpaca live trading API secret (real money) |
 
 ### Troubleshooting
+
 - **Backend won't start**: Check `docker compose logs backend` for Python/import errors
 - **Frontend 502**: Backend not ready yet — wait for health check to pass
 - **SSE not working**: Check Nginx config has `proxy_buffering off` for `/api/v1/events/stream`
@@ -1386,15 +1433,15 @@ curl -s http://localhost:23579/ | head -5
 
 After all M10 tests are written, update these files:
 
-| File                       | Section                  | Update                                      |
-| -------------------------- | ------------------------ | ------------------------------------------- |
-| `README.md`                | Development Status table | Add M9 row, update M10 row with test count  |
-| `docs/MILESTONE_PLAN.md`   | Executive Summary table  | Update M10 tests count and status           |
-| `docs/MILESTONE_PLAN.md`   | §10 Success Metrics      | Update M10 cumulative count                 |
-| `docs/TEST_COVERAGE.md`    | §1 Executive Summary     | Update total tests, add E2E line            |
-| `docs/TEST_COVERAGE.md`    | §3.1 Test Pyramid        | Update E2E count from 0 to ~25              |
-| `docs/architecture/roadmap.md` | §1 Current State     | Update status and test counts               |
-| `docs/DOCS_INDEX.md`       | Header                   | Update current state                        |
+| File                           | Section                  | Update                                     |
+| ------------------------------ | ------------------------ | ------------------------------------------ |
+| `README.md`                    | Development Status table | Add M9 row, update M10 row with test count |
+| `docs/MILESTONE_PLAN.md`       | Executive Summary table  | Update M10 tests count and status          |
+| `docs/MILESTONE_PLAN.md`       | §10 Success Metrics      | Update M10 cumulative count                |
+| `docs/TEST_COVERAGE.md`        | §1 Executive Summary     | Update total tests, add E2E line           |
+| `docs/TEST_COVERAGE.md`        | §3.1 Test Pyramid        | Update E2E count from 0 to ~25             |
+| `docs/architecture/roadmap.md` | §1 Current State         | Update status and test counts              |
+| `docs/DOCS_INDEX.md`           | Header                   | Update current state                       |
 
 ### 9.3 M10-5c: Cross-Doc Consistency Check
 
@@ -1495,11 +1542,13 @@ jobs:
 Create two short guides:
 
 **File**: `docs/guides/strategy-development.md`
+
 - How to create a new strategy (implement `BaseStrategy`, add `STRATEGY_META`)
 - Plugin discovery mechanism explained
 - Testing a new strategy (unit test template)
 
 **File**: `docs/guides/adapter-development.md`
+
 - How to create a new exchange adapter (implement `ExchangeAdapter`, add `ADAPTER_META`)
 - Plugin discovery mechanism explained
 - Required methods and their contracts
@@ -1527,18 +1576,20 @@ Manual verification checklist (to be run once before M10 closeout):
 All items must pass for M10 to close:
 
 **E2E Tests**:
+
 - [ ] Playwright installed and configured in `requirements.dev.txt`
 - [ ] `docker-compose.e2e.yml` starts isolated test stack
 - [ ] E2E conftest manages stack lifecycle (session-scoped)
 - [ ] `test_navigation.py`: 6 tests passing (page loads, routing, 404)
-- [ ] `test_backtest_flow.py`: 7 tests passing (create → start → results)
-- [ ] `test_paper_flow.py`: 5 tests passing (create → start → stop)
-- [ ] `test_orders.py`: 3 tests passing (listing, filter, detail)
-- [ ] `test_sse.py`: 4 tests passing (connection, delivery, reconnect)
+- [ ] `test_backtest_flow.py`: 6 tests passing (create → start → completion → status)
+- [ ] `test_paper_flow.py`: 5 tests passing (create → start → running → stop → error)
+- [ ] `test_orders.py`: 2 tests passing (mock data rendering, detail view)
+- [ ] `test_sse.py`: 4 tests passing (connection, run status delivery, reconnect)
 - [ ] `scripts/ci/e2e-local.sh` runs all E2E tests locally
-- [ ] `pytest tests/e2e/ -v` passes with all ~25 tests green
+- [ ] `pytest tests/e2e/ -v` passes with all ~23 tests green
 
 **Documentation**:
+
 - [ ] Production deployment guide complete in `docs/architecture/deployment.md`
 - [ ] Strategy development guide in `docs/guides/strategy-development.md`
 - [ ] Adapter development guide in `docs/guides/adapter-development.md`
@@ -1546,11 +1597,13 @@ All items must pass for M10 to close:
 - [ ] Cross-doc consistency check passes (events, endpoints, env vars)
 
 **CI**:
+
 - [ ] `.github/workflows/e2e.yml` runs on PR and passes
 - [ ] E2E workflow uploads failure artifacts
 - [ ] Branch protection updated to include `e2e-tests` check (optional or required — decision at M10-5)
 
 **Quality**:
+
 - [ ] Performance baselines documented
 - [ ] Fresh deploy → full UI workflow verified manually
 - [ ] All existing tests still pass: backend + frontend (no regressions)
@@ -1558,77 +1611,80 @@ All items must pass for M10 to close:
 
 ### 10.2 Test Count Summary
 
-| Category            | Before M10 | After M10 (Target) | Delta  |
-| ------------------- | ---------- | ------------------- | ------ |
-| Backend unit        | 902        | 902                 | 0      |
-| Backend integration | 44         | 44                  | 0      |
-| Backend E2E         | 0          | ~25                 | +25    |
-| Backend CI contract | 6          | 6                   | 0      |
-| Frontend            | 91         | 91                  | 0      |
-| **Total**           | **1037**¹  | **~1062**           | **+25** |
+| Category            | Before M10 | After M10 (Target) | Delta   |
+| ------------------- | ---------- | ------------------ | ------- |
+| Backend unit        | 902        | 902                | 0       |
+| Backend integration | 44         | 44                 | 0       |
+| Backend E2E         | 0          | ~23                | +23     |
+| Backend CI contract | 6          | 6                  | 0       |
+| Frontend            | 91         | 91                 | 0       |
+| **Total**           | **1037**¹  | **~1060**          | **+23** |
 
 ¹ 946 backend (collected by pytest) + 91 frontend (vitest)
 
 ### 10.3 Commit Sequence
 
-| Order | Commit Message                                                      | Phase   |
-| ----- | ------------------------------------------------------------------- | ------- |
-| 1     | `build(e2e): add playwright and pytest-playwright dependencies`     | M10-0a  |
-| 2     | `ci(e2e): add docker-compose.e2e.yml for E2E test stack`            | M10-0b  |
-| 3     | `test(e2e): add E2E helper module with API client and constants`    | M10-0c  |
-| 4     | `test(e2e): add E2E conftest with Docker stack management`          | M10-0d  |
-| 5     | `ci(e2e): add local E2E test runner script`                         | M10-0e  |
-| 6     | `test(e2e): add navigation and health E2E tests (6 tests)`         | M10-1   |
-| 7     | `test(e2e): add bar data seeding for backtest E2E tests`            | M10-2   |
-| 8     | `test(e2e): add backtest flow E2E tests (7 tests)`                 | M10-2   |
-| 9     | `test(e2e): add paper trading flow E2E tests (5 tests)`            | M10-3   |
-| 10    | `test(e2e): add orders page E2E tests (3 tests)`                   | M10-4   |
-| 11    | `test(e2e): add SSE delivery E2E tests (4 tests)`                  | M10-4   |
-| 12    | `docs(deploy): add production deployment guide`                     | M10-5a  |
-| 13    | `docs: update all test counts and coverage numbers`                 | M10-5b  |
-| 14    | `docs: add strategy and adapter development guides`                 | M10-5f  |
-| 15    | `ci(e2e): add E2E CI workflow`                                      | M10-5e  |
+| Order | Commit Message                                                   | Phase  |
+| ----- | ---------------------------------------------------------------- | ------ |
+| 1     | `build(e2e): add playwright and pytest-playwright dependencies`  | M10-0a |
+| 2     | `ci(e2e): add docker-compose.e2e.yml for E2E test stack`         | M10-0b |
+| 3     | `test(e2e): add E2E helper module with API client and constants` | M10-0c |
+| 4     | `test(e2e): add E2E conftest with Docker stack management`       | M10-0d |
+| 5     | `ci(e2e): add local E2E test runner script`                      | M10-0e |
+| 6     | `test(e2e): add navigation and health E2E tests (6 tests)`       | M10-1  |
+| 7     | `test(e2e): add bar data seeding for backtest E2E tests`         | M10-2  |
+| 8     | `test(e2e): add backtest flow E2E tests (6 tests)`               | M10-2  |
+| 9     | `test(e2e): add paper trading flow E2E tests (5 tests)`          | M10-3  |
+| 10    | `test(e2e): add orders page E2E tests (2 tests)`                 | M10-4  |
+| 11    | `test(e2e): add SSE delivery E2E tests (4 tests)`                | M10-4  |
+| 12    | `docs(deploy): add production deployment guide`                  | M10-5a |
+| 13    | `docs: update all test counts and coverage numbers`              | M10-5b |
+| 14    | `docs: add strategy and adapter development guides`              | M10-5f |
+| 15    | `ci(e2e): add E2E CI workflow`                                   | M10-5e |
 
 ### 10.4 Files Created
 
-| File                                      | Purpose                                          |
-| ----------------------------------------- | ------------------------------------------------ |
-| `docker/docker-compose.e2e.yml`           | Isolated E2E test Docker stack                   |
-| `tests/e2e/conftest.py`                   | E2E fixtures (stack lifecycle, API client)        |
-| `tests/e2e/helpers.py`                    | E2E utility functions and constants              |
-| `tests/e2e/seed.py`                       | Database seeding for E2E backtest tests          |
-| `tests/e2e/test_navigation.py`            | Navigation & health E2E tests                   |
-| `tests/e2e/test_backtest_flow.py`         | Backtest lifecycle E2E tests                     |
-| `tests/e2e/test_paper_flow.py`            | Paper trading lifecycle E2E tests                |
-| `tests/e2e/test_orders.py`               | Orders page E2E tests                            |
-| `tests/e2e/test_sse.py`                  | SSE event delivery E2E tests                     |
-| `scripts/ci/e2e-local.sh`                | Local E2E test runner script                     |
-| `.github/workflows/e2e.yml`               | E2E CI workflow for GitHub Actions               |
-| `docs/guides/strategy-development.md`     | Strategy development guide                       |
-| `docs/guides/adapter-development.md`      | Adapter development guide                        |
+| File                                  | Purpose                                    |
+| ------------------------------------- | ------------------------------------------ |
+| `docker/docker-compose.e2e.yml`       | Isolated E2E test Docker stack             |
+| `tests/e2e/conftest.py`               | E2E fixtures (stack lifecycle, API client) |
+| `tests/e2e/helpers.py`                | E2E utility functions and constants        |
+| `tests/e2e/seed.py`                   | Database seeding for E2E backtest tests    |
+| `tests/e2e/test_navigation.py`        | Navigation & health E2E tests              |
+| `tests/e2e/test_backtest_flow.py`     | Backtest lifecycle E2E tests               |
+| `tests/e2e/test_paper_flow.py`        | Paper trading lifecycle E2E tests          |
+| `tests/e2e/test_orders.py`            | Orders page E2E tests                      |
+| `tests/e2e/test_sse.py`               | SSE event delivery E2E tests               |
+| `scripts/ci/e2e-local.sh`             | Local E2E test runner script               |
+| `.github/workflows/e2e.yml`           | E2E CI workflow for GitHub Actions         |
+| `docs/guides/strategy-development.md` | Strategy development guide                 |
+| `docs/guides/adapter-development.md`  | Adapter development guide                  |
 
 ### 10.5 Files Modified
 
-| File                                    | Change                                           |
-| --------------------------------------- | ------------------------------------------------ |
-| `docker/backend/requirements.dev.txt`   | Add playwright, pytest-playwright                |
-| `pyproject.toml`                        | Add base_url for Playwright                      |
-| `README.md`                             | Update Development Status table                  |
-| `docs/MILESTONE_PLAN.md`               | M10 status update, exit gate checkboxes          |
-| `docs/TEST_COVERAGE.md`                | Update totals, add E2E section                   |
-| `docs/DOCS_INDEX.md`                   | Add M10 detail doc + guides entry                |
-| `docs/architecture/roadmap.md`         | Update M10 status                                |
-| `docs/architecture/deployment.md`      | Add production deployment guide + perf baselines |
+| File                                  | Change                                           |
+| ------------------------------------- | ------------------------------------------------ |
+| `docker/backend/requirements.dev.txt` | Add playwright, pytest-playwright                |
+| `pyproject.toml`                      | Add base_url for Playwright                      |
+| `README.md`                           | Update Development Status table                  |
+| `docs/MILESTONE_PLAN.md`              | M10 status update, exit gate checkboxes          |
+| `docs/TEST_COVERAGE.md`               | Update totals, add E2E section                   |
+| `docs/DOCS_INDEX.md`                  | Add M10 detail doc + guides entry                |
+| `docs/architecture/roadmap.md`        | Update M10 status                                |
+| `docs/architecture/deployment.md`     | Add production deployment guide + perf baselines |
 
 ### 10.6 Risk Assessment
 
-| Risk                                 | Probability | Impact | Mitigation                                      |
-| ------------------------------------ | ----------- | ------ | ----------------------------------------------- |
-| Flaky E2E tests due to timing       | High        | Medium | Use Playwright auto-wait, generous timeouts      |
-| CI E2E stack startup failure         | Medium      | High   | `--wait` flag + health checks + artifact upload  |
-| Locator fragility (UI text changes)  | Medium      | Low    | Use `data-testid` for critical elements          |
-| Backtest no orders (SMA no signals)  | Medium      | Low    | Seed data designed to trigger crossovers         |
+| Risk                                | Probability | Impact | Mitigation                                        |
+| ----------------------------------- | ----------- | ------ | ------------------------------------------------- |
+| Flaky E2E tests due to timing       | High        | Medium | Use Playwright auto-wait, generous timeouts (15s) |
+| CI E2E stack startup failure        | Medium      | High   | `--wait` flag + health checks + artifact upload   |
+| Locator fragility (UI text changes) | Medium      | Low    | Use `data-testid` for critical elements           |
+| Orders page tests mock data only    | Certain     | Low    | Documented in §1.7.1 — tests validate UI render   |
+| SSE orders.Placed not heard by FE   | Certain     | Medium | Documented in §1.7.3 — removed invalid tests      |
+| Paper run produces no orders        | Certain     | Low    | Documented in §1.7.7 — tests focus on lifecycle   |
 | Docker port conflicts in CI         | Low         | High   | Unique ports (3XXXX range) isolated from dev/prod |
+| SSE reconnect test flakiness        | Medium      | Low    | Alternative approach documented (multi-event test) |
 
 ---
 

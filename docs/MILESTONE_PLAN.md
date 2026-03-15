@@ -573,14 +573,14 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 6.2 MVP Breakdown
 
-| MVP   | Focus                         | Est. Tests | Dependencies     |
-| ----- | ----------------------------- | ---------- | ---------------- |
-| M10-0 | E2E Infrastructure Setup      | 0          | -                |
-| M10-1 | Core Navigation & Health      | ~6         | M10-0            |
-| M10-2 | E2E Backtest Flow             | ~7         | M10-0            |
-| M10-3 | E2E Live/Paper Flow           | ~5         | M10-0            |
-| M10-4 | E2E Orders & SSE              | ~7         | M10-0            |
-| M10-5 | Release Polish & Documentation| 0          | M10-1–M10-4      |
+| MVP   | Focus                          | Est. Tests | Dependencies |
+| ----- | ------------------------------ | ---------- | ------------ |
+| M10-0 | E2E Infrastructure Setup       | 0          | -            |
+| M10-1 | Core Navigation & Health       | ~6         | M10-0        |
+| M10-2 | E2E Backtest Flow              | ~7         | M10-0        |
+| M10-3 | E2E Live/Paper Flow            | ~5         | M10-0        |
+| M10-4 | E2E Orders & SSE               | ~7         | M10-0        |
+| M10-5 | Release Polish & Documentation | 0          | M10-1–M10-4  |
 
 ### 6.3 Detailed Tasks
 
