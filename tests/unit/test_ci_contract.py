@@ -1,8 +1,7 @@
 """Tests that CI tooling configurations are present and correct in pyproject.toml."""
 
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 import pytest
 

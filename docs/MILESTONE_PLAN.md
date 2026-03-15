@@ -5,7 +5,7 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ⏳ Planned (CI Deployment)  
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete (CI Deployment)  
 > **Tests (latest verified)**: 1033 passed (latest local run)  
 > **Remaining Work**: M9 (CI Deployment Pipeline) → M10 (E2E Tests & Release Prep)  
 > **Estimated Total**: ~20–30 new tests remaining (M10), ~2–3 weeks total
@@ -23,7 +23,7 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)                   |
 | **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)                   |
 | **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (historical cumulative: 1023) |
-| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ⏳ PLANNED                            |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ✅ COMPLETE                           |
 | **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | ~20–30 | ⏳ PLANNED                            |
 
 **M6 Complete** (101 tests added):

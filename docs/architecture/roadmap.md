@@ -64,7 +64,7 @@
 | **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests) |
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)  |
 | **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE         |
-| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ⏳ PLANNED          |
+| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE         |
 | **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                                                                       | ⏳ PLANNED          |
 
 ## 3. Phase Timeline
