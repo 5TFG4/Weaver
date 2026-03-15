@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
+from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.models import (
     OrderIntent,
     OrderSide,
@@ -24,9 +24,6 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
-if TYPE_CHECKING:
-    from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 
 # ============================================================================
 # Test: AlpacaAdapter Interface

@@ -289,10 +289,10 @@ When none of the three cases applies:
 
 ### CI Workflows
 
-| Workflow      | File                                  | Trigger Paths                                                    | Speed     | Job Name          |
-| ------------- | ------------------------------------- | ---------------------------------------------------------------- | --------- | ----------------- |
-| Backend CI    | `.github/workflows/backend-ci.yml`    | `src/`, `tests/`, `pyproject.toml`, `weaver.py`, `alembic.ini`   | ~2 min    | `backend-checks`  |
-| Frontend CI   | `.github/workflows/frontend-ci.yml`   | `haro/**`                                                        | ~2 min    | `frontend-checks` |
+| Workflow      | File                                  | Trigger Paths                                                            | Speed     | Job Name          |
+| ------------- | ------------------------------------- | ------------------------------------------------------------------------ | --------- | ----------------- |
+| Backend CI    | `.github/workflows/backend-ci.yml`    | `src/`, `tests/`, `pyproject.toml`, `weaver.py`, `alembic.ini`           | ~2 min    | `backend-checks`  |
+| Frontend CI   | `.github/workflows/frontend-ci.yml`   | `haro/**`                                                                | ~2 min    | `frontend-checks` |
 | Compose Smoke | `.github/workflows/compose-smoke.yml` | `docker/`, `src/`, `haro/`, `pyproject.toml`, `weaver.py`, `alembic.ini` | ~5-10 min | `compose-smoke`   |
 
 All three workflows also trigger on `workflow_dispatch` (manual) and changes to their own YAML file.

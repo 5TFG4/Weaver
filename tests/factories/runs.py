@@ -8,11 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import uuid4
 
-if TYPE_CHECKING:
-    from src.glados.services.run_manager import RunManager
+from src.glados.services.run_manager import RunManager
 
 
 @dataclass

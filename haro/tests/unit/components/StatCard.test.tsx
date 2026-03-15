@@ -37,9 +37,7 @@ describe("StatCard", () => {
   });
 
   it("applies status color variant", () => {
-      render(
-        <StatCard title="API Status" value="Healthy" status="success" />,
-      );
+    render(<StatCard title="API Status" value="Healthy" status="success" />);
 
     // The value text should have the success color
     const valueEl = screen.getByText("Healthy");
