@@ -5,9 +5,10 @@
 > **Authoritative for**: M9 task breakdown, workflow specs, file-level change specs, and execution order.
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: ⏳ PLANNED
+> **Status**: ✅ COMPLETE (verified 2026-03-15)
 > **Prerequisite**: M8 ✅ (940 backend tests, 91 frontend tests, 89.47% backend coverage)
-> **Branch**: `ci-pipeline`
+> **Result**: All lint/type/test tools exit 0; 3 CI workflows deployed; 6 CI contract tests added; 946 backend + 91 frontend tests
+> **Branch**: `ci-pipeline` (merged to `main`)
 > **Key Inputs**: `MILESTONE_PLAN.md` §5, existing `compose-smoke.yml`
 
 ---

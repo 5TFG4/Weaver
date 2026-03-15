@@ -498,11 +498,11 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 5.1 Exit Gate (Definition of Done)
 
-- [ ] Backend CI fast lane is green on PR (`ruff` + `mypy` + unit tests)
-- [ ] Frontend CI fast lane is green on PR (`lint` + `test` + `build`)
-- [ ] Compose smoke workflow runs in CI for docker/runtime-affecting changes
-- [ ] Branch protection requires core CI checks before merge
-- [ ] CI troubleshooting/runbook documented in README or DEVELOPMENT docs
+- [x] Backend CI fast lane is green on PR (`ruff` + `mypy` + unit tests) ✅
+- [x] Frontend CI fast lane is green on PR (`lint` + `test` + `build`) ✅
+- [x] Compose smoke workflow runs in CI for docker/runtime-affecting changes ✅
+- [x] Branch protection requires core CI checks before merge ✅
+- [x] CI troubleshooting/runbook documented in README or DEVELOPMENT docs ✅
 
 ### 5.2 MVP Breakdown
 
@@ -518,35 +518,35 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 #### M9-1: Backend Fast CI
 
 ```
-- [ ] Add/verify backend CI workflow (Python 3.13)
-- [ ] Run ruff + mypy as required checks
-- [ ] Run pytest unit scope (exclude container marker)
-- [ ] Add dependency caching to reduce CI duration
+- [x] Add/verify backend CI workflow (Python 3.13) ✅ .github/workflows/backend-ci.yml
+- [x] Run ruff + mypy as required checks ✅
+- [x] Run pytest unit scope (exclude container marker) ✅
+- [x] Add dependency caching to reduce CI duration ✅
 ```
 
 #### M9-2: Frontend Fast CI
 
 ```
-- [ ] Add/verify frontend CI workflow (Node 20)
-- [ ] Run npm lint + test + build
-- [ ] Cache npm dependencies
-- [ ] Fail fast on TypeScript or build regressions
+- [x] Add/verify frontend CI workflow (Node 20) ✅ .github/workflows/frontend-ci.yml
+- [x] Run npm lint + test + build ✅
+- [x] Cache npm dependencies ✅
+- [x] Fail fast on TypeScript or build regressions ✅
 ```
 
 #### M9-3: Container Smoke Integration
 
 ```
-- [ ] Keep/extend compose-smoke workflow for runtime-affecting PRs
-- [ ] Ensure logs are surfaced as CI artifacts on failure
-- [ ] Validate API health + frontend availability checks in CI
+- [x] Keep/extend compose-smoke workflow for runtime-affecting PRs ✅
+- [x] Ensure logs are surfaced as CI artifacts on failure ✅
+- [x] Validate API health + frontend availability checks in CI ✅
 ```
 
 #### M9-4: Branch Protection + Governance
 
 ```
-- [ ] Define required checks for PR merge
-- [ ] Document rerun/debug process for failed jobs
-- [ ] Mark optional jobs (e.g., full integration suite) vs required checks
+- [x] Define required checks for PR merge ✅
+- [x] Document rerun/debug process for failed jobs ✅
+- [x] Mark optional jobs (e.g., full integration suite) vs required checks ✅
 ```
 
 ---
@@ -555,67 +555,102 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 > **Goal**: Full end-to-end test coverage + final release polish  
 > **Prerequisite**: M9 ✅  
-> **Estimated Effort**: 1–1.5 weeks  
-> **Status**: ⏳ PLANNED
+> **Estimated Effort**: 1.5–2 weeks  
+> **Status**: ⏳ PLANNED  
+> **Design Doc**: [m10-e2e-release.md](archive/milestone-details/m10-e2e-release.md)
 
 ### 6.1 Exit Gate (Definition of Done)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Full user workflow validated end-to-end
-- [ ] Deployment guide complete
-- [ ] All docs accurate post-M9 changes
+- [ ] Playwright installed and E2E infrastructure configured
+- [ ] `docker-compose.e2e.yml` starts isolated test stack
+- [ ] E2E tests pass (~25 tests): navigation, backtest, paper, orders, SSE
+- [ ] Full user workflow validated end-to-end (browser-based)
+- [ ] Production deployment guide complete
+- [ ] Strategy & adapter development guides complete
+- [ ] All doc test counts updated to final numbers
+- [ ] E2E CI workflow runs on PR
+- [ ] Performance baselines documented
 
 ### 6.2 MVP Breakdown
 
-| MVP   | Focus                 | Est. Tests | Dependencies |
-| ----- | --------------------- | ---------- | ------------ |
-| M10-1 | E2E Setup & Infra     | ~5         | -            |
-| M10-2 | E2E Backtest Flow     | ~8         | M10-1        |
-| M10-3 | E2E Live/Paper Flow   | ~8         | M10-1        |
-| M10-4 | Release Polish & Docs | ~5         | M10-2, M10-3 |
+| MVP   | Focus                         | Est. Tests | Dependencies     |
+| ----- | ----------------------------- | ---------- | ---------------- |
+| M10-0 | E2E Infrastructure Setup      | 0          | -                |
+| M10-1 | Core Navigation & Health      | ~6         | M10-0            |
+| M10-2 | E2E Backtest Flow             | ~7         | M10-0            |
+| M10-3 | E2E Live/Paper Flow           | ~5         | M10-0            |
+| M10-4 | E2E Orders & SSE              | ~7         | M10-0            |
+| M10-5 | Release Polish & Documentation| 0          | M10-1–M10-4      |
 
 ### 6.3 Detailed Tasks
 
-#### M10-1: E2E Test Setup (~5 tests)
+#### M10-0: E2E Infrastructure Setup
 
 ```
-- [ ] Configure Playwright (install, config, base helpers)
-- [ ] Setup test database (seeded fixtures)
-- [ ] Docker Compose for E2E (backend + frontend + DB)
-- [ ] Basic page load tests (Dashboard, Runs, Orders, 404)
-- [ ] Health check E2E test
+- [ ] Add playwright + pytest-playwright to requirements.dev.txt
+- [ ] Create docker-compose.e2e.yml (isolated stack with fixed ports)
+- [ ] Create tests/e2e/helpers.py (API client, constants)
+- [ ] Create tests/e2e/conftest.py (stack lifecycle, fixtures)
+- [ ] Create scripts/ci/e2e-local.sh (local test runner)
+- [ ] Configure pyproject.toml base_url for Playwright
 ```
 
-#### M10-2: E2E Backtest Flow (~8 tests)
+#### M10-1: Core Navigation & Health (~6 tests)
 
 ```
-- [ ] Create backtest run via UI
-- [ ] View backtest progress (SSE updates reflected)
-- [ ] View backtest results (stats displayed)
-- [ ] View generated orders after backtest
-- [ ] Stop backtest mid-run
-- [ ] Multiple concurrent backtests
+- [ ] Root redirects to /dashboard
+- [ ] Dashboard page loads with stat cards
+- [ ] Runs page loads
+- [ ] Orders page loads
+- [ ] 404 page for unknown routes
+- [ ] Sidebar navigation between pages
 ```
 
-#### M10-3: E2E Live/Paper Flow (~8 tests)
+#### M10-2: E2E Backtest Flow (~7 tests)
 
 ```
-- [ ] Create paper run via UI
-- [ ] Monitor real-time status (SSE updates)
-- [ ] Manually stop paper run
-- [ ] Verify order status updates in UI
-- [ ] Dashboard reflects active run count
+- [ ] Create backtest run via UI form
+- [ ] API-created run visible in UI
+- [ ] Start backtest → completes
+- [ ] Run detail deep-link view
+- [ ] Backtest generates orders visible on orders page
+- [ ] Dashboard reflects run counts
+- [ ] Multiple backtests listed
+```
+
+#### M10-3: E2E Live/Paper Flow (~5 tests)
+
+```
+- [ ] Create paper run → visible on runs page
+- [ ] Start paper run → shows RUNNING status
+- [ ] Dashboard shows active run count
+- [ ] Stop paper run → shows STOPPED status
 - [ ] Error state displayed correctly
 ```
 
-#### M10-4: Release Polish & Docs (~5 tests)
+#### M10-4: E2E Orders & SSE (~7 tests)
 
 ```
-- [ ] Deployment guide (production Docker Compose)
-- [ ] Update all doc test counts post-M8/M9/M10
-- [ ] Final cross-doc consistency check
+- [ ] Orders page empty state
+- [ ] Orders appear after backtest completion
+- [ ] Orders status filter
+- [ ] SSE connection status shows "Connected"
+- [ ] SSE delivers real-time UI updates (no page reload needed)
+- [ ] SSE reconnects after interruption
+- [ ] SSE delivers run status change events
+```
+
+#### M10-5: Release Polish & Documentation
+
+```
+- [ ] Production deployment guide in docs/architecture/deployment.md
+- [ ] Strategy development guide (deferred from M8)
+- [ ] Adapter development guide (deferred from M8)
+- [ ] Update all doc test counts post-M10
+- [ ] Cross-doc consistency check (events, endpoints, env vars)
+- [ ] Performance baselines documented
+- [ ] E2E CI workflow (.github/workflows/e2e.yml)
 - [ ] Smoke test: fresh deploy → create run → verify
-- [ ] Performance baseline (response times, SSE latency)
 ```
 
 ---
