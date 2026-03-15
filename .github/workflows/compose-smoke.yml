@@ -6,8 +6,10 @@ on:
     paths:
       - "docker/**"
       - "src/**"
+      - "haro/**"
       - "weaver.py"
       - "pyproject.toml"
+      - "alembic.ini"
       - ".github/workflows/compose-smoke.yml"
 
 jobs:
@@ -81,6 +83,19 @@ jobs:
           docker compose -f docker/docker-compose.yml logs frontend
           exit 1
 
+      - name: Capture container logs
+        if: failure()
+        run: |
+          docker compose -f docker/docker-compose.yml logs --no-color > /tmp/weaver_container_logs.out 2>&1 || true
+
       - name: Teardown
         if: always()
         run: docker compose -f docker/docker-compose.yml down -v
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-smoke-logs
+          path: /tmp/weaver_*.out
+          retention-days: 7
