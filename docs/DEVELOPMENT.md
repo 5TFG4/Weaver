@@ -284,3 +284,45 @@ When none of the three cases applies:
 3. Link to detail doc from roadmap
 4. Update status as work progresses
 5. After completion, design doc becomes reference archive
+
+## CI & Branch Protection
+
+### CI Workflows
+
+| Workflow      | File                                  | Trigger Paths                                                            | Speed     | Job Name          |
+| ------------- | ------------------------------------- | ------------------------------------------------------------------------ | --------- | ----------------- |
+| Backend CI    | `.github/workflows/backend-ci.yml`    | `src/`, `tests/`, `pyproject.toml`, `weaver.py`, `alembic.ini`           | ~2 min    | `backend-checks`  |
+| Frontend CI   | `.github/workflows/frontend-ci.yml`   | `haro/**`                                                                | ~2 min    | `frontend-checks` |
+| Compose Smoke | `.github/workflows/compose-smoke.yml` | `docker/`, `src/`, `haro/`, `pyproject.toml`, `weaver.py`, `alembic.ini` | ~5-10 min | `compose-smoke`   |
+
+All three workflows also trigger on `workflow_dispatch` (manual) and changes to their own YAML file.
+
+### Branch Protection Setup (GitHub Settings)
+
+Go to **Settings → Branches → Add branch protection rule**:
+
+1. **Branch name pattern**: `main`
+2. **Require status checks to pass before merging**: ✅
+3. **Status checks that are required**:
+   - `backend-checks`
+   - `frontend-checks`
+   - `compose-smoke`
+4. **Require branches to be up to date before merging**: ✅
+5. **Do not allow force pushes**: ✅
+6. **Do not allow deletions**: ✅
+
+### Local Pre-Push Check
+
+Run `scripts/ci/check-local.sh` before pushing to catch errors locally. This script mirrors all CI checks (backend: ruff, mypy, pytest; frontend: eslint, tsc, vitest, build).
+
+### CI Troubleshooting
+
+**Ruff format drift**: Run `ruff format src/ tests/` locally before pushing. If CI fails on format check, your editor may not be auto-formatting on save.
+
+**MyPy strict errors**: All new code must have type annotations. If adding a new function, include full type annotations for all parameters and return type.
+
+**ESLint unused imports**: Remove unused imports in test files. IDE auto-import sometimes adds unused imports that eslint catches.
+
+**Compose smoke timeout**: The health check retries 60 times with 2-second intervals (2 min total). If the backend or frontend takes longer to boot, check the Docker build logs.
+
+**Downloading failure artifacts**: When compose-smoke fails, go to the workflow run page → Artifacts section → download `compose-smoke-logs`. The ZIP contains container logs, API response body, and frontend response body.

@@ -9,10 +9,8 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-
-from .types import AsyncConnectionPool
 
 
 class OffsetStore(ABC):
@@ -110,13 +108,12 @@ class PostgresOffsetStore(OffsetStore):
     async def get_offset(self, consumer_id: str) -> int:
         """Get the last processed offset from the database."""
         from sqlalchemy import select
+
         from src.walle.models import ConsumerOffset
 
         async with self._session_factory() as session:
             result = await session.execute(
-                select(ConsumerOffset.last_offset).where(
-                    ConsumerOffset.consumer_id == consumer_id
-                )
+                select(ConsumerOffset.last_offset).where(ConsumerOffset.consumer_id == consumer_id)
             )
             offset = result.scalar()
             return offset if offset is not None else -1
@@ -124,19 +121,20 @@ class PostgresOffsetStore(OffsetStore):
     async def set_offset(self, consumer_id: str, offset: int) -> None:
         """Update the last processed offset in the database."""
         from sqlalchemy.dialects.postgresql import insert
+
         from src.walle.models import ConsumerOffset
 
         async with self._session_factory() as session:
             stmt = insert(ConsumerOffset).values(
                 consumer_id=consumer_id,
                 last_offset=offset,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["consumer_id"],
                 set_={
                     "last_offset": offset,
-                    "updated_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(UTC),
                 },
             )
             await session.execute(stmt)
@@ -145,6 +143,7 @@ class PostgresOffsetStore(OffsetStore):
     async def get_all_offsets(self) -> dict[str, int]:
         """Get all consumer offsets from the database."""
         from sqlalchemy import select
+
         from src.walle.models import ConsumerOffset
 
         async with self._session_factory() as session:
@@ -211,7 +210,7 @@ class EventConsumer:
             self._current_offset,
             limit=self._batch_size,
         )
-        return events
+        return events  # type: ignore[no-any-return]
 
     async def commit(self, offset: int) -> None:
         """

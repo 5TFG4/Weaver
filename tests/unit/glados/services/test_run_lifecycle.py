@@ -15,7 +15,6 @@ import pytest
 from src.events.log import InMemoryEventLog
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 
-
 # =============================================================================
 # A.1: RunManager Dependency Validation
 # =============================================================================
@@ -243,8 +242,9 @@ class TestPerRunCleanup:
 
     async def test_stop_emits_event_and_sets_timestamp(self) -> None:
         """stop() should emit Stopped event and set stopped_at."""
-        from src.events.types import RunEvents
         from tests.factories.runs import create_run_manager_with_deps
+
+        from src.events.types import RunEvents
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
@@ -265,8 +265,9 @@ class TestPerRunCleanup:
 
     async def test_backtest_completion_emits_completed_event(self) -> None:
         """Backtest should emit run.Completed on success."""
-        from src.events.types import RunEvents
         from tests.factories.runs import create_run_manager_with_deps
+
+        from src.events.types import RunEvents
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)

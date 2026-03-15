@@ -10,10 +10,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest_asyncio
 
+from src.events.protocol import Envelope
+from src.glados.schemas import RunMode, RunStatus
 from src.glados.services.domain_router import DomainRouter
 from src.glados.services.run_manager import Run
-from src.glados.schemas import RunMode, RunStatus
-from src.events.protocol import Envelope
 
 
 def make_envelope(
@@ -237,9 +237,7 @@ class TestDomainRouterEventTypes:
             run_manager=mock_run_manager,
         )
 
-    async def test_maps_all_strategy_event_types(
-        self, backtest_router: DomainRouter
-    ) -> None:
+    async def test_maps_all_strategy_event_types(self, backtest_router: DomainRouter) -> None:
         """All strategy.* events are mapped correctly."""
         event_types = [
             ("strategy.FetchWindow", "backtest.FetchWindow"),

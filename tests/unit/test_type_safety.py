@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from src.veda.models import OrderSide
 
-
 # =============================================================================
 # SimulatedFill Type Safety Tests
 # =============================================================================
@@ -67,8 +66,9 @@ class TestClockFixture:
 
     def test_controllable_clock_uses_production_clock_tick(self) -> None:
         """ControllableClock should use ClockTick from production code."""
-        from src.glados.clock.base import ClockTick as ProductionClockTick
         from tests.fixtures.clock import ControllableClock
+
+        from src.glados.clock.base import ClockTick as ProductionClockTick
 
         clock = ControllableClock(start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
         tick = clock.make_tick()
@@ -77,7 +77,8 @@ class TestClockFixture:
 
     def test_clock_tick_not_redefined_in_fixtures(self) -> None:
         """Fixture ClockTick symbol should be exactly the production ClockTick class."""
-        from src.glados.clock.base import ClockTick as ProductionClockTick
         from tests.fixtures.clock import ClockTick as FixtureClockTick
+
+        from src.glados.clock.base import ClockTick as ProductionClockTick
 
         assert FixtureClockTick is ProductionClockTick

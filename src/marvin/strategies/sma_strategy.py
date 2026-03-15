@@ -7,6 +7,7 @@ Buys when fast SMA crosses above slow SMA, sells when it crosses below.
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from src.marvin.base_strategy import (
     ActionType,
@@ -14,7 +15,6 @@ from src.marvin.base_strategy import (
     StrategyAction,
     StrategyOrderSide,
 )
-
 
 # Plugin metadata for auto-discovery
 STRATEGY_META = {
@@ -32,7 +32,7 @@ STRATEGY_META = {
 class SMAConfig:
     """
     Configuration for SMA crossover strategy.
-    
+
     Attributes:
         fast_period: Period for fast SMA (shorter)
         slow_period: Period for slow SMA (longer)
@@ -55,19 +55,19 @@ class SMAConfig:
 class SMAStrategy(BaseStrategy):
     """
     Simple Moving Average crossover strategy.
-    
+
     Logic:
         - Calculates fast and slow SMAs from bar close prices
         - Buy when fast SMA crosses above slow SMA (bullish crossover)
         - Sell when fast SMA crosses below slow SMA (bearish crossover)
-    
+
     Crossover detection requires tracking previous SMA relationship.
     """
 
     def __init__(self, config: SMAConfig | None = None) -> None:
         """
         Initialize SMA strategy.
-        
+
         Args:
             config: Strategy configuration (uses defaults if None)
         """
@@ -75,16 +75,16 @@ class SMAStrategy(BaseStrategy):
         self._config = config or SMAConfig()
         self._prev_fast_above_slow: bool | None = None
 
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
-        
+
         Requests bars for slow_period + 1 to ensure enough data
         for calculating both SMAs.
-        
+
         Args:
             tick: Clock tick with timestamp
-            
+
         Returns:
             List with single FetchWindow action
         """
@@ -102,10 +102,10 @@ class SMAStrategy(BaseStrategy):
     async def on_data(self, data: dict) -> list[StrategyAction]:
         """
         Handle data ready - check for SMA crossover.
-        
+
         Args:
             data: Dictionary with "bars" key containing list of bar dicts
-            
+
         Returns:
             List of StrategyAction (0 or 1 items)
         """
@@ -137,10 +137,10 @@ class SMAStrategy(BaseStrategy):
     def _extract_closes(self, bars: list[dict]) -> list[Decimal]:
         """
         Extract close prices from bar dicts.
-        
+
         Args:
             bars: List of bar dictionaries with 'close' key
-            
+
         Returns:
             List of Decimal close prices
         """
@@ -157,14 +157,14 @@ class SMAStrategy(BaseStrategy):
     def _calculate_sma(self, values: list[Decimal], period: int) -> Decimal:
         """
         Calculate Simple Moving Average.
-        
+
         Uses the last 'period' values. If fewer values available,
         uses all available values.
-        
+
         Args:
             values: List of Decimal values
             period: Number of periods for SMA
-            
+
         Returns:
             SMA as Decimal
         """
@@ -175,16 +175,14 @@ class SMAStrategy(BaseStrategy):
         window = values[-period:] if len(values) >= period else values
         return sum(window, Decimal("0")) / Decimal(len(window))
 
-    def _check_crossover(
-        self, fast_above_slow: bool, symbol: str
-    ) -> list[StrategyAction]:
+    def _check_crossover(self, fast_above_slow: bool, symbol: str) -> list[StrategyAction]:
         """
         Check for SMA crossover and generate signal.
-        
+
         Args:
             fast_above_slow: Whether fast SMA is currently above slow SMA
             symbol: Trading symbol
-            
+
         Returns:
             List with trade action if crossover detected, empty otherwise
         """
@@ -193,29 +191,27 @@ class SMAStrategy(BaseStrategy):
             return []
 
         # Bullish crossover: fast crosses above slow
-        if fast_above_slow and not self._prev_fast_above_slow:
-            if not self._has_position:
-                self._has_position = True
-                return [
-                    StrategyAction(
-                        type=ActionType.PLACE_ORDER,
-                        symbol=symbol,
-                        side=StrategyOrderSide.BUY,
-                        qty=self._config.qty,
-                    )
-                ]
+        if fast_above_slow and not self._prev_fast_above_slow and not self._has_position:
+            self._has_position = True
+            return [
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol=symbol,
+                    side=StrategyOrderSide.BUY,
+                    qty=self._config.qty,
+                )
+            ]
 
         # Bearish crossover: fast crosses below slow
-        if not fast_above_slow and self._prev_fast_above_slow:
-            if self._has_position:
-                self._has_position = False
-                return [
-                    StrategyAction(
-                        type=ActionType.PLACE_ORDER,
-                        symbol=symbol,
-                        side=StrategyOrderSide.SELL,
-                        qty=self._config.qty,
-                    )
-                ]
+        if not fast_above_slow and self._prev_fast_above_slow and self._has_position:
+            self._has_position = False
+            return [
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol=symbol,
+                    side=StrategyOrderSide.SELL,
+                    qty=self._config.qty,
+                )
+            ]
 
         return []

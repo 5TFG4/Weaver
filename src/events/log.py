@@ -11,7 +11,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import sqlalchemy as sa
 
@@ -136,11 +137,11 @@ class InMemoryEventLog(EventLog):
         self._filtered_subscriptions: dict[str, Subscription] = {}
         self._lock = asyncio.Lock()
 
-    async def append(
+    async def append(  # type: ignore[override]
         self,
         envelope: Envelope,
         *,
-        connection: Any | None = None,
+        _connection: Any | None = None,
     ) -> int:
         """Append an event to the in-memory log."""
         async with self._lock:
@@ -273,7 +274,7 @@ class PostgresEventLog(EventLog):
     def __init__(
         self,
         session_factory: Any | None = None,
-        pool: "AsyncConnectionPool | None" = None,
+        pool: AsyncConnectionPool | None = None,
     ) -> None:
         """
         Initialize with session factory and/or connection pool.
@@ -375,10 +376,7 @@ class PostgresEventLog(EventLog):
                 .limit(limit)
             )
             events = result.scalars().all()
-            return [
-                (event.id, Envelope.from_dict(event.payload))
-                for event in events
-            ]
+            return [(event.id, Envelope.from_dict(event.payload)) for event in events]
 
     async def _dispatch_to_subscribers(self, envelope: Envelope) -> None:
         """
@@ -442,9 +440,9 @@ class PostgresEventLog(EventLog):
 
     def _on_notify(
         self,
-        connection: Any,
-        pid: int,
-        channel: str,
+        _connection: Any,
+        _pid: int,
+        _channel: str,
         payload: str,
     ) -> None:
         """Handle NOTIFY callback."""
@@ -532,8 +530,6 @@ class PostgresEventLog(EventLog):
             raise RuntimeError("No session factory configured")
 
         async with self._session_factory() as session:
-            result = await session.execute(
-                sa.select(sa.func.max(OutboxEvent.id))
-            )
+            result = await session.execute(sa.select(sa.func.max(OutboxEvent.id)))
             max_id = result.scalar()
             return max_id if max_id is not None else -1

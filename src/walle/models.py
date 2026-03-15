@@ -43,9 +43,7 @@ class OutboxEvent(Base):
         index=True,
     )
 
-    __table_args__ = (
-        Index("idx_outbox_type_created", "type", "created_at"),
-    )
+    __table_args__ = (Index("idx_outbox_type_created", "type", "created_at"),)
 
     def __repr__(self) -> str:
         return f"<OutboxEvent(id={self.id}, type={self.type!r})>"
@@ -80,12 +78,12 @@ class BarRecord(Base):
 
     Stores candle data fetched from exchanges. Used by Greta
     during backtests to provide historical market data.
-    
+
     Data is immutable once written - safe to share across runs.
     """
 
     __tablename__ = "bars"
-    
+
     # Constraint names (referenced by repository for upsert)
     UNIQUE_CONSTRAINT = "uq_bar"
 
@@ -113,7 +111,7 @@ class VedaOrder(Base):
     SQLAlchemy model for persisting order state.
 
     Maps to veda_orders table for durable order tracking.
-    
+
     Note: Defined in walle/models.py (persistence layer) but used by Veda.
     This ensures all SQLAlchemy models are registered in Base.metadata
     consistently, regardless of import order.
@@ -186,19 +184,15 @@ class RunRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    stopped_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    __table_args__ = (
-        Index("idx_runs_status_created", "status", "created_at"),
-    )
+    __table_args__ = (Index("idx_runs_status_created", "status", "created_at"),)
 
     def __repr__(self) -> str:
-        return f"<RunRecord(id={self.id!r}, strategy_id={self.strategy_id!r}, status={self.status!r})>"
+        return (
+            f"<RunRecord(id={self.id!r}, strategy_id={self.strategy_id!r}, status={self.status!r})>"
+        )
 
 
 class FillRecord(Base):
@@ -218,14 +212,10 @@ class FillRecord(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     side: Mapped[str] = mapped_column(String(10), nullable=False)  # buy | sell
-    filled_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    filled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     exchange_fill_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    __table_args__ = (
-        Index("idx_fills_order_filled", "order_id", "filled_at"),
-    )
+    __table_args__ = (Index("idx_fills_order_filled", "order_id", "filled_at"),)
 
     def __repr__(self) -> str:
         return f"<FillRecord(id={self.id!r}, order_id={self.order_id!r}, price={self.price})>"

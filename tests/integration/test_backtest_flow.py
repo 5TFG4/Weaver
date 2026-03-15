@@ -18,8 +18,6 @@ from src.events.log import PostgresEventLog
 from src.events.types import RunEvents
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.glados.services.run_manager import RunManager
-from src.marvin.base_strategy import BaseStrategy, StrategyAction
-from src.marvin.strategy_loader import StrategyLoader
 from src.walle.repositories.bar_repository import Bar, BarRepository
 
 # Import test strategies from fixtures instead of defining inline
@@ -52,9 +50,7 @@ class TestBacktestFlow:
         )
 
     @pytest_asyncio.fixture
-    async def seeded_bars(
-        self, bar_repository: BarRepository, clean_tables
-    ) -> list[Bar]:
+    async def seeded_bars(self, bar_repository: BarRepository, clean_tables) -> list[Bar]:
         """Seed database with test bar data."""
         start = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
         bars = []
@@ -201,7 +197,7 @@ class TestBacktestFlow:
 
         # Verify backtest completed (strategy was executed)
         assert result.status == RunStatus.COMPLETED
-        
+
         # Read events
         event_tuples = await event_log.read_from(offset=0, limit=100)
         events = [envelope for _, envelope in event_tuples]

@@ -7,11 +7,10 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.veda.models import (
@@ -21,7 +20,6 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
 
 # =============================================================================
 # Helpers
@@ -50,9 +48,9 @@ def _make_order_state(
         status=status,
         filled_qty=Decimal("10"),
         filled_avg_price=Decimal("150.50"),
-        created_at=datetime.now(timezone.utc),
-        submitted_at=datetime.now(timezone.utc),
-        filled_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        submitted_at=datetime.now(UTC),
+        filled_at=datetime.now(UTC),
         cancelled_at=None,
         reject_reason=None,
         error_code=None,
@@ -124,9 +122,7 @@ class TestGetOrderEndpoint:
 class TestListOrdersVedaPath:
     """C-04: GET /orders uses VedaService when available."""
 
-    def test_list_returns_veda_orders_when_service_present(
-        self, client: TestClient
-    ) -> None:
+    def test_list_returns_veda_orders_when_service_present(self, client: TestClient) -> None:
         """When VedaService is configured, list_orders reads from it."""
         mock_veda = AsyncMock()
         mock_veda.list_orders.return_value = [
@@ -146,9 +142,7 @@ class TestListOrdersVedaPath:
         # Clean up
         client.app.state.veda_service = None  # type: ignore[union-attr]
 
-    def test_list_passes_run_id_filter_to_veda(
-        self, client: TestClient
-    ) -> None:
+    def test_list_passes_run_id_filter_to_veda(self, client: TestClient) -> None:
         """run_id query param is forwarded to VedaService.list_orders."""
         mock_veda = AsyncMock()
         mock_veda.list_orders.return_value = []
@@ -160,9 +154,7 @@ class TestListOrdersVedaPath:
 
         client.app.state.veda_service = None  # type: ignore[union-attr]
 
-    def test_list_falls_back_to_mock_when_veda_absent(
-        self, client: TestClient
-    ) -> None:
+    def test_list_falls_back_to_mock_when_veda_absent(self, client: TestClient) -> None:
         """Without VedaService, list_orders still returns from MockOrderService."""
         # veda_service is None by default in test config
         response = client.get("/api/v1/orders")
@@ -172,9 +164,7 @@ class TestListOrdersVedaPath:
 class TestGetOrderVedaPath:
     """C-04: GET /orders/{id} uses VedaService when available."""
 
-    def test_get_returns_veda_order_when_service_present(
-        self, client: TestClient
-    ) -> None:
+    def test_get_returns_veda_order_when_service_present(self, client: TestClient) -> None:
         """When VedaService is configured, get_order reads from it."""
         mock_veda = AsyncMock()
         mock_veda.get_order.return_value = _make_order_state("veda-order-42")
@@ -187,9 +177,7 @@ class TestGetOrderVedaPath:
 
         client.app.state.veda_service = None  # type: ignore[union-attr]
 
-    def test_get_veda_not_found_returns_404(
-        self, client: TestClient
-    ) -> None:
+    def test_get_veda_not_found_returns_404(self, client: TestClient) -> None:
         """When VedaService returns None, return 404."""
         mock_veda = AsyncMock()
         mock_veda.get_order.return_value = None
@@ -201,9 +189,7 @@ class TestGetOrderVedaPath:
 
         client.app.state.veda_service = None  # type: ignore[union-attr]
 
-    def test_get_falls_back_to_mock_when_veda_absent(
-        self, client: TestClient
-    ) -> None:
+    def test_get_falls_back_to_mock_when_veda_absent(self, client: TestClient) -> None:
         """Without VedaService, get_order reads from MockOrderService."""
         response = client.get("/api/v1/orders/order-123")
         assert response.status_code == 200

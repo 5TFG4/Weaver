@@ -13,11 +13,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from src.events.log import InMemoryEventLog
 from src.events.protocol import Envelope
-
 
 # =============================================================================
 # B.1: PostgresEventLog Direct Subscriber Dispatch (D-1)
@@ -212,22 +209,25 @@ class TestDomainRouterWiring:
 
     async def test_domain_router_routes_strategy_to_backtest(self) -> None:
         """strategy.FetchWindow should route to backtest.FetchWindow for backtest runs."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.glados.schemas import RunCreate, RunMode
         from src.glados.services.domain_router import DomainRouter
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
 
         # Create a backtest run
-        run = await run_manager.create(RunCreate(
-            strategy_id="sma_cross",
-            mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
-        ))
+        run = await run_manager.create(
+            RunCreate(
+                strategy_id="sma_cross",
+                mode=RunMode.BACKTEST,
+                symbols=["AAPL"],
+                start_time="2024-01-01T00:00:00Z",
+                end_time="2024-06-30T00:00:00Z",
+            )
+        )
 
         router = DomainRouter(event_log=event_log, run_manager=run_manager)
 
@@ -257,19 +257,22 @@ class TestDomainRouterWiring:
 
     async def test_domain_router_routes_strategy_to_live(self) -> None:
         """strategy.PlaceRequest should route to live.PlaceOrder for live runs."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.glados.schemas import RunCreate, RunMode
         from src.glados.services.domain_router import DomainRouter
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
 
-        run = await run_manager.create(RunCreate(
-            strategy_id="sma_cross",
-            mode=RunMode.LIVE,
-            symbols=["AAPL"],
-        ))
+        run = await run_manager.create(
+            RunCreate(
+                strategy_id="sma_cross",
+                mode=RunMode.LIVE,
+                symbols=["AAPL"],
+            )
+        )
 
         router = DomainRouter(event_log=event_log, run_manager=run_manager)
 
@@ -296,9 +299,10 @@ class TestDomainRouterWiring:
 
     async def test_domain_router_ignores_non_strategy_events(self) -> None:
         """DomainRouter should ignore events not starting with 'strategy.'."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.events.log import InMemoryEventLog
         from src.glados.services.domain_router import DomainRouter
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         run_manager = create_run_manager_with_deps(event_log=event_log)
@@ -341,7 +345,7 @@ class TestInMemoryEventLogFallback:
         # Temporarily unset DB_URL to simulate no-database mode
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 # event_log should exist (not None)
                 assert app.state.event_log is not None
                 assert isinstance(app.state.event_log, InMemoryEventLog)
@@ -363,7 +367,7 @@ class TestInMemoryEventLogFallback:
 
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 run_manager = app.state.run_manager
                 assert run_manager._event_log is not None
         finally:
@@ -384,7 +388,7 @@ class TestInMemoryEventLogFallback:
 
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 event_log = app.state.event_log
                 assert isinstance(event_log, InMemoryEventLog)
                 # Verify broadcaster is subscribed (has at least one subscriber)
@@ -432,23 +436,26 @@ class TestEventToSSEIntegration:
 
     async def test_domain_router_event_reaches_broadcaster(self) -> None:
         """DomainRouter routed event → EventLog → SSEBroadcaster chain."""
+        from tests.factories.runs import create_run_manager_with_deps
+
         from src.glados.schemas import RunCreate, RunMode
         from src.glados.services.domain_router import DomainRouter
         from src.glados.sse_broadcaster import SSEBroadcaster
-        from tests.factories.runs import create_run_manager_with_deps
 
         event_log = InMemoryEventLog()
         broadcaster = SSEBroadcaster()
         run_manager = create_run_manager_with_deps(event_log=event_log)
 
         # Create a backtest run
-        run = await run_manager.create(RunCreate(
-            strategy_id="sma_cross",
-            mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
-        ))
+        run = await run_manager.create(
+            RunCreate(
+                strategy_id="sma_cross",
+                mode=RunMode.BACKTEST,
+                symbols=["AAPL"],
+                start_time="2024-01-01T00:00:00Z",
+                end_time="2024-06-30T00:00:00Z",
+            )
+        )
 
         router = DomainRouter(event_log=event_log, run_manager=run_manager)
 

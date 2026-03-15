@@ -110,9 +110,8 @@ class TestEventTypes:
                 if attr.startswith("_"):
                     continue
                 value = getattr(cls, attr)
-                if isinstance(value, str) and "." in value:
-                    if value not in ALL_EVENT_TYPES:
-                        missing.append(f"{cls.__name__}.{attr} = {value!r}")
+                if isinstance(value, str) and "." in value and value not in ALL_EVENT_TYPES:
+                    missing.append(f"{cls.__name__}.{attr} = {value!r}")
 
         assert missing == [], f"Missing from ALL_EVENT_TYPES: {missing}"
 

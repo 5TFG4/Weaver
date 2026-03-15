@@ -4,10 +4,9 @@ Unit tests for GLaDOS dependency injection.
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from fastapi import Request
 
 from src.glados.dependencies import (

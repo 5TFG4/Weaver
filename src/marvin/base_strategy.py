@@ -7,24 +7,25 @@ Abstract base class for trading strategies.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
+from typing import Any
 
 
-class ActionType(str, Enum):
+class ActionType(StrEnum):
     """Type of strategy action."""
 
     FETCH_WINDOW = "fetch_window"
     PLACE_ORDER = "place_order"
 
 
-class StrategyOrderSide(str, Enum):
+class StrategyOrderSide(StrEnum):
     """Order side for strategy actions."""
 
     BUY = "buy"
     SELL = "sell"
 
 
-class StrategyOrderType(str, Enum):
+class StrategyOrderType(StrEnum):
     """Order type for strategy actions."""
 
     MARKET = "market"
@@ -37,9 +38,9 @@ class StrategyOrderType(str, Enum):
 class StrategyAction:
     """
     Action returned by a strategy.
-    
+
     Represents either a data request or an order placement.
-    
+
     Attributes:
         type: Action type - FETCH_WINDOW or PLACE_ORDER
         symbol: Trading symbol
@@ -64,11 +65,11 @@ class StrategyAction:
 class BaseStrategy(ABC):
     """
     Abstract base class for trading strategies.
-    
+
     Strategies implement logic for generating trading signals
     based on market data. They are mode-agnostic and work
     identically for live trading and backtesting.
-    
+
     Lifecycle:
         1. initialize() - called once when strategy starts
         2. on_tick() - called on each clock tick
@@ -88,25 +89,25 @@ class BaseStrategy(ABC):
     async def initialize(self, symbols: list[str]) -> None:
         """
         Initialize strategy with symbols.
-        
+
         Override for custom initialization logic.
-        
+
         Args:
             symbols: List of symbols the strategy will trade
         """
         self._symbols = symbols
 
     @abstractmethod
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick event.
-        
+
         Called on each time step. Strategy should return
         actions like requesting data or placing orders.
-        
+
         Args:
             tick: Clock tick with timestamp
-            
+
         Returns:
             List of StrategyAction to execute
         """
@@ -116,12 +117,12 @@ class BaseStrategy(ABC):
     async def on_data(self, data: dict) -> list[StrategyAction]:
         """
         Handle data ready event.
-        
+
         Called when requested market data is available.
-        
+
         Args:
             data: Dictionary with requested data (e.g., {"bars": [...]})
-            
+
         Returns:
             List of StrategyAction to execute
         """

@@ -8,22 +8,23 @@ Fixtures are organized by scope and purpose.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
-from typing import Any, Generator
+from collections.abc import Generator
+from datetime import UTC, datetime
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 
 # =============================================================================
 # Event Loop Configuration
 # =============================================================================
 
+
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+def event_loop() -> Generator[asyncio.AbstractEventLoop]:
     """
     Create an event loop for the entire test session.
-    
+
     This is needed for session-scoped async fixtures.
     """
     loop = asyncio.new_event_loop()
@@ -35,31 +36,33 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 # Time Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def frozen_time() -> datetime:
     """
     A fixed point in time for deterministic tests.
-    
+
     Default: 2024-01-15 09:30:00 UTC (market open)
     """
-    return datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
 
 
 @pytest.fixture
 def market_open_time() -> datetime:
     """US market open time (9:30 AM ET = 14:30 UTC in winter)."""
-    return datetime(2024, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 14, 30, 0, tzinfo=UTC)
 
 
 @pytest.fixture
 def market_close_time() -> datetime:
     """US market close time (4:00 PM ET = 21:00 UTC in winter)."""
-    return datetime(2024, 1, 15, 21, 0, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 21, 0, 0, tzinfo=UTC)
 
 
 # =============================================================================
 # ID Generation Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_run_id() -> str:
@@ -83,11 +86,12 @@ def sample_corr_id() -> str:
 # Configuration Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def test_config() -> dict[str, Any]:
     """
     Test configuration that mirrors production config structure.
-    
+
     Use this for testing config parsing and validation.
     """
     return {
@@ -112,6 +116,7 @@ def test_config() -> dict[str, Any]:
 # Mock Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_logger() -> MagicMock:
     """A mock logger for testing log calls."""
@@ -127,6 +132,7 @@ def mock_logger() -> MagicMock:
 # Async Utility Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def async_timeout() -> float:
     """Default timeout for async operations in tests (seconds)."""
@@ -136,6 +142,7 @@ def async_timeout() -> float:
 # =============================================================================
 # Markers Registration
 # =============================================================================
+
 
 def pytest_configure(config: pytest.Config) -> None:
     """Register custom markers."""
@@ -149,19 +156,18 @@ def pytest_configure(config: pytest.Config) -> None:
 # Test Collection Hooks
 # =============================================================================
 
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """
     Automatically add markers based on test path.
-    
+
     - tests/unit/* -> @pytest.mark.unit
     - tests/integration/* -> @pytest.mark.integration
     - tests/e2e/* -> @pytest.mark.e2e
     """
     for item in items:
         test_path = str(item.fspath)
-        
+
         if "/unit/" in test_path:
             item.add_marker(pytest.mark.unit)
         elif "/integration/" in test_path:
@@ -174,12 +180,12 @@ def pytest_collection_modifyitems(
 # Database Fixtures (Integration Tests)
 # =============================================================================
 
-import os
-import subprocess
-from collections.abc import AsyncGenerator
+import os  # noqa: E402
+import subprocess  # noqa: E402
+from collections.abc import AsyncGenerator  # noqa: E402
 
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import pytest_asyncio  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
 
 
 def _get_database_url() -> str | None:
@@ -197,7 +203,7 @@ def database_url() -> str:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_engine(database_url: str) -> AsyncGenerator[Any, None]:
+async def async_engine(database_url: str) -> AsyncGenerator[Any]:
     """Create an async engine for the test database."""
     engine = create_async_engine(database_url, echo=False)
     yield engine
@@ -223,25 +229,21 @@ def init_tables(database_url: str) -> None:
 
 
 @pytest_asyncio.fixture
-async def db_session(
-    async_engine: Any, init_tables: None
-) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(async_engine: Any, init_tables: None) -> AsyncGenerator[AsyncSession]:
     """
     Provide an AsyncSession for integration tests.
-    
+
     Each test gets a fresh session with clean tables.
     Used by tests marked @pytest.mark.integration.
     """
     from sqlalchemy import text
-    
+
     async with AsyncSession(async_engine, expire_on_commit=False) as session:
         # Clean tables before test
-        await session.execute(
-            text("TRUNCATE TABLE veda_orders, outbox, consumer_offsets")
-        )
+        await session.execute(text("TRUNCATE TABLE veda_orders, outbox, consumer_offsets"))
         await session.commit()
-        
+
         yield session
-        
+
         # Rollback any uncommitted changes and clean up
         await session.rollback()

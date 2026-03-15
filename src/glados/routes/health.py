@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/v1", tags=["health"])
 async def healthz() -> HealthResponse:
     """
     Health check endpoint.
-    
+
     Returns:
         HealthResponse with status and version
     """

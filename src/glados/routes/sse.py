@@ -7,13 +7,14 @@ Provides real-time event streaming to clients.
 from __future__ import annotations
 
 import json
-from typing import Annotated
+from collections.abc import AsyncIterator
+from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 from src.glados.dependencies import get_broadcaster
-from src.glados.sse_broadcaster import SSEBroadcaster, ServerSentEvent
+from src.glados.sse_broadcaster import ServerSentEvent, SSEBroadcaster
 
 router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
@@ -47,10 +48,12 @@ def _should_include_event(event: ServerSentEvent, run_id: str | None) -> bool:
         # No run_id in event data — system event, pass through
         return True
 
-    return event_run_id == run_id
+    return event_run_id == run_id  # type: ignore[no-any-return]
 
 
-async def _event_generator(broadcaster: SSEBroadcaster, run_id: str | None = None):
+async def _event_generator(
+    broadcaster: SSEBroadcaster, run_id: str | None = None
+) -> AsyncIterator[dict[str, Any]]:
     """Generate SSE events from broadcaster, optionally filtered by run_id."""
     async for event in broadcaster.subscribe():
         if _should_include_event(event, run_id):
@@ -68,13 +71,13 @@ async def event_stream(
 ) -> EventSourceResponse:
     """
     SSE event stream endpoint.
-    
+
     Clients connect here to receive real-time events.
     D-5: Optional run_id query param filters events for a specific run.
-    
+
     Args:
         run_id: Optional run_id to filter events. If not provided, all events are streamed.
-    
+
     Returns:
         EventSourceResponse with event stream
     """

@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-
 import pytest_asyncio
 
 from src.glados.schemas import RunCreate, RunMode, RunStatus
@@ -72,9 +71,7 @@ class TestRunManagerBacktestStart:
             strategy_loader=mock_strategy_loader,
         )
 
-    async def test_start_backtest_creates_run_context(
-        self, manager_with_deps: RunManager
-    ) -> None:
+    async def test_start_backtest_creates_run_context(self, manager_with_deps: RunManager) -> None:
         """start() creates RunContext for backtest runs and cleans up after completion."""
         run = await manager_with_deps.create(
             RunCreate(
@@ -94,9 +91,7 @@ class TestRunManagerBacktestStart:
         # Run should be marked completed
         assert run.status == RunStatus.COMPLETED
 
-    async def test_start_backtest_initializes_greta(
-        self, manager_with_deps: RunManager
-    ) -> None:
+    async def test_start_backtest_initializes_greta(self, manager_with_deps: RunManager) -> None:
         """start() initializes GretaService with run params."""
         run = await manager_with_deps.create(
             RunCreate(
@@ -117,9 +112,7 @@ class TestRunManagerBacktestStart:
         bar_repo = cast(AsyncMock, manager_with_deps._bar_repository)
         bar_repo.get_bars.assert_called()
 
-    async def test_start_backtest_initializes_runner(
-        self, manager_with_deps: RunManager
-    ) -> None:
+    async def test_start_backtest_initializes_runner(self, manager_with_deps: RunManager) -> None:
         """start() initializes StrategyRunner with run params."""
         run = await manager_with_deps.create(
             RunCreate(
@@ -137,14 +130,12 @@ class TestRunManagerBacktestStart:
         # Verify strategy was loaded and initialized (implies runner was created)
         strategy_loader = cast(MagicMock, manager_with_deps._strategy_loader)
         strategy_loader.load.assert_called_once_with("test-strategy")
-        
+
         # Verify strategy.initialize was called with correct params
         mock_strategy = strategy_loader.load.return_value
         mock_strategy.initialize.assert_called_once_with(["BTC/USD"])
 
-    async def test_start_backtest_loads_strategy(
-        self, manager_with_deps: RunManager
-    ) -> None:
+    async def test_start_backtest_loads_strategy(self, manager_with_deps: RunManager) -> None:
         """start() loads strategy from loader."""
         run = await manager_with_deps.create(
             RunCreate(
@@ -159,11 +150,11 @@ class TestRunManagerBacktestStart:
 
         await manager_with_deps.start(run.id)
 
-        cast(MagicMock, manager_with_deps._strategy_loader).load.assert_called_once_with("test-strategy")
+        cast(MagicMock, manager_with_deps._strategy_loader).load.assert_called_once_with(
+            "test-strategy"
+        )
 
-    async def test_start_backtest_runs_to_completion(
-        self, manager_with_deps: RunManager
-    ) -> None:
+    async def test_start_backtest_runs_to_completion(self, manager_with_deps: RunManager) -> None:
         """start() for backtest runs clock to completion."""
         run = await manager_with_deps.create(
             RunCreate(
@@ -261,9 +252,7 @@ class TestRunManagerStopWithContext:
 
         assert run_id not in manager._run_contexts
 
-    async def test_stop_stops_clock(
-        self, manager_with_running_run: tuple[RunManager, str]
-    ) -> None:
+    async def test_stop_stops_clock(self, manager_with_running_run: tuple[RunManager, str]) -> None:
         """stop() calls clock.stop() before cleanup."""
         manager, run_id = manager_with_running_run
         ctx = manager._run_contexts[run_id]

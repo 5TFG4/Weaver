@@ -165,9 +165,7 @@ class PluginAdapterLoader(AdapterLoader):
             raise AdapterNotFoundError(meta.id)
 
         # Load module from file path
-        spec = importlib.util.spec_from_file_location(
-            f"adapter_{meta.id}", meta.module_path
-        )
+        spec = importlib.util.spec_from_file_location(f"adapter_{meta.id}", meta.module_path)
         if spec is None or spec.loader is None:
             raise AdapterNotFoundError(meta.id)
 
@@ -182,8 +180,6 @@ class PluginAdapterLoader(AdapterLoader):
         # Get the adapter class
         adapter_class = getattr(module, meta.class_name, None)
         if adapter_class is None:
-            raise AdapterNotFoundError(
-                f"{meta.id} (class {meta.class_name} not found)"
-            )
+            raise AdapterNotFoundError(f"{meta.id} (class {meta.class_name} not found)")
 
-        return adapter_class
+        return adapter_class  # type: ignore[no-any-return]

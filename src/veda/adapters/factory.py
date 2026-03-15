@@ -12,7 +12,7 @@ from src.veda.adapters.mock_adapter import MockExchangeAdapter
 from src.veda.interfaces import ExchangeAdapter
 
 
-def create_alpaca_adapter(credentials: "AlpacaCredentials") -> AlpacaAdapter:
+def create_alpaca_adapter(credentials: AlpacaCredentials) -> AlpacaAdapter:
     """
     Create AlpacaAdapter from AlpacaCredentials.
 
@@ -48,9 +48,9 @@ def create_mock_adapter() -> MockExchangeAdapter:
 
 
 def create_adapter_for_mode(
-    credentials: "AlpacaCredentials | None",
+    credentials: AlpacaCredentials | None,
     use_mock: bool = False,
-) -> "ExchangeAdapter":
+) -> ExchangeAdapter:
     """
     Create appropriate adapter based on configuration.
 

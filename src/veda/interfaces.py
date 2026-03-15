@@ -7,10 +7,10 @@ Abstract interfaces for exchange communication and result types.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import AsyncIterator
 
 from src.veda.models import (
     AccountInfo,
@@ -23,7 +23,6 @@ from src.veda.models import (
     Quote,
     Trade,
 )
-
 
 # =============================================================================
 # Result Types

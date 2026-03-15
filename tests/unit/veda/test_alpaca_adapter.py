@@ -7,6 +7,8 @@ MVP-6: AlpacaAdapter (Paper Trading)
 - Proper error handling
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -14,6 +16,7 @@ from uuid import uuid4
 
 import pytest
 
+from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.models import (
     OrderIntent,
     OrderSide,
@@ -21,7 +24,6 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
 
 # ============================================================================
 # Test: AlpacaAdapter Interface
@@ -34,19 +36,20 @@ class TestAlpacaAdapterInterface:
     def test_alpaca_adapter_exists(self) -> None:
         """AlpacaAdapter class exists."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
+
         assert AlpacaAdapter is not None
 
     def test_alpaca_adapter_is_exchange_adapter(self) -> None:
         """AlpacaAdapter implements ExchangeAdapter."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.interfaces import ExchangeAdapter
-        
+
         assert issubclass(AlpacaAdapter, ExchangeAdapter)
 
     def test_alpaca_adapter_accepts_credentials(self) -> None:
         """AlpacaAdapter accepts API credentials."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         # Should not raise with valid credentials
         adapter = AlpacaAdapter(
             api_key="test-key",
@@ -58,7 +61,7 @@ class TestAlpacaAdapterInterface:
     def test_alpaca_adapter_has_paper_mode(self) -> None:
         """AlpacaAdapter supports paper trading mode."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -115,7 +118,7 @@ class TestAlpacaAdapterSubmitOrder:
     ) -> None:
         """submit_order calls Alpaca API."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -123,9 +126,9 @@ class TestAlpacaAdapterSubmitOrder:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         await adapter.submit_order(sample_intent)
-        
+
         mock_alpaca_client.submit_order.assert_called_once()
 
     async def test_submit_order_returns_result(
@@ -134,7 +137,7 @@ class TestAlpacaAdapterSubmitOrder:
         """submit_order returns OrderSubmitResult."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.interfaces import OrderSubmitResult
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -142,9 +145,9 @@ class TestAlpacaAdapterSubmitOrder:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.submit_order(sample_intent)
-        
+
         assert isinstance(result, OrderSubmitResult)
         assert result.exchange_order_id == "alpaca-order-123"
 
@@ -153,7 +156,7 @@ class TestAlpacaAdapterSubmitOrder:
     ) -> None:
         """submit_order uses correct symbol format."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -161,9 +164,9 @@ class TestAlpacaAdapterSubmitOrder:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         await adapter.submit_order(sample_intent)
-        
+
         # Check the call arguments
         call_args = mock_alpaca_client.submit_order.call_args
         # Symbol should be passed to Alpaca
@@ -182,7 +185,7 @@ class TestAlpacaAdapterOrderManagement:
     def mock_alpaca_client(self) -> MagicMock:
         """Create mock Alpaca trading client."""
         mock = MagicMock()
-        
+
         # Mock get_order response
         mock_order = MagicMock()
         mock_order.id = "alpaca-order-123"
@@ -199,16 +202,14 @@ class TestAlpacaAdapterOrderManagement:
         mock.get_order_by_id = MagicMock(return_value=mock_order)
         mock.cancel_order_by_id = MagicMock(return_value=None)
         mock.get_orders = MagicMock(return_value=[mock_order])
-        
+
         return mock
 
-    async def test_get_order_returns_exchange_order(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_get_order_returns_exchange_order(self, mock_alpaca_client: MagicMock) -> None:
         """get_order returns ExchangeOrder."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.interfaces import ExchangeOrder
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -216,19 +217,17 @@ class TestAlpacaAdapterOrderManagement:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.get_order("alpaca-order-123")
-        
+
         assert result is not None
         assert isinstance(result, ExchangeOrder)
         assert result.exchange_order_id == "alpaca-order-123"
 
-    async def test_cancel_order_calls_alpaca(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_cancel_order_calls_alpaca(self, mock_alpaca_client: MagicMock) -> None:
         """cancel_order calls Alpaca cancel API."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -236,19 +235,17 @@ class TestAlpacaAdapterOrderManagement:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.cancel_order("alpaca-order-123")
-        
+
         assert result is True
         mock_alpaca_client.cancel_order_by_id.assert_called_once_with("alpaca-order-123")
 
-    async def test_list_orders_returns_list(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_list_orders_returns_list(self, mock_alpaca_client: MagicMock) -> None:
         """list_orders returns list of ExchangeOrder."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.interfaces import ExchangeOrder
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -256,9 +253,9 @@ class TestAlpacaAdapterOrderManagement:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.list_orders()
-        
+
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], ExchangeOrder)
@@ -276,7 +273,7 @@ class TestAlpacaAdapterAccount:
     def mock_alpaca_client(self) -> MagicMock:
         """Create mock Alpaca trading client."""
         mock = MagicMock()
-        
+
         # Mock account
         mock_account = MagicMock()
         mock_account.id = "account-123"
@@ -286,7 +283,7 @@ class TestAlpacaAdapterAccount:
         mock_account.currency = "USD"
         mock_account.status = "ACTIVE"
         mock.get_account = MagicMock(return_value=mock_account)
-        
+
         # Mock positions
         mock_position = MagicMock()
         mock_position.symbol = "AAPL"
@@ -298,16 +295,14 @@ class TestAlpacaAdapterAccount:
         mock_position.unrealized_plpc = "0.0333"
         mock.get_all_positions = MagicMock(return_value=[mock_position])
         mock.get_open_position = MagicMock(return_value=mock_position)
-        
+
         return mock
 
-    async def test_get_account_returns_account_info(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_get_account_returns_account_info(self, mock_alpaca_client: MagicMock) -> None:
         """get_account returns AccountInfo."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import AccountInfo
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -315,19 +310,17 @@ class TestAlpacaAdapterAccount:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.get_account()
-        
+
         assert isinstance(result, AccountInfo)
         assert result.buying_power == Decimal("100000.00")
 
-    async def test_get_positions_returns_list(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_get_positions_returns_list(self, mock_alpaca_client: MagicMock) -> None:
         """get_positions returns list of Position."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Position
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
@@ -335,30 +328,28 @@ class TestAlpacaAdapterAccount:
         )
         adapter._trading_client = mock_alpaca_client
         adapter._connected = True  # Simulate connected state
-        
+
         result = await adapter.get_positions()
-        
+
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], Position)
         assert result[0].symbol == "AAPL"
 
-    async def test_get_position_returns_position(
-        self, mock_alpaca_client: MagicMock
-    ) -> None:
+    async def test_get_position_returns_position(self, mock_alpaca_client: MagicMock) -> None:
         """get_position returns Position for symbol."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Position
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
         adapter._trading_client = mock_alpaca_client
-        
+
         result = await adapter.get_position("AAPL")
-        
+
         assert result is not None
         assert isinstance(result, Position)
 
@@ -375,7 +366,7 @@ class TestAlpacaAdapterMarketData:
     def mock_data_client(self) -> MagicMock:
         """Create mock Alpaca data client."""
         mock = MagicMock()
-        
+
         # Mock bars
         mock_bar = MagicMock()
         mock_bar.symbol = "AAPL"
@@ -389,7 +380,7 @@ class TestAlpacaAdapterMarketData:
         mock_bar.vwap = 150.5
         mock.get_stock_bars = MagicMock(return_value={"AAPL": [mock_bar]})
         mock.get_stock_latest_bar = MagicMock(return_value={"AAPL": mock_bar})
-        
+
         # Mock quote
         mock_quote = MagicMock()
         mock_quote.symbol = "AAPL"
@@ -399,7 +390,7 @@ class TestAlpacaAdapterMarketData:
         mock_quote.ask_price = 151.05
         mock_quote.ask_size = 200
         mock.get_stock_latest_quote = MagicMock(return_value={"AAPL": mock_quote})
-        
+
         # Mock trade
         mock_trade = MagicMock()
         mock_trade.symbol = "AAPL"
@@ -408,84 +399,76 @@ class TestAlpacaAdapterMarketData:
         mock_trade.size = 100
         mock_trade.exchange = "NASDAQ"
         mock.get_stock_latest_trade = MagicMock(return_value={"AAPL": mock_trade})
-        
+
         return mock
 
-    async def test_get_bars_returns_list(
-        self, mock_data_client: MagicMock
-    ) -> None:
+    async def test_get_bars_returns_list(self, mock_data_client: MagicMock) -> None:
         """get_bars returns list of Bar."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Bar
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
         adapter._stock_data_client = mock_data_client
-        
+
         start = datetime.now(UTC) - timedelta(days=1)
         result = await adapter.get_bars("AAPL", "1h", start)
-        
+
         assert isinstance(result, list)
         assert len(result) >= 1
         assert isinstance(result[0], Bar)
 
-    async def test_get_latest_bar_returns_bar(
-        self, mock_data_client: MagicMock
-    ) -> None:
+    async def test_get_latest_bar_returns_bar(self, mock_data_client: MagicMock) -> None:
         """get_latest_bar returns Bar."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Bar
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
         adapter._stock_data_client = mock_data_client
-        
+
         result = await adapter.get_latest_bar("AAPL")
-        
+
         assert result is not None
         assert isinstance(result, Bar)
 
-    async def test_get_latest_quote_returns_quote(
-        self, mock_data_client: MagicMock
-    ) -> None:
+    async def test_get_latest_quote_returns_quote(self, mock_data_client: MagicMock) -> None:
         """get_latest_quote returns Quote."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Quote
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
         adapter._stock_data_client = mock_data_client
-        
+
         result = await adapter.get_latest_quote("AAPL")
-        
+
         assert result is not None
         assert isinstance(result, Quote)
 
-    async def test_get_latest_trade_returns_trade(
-        self, mock_data_client: MagicMock
-    ) -> None:
+    async def test_get_latest_trade_returns_trade(self, mock_data_client: MagicMock) -> None:
         """get_latest_trade returns Trade."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
         from src.veda.models import Trade
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
         adapter._stock_data_client = mock_data_client
-        
+
         result = await adapter.get_latest_trade("AAPL")
-        
+
         assert result is not None
         assert isinstance(result, Trade)
 
@@ -501,28 +484,26 @@ class TestAlpacaAdapterErrorHandling:
     def test_adapter_raises_on_missing_credentials(self) -> None:
         """Adapter raises if credentials missing."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         with pytest.raises((ValueError, TypeError)):
             AlpacaAdapter(api_key="", api_secret="", paper=True)
 
     async def test_submit_order_handles_rejection(self) -> None:
         """submit_order handles order rejection gracefully."""
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
-        
+
         adapter = AlpacaAdapter(
             api_key="test-key",
             api_secret="test-secret",
             paper=True,
         )
-        
+
         # Mock rejection
         mock_client = MagicMock()
-        mock_client.submit_order = MagicMock(
-            side_effect=Exception("Insufficient buying power")
-        )
+        mock_client.submit_order = MagicMock(side_effect=Exception("Insufficient buying power"))
         adapter._trading_client = mock_client
         adapter._connected = True  # Simulate connected state
-        
+
         intent = OrderIntent(
             run_id="test-run",
             client_order_id=str(uuid4()),
@@ -534,9 +515,9 @@ class TestAlpacaAdapterErrorHandling:
             stop_price=None,
             time_in_force=TimeInForce.DAY,
         )
-        
+
         result = await adapter.submit_order(intent)
-        
+
         assert result.success is False
         assert result.status == OrderStatus.REJECTED
 
@@ -550,7 +531,7 @@ class TestAlpacaAdapterAsyncWrapping:
     """Sync Alpaca SDK calls must run in asyncio.to_thread to avoid blocking."""
 
     @pytest.fixture
-    def adapter(self) -> "AlpacaAdapter":
+    def adapter(self) -> AlpacaAdapter:
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 
         a = AlpacaAdapter(api_key="k", api_secret="s", paper=True)
@@ -559,7 +540,6 @@ class TestAlpacaAdapterAsyncWrapping:
 
     async def test_submit_order_runs_in_thread_pool(self, adapter) -> None:
         """submit_order delegates the sync SDK call to asyncio.to_thread."""
-        from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 
         mock_response = MagicMock()
         mock_response.id = "order-1"
@@ -580,7 +560,9 @@ class TestAlpacaAdapterAsyncWrapping:
             time_in_force=TimeInForce.DAY,
         )
 
-        with patch("src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
+        with patch(
+            "src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock
+        ) as mock_to_thread:
             mock_to_thread.return_value = mock_response
             await adapter.submit_order(intent)
             mock_to_thread.assert_called_once()
@@ -600,7 +582,9 @@ class TestAlpacaAdapterAsyncWrapping:
         mock_client.get_account = MagicMock(return_value=mock_response)
         adapter._trading_client = mock_client
 
-        with patch("src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
+        with patch(
+            "src.veda.adapters.alpaca_adapter.asyncio.to_thread", new_callable=AsyncMock
+        ) as mock_to_thread:
             mock_to_thread.return_value = mock_response
             await adapter.get_account()
             mock_to_thread.assert_called_once()

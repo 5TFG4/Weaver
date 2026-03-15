@@ -23,7 +23,7 @@ from src.walle.models import BarRecord
 class Bar:
     """
     Immutable bar data transfer object.
-    
+
     Used throughout the system to represent OHLCV data.
     Frozen dataclass ensures immutability.
     """
@@ -41,12 +41,12 @@ class Bar:
 class BarRepository:
     """
     Repository for historical bar data.
-    
+
     This is a SINGLETON shared across all runs because:
     - Historical data is immutable (cannot be modified)
     - Caching is efficient when shared
     - No isolation concerns (reads only)
-    
+
     Responsibilities:
     - Store bars from exchange API
     - Retrieve bars for backtest time ranges
@@ -56,7 +56,7 @@ class BarRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         """
         Initialize repository.
-        
+
         Args:
             session_factory: SQLAlchemy async session factory
         """
@@ -65,12 +65,12 @@ class BarRepository:
     async def save_bars(self, bars: Sequence[Bar]) -> int:
         """
         Save bars to database with upsert semantics.
-        
+
         Bars with duplicate (symbol, timeframe, timestamp) are skipped.
-        
+
         Args:
             bars: Sequence of Bar objects to save
-            
+
         Returns:
             Number of bars actually inserted (excludes duplicates)
         """
@@ -100,7 +100,7 @@ class BarRepository:
             result = await session.execute(stmt)
             await session.commit()
 
-            return result.rowcount  # type: ignore[return-value]
+            return result.rowcount  # type: ignore[no-any-return, attr-defined]
 
     async def get_bars(
         self,
@@ -111,13 +111,13 @@ class BarRepository:
     ) -> list[Bar]:
         """
         Get bars for a symbol/timeframe in a time range.
-        
+
         Args:
             symbol: Trading symbol (e.g., "BTC/USD")
             timeframe: Bar timeframe (e.g., "1m", "5m", "1h")
             start: Start timestamp (inclusive)
             end: End timestamp (inclusive)
-            
+
         Returns:
             List of Bar objects sorted by timestamp ascending
         """
@@ -159,15 +159,15 @@ class BarRepository:
     ) -> int:
         """
         Count bars in a time range without fetching data.
-        
+
         Useful for checking cache coverage before fetching from exchange.
-        
+
         Args:
             symbol: Trading symbol
             timeframe: Bar timeframe
             start: Start timestamp (inclusive)
             end: End timestamp (inclusive)
-            
+
         Returns:
             Number of bars in range
         """
@@ -193,13 +193,13 @@ class BarRepository:
     ) -> Bar | None:
         """
         Get the most recent bar for a symbol/timeframe.
-        
+
         Useful for determining where to start fetching new data.
-        
+
         Args:
             symbol: Trading symbol
             timeframe: Bar timeframe
-            
+
         Returns:
             Most recent Bar or None if no data exists
         """

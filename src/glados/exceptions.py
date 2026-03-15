@@ -21,9 +21,7 @@ class RunNotStartableError(Exception):
     def __init__(self, run_id: str, current_status: str) -> None:
         self.run_id = run_id
         self.current_status = current_status
-        super().__init__(
-            f"Run {run_id} cannot be started: current status is {current_status}"
-        )
+        super().__init__(f"Run {run_id} cannot be started: current status is {current_status}")
 
 
 class RunNotStoppableError(Exception):
@@ -32,6 +30,4 @@ class RunNotStoppableError(Exception):
     def __init__(self, run_id: str, current_status: str) -> None:
         self.run_id = run_id
         self.current_status = current_status
-        super().__init__(
-            f"Run {run_id} cannot be stopped: current status is {current_status}"
-        )
+        super().__init__(f"Run {run_id} cannot be stopped: current status is {current_status}")

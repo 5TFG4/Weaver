@@ -6,7 +6,7 @@ M6-4: Complete order flow with persistence and events.
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -22,7 +22,6 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -115,16 +114,19 @@ class TestVedaServiceConnection:
     def test_veda_service_has_connect_method(self) -> None:
         """VedaService should have connect() method."""
         from src.veda import VedaService
+
         assert hasattr(VedaService, "connect")
 
     def test_veda_service_has_disconnect_method(self) -> None:
         """VedaService should have disconnect() method."""
         from src.veda import VedaService
+
         assert hasattr(VedaService, "disconnect")
 
     def test_veda_service_has_is_connected_property(self) -> None:
         """VedaService should have is_connected property."""
         from src.veda import VedaService
+
         assert hasattr(VedaService, "is_connected")
 
     async def test_connect_calls_adapter_connect(
@@ -135,16 +137,16 @@ class TestVedaServiceConnection:
     ) -> None:
         """connect() should call adapter.connect()."""
         from src.veda.veda_service import VedaService
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.connect()
-        
+
         mock_adapter.connect.assert_called_once()
 
     async def test_disconnect_calls_adapter_disconnect(
@@ -155,16 +157,16 @@ class TestVedaServiceConnection:
     ) -> None:
         """disconnect() should call adapter.disconnect()."""
         from src.veda.veda_service import VedaService
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.disconnect()
-        
+
         mock_adapter.disconnect.assert_called_once()
 
     async def test_is_connected_returns_adapter_status(
@@ -175,17 +177,17 @@ class TestVedaServiceConnection:
     ) -> None:
         """is_connected should return adapter.is_connected."""
         from src.veda.veda_service import VedaService
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         mock_adapter.is_connected = True
         assert service.is_connected is True
-        
+
         mock_adapter.is_connected = False
         assert service.is_connected is False
 
@@ -207,22 +209,22 @@ class TestOrderPersistence:
     ) -> None:
         """place_order() should persist order to repository."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="exch-123",
             status=OrderStatus.SUBMITTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.place_order(sample_intent)
-        
+
         mock_repository.save.assert_called_once()
         saved_state = mock_repository.save.call_args[0][0]
         assert isinstance(saved_state, OrderState)
@@ -246,22 +248,22 @@ class TestEventEmission:
     ) -> None:
         """place_order() should emit orders.Created event on success."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="exch-123",
             status=OrderStatus.SUBMITTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.place_order(sample_intent)
-        
+
         mock_event_log.append.assert_called_once()
         envelope = mock_event_log.append.call_args[0][0]
         assert envelope.type == "orders.Created"
@@ -276,7 +278,7 @@ class TestEventEmission:
     ) -> None:
         """place_order() should emit orders.Rejected for rejected orders."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=False,
             exchange_order_id=None,
@@ -284,16 +286,16 @@ class TestEventEmission:
             error_code="INSUFFICIENT_FUNDS",
             error_message="Not enough buying power",
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.place_order(sample_intent)
-        
+
         mock_event_log.append.assert_called_once()
         envelope = mock_event_log.append.call_args[0][0]
         assert envelope.type == "orders.Rejected"
@@ -308,22 +310,22 @@ class TestEventEmission:
     ) -> None:
         """Event payload should include exchange_order_id."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="alpaca-order-xyz",
             status=OrderStatus.ACCEPTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.place_order(sample_intent)
-        
+
         envelope = mock_event_log.append.call_args[0][0]
         assert envelope.payload["exchange_order_id"] == "alpaca-order-xyz"
 
@@ -347,13 +349,13 @@ class TestOrderQueries:
         """get_order() should return order from local state first."""
         from src.veda.veda_service import VedaService
         from src.walle.models import FillRecord
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="exch-123",
             status=OrderStatus.SUBMITTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
@@ -361,7 +363,7 @@ class TestOrderQueries:
             config=MagicMock(),
             fill_repository=mock_fill_repository,
         )
-        
+
         state = await service.place_order(sample_intent)
 
         mock_fill_repository.list_by_order.return_value = [
@@ -374,10 +376,10 @@ class TestOrderQueries:
                 filled_at=datetime.now(UTC),
             )
         ]
-        
+
         # Should get from local state, not repository
         result = await service.get_order("order-abc")
-        
+
         assert result is not None
         assert result.client_order_id == "order-abc"
         mock_repository.get_by_client_order_id.assert_not_called()
@@ -393,7 +395,7 @@ class TestOrderQueries:
     ) -> None:
         """get_order() should fall back to repository if not in local state."""
         from src.veda.veda_service import VedaService
-        
+
         stored_state = OrderState(
             id="db-order-id",
             client_order_id="stored-order",
@@ -417,7 +419,7 @@ class TestOrderQueries:
             error_code=None,
         )
         mock_repository.get_by_client_order_id.return_value = stored_state
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
@@ -438,9 +440,9 @@ class TestOrderQueries:
                 filled_at=datetime.now(UTC),
             )
         ]
-        
+
         result = await service.get_order("stored-order")
-        
+
         assert result is not None
         assert result.client_order_id == "stored-order"
         assert len(result.fills) == 1
@@ -458,24 +460,24 @@ class TestOrderQueries:
     ) -> None:
         """list_orders() without run_id should return local orders."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="exch-123",
             status=OrderStatus.SUBMITTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         await service.place_order(sample_intent)
-        
+
         orders = await service.list_orders()
-        
+
         assert len(orders) == 1
         assert orders[0].client_order_id == "order-abc"
 
@@ -533,7 +535,6 @@ class TestOrderQueries:
     ) -> None:
         """list_orders(run_id=...) should query repository."""
         from src.veda.veda_service import VedaService
-        
         from src.walle.models import FillRecord
 
         mock_repository.list_by_run_id.return_value = [
@@ -578,9 +579,9 @@ class TestOrderQueries:
             config=MagicMock(),
             fill_repository=mock_fill_repository,
         )
-        
+
         result = await service.list_orders(run_id="run-456")
-        
+
         mock_repository.list_by_run_id.assert_called_once_with("run-456", status=None)
         mock_fill_repository.list_by_order.assert_called_once_with("repo-order-1")
         assert len(result) == 1
@@ -604,26 +605,26 @@ class TestIdempotency:
     ) -> None:
         """Submitting same client_order_id twice should return existing order."""
         from src.veda.veda_service import VedaService
-        
+
         mock_adapter.submit_order.return_value = OrderSubmitResult(
             success=True,
             exchange_order_id="exch-123",
             status=OrderStatus.SUBMITTED,
         )
-        
+
         service = VedaService(
             adapter=mock_adapter,
             event_log=mock_event_log,
             repository=mock_repository,
             config=MagicMock(),
         )
-        
+
         # Submit first time
         state1 = await service.place_order(sample_intent)
-        
+
         # Submit again with same client_order_id
         state2 = await service.place_order(sample_intent)
-        
+
         # Should return same state, adapter called only once
         assert state1.id == state2.id
         assert mock_adapter.submit_order.call_count == 1

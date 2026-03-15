@@ -15,6 +15,7 @@ from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from src.config import WeaverConfig
 from src.events.log import EventLog
 from src.events.protocol import Envelope
@@ -58,9 +59,9 @@ class VedaService:
     def __init__(
         self,
         adapter: ExchangeAdapter,
-        event_log: "EventLog",
+        event_log: EventLog,
         repository: OrderRepository,
-        config: "WeaverConfig",
+        config: WeaverConfig,
         fill_repository: FillRepository | None = None,
     ) -> None:
         """
@@ -142,10 +143,7 @@ class VedaService:
         await self._repository.save(state)
 
         # 3. Emit event
-        if state.status == OrderStatus.REJECTED:
-            event_type = "orders.Rejected"
-        else:
-            event_type = "orders.Created"
+        event_type = "orders.Rejected" if state.status == OrderStatus.REJECTED else "orders.Created"
         await self._emit_order_event(event_type, state)
 
         return state
@@ -232,7 +230,7 @@ class VedaService:
     # Fill Operations (N-03)
     # =========================================================================
 
-    async def record_fill(self, fill: "FillRecord") -> None:
+    async def record_fill(self, fill: FillRecord) -> None:
         """
         Persist a fill record for audit trail.
 
@@ -244,7 +242,7 @@ class VedaService:
         if self._fill_repository is not None:
             await self._fill_repository.save(fill)
 
-    async def get_fills(self, order_id: str) -> "list[FillRecord]":
+    async def get_fills(self, order_id: str) -> list[FillRecord]:
         """
         Get fills for an order.
 
@@ -298,7 +296,9 @@ class VedaService:
             side=OrderSide(payload["side"]),
             order_type=OrderType(payload["order_type"]),
             qty=Decimal(str(payload["qty"])),
-            limit_price=Decimal(str(payload["limit_price"])) if payload.get("limit_price") else None,
+            limit_price=Decimal(str(payload["limit_price"]))
+            if payload.get("limit_price")
+            else None,
             stop_price=Decimal(str(payload["stop_price"])) if payload.get("stop_price") else None,
             time_in_force=TimeInForce(payload.get("time_in_force", "day")),
         )
@@ -372,9 +372,9 @@ class VedaService:
 
 def create_veda_service(
     adapter: ExchangeAdapter,
-    event_log: "EventLog",
-    session_factory: "async_sessionmaker[AsyncSession]",
-    config: "WeaverConfig",
+    event_log: EventLog,
+    session_factory: async_sessionmaker[AsyncSession],
+    config: WeaverConfig,
 ) -> VedaService:
     """
     Factory function to create VedaService with all dependencies.

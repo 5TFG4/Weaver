@@ -10,7 +10,6 @@ import pytest
 
 from src.veda.adapter_meta import AdapterMeta
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -163,14 +162,12 @@ class TestPluginDiscovery:
         assert hasattr(meta, "class_name")
         assert hasattr(meta, "features")
 
-    def test_extracts_metadata_without_importing(
-        self, temp_adapter_dir: Path
-    ) -> None:
+    def test_extracts_metadata_without_importing(self, temp_adapter_dir: Path) -> None:
         """Reads ADAPTER_META without full module import (broken import is OK)."""
         from src.veda.adapter_loader import PluginAdapterLoader
 
         # Create file with an import that would fail
-        (temp_adapter_dir / "broken.py").write_text('''
+        (temp_adapter_dir / "broken.py").write_text("""
 ADAPTER_META = {
     "id": "broken-adapter",
     "name": "Broken Adapter",
@@ -180,7 +177,7 @@ ADAPTER_META = {
 }
 
 import nonexistent_module_that_does_not_exist  # This would fail on import
-''')
+""")
 
         loader = PluginAdapterLoader(plugin_dir=temp_adapter_dir)
         available = loader.list_available()
@@ -188,18 +185,16 @@ import nonexistent_module_that_does_not_exist  # This would fail on import
         # Should still discover the metadata via AST parsing
         assert any(a.id == "broken-adapter" for a in available)
 
-    def test_ignores_files_starting_with_underscore(
-        self, temp_adapter_dir: Path
-    ) -> None:
+    def test_ignores_files_starting_with_underscore(self, temp_adapter_dir: Path) -> None:
         """Files like __init__.py are ignored."""
         from src.veda.adapter_loader import PluginAdapterLoader
 
-        (temp_adapter_dir / "__init__.py").write_text('''
+        (temp_adapter_dir / "__init__.py").write_text("""
 ADAPTER_META = {"id": "init-adapter", "class": "X"}
-''')
-        (temp_adapter_dir / "_private.py").write_text('''
+""")
+        (temp_adapter_dir / "_private.py").write_text("""
 ADAPTER_META = {"id": "private-adapter", "class": "Y"}
-''')
+""")
 
         loader = PluginAdapterLoader(plugin_dir=temp_adapter_dir)
         available = loader.list_available()
@@ -207,17 +202,15 @@ ADAPTER_META = {"id": "private-adapter", "class": "Y"}
         assert not any(a.id == "init-adapter" for a in available)
         assert not any(a.id == "private-adapter" for a in available)
 
-    def test_handles_syntax_error_gracefully(
-        self, temp_adapter_dir: Path
-    ) -> None:
+    def test_handles_syntax_error_gracefully(self, temp_adapter_dir: Path) -> None:
         """Syntax error in plugin file doesn't crash loader."""
         from src.veda.adapter_loader import PluginAdapterLoader
 
-        (temp_adapter_dir / "syntax_error.py").write_text('''
+        (temp_adapter_dir / "syntax_error.py").write_text("""
 ADAPTER_META = {"id": "syntax-error", "class": "X"}
 def broken(
     # Missing closing paren - syntax error
-''')
+""")
 
         # Should not raise, just skip the broken file
         loader = PluginAdapterLoader(plugin_dir=temp_adapter_dir)
@@ -240,15 +233,11 @@ def broken(
 
         assert available == []
 
-    def test_nonexistent_directory_returns_empty_list(
-        self, tmp_path: Path
-    ) -> None:
+    def test_nonexistent_directory_returns_empty_list(self, tmp_path: Path) -> None:
         """Non-existent adapter directory returns empty list (no crash)."""
         from src.veda.adapter_loader import PluginAdapterLoader
 
-        loader = PluginAdapterLoader(
-            plugin_dir=tmp_path / "does_not_exist"
-        )
+        loader = PluginAdapterLoader(plugin_dir=tmp_path / "does_not_exist")
         available = loader.list_available()
 
         assert available == []
@@ -324,7 +313,7 @@ class TestPluginLoading:
         from src.veda.adapter_loader import PluginAdapterLoader
 
         # Create adapter that prints on import
-        (temp_adapter_dir / "lazy_test.py").write_text('''
+        (temp_adapter_dir / "lazy_test.py").write_text("""
 ADAPTER_META = {"id": "lazy", "class": "Lazy", "features": []}
 print("LAZY_ADAPTER_IMPORTED_MARKER")
 from src.veda.interfaces import ExchangeAdapter
@@ -347,7 +336,7 @@ class Lazy(ExchangeAdapter):
     async def get_latest_trade(self, symbol): return None
     async def stream_quotes(self, symbols): yield None
     async def stream_bars(self, symbols): yield None
-''')
+""")
 
         # Capture stdout during initialization
         captured = io.StringIO()
@@ -378,7 +367,7 @@ class TestDeleteSafety:
 
         # Create a file then delete it
         file = temp_adapter_dir / "to_delete.py"
-        file.write_text('''
+        file.write_text("""
 ADAPTER_META = {"id": "to-delete", "class": "ToDelete", "features": []}
 from src.veda.interfaces import ExchangeAdapter
 class ToDelete(ExchangeAdapter):
@@ -400,7 +389,7 @@ class ToDelete(ExchangeAdapter):
     async def get_latest_trade(self, symbol): return None
     async def stream_quotes(self, symbols): yield None
     async def stream_bars(self, symbols): yield None
-''')
+""")
 
         loader1 = PluginAdapterLoader(plugin_dir=temp_adapter_dir)
         assert any(a.id == "to-delete" for a in loader1.list_available())
@@ -412,17 +401,15 @@ class ToDelete(ExchangeAdapter):
         loader2 = PluginAdapterLoader(plugin_dir=temp_adapter_dir)
         assert not any(a.id == "to-delete" for a in loader2.list_available())
 
-    def test_system_works_after_adapter_deleted(
-        self, temp_adapter_dir: Path
-    ) -> None:
+    def test_system_works_after_adapter_deleted(self, temp_adapter_dir: Path) -> None:
         """Other adapters still load after one is deleted."""
         from src.veda.adapter_loader import PluginAdapterLoader
         from src.veda.interfaces import ExchangeAdapter
 
         to_delete = temp_adapter_dir / "to_delete.py"
-        to_delete.write_text('''
+        to_delete.write_text("""
 ADAPTER_META = {"id": "to-delete", "class": "X", "features": []}
-''')
+""")
 
         # Delete the file before creating loader
         to_delete.unlink()

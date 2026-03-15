@@ -141,15 +141,17 @@ class PositionTracker:
         result = []
         for pos in self._positions.values():
             if pos.qty != Decimal("0"):
-                result.append(Position(
-                    symbol=pos.symbol,
-                    qty=abs(pos.qty),
-                    side=PositionSide.LONG if pos.qty > 0 else PositionSide.SHORT,
-                    avg_entry_price=pos.cost_basis,
-                    market_value=Decimal("0"),
-                    unrealized_pnl=Decimal("0"),
-                    unrealized_pnl_percent=Decimal("0"),
-                ))
+                result.append(
+                    Position(
+                        symbol=pos.symbol,
+                        qty=abs(pos.qty),
+                        side=PositionSide.LONG if pos.qty > 0 else PositionSide.SHORT,
+                        avg_entry_price=pos.cost_basis,
+                        market_value=Decimal("0"),
+                        unrealized_pnl=Decimal("0"),
+                        unrealized_pnl_percent=Decimal("0"),
+                    )
+                )
         return result
 
     # =========================================================================
@@ -166,10 +168,10 @@ class PositionTracker:
             adapter: The exchange adapter to sync from
         """
         exchange_positions = await adapter.get_positions()
-        
+
         # Clear local positions
         self._positions.clear()
-        
+
         # Import exchange positions
         for pos in exchange_positions:
             qty = pos.qty if pos.side == PositionSide.LONG else -pos.qty

@@ -24,7 +24,7 @@ from src.events.types import RunEvents
 from src.glados.clock.backtest import BacktestClock
 from src.glados.clock.base import BaseClock, ClockTick
 from src.glados.clock.realtime import RealtimeClock
-from src.glados.exceptions import RunNotFoundError, RunNotStartableError, RunNotStoppableError
+from src.glados.exceptions import RunNotFoundError, RunNotStartableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.greta.greta_service import GretaService
 from src.marvin.strategy_loader import StrategyLoader
@@ -57,12 +57,12 @@ class Run:
 class RunContext:
     """
     Per-run execution context.
-    
+
     Holds all components that are instantiated per-run.
     For backtest: greta, runner, clock all set.
     For live/paper: greta is None (uses singleton VedaService).
     """
-    
+
     greta: GretaService | None
     runner: StrategyRunner
     clock: BaseClock  # BacktestClock or RealtimeClock
@@ -71,7 +71,7 @@ class RunContext:
 class RunManager:
     """
     Manages trading run lifecycle.
-    
+
     Multi-Run Architecture (M4):
     - Creates per-run instances (GretaService, StrategyRunner, Clock)
     - Maintains _run_contexts: Dict[str, RunContext]
@@ -81,14 +81,14 @@ class RunManager:
 
     def __init__(
         self,
-        event_log: "EventLog | None" = None,
-        bar_repository: "BarRepository | None" = None,
-        strategy_loader: "StrategyLoader | None" = None,
-        run_repository: "RunRepository | None" = None,
+        event_log: EventLog | None = None,
+        bar_repository: BarRepository | None = None,
+        strategy_loader: StrategyLoader | None = None,
+        run_repository: RunRepository | None = None,
     ) -> None:
         """
         Initialize RunManager.
-        
+
         Args:
             event_log: Event log for emitting run events
             bar_repository: Bar repository for GretaService (backtest)
@@ -106,7 +106,7 @@ class RunManager:
         """Emit an event if event_log is configured."""
         if self._event_log is None:
             return
-        
+
         envelope = Envelope(
             type=event_type,
             producer="glados.run_manager",
@@ -164,10 +164,10 @@ class RunManager:
     async def create(self, request: RunCreate) -> Run:
         """
         Create a new run in PENDING status.
-        
+
         Args:
             request: Run creation parameters
-            
+
         Returns:
             Created Run with generated ID
         """
@@ -191,10 +191,10 @@ class RunManager:
     async def get(self, run_id: str) -> Run | None:
         """
         Get run by ID.
-        
+
         Args:
             run_id: The run ID to fetch
-            
+
         Returns:
             Run if found, None otherwise
         """
@@ -203,9 +203,9 @@ class RunManager:
     async def list(self, status: RunStatus | None = None) -> tuple[list[Run], int]:
         """
         List all runs.
-        
+
         MVP-2: No pagination, returns all runs.
-        
+
         Args:
             status: Optional status filter
 
@@ -220,23 +220,23 @@ class RunManager:
     async def start(self, run_id: str) -> Run:
         """
         Start a pending run.
-        
+
         For BACKTEST mode:
         1. Create GretaService, StrategyRunner, BacktestClock
         2. Initialize all components
         3. Run clock to completion (synchronous)
         4. Return completed run
-        
+
         For LIVE/PAPER mode: (not yet implemented)
         1. Create StrategyRunner, RealtimeClock
         2. Start async execution
-        
+
         Args:
             run_id: The run ID to start
-            
+
         Returns:
             Updated Run (COMPLETED for backtest, RUNNING for live)
-            
+
         Raises:
             RunNotFoundError: If run doesn't exist
             RunNotStartableError: If run is not in PENDING status
@@ -272,13 +272,13 @@ class RunManager:
     async def _start_live(self, run: Run) -> None:
         """
         Start a live or paper trading run.
-        
+
         Creates RealtimeClock and StrategyRunner, starts async execution.
         Unlike backtest, this returns immediately while clock runs in background.
-        
+
         N-02: Added try/except/finally matching _start_backtest pattern.
         On failure: status → ERROR, stopped_at set, RunContext cleaned up.
-        
+
         Args:
             run: The run to execute
         """
@@ -304,14 +304,14 @@ class RunManager:
 
             # 3. Initialize runner
             await runner.initialize(run_id=run.id, symbols=run.symbols)
-            
+
             # 4. Wire tick handler
             async def on_tick(tick: ClockTick) -> None:
                 # Strategy processes tick (may emit order intents)
                 await runner.on_tick(tick)
-            
+
             clock.on_tick(on_tick)
-            
+
             # 5. Start clock (runs in background, doesn't block)
             await clock.start(run.id)
         except Exception:
@@ -326,9 +326,9 @@ class RunManager:
     async def _start_backtest(self, run: Run) -> None:
         """
         Execute backtest run to completion.
-        
+
         Creates per-run components, runs clock, and completes.
-        
+
         Args:
             run: The run to execute
         """
@@ -399,18 +399,18 @@ class RunManager:
     async def stop(self, run_id: str) -> Run:
         """
         Stop a run.
-        
+
         M4+ Multi-Run Implementation:
         1. Stop the clock (halts tick generation)
         2. Dispose per-run instances
         3. Remove from self._run_contexts[run_id]
-        
+
         Args:
             run_id: The run ID to stop
-            
+
         Returns:
             Updated Run with STOPPED status
-            
+
         Raises:
             RunNotFoundError: If run doesn't exist
         """
@@ -427,7 +427,7 @@ class RunManager:
             run.stopped_at = datetime.now(UTC)
             await self._emit_event(RunEvents.STOPPED, run)
             await self._persist_run(run)
-        
+
         return run
 
     async def recover(self) -> int:

@@ -19,25 +19,26 @@ ADAPTER_META = {
     "features": ["paper_trading", "live_trading", "crypto", "stocks"],
 }
 
-from datetime import datetime
-from decimal import Decimal
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator  # noqa: E402
+from datetime import datetime  # noqa: E402
+from decimal import Decimal  # noqa: E402
+from typing import Any  # noqa: E402
 
 # Alpaca SDK imports (lazy imported in connect())
 try:
-    from alpaca.trading.client import TradingClient
     from alpaca.data.historical import (
         CryptoHistoricalDataClient,
         StockHistoricalDataClient,
     )
+    from alpaca.trading.client import TradingClient
 except ImportError:
     # SDK not installed - will fail at connect() time
     TradingClient = None  # type: ignore
     CryptoHistoricalDataClient = None  # type: ignore
     StockHistoricalDataClient = None  # type: ignore
 
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
-from src.veda.models import (
+from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult  # noqa: E402
+from src.veda.models import (  # noqa: E402
     AccountInfo,
     Bar,
     OrderIntent,
@@ -127,10 +128,7 @@ class AlpacaAdapter(ExchangeAdapter):
             return  # Already connected (idempotent)
 
         if TradingClient is None:
-            raise ImportError(
-                "alpaca-py SDK is not installed. "
-                "Install with: pip install alpaca-py"
-            )
+            raise ImportError("alpaca-py SDK is not installed. Install with: pip install alpaca-py")
 
         # Verify all SDK classes are available (they're imported together,
         # but explicit check is safer than assert which can be disabled with -O)
@@ -164,9 +162,7 @@ class AlpacaAdapter(ExchangeAdapter):
             self._trading_client = None
             self._stock_data_client = None
             self._crypto_data_client = None
-            raise ConnectionError(
-                f"Account status is {account.status}, expected ACTIVE"
-            )
+            raise ConnectionError(f"Account status is {account.status}, expected ACTIVE")
 
         self._connected = True
 
@@ -190,9 +186,7 @@ class AlpacaAdapter(ExchangeAdapter):
             ConnectionError: If adapter is not connected
         """
         if not self._connected:
-            raise ConnectionError(
-                "Adapter is not connected. Call connect() first."
-            )
+            raise ConnectionError("Adapter is not connected. Call connect() first.")
 
     # =========================================================================
     # Order Management
@@ -236,9 +230,7 @@ class AlpacaAdapter(ExchangeAdapter):
                 order_params["extended_hours"] = True
 
             # Submit to Alpaca
-            response = await asyncio.to_thread(
-                self._trading_client.submit_order, **order_params
-            )
+            response = await asyncio.to_thread(self._trading_client.submit_order, **order_params)
 
             return OrderSubmitResult(
                 success=True,
@@ -270,9 +262,7 @@ class AlpacaAdapter(ExchangeAdapter):
         """
         self._require_connection()
         try:
-            await asyncio.to_thread(
-                self._trading_client.cancel_order_by_id, exchange_order_id
-            )
+            await asyncio.to_thread(self._trading_client.cancel_order_by_id, exchange_order_id)
             return True
         except Exception:
             return False
@@ -327,9 +317,7 @@ class AlpacaAdapter(ExchangeAdapter):
             if symbols is not None:
                 params["symbols"] = symbols
 
-            response = await asyncio.to_thread(
-                self._trading_client.get_orders, **params
-            )
+            response = await asyncio.to_thread(self._trading_client.get_orders, **params)
             return [self._map_alpaca_order(o) for o in response]
         except Exception:
             return []
@@ -370,9 +358,7 @@ class AlpacaAdapter(ExchangeAdapter):
     async def get_position(self, symbol: str) -> Position | None:
         """Get position for a symbol."""
         try:
-            response = await asyncio.to_thread(
-                self._trading_client.get_open_position, symbol
-            )
+            response = await asyncio.to_thread(self._trading_client.get_open_position, symbol)
             return self._map_alpaca_position(response)
         except Exception:
             return None
@@ -400,18 +386,14 @@ class AlpacaAdapter(ExchangeAdapter):
         if limit is not None:
             params["limit"] = limit
 
-        response = await asyncio.to_thread(
-            self._stock_data_client.get_stock_bars, **params
-        )
+        response = await asyncio.to_thread(self._stock_data_client.get_stock_bars, **params)
         bars_data = response.get(symbol, [])
         return [self._map_alpaca_bar(symbol, b) for b in bars_data]
 
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get latest bar for a symbol."""
         try:
-            response = await asyncio.to_thread(
-                self._stock_data_client.get_stock_latest_bar, symbol
-            )
+            response = await asyncio.to_thread(self._stock_data_client.get_stock_latest_bar, symbol)
             bar_data = response.get(symbol)
             if bar_data:
                 return self._map_alpaca_bar(symbol, bar_data)
@@ -528,7 +510,7 @@ class AlpacaAdapter(ExchangeAdapter):
         }
         return mapping.get(status, "all")
 
-    def _map_alpaca_order(self, response) -> ExchangeOrder:
+    def _map_alpaca_order(self, response: Any) -> ExchangeOrder:
         """Map Alpaca order response to ExchangeOrder."""
         filled_price = None
         if response.filled_avg_price is not None:
@@ -560,7 +542,7 @@ class AlpacaAdapter(ExchangeAdapter):
         return mapping.get(type_str, OrderType.MARKET)
 
     @staticmethod
-    def _map_alpaca_position(response) -> Position:
+    def _map_alpaca_position(response: Any) -> Position:
         """Map Alpaca position response to Position."""
         return Position(
             symbol=response.symbol,
@@ -573,7 +555,7 @@ class AlpacaAdapter(ExchangeAdapter):
         )
 
     @staticmethod
-    def _map_alpaca_bar(symbol: str, bar) -> Bar:
+    def _map_alpaca_bar(symbol: str, bar: Any) -> Bar:
         """Map Alpaca bar response to Bar."""
         return Bar(
             symbol=symbol,
@@ -594,13 +576,6 @@ class AlpacaAdapter(ExchangeAdapter):
         unit = timeframe[-1]
         value = timeframe[:-1] if len(timeframe) > 1 else "1"
 
-        if unit == "m":
-            return f"{value}Min"
-        elif unit == "h":
-            return f"{value}Hour"
-        elif unit == "d":
-            return f"{value}Day"
-        elif unit == "w":
-            return f"{value}Week"
-        else:
-            return timeframe  # Pass through
+        unit_map = {"m": "Min", "h": "Hour", "d": "Day", "w": "Week"}
+        suffix = unit_map.get(unit)
+        return f"{value}{suffix}" if suffix else timeframe

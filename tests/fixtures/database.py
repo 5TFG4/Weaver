@@ -6,26 +6,27 @@ Provides fixtures for database testing:
 - Test configuration
 - Integration tests connect to db_dev via DB_URL environment variable
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any
 
 # NOTE: asyncio, AsyncGenerator, asynccontextmanager will be needed
 # when implementing real async database fixtures with testcontainers
-
 import pytest
 
 
 @dataclass
 class TestDatabaseConfig:
     """Configuration for test database."""
-    
+
     host: str = "localhost"
     port: int = 5432
     user: str = "test"
     password: str = "test"
     database: str = "weaver_test"
-    
+
     @property
     def url(self) -> str:
         """Get async database URL."""
@@ -33,7 +34,7 @@ class TestDatabaseConfig:
             f"postgresql+asyncpg://{self.user}:{self.password}"
             f"@{self.host}:{self.port}/{self.database}"
         )
-    
+
     @property
     def sync_url(self) -> str:
         """Get sync database URL (for Alembic)."""
@@ -46,71 +47,71 @@ class TestDatabaseConfig:
 class MockDatabaseSession:
     """
     A mock database session for unit tests.
-    
+
     Use this when you don't need a real database but want to verify
     that database calls are made correctly.
     """
-    
+
     def __init__(self) -> None:
         self._committed = False
         self._rolled_back = False
         self._added: list[Any] = []
         self._queries: list[str] = []
-    
+
     @property
     def committed(self) -> bool:
         """Check if commit was called."""
         return self._committed
-    
+
     @property
     def rolled_back(self) -> bool:
         """Check if rollback was called."""
         return self._rolled_back
-    
+
     @property
     def added_objects(self) -> list[Any]:
         """Get all objects added to the session."""
         return self._added.copy()
-    
+
     def add(self, obj: Any) -> None:
         """Mock add operation."""
         self._added.append(obj)
-    
+
     async def commit(self) -> None:
         """Mock commit operation."""
         self._committed = True
-    
+
     async def rollback(self) -> None:
         """Mock rollback operation."""
         self._rolled_back = True
-    
-    async def execute(self, query: Any) -> "MockResult":
+
+    async def execute(self, query: Any) -> MockResult:
         """Mock execute operation."""
         self._queries.append(str(query))
         return MockResult()
-    
-    async def __aenter__(self) -> "MockDatabaseSession":
+
+    async def __aenter__(self) -> MockDatabaseSession:
         return self
-    
+
     async def __aexit__(self, *args: Any) -> None:
         pass
 
 
 class MockResult:
     """Mock result from database query."""
-    
+
     def __init__(self, rows: list[Any] | None = None) -> None:
         self._rows = rows or []
-    
-    def scalars(self) -> "MockResult":
+
+    def scalars(self) -> MockResult:
         return self
-    
+
     def all(self) -> list[Any]:
         return self._rows
-    
+
     def first(self) -> Any | None:
         return self._rows[0] if self._rows else None
-    
+
     def one_or_none(self) -> Any | None:
         return self._rows[0] if self._rows else None
 
@@ -118,6 +119,7 @@ class MockResult:
 # =============================================================================
 # Pytest Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def test_db_config() -> TestDatabaseConfig:
@@ -152,6 +154,7 @@ async def create_test_tables(engine: Any) -> None:
     Uses SQLAlchemy metadata to create tables.
     """
     from src.walle.models import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -163,5 +166,6 @@ async def drop_test_tables(engine: Any) -> None:
     Uses SQLAlchemy metadata to drop tables.
     """
     from src.walle.models import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

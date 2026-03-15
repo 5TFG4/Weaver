@@ -11,7 +11,6 @@ import { act } from "@testing-library/react";
 // We'll test the store directly (no React rendering needed for Zustand)
 import {
   useNotificationStore,
-  type Notification,
 } from "../../../src/stores/notificationStore";
 
 describe("notificationStore", () => {

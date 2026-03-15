@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "../../utils";
 import { OrderStatusBadge } from "../../../src/components/orders/OrderStatusBadge";
-import type { OrderSide, OrderStatus } from "../../../src/api/types";
+import type { OrderStatus } from "../../../src/api/types";
 
 describe("OrderStatusBadge", () => {
   it("renders correct color for each order status", () => {

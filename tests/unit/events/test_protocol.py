@@ -4,7 +4,7 @@ Unit Tests for Event Protocol
 Tests the Envelope and ErrorResponse classes.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -72,7 +72,7 @@ class TestEnvelope:
 
     def test_envelope_with_all_fields(self) -> None:
         """Envelope should accept all optional fields."""
-        ts = datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
+        ts = datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
 
         envelope = Envelope(
             id="evt-123",
@@ -116,7 +116,7 @@ class TestEnvelope:
         envelope = Envelope(type="test.Event", producer="test")
 
         assert envelope.ts.tzinfo is not None
-        assert envelope.ts.tzinfo == timezone.utc
+        assert envelope.ts.tzinfo == UTC
 
 
 class TestErrorResponse:

@@ -3,9 +3,11 @@ Order Factories
 
 Provides factory functions and classes for creating test orders.
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import uuid4
@@ -15,11 +17,11 @@ from uuid import uuid4
 class OrderFactory:
     """
     Factory for creating test order objects.
-    
+
     Usage:
         # Create with defaults
         order = OrderFactory.create("AAPL", "buy", 100)
-        
+
         # Create with custom fields
         order = OrderFactory.create(
             "AAPL",
@@ -28,7 +30,7 @@ class OrderFactory:
             order_type="limit",
             limit_price=Decimal("150.00"),
         )
-        
+
         # Use builder pattern
         order = (OrderFactory()
             .with_symbol("BTCUSD")
@@ -36,7 +38,7 @@ class OrderFactory:
             .with_qty(Decimal("0.5"))
             .build())
     """
-    
+
     _id: str | None = None
     _client_order_id: str | None = None
     _run_id: str | None = None
@@ -50,66 +52,66 @@ class OrderFactory:
     _filled_avg_price: Decimal | None = None
     _created_at: datetime | None = None
     _updated_at: datetime | None = None
-    
-    def with_id(self, id: str) -> "OrderFactory":
+
+    def with_id(self, id: str) -> OrderFactory:
         """Set order ID."""
         self._id = id
         return self
-    
-    def with_client_order_id(self, client_order_id: str) -> "OrderFactory":
+
+    def with_client_order_id(self, client_order_id: str) -> OrderFactory:
         """Set client order ID."""
         self._client_order_id = client_order_id
         return self
-    
-    def with_run_id(self, run_id: str) -> "OrderFactory":
+
+    def with_run_id(self, run_id: str) -> OrderFactory:
         """Set run ID."""
         self._run_id = run_id
         return self
-    
-    def with_symbol(self, symbol: str) -> "OrderFactory":
+
+    def with_symbol(self, symbol: str) -> OrderFactory:
         """Set symbol."""
         self._symbol = symbol
         return self
-    
-    def with_side(self, side: str) -> "OrderFactory":
+
+    def with_side(self, side: str) -> OrderFactory:
         """Set side (buy or sell)."""
         self._side = side
         return self
-    
-    def with_order_type(self, order_type: str) -> "OrderFactory":
+
+    def with_order_type(self, order_type: str) -> OrderFactory:
         """Set order type (market or limit)."""
         self._order_type = order_type
         return self
-    
-    def with_qty(self, qty: Decimal | float | int) -> "OrderFactory":
+
+    def with_qty(self, qty: Decimal | float | int) -> OrderFactory:
         """Set quantity."""
         self._qty = Decimal(str(qty))
         return self
-    
-    def with_limit_price(self, price: Decimal | float | None) -> "OrderFactory":
+
+    def with_limit_price(self, price: Decimal | float | None) -> OrderFactory:
         """Set limit price."""
         self._limit_price = Decimal(str(price)) if price else None
         return self
-    
-    def with_status(self, status: str) -> "OrderFactory":
+
+    def with_status(self, status: str) -> OrderFactory:
         """Set status."""
         self._status = status
         return self
-    
+
     def with_fill(
         self,
         filled_qty: Decimal | float,
         avg_price: Decimal | float,
-    ) -> "OrderFactory":
+    ) -> OrderFactory:
         """Set fill information."""
         self._filled_qty = Decimal(str(filled_qty))
         self._filled_avg_price = Decimal(str(avg_price))
         self._status = "filled" if self._filled_qty >= self._qty else "partial"
         return self
-    
+
     def build(self) -> dict[str, Any]:
         """Build the order as a dictionary."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return {
             "id": self._id or str(uuid4()),
             "client_order_id": self._client_order_id or str(uuid4()),
@@ -125,7 +127,7 @@ class OrderFactory:
             "created_at": self._created_at or now,
             "updated_at": self._updated_at or now,
         }
-    
+
     @classmethod
     def create(
         cls,
@@ -140,7 +142,7 @@ class OrderFactory:
     ) -> dict[str, Any]:
         """
         Convenience method to create an order with minimal boilerplate.
-        
+
         Args:
             symbol: Trading symbol (e.g., "AAPL", "BTCUSD")
             side: Order side ("buy" or "sell")
@@ -149,7 +151,7 @@ class OrderFactory:
             limit_price: Limit price for limit orders
             status: Order status (default: "pending")
             run_id: Optional run ID
-            
+
         Returns:
             Order as dictionary
         """
@@ -161,13 +163,13 @@ class OrderFactory:
             .with_order_type(order_type)
             .with_status(status)
         )
-        
+
         if limit_price is not None:
             factory.with_limit_price(limit_price)
-        
+
         if run_id is not None:
             factory.with_run_id(run_id)
-        
+
         return factory.build()
 
 
@@ -179,13 +181,13 @@ def create_order(
 ) -> dict[str, Any]:
     """
     Simple function to create a test order.
-    
+
     Args:
         symbol: Trading symbol
         side: Order side
         qty: Quantity
         **kwargs: Additional fields
-        
+
     Returns:
         Order as dictionary
     """
@@ -195,6 +197,7 @@ def create_order(
 # =============================================================================
 # Pre-built Order Templates
 # =============================================================================
+
 
 def create_market_buy(
     symbol: str,
@@ -269,11 +272,7 @@ def create_filled_order(
 ) -> dict[str, Any]:
     """Create a filled order."""
     factory = (
-        OrderFactory()
-        .with_symbol(symbol)
-        .with_side(side)
-        .with_qty(qty)
-        .with_fill(qty, fill_price)
+        OrderFactory().with_symbol(symbol).with_side(side).with_qty(qty).with_fill(qty, fill_price)
     )
     if run_id:
         factory = factory.with_run_id(run_id)

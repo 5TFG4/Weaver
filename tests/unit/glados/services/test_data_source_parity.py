@@ -10,8 +10,6 @@ from __future__ import annotations
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from src.events.log import InMemoryEventLog
 from src.veda.interfaces import OrderSubmitResult
 from src.veda.models import (
@@ -32,11 +30,13 @@ class TestOrderWriteReadParity:
 
         # Mock adapter accepts all orders
         adapter = MagicMock()
-        adapter.submit_order = AsyncMock(return_value=OrderSubmitResult(
-            success=True,
-            exchange_order_id="exch-001",
-            status=OrderStatus.SUBMITTED,
-        ))
+        adapter.submit_order = AsyncMock(
+            return_value=OrderSubmitResult(
+                success=True,
+                exchange_order_id="exch-001",
+                status=OrderStatus.SUBMITTED,
+            )
+        )
 
         # Mock repository that stores orders in memory
         stored = {}
@@ -85,11 +85,13 @@ class TestOrderWriteReadParity:
         from src.veda.veda_service import VedaService
 
         adapter = MagicMock()
-        adapter.submit_order = AsyncMock(return_value=OrderSubmitResult(
-            success=True,
-            exchange_order_id="exch-002",
-            status=OrderStatus.SUBMITTED,
-        ))
+        adapter.submit_order = AsyncMock(
+            return_value=OrderSubmitResult(
+                success=True,
+                exchange_order_id="exch-002",
+                status=OrderStatus.SUBMITTED,
+            )
+        )
 
         repo = MagicMock()
         repo.save = AsyncMock()
@@ -127,11 +129,13 @@ class TestOrderWriteReadParity:
         from src.veda.veda_service import VedaService
 
         adapter = MagicMock()
-        adapter.submit_order = AsyncMock(return_value=OrderSubmitResult(
-            success=True,
-            exchange_order_id="exch-003",
-            status=OrderStatus.SUBMITTED,
-        ))
+        adapter.submit_order = AsyncMock(
+            return_value=OrderSubmitResult(
+                success=True,
+                exchange_order_id="exch-003",
+                status=OrderStatus.SUBMITTED,
+            )
+        )
         adapter.cancel_order = AsyncMock(return_value=True)
 
         stored = {}

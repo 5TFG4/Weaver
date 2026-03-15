@@ -6,7 +6,7 @@ Repository for order persistence. Uses VedaOrder model from walle/models.py.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +19,6 @@ from src.veda.models import (
     TimeInForce,
 )
 from src.walle.models import VedaOrder
-
 
 # =============================================================================
 # Conversion Functions
@@ -129,15 +128,11 @@ class OrderRepository:
             OrderState if found, None otherwise
         """
         async with self._session_factory() as session:
-            result = await session.execute(
-                select(VedaOrder).where(VedaOrder.id == order_id)
-            )
+            result = await session.execute(select(VedaOrder).where(VedaOrder.id == order_id))
             row = result.scalar_one_or_none()
             return veda_order_to_order_state(row) if row else None
 
-    async def get_by_client_order_id(
-        self, client_order_id: str
-    ) -> OrderState | None:
+    async def get_by_client_order_id(self, client_order_id: str) -> OrderState | None:
         """
         Get order by client order ID.
 
@@ -171,14 +166,12 @@ class OrderRepository:
             query = select(VedaOrder).where(VedaOrder.run_id == run_id)
             if status is not None:
                 query = query.where(VedaOrder.status == status.value)
-            
+
             result = await session.execute(query)
             rows = result.scalars().all()
             return [veda_order_to_order_state(row) for row in rows]
 
-    async def list_by_status(
-        self, status: OrderStatus, limit: int = 100
-    ) -> list[OrderState]:
+    async def list_by_status(self, status: OrderStatus, limit: int = 100) -> list[OrderState]:
         """
         List orders by status.
 
@@ -191,9 +184,7 @@ class OrderRepository:
         """
         async with self._session_factory() as session:
             result = await session.execute(
-                select(VedaOrder)
-                .where(VedaOrder.status == status.value)
-                .limit(limit)
+                select(VedaOrder).where(VedaOrder.status == status.value).limit(limit)
             )
             rows = result.scalars().all()
             return [veda_order_to_order_state(row) for row in rows]

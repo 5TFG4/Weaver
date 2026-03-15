@@ -6,7 +6,7 @@ RealtimeClock emits ticks aligned to wall-clock bar boundaries.
 Uses freezegun for time mocking to avoid real waits.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -49,7 +49,7 @@ class TestRealtimeClockCurrentTime:
         clock = RealtimeClock()
         current = clock.current_time()
 
-        assert current == datetime(2024, 1, 15, 9, 30, 45, tzinfo=timezone.utc)
+        assert current == datetime(2024, 1, 15, 9, 30, 45, tzinfo=UTC)
 
     @freeze_time("2024-01-15 09:30:45", tz_offset=0)
     def test_time_has_utc_timezone(self) -> None:
@@ -57,7 +57,7 @@ class TestRealtimeClockCurrentTime:
         clock = RealtimeClock()
         current = clock.current_time()
 
-        assert current.tzinfo == timezone.utc
+        assert current.tzinfo == UTC
 
 
 class TestRealtimeClockLifecycle:
@@ -222,7 +222,7 @@ class TestRealtimeClockTicks:
 
         tick_count = 0
         # The next bar after 09:30:45 is 09:31:00
-        expected_bar_start = datetime(2024, 1, 15, 9, 31, 0, tzinfo=timezone.utc)
+        expected_bar_start = datetime(2024, 1, 15, 9, 31, 0, tzinfo=UTC)
 
         async def mock_sleep_until(target: datetime) -> None:
             nonlocal tick_count
@@ -247,7 +247,7 @@ class TestRealtimeClockSleepUntil:
         clock = RealtimeClock()
 
         # Target in the past
-        past_target = datetime.now(timezone.utc) - timedelta(seconds=10)
+        past_target = datetime.now(UTC) - timedelta(seconds=10)
 
         # Should not block
         await clock._sleep_until(past_target)
@@ -261,7 +261,7 @@ class TestRealtimeClockSleepUntil:
         clock._running = True
 
         # Target in the future
-        future_target = datetime.now(timezone.utc) + timedelta(seconds=2)
+        future_target = datetime.now(UTC) + timedelta(seconds=2)
 
         # Stop the clock after a short delay
         async def stop_clock():
@@ -384,12 +384,12 @@ class TestRealtimeClockErrorHandling:
             elif call_count > 3:
                 clock._running = False
 
-        with patch.object(
-            clock, "_sleep_until", side_effect=mock_sleep_until_with_error
+        with (
+            patch.object(clock, "_sleep_until", side_effect=mock_sleep_until_with_error),
+            patch("asyncio.sleep", new_callable=AsyncMock),
         ):
-            with patch("asyncio.sleep", new_callable=AsyncMock):
-                await clock.start("test-run")
-                await clock.wait()
+            await clock.start("test-run")
+            await clock.wait()
 
         # Should have recovered and emitted ticks
         assert len(ticks) >= 1

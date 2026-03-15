@@ -7,9 +7,11 @@ Manages Server-Sent Events connections and broadcasts events to all clients.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import Any, AsyncIterator
+from typing import Any
 
 
 @dataclass
@@ -24,18 +26,18 @@ class ServerSentEvent:
 class SSEBroadcaster:
     """
     Manages SSE connections and broadcasts events to all clients.
-    
+
     Features:
     - Multi-client support
     - Event ID tracking for reconnection support
     - Automatic client cleanup on disconnect
     - Bounded queues to prevent memory exhaustion from slow clients
-    
+
     MVP-3 Implementation:
     - Basic pub/sub pattern
     - No persistence (events not stored)
     - No heartbeat (clients may timeout)
-    
+
     Future (M3+):
     - EventLog integration for persistence
     - Heartbeat for connection keep-alive
@@ -57,7 +59,7 @@ class SSEBroadcaster:
     async def subscribe(self) -> AsyncIterator[ServerSentEvent]:
         """
         Subscribe to event stream.
-        
+
         Yields:
             ServerSentEvent objects as they are published
         """
@@ -73,11 +75,11 @@ class SSEBroadcaster:
     async def publish(self, event_type: str, data: dict[str, Any]) -> None:
         """
         Publish event to all connected clients.
-        
+
         Args:
             event_type: Event type name (e.g., "run.started")
             data: Event payload (will be JSON serialized)
-            
+
         Note:
             Uses put_nowait to avoid blocking on slow clients.
             If a client's queue is full, the event is dropped for that client.
@@ -90,8 +92,5 @@ class SSEBroadcaster:
         )
         # Use put_nowait to avoid blocking on slow clients
         for queue in self._clients.copy():
-            try:
+            with contextlib.suppress(asyncio.QueueFull):
                 queue.put_nowait(event)
-            except asyncio.QueueFull:
-                # Drop event for slow client to avoid memory buildup
-                pass

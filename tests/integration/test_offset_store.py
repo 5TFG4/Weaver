@@ -16,7 +16,6 @@ import pytest
 from src.events.offsets import PostgresOffsetStore
 from src.walle.database import Database
 
-
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
@@ -30,9 +29,7 @@ pytestmark = [
 class TestPostgresOffsetStoreBasicOperations:
     """Tests for basic offset operations."""
 
-    async def test_set_and_get_offset(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_set_and_get_offset(self, database: Database, clean_tables: None) -> None:
         """Should store and retrieve offset correctly."""
         offset_store = PostgresOffsetStore(database.session_factory)
 
@@ -51,9 +48,7 @@ class TestPostgresOffsetStoreBasicOperations:
 
         assert offset == -1
 
-    async def test_update_existing_offset(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_update_existing_offset(self, database: Database, clean_tables: None) -> None:
         """Should update offset when consumer already has one."""
         offset_store = PostgresOffsetStore(database.session_factory)
 
@@ -81,9 +76,7 @@ class TestPostgresOffsetStoreBasicOperations:
 class TestPostgresOffsetStoreGetAllOffsets:
     """Tests for retrieving all offsets."""
 
-    async def test_get_all_offsets_empty(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_get_all_offsets_empty(self, database: Database, clean_tables: None) -> None:
         """Should return empty dict when no offsets stored."""
         offset_store = PostgresOffsetStore(database.session_factory)
 
@@ -157,18 +150,14 @@ class TestPostgresOffsetStoreConcurrency:
             await offset_store.set_offset(consumer_id, value)
 
         # Update different consumers concurrently
-        await asyncio.gather(
-            *[update_consumer(f"consumer-{i}", i * 10) for i in range(10)]
-        )
+        await asyncio.gather(*[update_consumer(f"consumer-{i}", i * 10) for i in range(10)])
 
         # Verify all consumers have correct offsets
         for i in range(10):
             offset = await offset_store.get_offset(f"consumer-{i}")
             assert offset == i * 10
 
-    async def test_concurrent_read_write(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_concurrent_read_write(self, database: Database, clean_tables: None) -> None:
         """Should handle concurrent reads and writes."""
         offset_store = PostgresOffsetStore(database.session_factory)
         await offset_store.set_offset("rw-consumer", 0)
@@ -197,9 +186,7 @@ class TestPostgresOffsetStoreConcurrency:
 class TestPostgresOffsetStoreEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    async def test_large_offset_values(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_large_offset_values(self, database: Database, clean_tables: None) -> None:
         """Should handle large offset values."""
         offset_store = PostgresOffsetStore(database.session_factory)
         large_offset = 2**62  # Very large but within BIGINT range
@@ -228,9 +215,7 @@ class TestPostgresOffsetStoreEdgeCases:
         for i, consumer_id in enumerate(special_ids):
             assert await offset_store.get_offset(consumer_id) == i * 10
 
-    async def test_zero_offset(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_zero_offset(self, database: Database, clean_tables: None) -> None:
         """Should handle storing zero as an explicit offset."""
         offset_store = PostgresOffsetStore(database.session_factory)
 

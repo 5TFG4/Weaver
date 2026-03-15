@@ -21,17 +21,17 @@ from src.marvin.strategy_loader import StrategyLoader
 class DummyStrategy(BaseStrategy):
     """
     No-op strategy with configurable return actions.
-    
+
     Use for unit tests where you need to control what the strategy returns.
-    
+
     Usage:
         strategy = DummyStrategy()
         strategy.tick_actions = [StrategyAction(...)]
         strategy.data_actions = [StrategyAction(...)]
-        
+
         # Run strategy
         actions = await strategy.on_tick(tick)
-        
+
         # Assert what was received
         assert strategy.received_ticks == [tick]
     """
@@ -59,7 +59,7 @@ class DummyStrategy(BaseStrategy):
 class RecordingStrategy(BaseStrategy):
     """
     Strategy that records all inputs without producing actions.
-    
+
     Use for integration tests where you need to verify what data
     the strategy received.
     """
@@ -83,9 +83,9 @@ class RecordingStrategy(BaseStrategy):
 class PredictableStrategy(BaseStrategy):
     """
     Strategy that returns pre-configured sequence of actions.
-    
+
     Use when you need to test specific action sequences.
-    
+
     Usage:
         strategy = PredictableStrategy(
             tick_actions=[[action1], [action2], []],  # First tick: action1, second: action2, third: none
@@ -124,7 +124,7 @@ class PredictableStrategy(BaseStrategy):
 class SimpleTestStrategy(BaseStrategy):
     """
     Simple strategy that buys once when data is available.
-    
+
     Use for end-to-end integration tests that need a working strategy.
     Migrated from tests/integration/test_backtest_flow.py.
     """
@@ -164,10 +164,10 @@ class SimpleTestStrategy(BaseStrategy):
 class MockStrategyLoader(StrategyLoader):
     """
     Mock strategy loader for testing.
-    
+
     Returns a pre-configured strategy instead of loading from file.
     Migrated from tests/integration/test_backtest_flow.py.
-    
+
     Usage:
         loader = MockStrategyLoader(strategy=my_dummy_strategy)
         strategy = loader.load("any-id")  # Returns my_dummy_strategy

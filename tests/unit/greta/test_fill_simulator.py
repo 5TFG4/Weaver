@@ -107,9 +107,7 @@ class TestDefaultFillSimulator:
         assert fill.fill_price == Decimal("42000.00")
         assert fill.side == "sell"
 
-    def test_market_buy_with_slippage(
-        self, simulator: DefaultFillSimulator
-    ) -> None:
+    def test_market_buy_with_slippage(self, simulator: DefaultFillSimulator) -> None:
         """Market buy includes unfavorable slippage (pays more)."""
         config = FillSimulationConfig(slippage_bps=Decimal("5"))  # 5 bps = 0.05%
         intent = make_order_intent(side=OrderSide.BUY, order_type=OrderType.MARKET)
@@ -123,9 +121,7 @@ class TestDefaultFillSimulator:
         assert fill.fill_price == expected_price
         assert fill.slippage > Decimal("0")
 
-    def test_market_sell_with_slippage(
-        self, simulator: DefaultFillSimulator
-    ) -> None:
+    def test_market_sell_with_slippage(self, simulator: DefaultFillSimulator) -> None:
         """Market sell includes unfavorable slippage (receives less)."""
         config = FillSimulationConfig(slippage_bps=Decimal("5"))  # 5 bps
         intent = make_order_intent(side=OrderSide.SELL, order_type=OrderType.MARKET)
@@ -138,15 +134,11 @@ class TestDefaultFillSimulator:
         expected_price = Decimal("42000.00") - Decimal("21.00")
         assert fill.fill_price == expected_price
 
-    def test_market_order_with_commission(
-        self, simulator: DefaultFillSimulator
-    ) -> None:
+    def test_market_order_with_commission(self, simulator: DefaultFillSimulator) -> None:
         """Commission is calculated correctly."""
         config = FillSimulationConfig(commission_bps=Decimal("10"))  # 10 bps = 0.1%
         intent = make_order_intent(
-            side=OrderSide.BUY, 
-            order_type=OrderType.MARKET, 
-            qty=Decimal("1.0")
+            side=OrderSide.BUY, order_type=OrderType.MARKET, qty=Decimal("1.0")
         )
         bar = make_bar(open_=Decimal("42000.00"))
 
@@ -156,9 +148,7 @@ class TestDefaultFillSimulator:
         # 10 bps of 42000 = 42000 * 0.001 = 42
         assert fill.commission == Decimal("42.00")
 
-    def test_commission_minimum(
-        self, simulator: DefaultFillSimulator
-    ) -> None:
+    def test_commission_minimum(self, simulator: DefaultFillSimulator) -> None:
         """Minimum commission is enforced."""
         config = FillSimulationConfig(
             commission_bps=Decimal("1"),  # 1 bp of small order = tiny commission
@@ -313,9 +303,7 @@ class TestDefaultFillSimulator:
     # Fill At Configuration Tests
     # =========================================================================
 
-    def test_fill_at_close(
-        self, simulator: DefaultFillSimulator
-    ) -> None:
+    def test_fill_at_close(self, simulator: DefaultFillSimulator) -> None:
         """Can configure to fill at bar close."""
         config = FillSimulationConfig(fill_at="close")
         intent = make_order_intent(side=OrderSide.BUY, order_type=OrderType.MARKET)

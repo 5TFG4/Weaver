@@ -17,7 +17,7 @@ from src.veda.models import OrderSide
 class FillSimulationConfig:
     """
     Configuration for fill simulation.
-    
+
     Controls slippage, commission, and fill price behavior.
     """
 
@@ -37,9 +37,9 @@ class FillSimulationConfig:
 class SimulatedFill:
     """
     Record of a simulated fill during backtest.
-    
+
     Immutable to preserve backtest audit trail.
-    
+
     Attributes:
         slippage: Total slippage cost (price_adjustment * qty), not per-unit.
                   Represents the total dollar impact of slippage on this fill.
@@ -66,7 +66,7 @@ class SimulatedFill:
 class SimulatedPosition:
     """
     Simulated position during backtest.
-    
+
     Mutable to allow mark-to-market updates.
     """
 
@@ -90,7 +90,7 @@ class SimulatedPosition:
     def update_mark(self, price: Decimal) -> None:
         """
         Update market value and unrealized P&L based on current price.
-        
+
         Args:
             price: Current market price
         """
@@ -102,7 +102,7 @@ class SimulatedPosition:
 class BacktestStats:
     """
     Comprehensive backtest statistics.
-    
+
     Calculated at end of backtest from fills and equity curve.
     """
 
@@ -144,7 +144,7 @@ class BacktestStats:
 class BacktestResult:
     """
     Complete backtest result.
-    
+
     Contains all information about a completed backtest run.
     """
 

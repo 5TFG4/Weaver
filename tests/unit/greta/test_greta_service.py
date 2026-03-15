@@ -200,9 +200,7 @@ class TestGretaServiceCleanup:
         mock_bar_repo = AsyncMock()
         mock_bar_repo.get_bars = AsyncMock(return_value=[])
         mock_event_log = AsyncMock()
-        mock_event_log.subscribe_filtered = AsyncMock(
-            side_effect=["sub-fetch", "sub-place"]
-        )
+        mock_event_log.subscribe_filtered = AsyncMock(side_effect=["sub-fetch", "sub-place"])
         mock_event_log.unsubscribe_by_id = AsyncMock()
 
         service = GretaService(
@@ -308,9 +306,7 @@ class TestGretaServicePlaceOrder:
 
         return service
 
-    async def test_place_order_queues_for_fill(
-        self, initialized_service: GretaService
-    ) -> None:
+    async def test_place_order_queues_for_fill(self, initialized_service: GretaService) -> None:
         """Place order adds to pending orders."""
         intent = make_order_intent()
 
@@ -318,9 +314,7 @@ class TestGretaServicePlaceOrder:
 
         assert len(initialized_service.pending_orders) == 1
 
-    async def test_place_order_emits_event(
-        self, initialized_service: GretaService
-    ) -> None:
+    async def test_place_order_emits_event(self, initialized_service: GretaService) -> None:
         """Place order emits orders.Placed event."""
         intent = make_order_intent()
 
@@ -373,9 +367,7 @@ class TestGretaServiceAdvanceTo:
 
         return service
 
-    async def test_advance_to_updates_current_bar(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_advance_to_updates_current_bar(self, service_with_bars: GretaService) -> None:
         """advance_to() updates current bar for symbols."""
         ts = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
 
@@ -384,9 +376,7 @@ class TestGretaServiceAdvanceTo:
         assert "BTC/USD" in service_with_bars.current_bars
         assert service_with_bars.current_bars["BTC/USD"].timestamp == ts
 
-    async def test_advance_to_fills_market_order(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_advance_to_fills_market_order(self, service_with_bars: GretaService) -> None:
         """advance_to() fills pending market orders."""
         intent = make_order_intent(order_type=OrderType.MARKET)
         await service_with_bars.place_order(intent)
@@ -413,9 +403,7 @@ class TestGretaServiceAdvanceTo:
         assert "BTC/USD" in service_with_bars.positions
         assert service_with_bars.positions["BTC/USD"].qty == Decimal("1.0")
 
-    async def test_advance_to_records_equity(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_advance_to_records_equity(self, service_with_bars: GretaService) -> None:
         """advance_to() records equity curve point."""
         ts = datetime(2024, 1, 1, 9, 30, tzinfo=UTC)
 
@@ -504,9 +492,7 @@ class TestGretaServicePositionTracking:
 
         return service
 
-    async def test_buy_increases_position(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_buy_increases_position(self, service_with_bars: GretaService) -> None:
         """Buying increases position qty."""
         # First buy
         await service_with_bars.place_order(
@@ -516,17 +502,13 @@ class TestGretaServicePositionTracking:
 
         # Second buy
         await service_with_bars.place_order(
-            make_order_intent(
-                client_order_id="order-789", side=OrderSide.BUY, qty=Decimal("0.5")
-            )
+            make_order_intent(client_order_id="order-789", side=OrderSide.BUY, qty=Decimal("0.5"))
         )
         await service_with_bars.advance_to(datetime(2024, 1, 1, 9, 32, tzinfo=UTC))
 
         assert service_with_bars.positions["BTC/USD"].qty == Decimal("1.5")
 
-    async def test_sell_decreases_position(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_sell_decreases_position(self, service_with_bars: GretaService) -> None:
         """Selling decreases position qty."""
         # Buy first
         await service_with_bars.place_order(
@@ -536,17 +518,13 @@ class TestGretaServicePositionTracking:
 
         # Sell some
         await service_with_bars.place_order(
-            make_order_intent(
-                client_order_id="order-789", side=OrderSide.SELL, qty=Decimal("1.0")
-            )
+            make_order_intent(client_order_id="order-789", side=OrderSide.SELL, qty=Decimal("1.0"))
         )
         await service_with_bars.advance_to(datetime(2024, 1, 1, 9, 32, tzinfo=UTC))
 
         assert service_with_bars.positions["BTC/USD"].qty == Decimal("1.0")
 
-    async def test_position_unrealized_pnl_updates(
-        self, service_with_bars: GretaService
-    ) -> None:
+    async def test_position_unrealized_pnl_updates(self, service_with_bars: GretaService) -> None:
         """Position unrealized P&L updates with price."""
         # Buy at 42100 (bar open at 9:31) + slippage
         await service_with_bars.place_order(
@@ -610,17 +588,13 @@ class TestGretaServiceGetResult:
         assert isinstance(result, BacktestResult)
         assert result.run_id == "run-123"
 
-    async def test_get_result_includes_equity_curve(
-        self, completed_service: GretaService
-    ) -> None:
+    async def test_get_result_includes_equity_curve(self, completed_service: GretaService) -> None:
         """Result includes equity curve."""
         result = completed_service.get_result()
 
         assert len(result.equity_curve) > 0
 
-    async def test_get_result_includes_fills(
-        self, completed_service: GretaService
-    ) -> None:
+    async def test_get_result_includes_fills(self, completed_service: GretaService) -> None:
         """Result includes all fills."""
         # Place an order first
         await completed_service.place_order(make_order_intent())
@@ -650,12 +624,48 @@ class TestGretaServiceStatsComputation:
         event_log.subscribe_filtered = AsyncMock(return_value="sub-1")
 
         bars = [
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC), open_=Decimal("100"), high=Decimal("112"), low=Decimal("98"), close=Decimal("110")),
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 31, tzinfo=UTC), open_=Decimal("110"), high=Decimal("115"), low=Decimal("108"), close=Decimal("112")),
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 32, tzinfo=UTC), open_=Decimal("105"), high=Decimal("107"), low=Decimal("93"), close=Decimal("95")),
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 33, tzinfo=UTC), open_=Decimal("95"), high=Decimal("100"), low=Decimal("90"), close=Decimal("98")),
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 34, tzinfo=UTC), open_=Decimal("102"), high=Decimal("110"), low=Decimal("100"), close=Decimal("108")),
-            make_bar(timestamp=datetime(2024, 1, 1, 9, 35, tzinfo=UTC), open_=Decimal("108"), high=Decimal("112"), low=Decimal("106"), close=Decimal("109")),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                open_=Decimal("100"),
+                high=Decimal("112"),
+                low=Decimal("98"),
+                close=Decimal("110"),
+            ),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 31, tzinfo=UTC),
+                open_=Decimal("110"),
+                high=Decimal("115"),
+                low=Decimal("108"),
+                close=Decimal("112"),
+            ),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                open_=Decimal("105"),
+                high=Decimal("107"),
+                low=Decimal("93"),
+                close=Decimal("95"),
+            ),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 33, tzinfo=UTC),
+                open_=Decimal("95"),
+                high=Decimal("100"),
+                low=Decimal("90"),
+                close=Decimal("98"),
+            ),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 34, tzinfo=UTC),
+                open_=Decimal("102"),
+                high=Decimal("110"),
+                low=Decimal("100"),
+                close=Decimal("108"),
+            ),
+            make_bar(
+                timestamp=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                open_=Decimal("108"),
+                high=Decimal("112"),
+                low=Decimal("106"),
+                close=Decimal("109"),
+            ),
         ]
         bar_repo.get_bars = AsyncMock(return_value=bars)
 
@@ -673,36 +683,60 @@ class TestGretaServiceStatsComputation:
         )
 
         # Trade 1: Buy at open=100, Sell at open=110 → profit $10
-        await service.place_order(make_order_intent(
-            client_order_id="buy-1", side=OrderSide.BUY, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="buy-1",
+                side=OrderSide.BUY,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 30, tzinfo=UTC))
 
-        await service.place_order(make_order_intent(
-            client_order_id="sell-1", side=OrderSide.SELL, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="sell-1",
+                side=OrderSide.SELL,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 31, tzinfo=UTC))
 
         # Trade 2: Buy at open=105, Sell at open=95 → loss $10
-        await service.place_order(make_order_intent(
-            client_order_id="buy-2", side=OrderSide.BUY, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="buy-2",
+                side=OrderSide.BUY,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 32, tzinfo=UTC))
 
-        await service.place_order(make_order_intent(
-            client_order_id="sell-2", side=OrderSide.SELL, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="sell-2",
+                side=OrderSide.SELL,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 33, tzinfo=UTC))
 
         # Trade 3: Buy at open=102, Sell at open=108 → profit $6
-        await service.place_order(make_order_intent(
-            client_order_id="buy-3", side=OrderSide.BUY, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="buy-3",
+                side=OrderSide.BUY,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 34, tzinfo=UTC))
 
-        await service.place_order(make_order_intent(
-            client_order_id="sell-3", side=OrderSide.SELL, qty=Decimal("1"),
-        ))
+        await service.place_order(
+            make_order_intent(
+                client_order_id="sell-3",
+                side=OrderSide.SELL,
+                qty=Decimal("1"),
+            )
+        )
         await service.advance_to(datetime(2024, 1, 1, 9, 35, tzinfo=UTC))
 
         return service

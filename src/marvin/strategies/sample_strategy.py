@@ -6,6 +6,7 @@ Logic: Buy when price drops 1% below average, sell when up 1%.
 """
 
 from decimal import Decimal
+from typing import Any
 
 from src.marvin.base_strategy import (
     ActionType,
@@ -13,7 +14,6 @@ from src.marvin.base_strategy import (
     StrategyAction,
     StrategyOrderSide,
 )
-
 
 # Plugin metadata for auto-discovery
 STRATEGY_META = {
@@ -30,32 +30,32 @@ STRATEGY_META = {
 class SampleStrategy(BaseStrategy):
     """
     Simple strategy for testing backtest flow.
-    
+
     Logic:
         - Request 10-bar window on each tick
         - Buy when current price < 99% of average (and no position)
         - Sell when current price > 101% of average (and has position)
-    
+
     This is intentionally simple for testing purposes.
     """
 
     def __init__(self, lookback: int = 10) -> None:
         """
         Initialize TestStrategy.
-        
+
         Args:
             lookback: Number of bars to request for analysis
         """
         super().__init__()
         self._lookback = lookback
 
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick: Any) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
-        
+
         Args:
             tick: Clock tick with timestamp
-            
+
         Returns:
             List with single FetchWindow action
         """
@@ -71,14 +71,14 @@ class SampleStrategy(BaseStrategy):
     async def on_data(self, data: dict) -> list[StrategyAction]:
         """
         Handle data ready - decide whether to trade.
-        
+
         Simple mean-reversion logic:
         - Buy if current < 99% of average
         - Sell if current > 101% of average
-        
+
         Args:
             data: Dictionary with "bars" key containing list of bars
-            
+
         Returns:
             List of StrategyAction (0 or 1 items)
         """

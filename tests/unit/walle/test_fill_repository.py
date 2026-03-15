@@ -4,16 +4,14 @@ Tests for FillRecord model and FillRepository.
 D-3: Fills table + persistence for audit trail.
 """
 
-from datetime import datetime, timezone
-from decimal import Decimal
 import inspect as py_inspect
+from datetime import UTC, datetime
+from decimal import Decimal
 from typing import cast
 
-import pytest
 from sqlalchemy import Table, inspect
 
 from src.walle.models import Base, FillRecord
-
 
 # ============================================================================
 # Test: FillRecord Model Structure
@@ -51,9 +49,7 @@ class TestFillRecordModel:
     def test_order_id_is_indexed(self) -> None:
         """order_id column is indexed for lookup."""
         table = cast(Table, FillRecord.__table__)
-        order_id_indexed = any(
-            "order_id" in list(idx.columns.keys()) for idx in table.indexes
-        )
+        order_id_indexed = any("order_id" in list(idx.columns.keys()) for idx in table.indexes)
         assert order_id_indexed
 
     def test_repr(self) -> None:
@@ -64,7 +60,7 @@ class TestFillRecordModel:
             price=Decimal("150.25"),
             quantity=Decimal("10"),
             side="buy",
-            filled_at=datetime.now(timezone.utc),
+            filled_at=datetime.now(UTC),
         )
         repr_str = repr(record)
         assert "FillRecord" in repr_str
@@ -104,13 +100,13 @@ class TestFillRepositoryInterface:
         from src.walle.repositories.fill_repository import FillRepository
 
         assert hasattr(FillRepository, "save")
-        assert callable(getattr(FillRepository, "save"))
-        assert py_inspect.iscoroutinefunction(getattr(FillRepository, "save"))
+        assert callable(FillRepository.save)
+        assert py_inspect.iscoroutinefunction(FillRepository.save)
 
     def test_repository_has_list_by_order_method(self) -> None:
         """FillRepository has an async list_by_order() method."""
         from src.walle.repositories.fill_repository import FillRepository
 
         assert hasattr(FillRepository, "list_by_order")
-        assert callable(getattr(FillRepository, "list_by_order"))
-        assert py_inspect.iscoroutinefunction(getattr(FillRepository, "list_by_order"))
+        assert callable(FillRepository.list_by_order)
+        assert py_inspect.iscoroutinefunction(FillRepository.list_by_order)

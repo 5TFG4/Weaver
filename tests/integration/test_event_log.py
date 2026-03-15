@@ -19,7 +19,6 @@ from src.events.protocol import Envelope
 from src.walle.database import Database
 from src.walle.models import OutboxEvent
 
-
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
@@ -33,9 +32,7 @@ pytestmark = [
 class TestPostgresEventLogAppend:
     """Tests for appending events to the log."""
 
-    async def test_append_single_event(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_append_single_event(self, database: Database, clean_tables: None) -> None:
         """Should persist event to database with correct data."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
         envelope = Envelope(
@@ -50,9 +47,7 @@ class TestPostgresEventLogAppend:
 
         # Verify event was persisted
         async with database.session() as session:
-            result = await session.execute(
-                select(OutboxEvent).where(OutboxEvent.id == offset)
-            )
+            result = await session.execute(select(OutboxEvent).where(OutboxEvent.id == offset))
             row = result.scalar_one()
             assert row.type == "test.event"
             # Payload is stored as serialized envelope
@@ -99,9 +94,7 @@ class TestPostgresEventLogAppend:
         offset = await event_log.append(envelope)
 
         async with database.session() as session:
-            result = await session.execute(
-                select(OutboxEvent).where(OutboxEvent.id == offset)
-            )
+            result = await session.execute(select(OutboxEvent).where(OutboxEvent.id == offset))
             row = result.scalar_one()
             assert row.payload["payload"] == complex_payload
 
@@ -109,9 +102,7 @@ class TestPostgresEventLogAppend:
 class TestPostgresEventLogRead:
     """Tests for reading events from the log."""
 
-    async def test_read_from_beginning(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_read_from_beginning(self, database: Database, clean_tables: None) -> None:
         """Should read all events when starting from offset -1."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
 
@@ -132,9 +123,7 @@ class TestPostgresEventLogRead:
         assert events[1][1].type == "test.event.1"
         assert events[2][1].type == "test.event.2"
 
-    async def test_read_from_middle_offset(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_read_from_middle_offset(self, database: Database, clean_tables: None) -> None:
         """Should read only events after specified offset."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
 
@@ -155,9 +144,7 @@ class TestPostgresEventLogRead:
         assert events[0][1].type == "test.event.2"  # offset 3 contains event index 2
         assert events[0][1].payload == {"index": 2}
 
-    async def test_read_with_limit(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_read_with_limit(self, database: Database, clean_tables: None) -> None:
         """Should respect the limit parameter."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
 
@@ -240,9 +227,7 @@ class TestPostgresEventLogConcurrency:
         # All offsets should be in range 1-10
         assert all(1 <= o <= 10 for o in offsets)
 
-    async def test_read_while_writing(
-        self, database: Database, clean_tables: None
-    ) -> None:
+    async def test_read_while_writing(self, database: Database, clean_tables: None) -> None:
         """Should handle reads while writes are occurring."""
         event_log = PostgresEventLog(session_factory=database.session_factory)
 

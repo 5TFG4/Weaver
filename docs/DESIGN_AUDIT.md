@@ -401,7 +401,7 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 | `roadmap.md`        | 808 backend                     | 808 backend                     | 0     |
 | `MILESTONE_PLAN.md` | 808 backend + 86 frontend       | 808 backend + 86 frontend       | 0     |
 
-**Verified**: 2026-02-19 via `pytest --co -q` and `vitest --run`.
+**Verified**: 2026-02-19 via `pytest --co -q` and `vitest --run`.\n\n> **Post-M8 Note (2026-03-15)**: These counts are from the pre-M8 snapshot (2026-02-19). After M8 completion, the system has 1032+ tests (908+ backend + 90+ frontend) with 89.78% coverage. See `docs/TEST_COVERAGE.md` for latest measured totals.
 
 ### 7.2 Test Type Distribution (Actual)
 
@@ -418,22 +418,22 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 ### 8.1 Phase 0: Critical Contract Fixes (M8-P0) — Must Fix First
 
-- [ ] **C-01**: Fix SSE event name casing — align frontend `useSSE.ts` to use `run.Started`, `run.Stopped`, `run.Completed`, `run.Error` (match backend)
-- [ ] **C-02**: Add `POST /api/v1/runs/{run_id}/start` route in `routes/runs.py`
-- [ ] **C-03**: Fix health endpoint path — add `/api/v1` prefix to health router or change frontend
-- [ ] **C-04**: Update `GET /orders` and `GET /orders/{id}` to use VedaService when available (fall back to MockOrderService)
-- [ ] **N-02**: Add error handling to `_start_live` (copy `_start_backtest` pattern)
-- [ ] **N-09**: Unify `time_in_force` defaults
-- [ ] **M-01**: Add missing events to `ALL_EVENT_TYPES`
-- [ ] **M-03**: Add `orders.Cancelled` listener to frontend `useSSE.ts`
+- [x] **C-01**: Fix SSE event name casing — frontend `useSSE.ts` aligned to PascalCase (`run.Started`, etc.) ✅ M8
+- [x] **C-02**: Add `POST /api/v1/runs/{run_id}/start` route in `routes/runs.py` ✅ M8
+- [x] **C-03**: Fix health endpoint path — `/api/v1` prefix added to health router ✅ M8
+- [x] **C-04**: Update `GET /orders` and `GET /orders/{id}` to use VedaService when available ✅ M8
+- [x] **N-02**: Add error handling to `_start_live` (try/except/finally pattern) ✅ M8
+- [x] **N-09**: Unify `time_in_force` defaults ✅ M8
+- [x] **M-01**: Add missing events to `ALL_EVENT_TYPES` ✅ M8
+- [x] **M-03**: Add `orders.Cancelled` listener to frontend `useSSE.ts` ✅ M8
 
 ### 8.2 Phase 1: Runtime Wiring (M8-P1)
 
-- [ ] **N-01/N-07**: Fix EventLog subscriber dispatch parity (Package B + D-1)
-- [ ] Wire DomainRouter as standalone singleton (Package B + D-4)
-- [ ] Inject RunManager runtime dependencies (Package A)
-- [ ] Per-run cleanup guarantees (Package A)
-- [ ] Unify order read/write sources (Package C)
+- [x] **N-01/N-07**: Fix EventLog subscriber dispatch parity (D-1 implemented) ✅ M8
+- [x] Wire DomainRouter as standalone singleton (D-4 implemented) ✅ M8
+- [x] Inject RunManager runtime dependencies (Package A complete) ✅ M8
+- [x] Per-run cleanup guarantees (Package A complete) ✅ M8
+- [x] Unify order read/write sources (Package C / C1 implemented) ✅ M8
 
 ### 8.3 Code Quality & P1 Fixes (M8-Q)
 
@@ -448,26 +448,26 @@ The `api.md` doc at §3.3 shows the SSE event mapping table, which correctly doc
 
 ### 8.4 Documentation (M8-D)
 
-- [ ] Create `docs/architecture/greta.md`
-- [ ] Create `docs/architecture/marvin.md`
-- [ ] Create `docs/architecture/walle.md`
-- [ ] Document SSE event wire format
-- [ ] Document error handling strategy
-- [ ] Fix ARCHITECTURE.md §5 false SSE run_id claim
-- [ ] Update veda.md env var names (L-04) and OrderStatus enum (L-05)
+- [x] Create `docs/architecture/greta.md` ✅ M8
+- [x] Create `docs/architecture/marvin.md` ✅ M8
+- [x] Create `docs/architecture/walle.md` ✅ M8
+- [x] Document SSE event wire format ✅ M8
+- [x] Document error handling strategy ✅ M8
+- [x] Fix ARCHITECTURE.md §5 false SSE run_id claim ✅ M8
+- [x] Update veda.md env var names (L-04) and OrderStatus enum (L-05) ✅ M8
 
 ### 8.5 Code Cleanup (Low)
 
-- [ ] **L-01**: Delete orphan files: `src/models.py`, `src/constants.py`, `src/veda/base_api_handler.py`
-- [ ] **L-02**: Resolve 3 TODO/FIXME comments
-- [ ] **L-03**: Document or unify dual `Bar` types
+- [x] **L-01**: Delete orphan files: `src/models.py`, `src/constants.py`, `src/veda/base_api_handler.py` ✅ M8
+- [x] **L-02**: Resolve 3 TODO/FIXME comments ✅ M8
+- [x] **L-03**: Document or unify dual `Bar` types ✅ M8
 
 ### 8.6 Commit & Merge Checklist
 
-- [ ] Apply M8-P0 critical fixes on `haro_update`
-- [ ] Run full test suite (both backend and frontend)
-- [ ] Update test counts in docs after each phase
-- [ ] Merge to `main` after M8 complete
+- [x] Apply M8-P0 critical fixes ✅ M8
+- [x] Run full test suite (both backend and frontend) ✅ M8
+- [x] Update test counts in docs after each phase ✅ M8
+- [x] Merge after M8 complete ✅ M8
 
 ---
 

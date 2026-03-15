@@ -9,22 +9,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-
+from enum import StrEnum
 
 # =============================================================================
 # Enums
 # =============================================================================
 
 
-class OrderSide(str, Enum):
+class OrderSide(StrEnum):
     """Order side."""
 
     BUY = "buy"
     SELL = "sell"
 
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     """Order type."""
 
     MARKET = "market"
@@ -33,7 +32,7 @@ class OrderType(str, Enum):
     STOP_LIMIT = "stop_limit"
 
 
-class TimeInForce(str, Enum):
+class TimeInForce(StrEnum):
     """Order time-in-force options."""
 
     DAY = "day"  # Valid until end of regular trading hours
@@ -42,7 +41,7 @@ class TimeInForce(str, Enum):
     FOK = "fok"  # Fill or kill
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """Order lifecycle status."""
 
     # Initial states
@@ -61,7 +60,7 @@ class OrderStatus(str, Enum):
     EXPIRED = "expired"  # Time-in-force expired
 
 
-class PositionSide(str, Enum):
+class PositionSide(StrEnum):
     """Position side."""
 
     LONG = "long"

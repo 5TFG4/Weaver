@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor, within } from "../../utils";
+import { render, screen, waitFor } from "../../utils";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { OrdersPage } from "../../../src/pages/OrdersPage";

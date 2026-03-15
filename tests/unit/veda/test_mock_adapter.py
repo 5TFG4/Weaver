@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytest
 
 from src.veda.adapters.mock_adapter import MockExchangeAdapter
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
+from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
     AccountInfo,
     Bar,
@@ -20,7 +20,6 @@ from src.veda.models import (
     OrderSide,
     OrderStatus,
     OrderType,
-    Position,
     Quote,
     TimeInForce,
     Trade,
@@ -149,9 +148,7 @@ class TestMockAdapterSubmitOrder:
         assert result1.exchange_order_id != result2.exchange_order_id
 
     @pytest.mark.asyncio
-    async def test_market_order_fills_immediately(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_market_order_fills_immediately(self, mock_adapter: MockExchangeAdapter) -> None:
         """Market orders should fill immediately in mock."""
         intent = OrderIntent(
             run_id="run-123",
@@ -173,9 +170,7 @@ class TestMockAdapterSubmitOrder:
         assert order.filled_qty == Decimal("1.0")
 
     @pytest.mark.asyncio
-    async def test_limit_order_stays_pending(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_limit_order_stays_pending(self, mock_adapter: MockExchangeAdapter) -> None:
         """Limit orders should not auto-fill, stay accepted."""
         intent = OrderIntent(
             run_id="run-123",
@@ -258,9 +253,7 @@ class TestMockAdapterGetOrder:
         assert order is None
 
     @pytest.mark.asyncio
-    async def test_get_order_has_timestamps(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_order_has_timestamps(self, mock_adapter: MockExchangeAdapter) -> None:
         """Order should have created_at and updated_at timestamps."""
         intent = OrderIntent(
             run_id="run-123",
@@ -285,9 +278,7 @@ class TestMockAdapterListOrders:
     """Tests for MockExchangeAdapter.list_orders()."""
 
     @pytest.mark.asyncio
-    async def test_list_orders_returns_all(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_list_orders_returns_all(self, mock_adapter: MockExchangeAdapter) -> None:
         """list_orders should return all submitted orders."""
         for i in range(3):
             intent = OrderIntent(
@@ -306,9 +297,7 @@ class TestMockAdapterListOrders:
         assert len(orders) == 3
 
     @pytest.mark.asyncio
-    async def test_list_orders_empty_initially(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_list_orders_empty_initially(self, mock_adapter: MockExchangeAdapter) -> None:
         """list_orders should return empty list initially."""
         orders = await mock_adapter.list_orders()
         assert orders == []
@@ -323,9 +312,7 @@ class TestMockAdapterCancelOrder:
     """Tests for MockExchangeAdapter.cancel_order()."""
 
     @pytest.mark.asyncio
-    async def test_cancel_pending_order(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_cancel_pending_order(self, mock_adapter: MockExchangeAdapter) -> None:
         """cancel_order should work for accepted orders."""
         intent = OrderIntent(
             run_id="run-123",
@@ -387,9 +374,7 @@ class TestMockAdapterAccount:
     """Tests for MockExchangeAdapter account methods."""
 
     @pytest.mark.asyncio
-    async def test_get_account_returns_mock_data(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_account_returns_mock_data(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_account should return mock account info."""
         account = await mock_adapter.get_account()
         assert isinstance(account, AccountInfo)
@@ -397,9 +382,7 @@ class TestMockAdapterAccount:
         assert account.status == "ACTIVE"
 
     @pytest.mark.asyncio
-    async def test_get_positions_returns_list(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_positions_returns_list(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_positions should return positions list."""
         positions = await mock_adapter.get_positions()
         assert isinstance(positions, list)
@@ -422,9 +405,7 @@ class TestMockAdapterMarketData:
     """Tests for MockExchangeAdapter market data methods."""
 
     @pytest.mark.asyncio
-    async def test_get_bars_returns_mock_data(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_bars_returns_mock_data(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_bars should return mock OHLCV data."""
         bars = await mock_adapter.get_bars(
             symbol="BTC/USD",
@@ -435,9 +416,7 @@ class TestMockAdapterMarketData:
         assert all(isinstance(b, Bar) for b in bars)
 
     @pytest.mark.asyncio
-    async def test_get_bars_respects_limit(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_bars_respects_limit(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_bars should respect limit parameter."""
         bars = await mock_adapter.get_bars(
             symbol="BTC/USD",
@@ -448,9 +427,7 @@ class TestMockAdapterMarketData:
         assert len(bars) <= 5
 
     @pytest.mark.asyncio
-    async def test_get_bars_has_correct_symbol(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_bars_has_correct_symbol(self, mock_adapter: MockExchangeAdapter) -> None:
         """Bars should have correct symbol."""
         bars = await mock_adapter.get_bars(
             symbol="ETH/USD",
@@ -460,9 +437,7 @@ class TestMockAdapterMarketData:
         assert all(b.symbol == "ETH/USD" for b in bars)
 
     @pytest.mark.asyncio
-    async def test_get_latest_bar_returns_bar(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_latest_bar_returns_bar(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_latest_bar should return a Bar."""
         bar = await mock_adapter.get_latest_bar("BTC/USD")
         assert bar is not None
@@ -470,9 +445,7 @@ class TestMockAdapterMarketData:
         assert bar.symbol == "BTC/USD"
 
     @pytest.mark.asyncio
-    async def test_get_latest_quote_returns_quote(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_latest_quote_returns_quote(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_latest_quote should return a Quote."""
         quote = await mock_adapter.get_latest_quote("BTC/USD")
         assert quote is not None
@@ -482,9 +455,7 @@ class TestMockAdapterMarketData:
         assert quote.ask_price > 0
 
     @pytest.mark.asyncio
-    async def test_get_latest_trade_returns_trade(
-        self, mock_adapter: MockExchangeAdapter
-    ) -> None:
+    async def test_get_latest_trade_returns_trade(self, mock_adapter: MockExchangeAdapter) -> None:
         """get_latest_trade should return a Trade."""
         trade = await mock_adapter.get_latest_trade("BTC/USD")
         assert trade is not None

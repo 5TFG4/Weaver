@@ -5,7 +5,7 @@ TDD tests for the backtest clock implementation.
 BacktestClock runs as fast as possible (no sleeping) for simulation.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -17,13 +17,13 @@ from src.glados.clock.base import ClockTick
 @pytest.fixture
 def sample_start_time() -> datetime:
     """Standard start time for tests."""
-    return datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
 
 
 @pytest.fixture
 def sample_end_time() -> datetime:
     """Standard end time for tests (30 minutes later)."""
-    return datetime(2024, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ class TestClockTick:
         """Should serialize tick to dictionary."""
         tick = ClockTick(
             run_id="test-run",
-            ts=datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc),
+            ts=datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC),
             timeframe="1m",
             bar_index=1,
             is_backtest=True,
@@ -61,7 +61,7 @@ class TestClockTick:
         """ClockTick should be immutable (frozen dataclass)."""
         tick = ClockTick(
             run_id="test-run",
-            ts=datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc),
+            ts=datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC),
             timeframe="1m",
             bar_index=1,
         )
@@ -498,7 +498,7 @@ class TestBacktestClockEdgeCases:
     @pytest.mark.asyncio
     async def test_single_tick_when_start_equals_end(self) -> None:
         """Should emit exactly one tick when start == end."""
-        start = datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
         clock = BacktestClock(
             start_time=start,
             end_time=start,  # Same as start
@@ -517,8 +517,8 @@ class TestBacktestClockEdgeCases:
     @pytest.mark.asyncio
     async def test_handles_5m_timeframe(self) -> None:
         """Should work correctly with 5-minute timeframe."""
-        start = datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
+        end = datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC)
         clock = BacktestClock(
             start_time=start,
             end_time=end,
@@ -538,8 +538,8 @@ class TestBacktestClockEdgeCases:
     @pytest.mark.asyncio
     async def test_handles_1h_timeframe(self) -> None:
         """Should work correctly with 1-hour timeframe."""
-        start = datetime(2024, 1, 15, 9, 0, 0, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 15, 9, 0, 0, tzinfo=UTC)
+        end = datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
         clock = BacktestClock(
             start_time=start,
             end_time=end,

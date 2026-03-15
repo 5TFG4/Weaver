@@ -22,13 +22,13 @@ from .exceptions import (
     MarvinError,
     StrategyNotFoundError,
 )
-from .strategy_loader import PluginStrategyLoader, SimpleStrategyLoader, StrategyLoader
-from .strategy_meta import StrategyMeta
-from .strategy_runner import StrategyRunner
 
 # For backwards compatibility, import SampleStrategy from new location
 # This can be removed once all usages migrate to PluginStrategyLoader
 from .strategies.sample_strategy import SampleStrategy
+from .strategy_loader import PluginStrategyLoader, SimpleStrategyLoader, StrategyLoader
+from .strategy_meta import StrategyMeta
+from .strategy_runner import StrategyRunner
 
 
 class Marvin:

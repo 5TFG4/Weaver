@@ -9,6 +9,8 @@
 > **Status**: ✅ M6 Complete — 808 tests passing  
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution
 
+> **✅ Historical Baseline Note (2026-03-15)**: This document is a **post-M5 audit baseline** from 2026-02-03. The critical and medium issues listed below were systematically resolved during M6, M7, and M8 milestones. For current implementation status, see `DESIGN_AUDIT.md` (M8 quality gate) and `M8_FINAL_PYRAMID_REVIEW.md` (post-implementation review). Current test count: 1032+ tests, 89.78% coverage.
+
 ---
 
 ## Executive Summary

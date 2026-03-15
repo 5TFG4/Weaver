@@ -437,14 +437,14 @@ Each completed layer must produce a short packet (added to the Review Findings s
 
 ### P2
 
-- [ ] Record and reconcile version drift in M7 design doc (React/Router versions) or update implementation notes.
-- [ ] **[N-05]** Refactor `StrategyAction` from stringly-typed to proper enum/union type.
-- [ ] **[N-08]** Compute Sharpe, Sortino, max drawdown in BacktestResult (currently all zeros).
-- [ ] Create `docs/architecture/greta.md` — promote from milestone doc to living architecture.
-- [ ] Create `docs/architecture/marvin.md` — same.
-- [ ] Create `docs/architecture/walle.md` — document schema decisions, repository patterns, migration strategy.
-- [ ] Document SSE event wire format (exact bytes on wire).
-- [ ] Document error handling strategy (exception hierarchy, HTTP mapping, event pipeline propagation).
+- [x] Record and reconcile version drift in M7 design doc (React/Router versions). ✅ M8
+- [ ] **[N-05]** Refactor `StrategyAction` from stringly-typed to proper enum/union type. _(deferred to post-M8)_
+- [ ] **[N-08]** Compute Sharpe, Sortino, max drawdown in BacktestResult (currently all zeros). _(deferred to post-M8)_
+- [x] Create `docs/architecture/greta.md` — promoted from milestone doc. ✅ M8
+- [x] Create `docs/architecture/marvin.md` — promoted from milestone doc. ✅ M8
+- [x] Create `docs/architecture/walle.md` — documented schema decisions, repository patterns, migration strategy. ✅ M8
+- [x] Document SSE event wire format. ✅ M8
+- [x] Document error handling strategy. ✅ M8
 
 ---
 
@@ -459,18 +459,19 @@ After each segment:
 
 ---
 
-## 9. Next Focus (Active — M8 Execution)
+## 9. Next Focus (Active — M9 CI Pipeline)
 
-**M8 has started (2026-02-19).** All design decisions (D-1–D-5) are locked. M8 focuses on critical fixes and improvements. E2E testing is deferred to M9.
+**M8 completed (2026-02-26).** All design decisions (D-1–D-5) implemented. All P0/P1 issues resolved. Next milestone: M9 (CI Deployment Pipeline).
 
 **Execution order:**
 
 1. ✅ Lock D-1–D-5 (all locked)
-2. 🔄 M8-P0: Critical contract fixes (C-01–C-04, N-02, N-09, M-01, M-03)
-3. ⏳ M8-P1: Runtime wiring (Package A → B → C)
-4. ⏳ M8-Q: Code quality + P1 standalone fixes
-5. ⏳ M8-D: Documentation completion
-6. ⏳ M9: E2E tests (Playwright) + Release preparation
+2. ✅ M8-P0: Critical contract fixes (C-01–C-04, N-02, N-09, M-01, M-03)
+3. ✅ M8-P1: Runtime wiring (Package A → B → C)
+4. ✅ M8-Q: Code quality + P1 standalone fixes
+5. ✅ M8-D: Documentation completion
+6. ⏳ M9: CI Deployment Pipeline
+7. ⏳ M10: E2E tests (Playwright) + Release preparation
 
 ### 9.1 Package A — Run lifecycle design (Issues 1 + 5 + 6)
 
