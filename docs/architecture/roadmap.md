@@ -47,6 +47,8 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
+> **Latest measured totals (2026-03-15)**: 1032+ tests, 89.78% coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
+
 **Active Milestone**: M9 (CI Deployment Pipeline)
 
 **Last State Update**: 2026-02-25

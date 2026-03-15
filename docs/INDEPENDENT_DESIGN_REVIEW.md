@@ -12,6 +12,8 @@
 > **Constraint**: Documentation-only — no code changes  
 > **Status**: All findings (N-01–N-10) and decisions (D-1–D-5) incorporated into M8 plan
 
+> **✅ Post-M8 Note (2026-02-26)**: This document is a **pre-M8 baseline** from 2026-02-16. All P0 findings (N-01, N-02) and P1 findings (N-03, N-04, N-06, N-09, N-10) identified here have been **resolved in M8**. For current status, see `DESIGN_AUDIT.md` and `M8_FINAL_PYRAMID_REVIEW.md`. Findings N-05 and N-08 (P2) are deferred to post-M8.
+
 ---
 
 ## Table of Contents
