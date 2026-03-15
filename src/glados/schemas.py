@@ -7,7 +7,7 @@ Pydantic models for API request/response validation.
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 # =============================================================================
 
 
-class RunMode(str, Enum):
+class RunMode(StrEnum):
     """Trading run mode."""
 
     LIVE = "live"
@@ -25,7 +25,7 @@ class RunMode(str, Enum):
     BACKTEST = "backtest"
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     """Run lifecycle status."""
 
     PENDING = "pending"  # Created, not started
@@ -96,14 +96,14 @@ class RunListResponse(BaseModel):
 # =============================================================================
 
 
-class OrderSide(str, Enum):
+class OrderSide(StrEnum):
     """Order side."""
 
     BUY = "buy"
     SELL = "sell"
 
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     """Order type."""
 
     MARKET = "market"
@@ -112,7 +112,7 @@ class OrderType(str, Enum):
     STOP_LIMIT = "stop_limit"
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """Order status."""
 
     PENDING = "pending"

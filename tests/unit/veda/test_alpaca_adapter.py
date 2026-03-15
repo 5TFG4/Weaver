@@ -7,8 +7,11 @@ MVP-6: AlpacaAdapter (Paper Trading)
 - Proper error handling
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -21,6 +24,9 @@ from src.veda.models import (
     OrderType,
     TimeInForce,
 )
+
+if TYPE_CHECKING:
+    from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 
 # ============================================================================
 # Test: AlpacaAdapter Interface
@@ -528,7 +534,7 @@ class TestAlpacaAdapterAsyncWrapping:
     """Sync Alpaca SDK calls must run in asyncio.to_thread to avoid blocking."""
 
     @pytest.fixture
-    def adapter(self) -> "AlpacaAdapter":
+    def adapter(self) -> AlpacaAdapter:
         from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 
         a = AlpacaAdapter(api_key="k", api_secret="s", paper=True)

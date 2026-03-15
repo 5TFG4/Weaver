@@ -405,7 +405,7 @@ class GretaService:
             },
         )
 
-    async def _process_pending_orders(self, timestamp: datetime) -> None:
+    async def _process_pending_orders(self, _timestamp: datetime) -> None:
         """Process all pending orders, attempting to fill them."""
         filled_order_ids = []
 

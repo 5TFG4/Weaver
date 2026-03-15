@@ -48,7 +48,7 @@ class SampleStrategy(BaseStrategy):
         super().__init__()
         self._lookback = lookback
 
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
 

@@ -74,7 +74,7 @@ class SMAStrategy(BaseStrategy):
         self._config = config or SMAConfig()
         self._prev_fast_above_slow: bool | None = None
 
-    async def on_tick(self, tick) -> list[StrategyAction]:
+    async def on_tick(self, _tick) -> list[StrategyAction]:
         """
         Handle clock tick - request data window.
 
@@ -190,29 +190,27 @@ class SMAStrategy(BaseStrategy):
             return []
 
         # Bullish crossover: fast crosses above slow
-        if fast_above_slow and not self._prev_fast_above_slow:
-            if not self._has_position:
-                self._has_position = True
-                return [
-                    StrategyAction(
-                        type=ActionType.PLACE_ORDER,
-                        symbol=symbol,
-                        side=StrategyOrderSide.BUY,
-                        qty=self._config.qty,
-                    )
-                ]
+        if fast_above_slow and not self._prev_fast_above_slow and not self._has_position:
+            self._has_position = True
+            return [
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol=symbol,
+                    side=StrategyOrderSide.BUY,
+                    qty=self._config.qty,
+                )
+            ]
 
         # Bearish crossover: fast crosses below slow
-        if not fast_above_slow and self._prev_fast_above_slow:
-            if self._has_position:
-                self._has_position = False
-                return [
-                    StrategyAction(
-                        type=ActionType.PLACE_ORDER,
-                        symbol=symbol,
-                        side=StrategyOrderSide.SELL,
-                        qty=self._config.qty,
-                    )
-                ]
+        if not fast_above_slow and self._prev_fast_above_slow and self._has_position:
+            self._has_position = False
+            return [
+                StrategyAction(
+                    type=ActionType.PLACE_ORDER,
+                    symbol=symbol,
+                    side=StrategyOrderSide.SELL,
+                    qty=self._config.qty,
+                )
+            ]
 
         return []

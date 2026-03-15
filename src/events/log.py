@@ -141,7 +141,7 @@ class InMemoryEventLog(EventLog):
         self,
         envelope: Envelope,
         *,
-        connection: Any | None = None,
+        _connection: Any | None = None,
     ) -> int:
         """Append an event to the in-memory log."""
         async with self._lock:
@@ -440,9 +440,9 @@ class PostgresEventLog(EventLog):
 
     def _on_notify(
         self,
-        connection: Any,
-        pid: int,
-        channel: str,
+        _connection: Any,
+        _pid: int,
+        _channel: str,
         payload: str,
     ) -> None:
         """Handle NOTIFY callback."""

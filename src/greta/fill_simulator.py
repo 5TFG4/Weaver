@@ -139,7 +139,7 @@ class DefaultFillSimulator:
     def _calculate_slippage(
         self,
         price: Decimal,
-        side: OrderSide,
+        _side: OrderSide,
         config: FillSimulationConfig,
     ) -> Decimal:
         """

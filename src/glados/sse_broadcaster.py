@@ -7,6 +7,7 @@ Manages Server-Sent Events connections and broadcasts events to all clients.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -91,8 +92,5 @@ class SSEBroadcaster:
         )
         # Use put_nowait to avoid blocking on slow clients
         for queue in self._clients.copy():
-            try:
+            with contextlib.suppress(asyncio.QueueFull):
                 queue.put_nowait(event)
-            except asyncio.QueueFull:
-                # Drop event for slow client to avoid memory buildup
-                pass

@@ -24,12 +24,12 @@ from src.glados.services.run_manager import RunManager
 
 def _make_run_create(**overrides: Any) -> RunCreate:
     """Create a RunCreate request with defaults."""
-    defaults: dict[str, Any] = dict(
-        strategy_id="sma",
-        mode=RunMode.BACKTEST,
-        symbols=["AAPL"],
-        timeframe="1h",
-    )
+    defaults: dict[str, Any] = {
+        "strategy_id": "sma",
+        "mode": RunMode.BACKTEST,
+        "symbols": ["AAPL"],
+        "timeframe": "1h",
+    }
     defaults.update(overrides)
     return RunCreate(**defaults)
 

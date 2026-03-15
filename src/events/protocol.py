@@ -139,9 +139,7 @@ class Subscription:
         if "*" not in self.event_types and envelope.type not in self.event_types:
             return False
         # Check custom filter function
-        if self.filter_fn is not None and not self.filter_fn(envelope):
-            return False
-        return True
+        return self.filter_fn is None or self.filter_fn(envelope)
 
 
 @dataclass(frozen=True)

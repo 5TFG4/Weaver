@@ -7,24 +7,24 @@ Abstract base class for trading strategies.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 
-class ActionType(str, Enum):
+class ActionType(StrEnum):
     """Type of strategy action."""
 
     FETCH_WINDOW = "fetch_window"
     PLACE_ORDER = "place_order"
 
 
-class StrategyOrderSide(str, Enum):
+class StrategyOrderSide(StrEnum):
     """Order side for strategy actions."""
 
     BUY = "buy"
     SELL = "sell"
 
 
-class StrategyOrderType(str, Enum):
+class StrategyOrderType(StrEnum):
     """Order type for strategy actions."""
 
     MARKET = "market"

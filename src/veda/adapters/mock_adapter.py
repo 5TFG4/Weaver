@@ -16,13 +16,13 @@ ADAPTER_META = {
     "class": "MockExchangeAdapter",
     "features": ["paper_trading", "testing"],
 }
-from collections.abc import AsyncIterator
-from datetime import UTC, datetime, timedelta
-from decimal import Decimal
-from uuid import uuid4
+from collections.abc import AsyncIterator  # noqa: E402
+from datetime import UTC, datetime, timedelta  # noqa: E402
+from decimal import Decimal  # noqa: E402
+from uuid import uuid4  # noqa: E402
 
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
-from src.veda.models import (
+from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult  # noqa: E402
+from src.veda.models import (  # noqa: E402
     AccountInfo,
     Bar,
     OrderIntent,
@@ -346,13 +346,13 @@ class MockExchangeAdapter(ExchangeAdapter):
     # Streaming (Stub implementations)
     # =========================================================================
 
-    async def stream_bars(self, symbols: list[str]) -> AsyncIterator[Bar]:
+    async def stream_bars(self, _symbols: list[str]) -> AsyncIterator[Bar]:
         """Stream bars (not implemented in mock)."""
         # Yield nothing - streaming not needed for unit tests
         if False:
             yield  # Make this an async generator that yields nothing
 
-    async def stream_quotes(self, symbols: list[str]) -> AsyncIterator[Quote]:
+    async def stream_quotes(self, _symbols: list[str]) -> AsyncIterator[Quote]:
         """Stream quotes (not implemented in mock)."""
         # Yield nothing - streaming not needed for unit tests
         if False:

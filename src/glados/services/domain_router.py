@@ -73,11 +73,8 @@ class DomainRouter:
             return
 
         # Determine target domain based on run mode
-        if run.mode == RunMode.BACKTEST:
-            target_domain = "backtest"
-        else:
-            # PAPER and LIVE both use live handlers
-            target_domain = "live"
+        # PAPER and LIVE both use live handlers
+        target_domain = "backtest" if run.mode == RunMode.BACKTEST else "live"
 
         # Get the base event type (without domain prefix)
         base_type = EVENT_TYPE_MAPPING.get(event.type)

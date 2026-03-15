@@ -180,12 +180,12 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 # Database Fixtures (Integration Tests)
 # =============================================================================
 
-import os
-import subprocess
-from collections.abc import AsyncGenerator
+import os  # noqa: E402
+import subprocess  # noqa: E402
+from collections.abc import AsyncGenerator  # noqa: E402
 
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import pytest_asyncio  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
 
 
 def _get_database_url() -> str | None:

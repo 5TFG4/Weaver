@@ -19,10 +19,10 @@ ADAPTER_META = {
     "features": ["paper_trading", "live_trading", "crypto", "stocks"],
 }
 
-from collections.abc import AsyncIterator
-from datetime import datetime
-from decimal import Decimal
-from typing import Any
+from collections.abc import AsyncIterator  # noqa: E402
+from datetime import datetime  # noqa: E402
+from decimal import Decimal  # noqa: E402
+from typing import Any  # noqa: E402
 
 # Alpaca SDK imports (lazy imported in connect())
 try:
@@ -37,8 +37,8 @@ except ImportError:
     CryptoHistoricalDataClient = None  # type: ignore
     StockHistoricalDataClient = None  # type: ignore
 
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
-from src.veda.models import (
+from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult  # noqa: E402
+from src.veda.models import (  # noqa: E402
     AccountInfo,
     Bar,
     OrderIntent,
@@ -576,13 +576,6 @@ class AlpacaAdapter(ExchangeAdapter):
         unit = timeframe[-1]
         value = timeframe[:-1] if len(timeframe) > 1 else "1"
 
-        if unit == "m":
-            return f"{value}Min"
-        elif unit == "h":
-            return f"{value}Hour"
-        elif unit == "d":
-            return f"{value}Day"
-        elif unit == "w":
-            return f"{value}Week"
-        else:
-            return timeframe  # Pass through
+        unit_map = {"m": "Min", "h": "Hour", "d": "Day", "w": "Week"}
+        suffix = unit_map.get(unit)
+        return f"{value}{suffix}" if suffix else timeframe

@@ -345,7 +345,7 @@ class TestInMemoryEventLogFallback:
         # Temporarily unset DB_URL to simulate no-database mode
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 # event_log should exist (not None)
                 assert app.state.event_log is not None
                 assert isinstance(app.state.event_log, InMemoryEventLog)
@@ -367,7 +367,7 @@ class TestInMemoryEventLogFallback:
 
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 run_manager = app.state.run_manager
                 assert run_manager._event_log is not None
         finally:
@@ -388,7 +388,7 @@ class TestInMemoryEventLogFallback:
 
         old_db_url = os.environ.pop("DB_URL", None)
         try:
-            with TestClient(app) as client:
+            with TestClient(app) as _client:
                 event_log = app.state.event_log
                 assert isinstance(event_log, InMemoryEventLog)
                 # Verify broadcaster is subscribed (has at least one subscriber)

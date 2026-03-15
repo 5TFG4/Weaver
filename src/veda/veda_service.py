@@ -143,10 +143,7 @@ class VedaService:
         await self._repository.save(state)
 
         # 3. Emit event
-        if state.status == OrderStatus.REJECTED:
-            event_type = "orders.Rejected"
-        else:
-            event_type = "orders.Created"
+        event_type = "orders.Rejected" if state.status == OrderStatus.REJECTED else "orders.Created"
         await self._emit_order_event(event_type, state)
 
         return state
