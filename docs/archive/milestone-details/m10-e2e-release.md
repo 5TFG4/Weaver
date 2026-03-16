@@ -125,14 +125,15 @@ All results measured locally on 2026-03-15; these are facts, not assumptions.
 
 **The Problem**: Without Alpaca credentials (E2E stack has none), `VedaService = None`. The orders route then falls back to `MockOrderService`, which returns **2 hardcoded mock orders** regardless of any actual trading activity:
 
-| Mock Order | Symbol | Side | Type | Status | run_id |
-|------------|--------|------|------|--------|--------|
-| order-123 | BTC/USD | BUY | MARKET | **FILLED** | run-123 |
-| order-456 | ETH/USD | SELL | LIMIT | **SUBMITTED** | run-123 |
+| Mock Order | Symbol  | Side | Type   | Status        | run_id  |
+| ---------- | ------- | ---- | ------ | ------------- | ------- |
+| order-123  | BTC/USD | BUY  | MARKET | **FILLED**    | run-123 |
+| order-456  | ETH/USD | SELL | LIMIT  | **SUBMITTED** | run-123 |
 
 **Impact on tests**: Any test that asserts "orders appear after backtest" by checking GET /orders would be a **FALSE test** — the orders page ALWAYS shows these 2 mock orders, whether or not a backtest ran. The data is completely unrelated to actual trading activity.
 
 **Fallback logic (code trace)**:
+
 ```
 GET /api/v1/orders → orders_router.list_orders()
   → if veda_service is not None:  (False in E2E — no Alpaca creds)
@@ -164,20 +165,21 @@ Strategy → PLACE_ORDER → DomainRouter → backtest.PlaceOrder
 
 #### 1.7.3 SSE Event Type Names — Backend vs Frontend Mismatch
 
-| Backend Emitter | Event Type String | Frontend Listener | Match? |
-|-----------------|-------------------|-------------------|--------|
-| RunManager | `run.Started` | `addEventListener("run.Started")` | ✅ |
-| RunManager | `run.Completed` | `addEventListener("run.Completed")` | ✅ |
-| RunManager | `run.Stopped` | `addEventListener("run.Stopped")` | ✅ |
-| RunManager | `run.Error` | `addEventListener("run.Error")` | ✅ |
-| VedaService | `orders.Created` | `addEventListener("orders.Created")` | ✅ |
-| GretaService | **`orders.Placed`** | ❌ No listener for `orders.Placed` | **❌ MISMATCH** |
-| GretaService | `orders.Filled` | `addEventListener("orders.Filled")` | ✅ |
-| VedaService | `orders.Rejected` | `addEventListener("orders.Rejected")` | ✅ |
+| Backend Emitter | Event Type String   | Frontend Listener                     | Match?          |
+| --------------- | ------------------- | ------------------------------------- | --------------- |
+| RunManager      | `run.Started`       | `addEventListener("run.Started")`     | ✅              |
+| RunManager      | `run.Completed`     | `addEventListener("run.Completed")`   | ✅              |
+| RunManager      | `run.Stopped`       | `addEventListener("run.Stopped")`     | ✅              |
+| RunManager      | `run.Error`         | `addEventListener("run.Error")`       | ✅              |
+| VedaService     | `orders.Created`    | `addEventListener("orders.Created")`  | ✅              |
+| GretaService    | **`orders.Placed`** | ❌ No listener for `orders.Placed`    | **❌ MISMATCH** |
+| GretaService    | `orders.Filled`     | `addEventListener("orders.Filled")`   | ✅              |
+| VedaService     | `orders.Rejected`   | `addEventListener("orders.Rejected")` | ✅              |
 
 **Impact**: During a backtest, when GretaService emits `orders.Placed`, the frontend has **no listener** for it — no cache invalidation, no toast. The `orders.Filled` event IS received, which triggers `invalidateQueries(["orders"])`, but the refetch hits MockOrderService (see §1.7.1).
 
 **SSE events the frontend WILL receive during a backtest**:
+
 1. `run.Started` → toast "Run {id} started", invalidates `["runs"]`
 2. `orders.Filled` → toast "Order filled", invalidates `["orders"]` (but fetches mock data)
 3. `run.Completed` → toast "Run {id} completed", invalidates `["runs"]`
@@ -186,12 +188,12 @@ Strategy → PLACE_ORDER → DomainRouter → backtest.PlaceOrder
 
 The `CreateRunForm` component has 4 fields:
 
-| Field | HTML ID | Type | Mapped to RunCreate field |
-|-------|---------|------|--------------------------|
-| Strategy | `strategy-id` | text input | `strategy_id` |
-| Mode | `run-mode` | select (backtest/paper/live) | `mode` |
-| Symbols | `symbols` | text input (comma-separated) | `symbols` |
-| Timeframe | `timeframe` | select (1m/5m/15m/1h/4h/1d) | `timeframe` |
+| Field     | HTML ID       | Type                         | Mapped to RunCreate field |
+| --------- | ------------- | ---------------------------- | ------------------------- |
+| Strategy  | `strategy-id` | text input                   | `strategy_id`             |
+| Mode      | `run-mode`    | select (backtest/paper/live) | `mode`                    |
+| Symbols   | `symbols`     | text input (comma-separated) | `symbols`                 |
+| Timeframe | `timeframe`   | select (1m/5m/15m/1h/4h/1d)  | `timeframe`               |
 
 **Missing**: `start_time` and `end_time` fields. These are required for backtest execution.
 
@@ -201,14 +203,15 @@ The `CreateRunForm` component has 4 fields:
 
 #### 1.7.5 React Query Cache Behavior
 
-| Setting | Value | Impact on E2E |
-|---------|-------|---------------|
-| `staleTime` | 60,000ms (60s) | After first fetch, data is "fresh" for 60s; won't refetch on remount |
-| `retry` | 1 | Failed queries retry once before showing error |
-| SSE invalidation | `invalidateQueries()` | Forces refetch regardless of staleTime |
-| `refetchInterval` (health) | 30,000ms (30s) | Health endpoint polls every 30s |
+| Setting                    | Value                 | Impact on E2E                                                        |
+| -------------------------- | --------------------- | -------------------------------------------------------------------- |
+| `staleTime`                | 60,000ms (60s)        | After first fetch, data is "fresh" for 60s; won't refetch on remount |
+| `retry`                    | 1                     | Failed queries retry once before showing error                       |
+| SSE invalidation           | `invalidateQueries()` | Forces refetch regardless of staleTime                               |
+| `refetchInterval` (health) | 30,000ms (30s)        | Health endpoint polls every 30s                                      |
 
 **Impact on tests**: After an API action (e.g., create run), the runs page may NOT show the new data immediately if the cache is still "fresh". Tests must either:
+
 1. Wait for SSE event to invalidate the cache (preferred, tests real behavior)
 2. Use `page.reload()` (forces fresh query)
 3. Navigate away and back (new mount triggers fetch if stale)
@@ -216,6 +219,7 @@ The `CreateRunForm` component has 4 fields:
 #### 1.7.6 Strategy Behavior — Exact Bar Data Requirements
 
 **Strategy "sample"** (preferred for E2E — simpler, more controllable):
+
 - Lookback window: 10 bars
 - Buy condition: `current_close < avg_close_10bars * 0.99` AND no position
 - Sell condition: `current_close > avg_close_10bars * 1.01` AND has position
@@ -224,6 +228,7 @@ The `CreateRunForm` component has 4 fields:
 - **Minimum bars for 1 BUY + 1 SELL**: 13 bars (see calculated seed data in §4)
 
 **Strategy "sma-crossover"** (NOT recommended for E2E — harder to control):
+
 - Lookback window: `slow_period + 1` = 21 bars (default)
 - Requires actual crossover pattern in data → harder to guarantee
 - Configurable fast_period/slow_period adds complexity
@@ -247,6 +252,7 @@ Strategy → PLACE_ORDER → strategy.PlaceRequest event
 #### 1.7.8 Nginx Reverse Proxy in E2E Stack
 
 The production frontend (Nginx) proxies API requests:
+
 - `/api/*` → `proxy_pass http://backend:8000`
 - `/api/v1/events/stream` → special SSE config: `proxy_buffering off`, `proxy_read_timeout 86400s`
 - All other paths → serve static files, fallback to `index.html` (SPA routing)
@@ -255,20 +261,20 @@ The production frontend (Nginx) proxies API requests:
 
 #### 1.7.9 Valid vs Invalid Test Summary
 
-| Test Idea | Valid? | Why |
-|-----------|--------|-----|
-| Dashboard loads with stat cards | ✅ | Reads from GET /runs and /orders — data exists (in-memory + mock) |
-| Create backtest run via UI form | ✅ | POST /runs works; run visible in list |
-| Start backtest via API → completes | ✅ | Synchronous execution; status changes are real |
-| Orders appear after backtest | ❌ **FALSE** | GET /orders returns MockOrderService, not backtest fills |
-| Dashboard "Total Runs" increments | ✅ | GET /runs data is real (in-memory RunManager) |
-| SSE delivers run.Completed | ✅ | Event chain: RunManager → EventLog → SSEBroadcaster → browser |
-| SSE delivers orders.Created (backtest) | ❌ **MISMATCH** | GretaService emits "orders.Placed", frontend listens "orders.Created" |
-| Orders page shows data | ✅ (mock) | MockOrderService always returns 2 orders; tests UI rendering |
-| Paper run start → running → stop | ✅ | Clock + status work; just no order execution |
-| Connection status shows Connected | ✅ | EventSource connects to SSE endpoint through Nginx |
-| SSE reconnect after offline | ✅ | useSSE.ts has 3s reconnect; Playwright can simulate offline |
-| Create run via UI → status pending in table | ✅ | Real data flow: POST /runs → RunManager → in-memory → GET /runs |
+| Test Idea                                   | Valid?          | Why                                                                   |
+| ------------------------------------------- | --------------- | --------------------------------------------------------------------- |
+| Dashboard loads with stat cards             | ✅              | Reads from GET /runs and /orders — data exists (in-memory + mock)     |
+| Create backtest run via UI form             | ✅              | POST /runs works; run visible in list                                 |
+| Start backtest via API → completes          | ✅              | Synchronous execution; status changes are real                        |
+| Orders appear after backtest                | ❌ **FALSE**    | GET /orders returns MockOrderService, not backtest fills              |
+| Dashboard "Total Runs" increments           | ✅              | GET /runs data is real (in-memory RunManager)                         |
+| SSE delivers run.Completed                  | ✅              | Event chain: RunManager → EventLog → SSEBroadcaster → browser         |
+| SSE delivers orders.Created (backtest)      | ❌ **MISMATCH** | GretaService emits "orders.Placed", frontend listens "orders.Created" |
+| Orders page shows data                      | ✅ (mock)       | MockOrderService always returns 2 orders; tests UI rendering          |
+| Paper run start → running → stop            | ✅              | Clock + status work; just no order execution                          |
+| Connection status shows Connected           | ✅              | EventSource connects to SSE endpoint through Nginx                    |
+| SSE reconnect after offline                 | ✅              | useSSE.ts has 3s reconnect; Playwright can simulate offline           |
+| Create run via UI → status pending in table | ✅              | Real data flow: POST /runs → RunManager → in-memory → GET /runs       |
 
 ---
 
@@ -851,18 +857,19 @@ class TestNavigation:
 
 ### 5.2 Per-Test Data Flow & Validity Proof
 
-| # | Test | Prerequisite Data | Data Source | Exact Assertion | Validity Proof | False-Pass Risk |
-|---|------|-------------------|-------------|-----------------|----------------|-----------------|
-| 1 | root redirects | None | Nginx config (`try_files → /index.html`) | URL changes to `/dashboard` | React Router `<Navigate to="/dashboard" replace />` in App.tsx | None — redirect is deterministic |
-| 2 | dashboard loads | Stack running, MockOrderService active | GET /healthz → `{"status":"ok"}`, GET /runs → `{"items":[],"total":0}`, GET /orders → `{"items":[mock1,mock2],"total":2}` | Text "Active Runs", "Total Runs", "Total Orders" visible as StatCard titles | Dashboard.tsx renders 4 StatCards with hardcoded title props | Low — could fail if backend is slow (use auto-wait) |
-| 3 | runs page loads | Stack running | GET /runs → `{"items":[],"total":0}` (no runs created yet) | Page at `/runs` URL; has heading "Runs" | RunsPage.tsx renders h1 "Runs"; empty state shows `data-testid="runs-empty"` with "No runs yet" | None — static text |
-| 4 | orders page loads | Stack running, MockOrderService active | GET /orders → 2 mock orders | Page at `/orders` URL | OrdersPage.tsx renders table with OrderTable component | Low — mock data always exists |
-| 5 | 404 page | None | Client-side React Router | Text "404" visible | App.tsx has `<Route path="*" element={<NotFound />} />`; NotFound renders "Page Not Found" | None — static text, client-side only |
-| 6 | sidebar navigation | All route components loaded | Client-side React Router | URL changes correctly on each click | Sidebar.tsx has `<NavLink to="/runs">`, etc. | Low — Playwright waits for navigation |
+| #   | Test               | Prerequisite Data                      | Data Source                                                                                                               | Exact Assertion                                                             | Validity Proof                                                                                  | False-Pass Risk                                     |
+| --- | ------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1   | root redirects     | None                                   | Nginx config (`try_files → /index.html`)                                                                                  | URL changes to `/dashboard`                                                 | React Router `<Navigate to="/dashboard" replace />` in App.tsx                                  | None — redirect is deterministic                    |
+| 2   | dashboard loads    | Stack running, MockOrderService active | GET /healthz → `{"status":"ok"}`, GET /runs → `{"items":[],"total":0}`, GET /orders → `{"items":[mock1,mock2],"total":2}` | Text "Active Runs", "Total Runs", "Total Orders" visible as StatCard titles | Dashboard.tsx renders 4 StatCards with hardcoded title props                                    | Low — could fail if backend is slow (use auto-wait) |
+| 3   | runs page loads    | Stack running                          | GET /runs → `{"items":[],"total":0}` (no runs created yet)                                                                | Page at `/runs` URL; has heading "Runs"                                     | RunsPage.tsx renders h1 "Runs"; empty state shows `data-testid="runs-empty"` with "No runs yet" | None — static text                                  |
+| 4   | orders page loads  | Stack running, MockOrderService active | GET /orders → 2 mock orders                                                                                               | Page at `/orders` URL                                                       | OrdersPage.tsx renders table with OrderTable component                                          | Low — mock data always exists                       |
+| 5   | 404 page           | None                                   | Client-side React Router                                                                                                  | Text "404" visible                                                          | App.tsx has `<Route path="*" element={<NotFound />} />`; NotFound renders "Page Not Found"      | None — static text, client-side only                |
+| 6   | sidebar navigation | All route components loaded            | Client-side React Router                                                                                                  | URL changes correctly on each click                                         | Sidebar.tsx has `<NavLink to="/runs">`, etc.                                                    | Low — Playwright waits for navigation               |
 
 **Empty state behavior**: On first run with a fresh stack, the runs page shows `data-testid="runs-empty"` with the `text "No runs yet"` and `"Create a new run to get started"`. The orders page shows 2 mock orders from MockOrderService (NOT empty state).
 
 **Data-testid selectors available** (for resilient locators):
+
 - `data-testid="dashboard-loading"` — dashboard skeleton
 - `data-testid="dashboard-error"` — dashboard error state
 - `data-testid="runs-loading"` / `data-testid="runs-error"` / `data-testid="runs-empty"`
@@ -909,6 +916,7 @@ pytest tests/e2e/test_navigation.py -v --timeout=30
 Backtest requires historical bar data in the `bars` table. Without seed data, `GretaService.initialize()` loads zero bars → strategy receives empty windows → no signals → no orders → but run still "completes" (just does nothing).
 
 **Strategy choice**: Use `"sample"` strategy (NOT `"sma-crossover"`).
+
 - `"sample"` needs only 10-bar lookback — smaller seed data
 - Simpler buy/sell logic — easier to guarantee signals
 - `"sma-crossover"` needs 21 bars minimum and harder-to-control crossover patterns
@@ -917,13 +925,13 @@ Backtest requires historical bar data in the `bars` table. Without seed data, `G
 
 We need bars where `current_close < avg_close_10bars * 0.99` triggers a BUY, then `current_close > avg_close_10bars * 1.01` triggers a SELL.
 
-| Bar # | Timestamp (UTC) | Open | High | Low | Close | Purpose |
-|-------|-----------------|------|------|-----|-------|---------|
-| 1-10 | 2024-01-15 09:30 – 09:39 | 42000 | 42100 | 41900 | 42000 | Establish baseline average = 42000 |
-| 11 | 2024-01-15 09:40 | 41200 | 41300 | 40900 | **41000** | **BUY trigger**: 41000 < 41900 × 0.99 = 41481 ✓ |
-| 12 | 2024-01-15 09:41 | 41500 | 42100 | 41400 | 42000 | Recovery, no signal |
-| 13 | 2024-01-15 09:42 | 42200 | 42600 | 42100 | **42500** | **SELL trigger**: 42500 > 41950 × 1.01 = 42369.5 ✓ |
-| 14-20 | 2024-01-15 09:43 – 09:49 | 42000 | 42100 | 41900 | 42000 | Stable tail, no signals |
+| Bar # | Timestamp (UTC)          | Open  | High  | Low   | Close     | Purpose                                            |
+| ----- | ------------------------ | ----- | ----- | ----- | --------- | -------------------------------------------------- |
+| 1-10  | 2024-01-15 09:30 – 09:39 | 42000 | 42100 | 41900 | 42000     | Establish baseline average = 42000                 |
+| 11    | 2024-01-15 09:40         | 41200 | 41300 | 40900 | **41000** | **BUY trigger**: 41000 < 41900 × 0.99 = 41481 ✓    |
+| 12    | 2024-01-15 09:41         | 41500 | 42100 | 41400 | 42000     | Recovery, no signal                                |
+| 13    | 2024-01-15 09:42         | 42200 | 42600 | 42100 | **42500** | **SELL trigger**: 42500 > 41950 × 1.01 = 42369.5 ✓ |
+| 14-20 | 2024-01-15 09:43 – 09:49 | 42000 | 42100 | 41900 | 42000     | Stable tail, no signals                            |
 
 **Mathematical proof of 2 orders**:
 
@@ -949,12 +957,14 @@ Bars 14-20 → no position, prices stable → no action
 ```
 
 **Fill prices**: MARKET orders fill at `bar.open` (DefaultFillSimulator default).
+
 - BUY fills at bar 12's open = 41500 (order placed at bar 11, filled next advance_to)
 - SELL fills at bar 14's open = 42000 (order placed at bar 13, filled next advance_to)
 
 **Seed data is idempotent**: Use `ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING` or check before insert. Safe to run seed script multiple times.
 
 **Run config for E2E**:
+
 ```json
 {
   "strategy_id": "sample",
@@ -965,6 +975,7 @@ Bars 14-20 → no position, prices stable → no action
   "end_time": "2024-01-15T09:50:00Z"
 }
 ```
+
 This covers bars 1-20 (09:30-09:49), 20 clock ticks, and guarantees exactly 2 orders.
 
 ### 6.2 Complete Data Flow for One Backtest Run
@@ -1008,72 +1019,72 @@ This covers bars 1-20 (09:30-09:49), 20 clock ticks, and guarantees exactly 2 or
 
 #### Test 1: Create backtest run via UI → PENDING status
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | Stack running, no prior runs needed |
-| **Steps** | 1. Navigate to `/runs` 2. Click "+ New Run" button 3. Fill Strategy = "sample" (via `#strategy-id` input) 4. Set Mode = "backtest" (via `#run-mode` select) 5. Fill Symbols = "BTC/USD" (via `#symbols` input) 6. Set Timeframe = "1 Minute" (via `#timeframe` select) 7. Click "Create" button |
-| **Selector detail** | `page.locator("#strategy-id").fill("sample")` (NOT `get_by_label` — verify `htmlFor` attribute first); `page.locator("#run-mode").select_option("backtest")`; `page.get_by_role("button", name="+ New Run").click()` to open form |
-| **Expected result** | New row in runs table with status text "pending", mode text "backtest", strategy "sample" |
-| **Assertion** | `expect(page.get_by_text("pending")).to_be_visible()` (relies on StatusBadge rendering) |
-| **Data flow proof** | POST /runs → RunManager.create() → run in memory → form reset → RunsPage useCreateRun mutation → onSuccess invalidates ["runs"] → refetch GET /runs → new row appears |
-| **False-pass risk** | LOW. The run IS real. Only caveat: this run has no start_time/end_time → cannot be started (see §1.7.4). This is fine — we're only testing creation. |
-| **Note** | CreateRunForm does NOT send start_time/end_time. The created run is valid as PENDING but would fail on start. |
+| Aspect              | Detail                                                                                                                                                                                                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prerequisite**    | Stack running, no prior runs needed                                                                                                                                                                                                                                                             |
+| **Steps**           | 1. Navigate to `/runs` 2. Click "+ New Run" button 3. Fill Strategy = "sample" (via `#strategy-id` input) 4. Set Mode = "backtest" (via `#run-mode` select) 5. Fill Symbols = "BTC/USD" (via `#symbols` input) 6. Set Timeframe = "1 Minute" (via `#timeframe` select) 7. Click "Create" button |
+| **Selector detail** | `page.locator("#strategy-id").fill("sample")` (NOT `get_by_label` — verify `htmlFor` attribute first); `page.locator("#run-mode").select_option("backtest")`; `page.get_by_role("button", name="+ New Run").click()` to open form                                                               |
+| **Expected result** | New row in runs table with status text "pending", mode text "backtest", strategy "sample"                                                                                                                                                                                                       |
+| **Assertion**       | `expect(page.get_by_text("pending")).to_be_visible()` (relies on StatusBadge rendering)                                                                                                                                                                                                         |
+| **Data flow proof** | POST /runs → RunManager.create() → run in memory → form reset → RunsPage useCreateRun mutation → onSuccess invalidates ["runs"] → refetch GET /runs → new row appears                                                                                                                           |
+| **False-pass risk** | LOW. The run IS real. Only caveat: this run has no start_time/end_time → cannot be started (see §1.7.4). This is fine — we're only testing creation.                                                                                                                                            |
+| **Note**            | CreateRunForm does NOT send start_time/end_time. The created run is valid as PENDING but would fail on start.                                                                                                                                                                                   |
 
 #### Test 2: Create run via API → visible in UI
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | Stack running |
-| **Steps** | 1. Create run via E2EApiClient (POST /runs with start/end times) 2. Navigate to `/runs` page |
-| **API call** | `api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"], timeframe="1m", start_time="2024-01-15T09:30:00Z", end_time="2024-01-15T09:50:00Z")` |
-| **Expected** | Run ID appears in table (first 8 chars of UUID shown in `font-mono` span) |
-| **Assertion** | `expect(page.get_by_text(run["id"][:8])).to_be_visible()` |
-| **Data flow proof** | POST /runs → 201 → page.goto triggers GET /runs → RunManager.list() returns the run → table row rendered with `data-testid="run-row-{id}"` |
-| **False-pass risk** | NONE. API creates real run; GET /runs reads from same in-memory store. |
+| Aspect              | Detail                                                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prerequisite**    | Stack running                                                                                                                                                           |
+| **Steps**           | 1. Create run via E2EApiClient (POST /runs with start/end times) 2. Navigate to `/runs` page                                                                            |
+| **API call**        | `api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"], timeframe="1m", start_time="2024-01-15T09:30:00Z", end_time="2024-01-15T09:50:00Z")` |
+| **Expected**        | Run ID appears in table (first 8 chars of UUID shown in `font-mono` span)                                                                                               |
+| **Assertion**       | `expect(page.get_by_text(run["id"][:8])).to_be_visible()`                                                                                                               |
+| **Data flow proof** | POST /runs → 201 → page.goto triggers GET /runs → RunManager.list() returns the run → table row rendered with `data-testid="run-row-{id}"`                              |
+| **False-pass risk** | NONE. API creates real run; GET /runs reads from same in-memory store.                                                                                                  |
 
 #### Test 3: Start backtest → COMPLETED status (SSE-verified)
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | **Seed data MUST be present** (20 bars in `bars` table). Run created via API with start/end times. |
-| **Steps** | 1. Navigate to `/runs` page 2. Wait for SSE connection (2s) 3. Start run via E2EApiClient 4. Wait for "completed" badge to appear (via SSE cache invalidation) |
+| Aspect                                                                                                                                                                                                                 | Detail                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prerequisite**                                                                                                                                                                                                       | **Seed data MUST be present** (20 bars in `bars` table). Run created via API with start/end times.                                                                                                                                                                                                                                      |
+| **Steps**                                                                                                                                                                                                              | 1. Navigate to `/runs` page 2. Wait for SSE connection (2s) 3. Start run via E2EApiClient 4. Wait for "completed" badge to appear (via SSE cache invalidation)                                                                                                                                                                          |
 | **Why SSE-first**: Instead of `page.reload()`, we wait for the `run.Completed` SSE event to invalidate the `["runs"]` query cache → React Query refetches → UI updates automatically. This tests the real SSE→UI flow. |
-| **Expected result** | Run status badge changes from "pending" to "completed" WITHOUT manual page reload |
-| **Assertion** | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)` (generous timeout for backtest execution + SSE delivery) |
-| **Data flow proof** | POST /start → RunManager._start_backtest() → BacktestClock runs 20 ticks → emits "run.Completed" → SSEBroadcaster → EventSource → useSSE handler → invalidateQueries(["runs"]) → auto-refetch → StatusBadge re-renders |
-| **False-pass risk** | MEDIUM. If seed data is missing, the backtest still "completes" (runs 0 or few ticks, no orders but status=COMPLETED). This is technically correct behavior. The test should also verify the run completed with both started_at and stopped_at set via API check: `run = api_client.get_run(id); assert run["started_at"] is not None`. |
-| **Fallback** | If SSE event doesn't arrive within timeout, `page.reload()` as fallback — but this should be logged as a potential SSE issue. |
+| **Expected result**                                                                                                                                                                                                    | Run status badge changes from "pending" to "completed" WITHOUT manual page reload                                                                                                                                                                                                                                                       |
+| **Assertion**                                                                                                                                                                                                          | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)` (generous timeout for backtest execution + SSE delivery)                                                                                                                                                                                                           |
+| **Data flow proof**                                                                                                                                                                                                    | POST /start → RunManager.\_start_backtest() → BacktestClock runs 20 ticks → emits "run.Completed" → SSEBroadcaster → EventSource → useSSE handler → invalidateQueries(["runs"]) → auto-refetch → StatusBadge re-renders                                                                                                                 |
+| **False-pass risk**                                                                                                                                                                                                    | MEDIUM. If seed data is missing, the backtest still "completes" (runs 0 or few ticks, no orders but status=COMPLETED). This is technically correct behavior. The test should also verify the run completed with both started_at and stopped_at set via API check: `run = api_client.get_run(id); assert run["started_at"] is not None`. |
+| **Fallback**                                                                                                                                                                                                           | If SSE event doesn't arrive within timeout, `page.reload()` as fallback — but this should be logged as a potential SSE issue.                                                                                                                                                                                                           |
 
 #### Test 4: Backtest run detail deep-link
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | Run created via API |
-| **Steps** | 1. Navigate directly to `/runs/{run_id}` |
-| **Expected** | Page shows run ID (first 8 chars), mode "backtest", strategy "sample" |
-| **Assertion** | `expect(page.get_by_text(run["id"][:8])).to_be_visible()` and `expect(page.get_by_text("backtest")).to_be_visible()` |
+| Aspect              | Detail                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Prerequisite**    | Run created via API                                                                                                        |
+| **Steps**           | 1. Navigate directly to `/runs/{run_id}`                                                                                   |
+| **Expected**        | Page shows run ID (first 8 chars), mode "backtest", strategy "sample"                                                      |
+| **Assertion**       | `expect(page.get_by_text(run["id"][:8])).to_be_visible()` and `expect(page.get_by_text("backtest")).to_be_visible()`       |
 | **Data flow proof** | URL `/runs/:runId` → React Router → RunsPage component → `useRun(runId)` hook → GET /runs/{id} → RunManager.get() → render |
-| **False-pass risk** | NONE. Direct URL → direct API call → render. |
+| **False-pass risk** | NONE. Direct URL → direct API call → render.                                                                               |
 
 #### Test 5: Dashboard "Total Runs" reflects created runs
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | Stack clean (or known run count) |
-| **Steps** | 1. Navigate to `/dashboard` 2. Note initial Total Runs value 3. Create run via API 4. Reload page (or wait for SSE) 5. Verify Total Runs incremented |
-| **Expected** | StatCard "Total Runs" value increases by 1 |
-| **Assertion** | After reload: the Total Runs card shows the run count from `GET /runs` response's `total` field. Since we know we created 1 run, check `total >= 1`. Use `expect(page.locator('[data-testid] >> text=/\\d+/').first).to_be_visible()` to verify a number is rendered. |
-| **Data flow proof** | Dashboard.tsx: `useRuns({ page: 1, page_size: 50 })` → GET /runs → `data.total` → StatCard value |
-| **False-pass risk** | LOW. Run counter is real. The `total` value from RunManager.list() is accurate. The risk is only if `page.reload()` happens before the POST /runs response returns — add a small wait. |
+| Aspect              | Detail                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prerequisite**    | Stack clean (or known run count)                                                                                                                                                                                                                                      |
+| **Steps**           | 1. Navigate to `/dashboard` 2. Note initial Total Runs value 3. Create run via API 4. Reload page (or wait for SSE) 5. Verify Total Runs incremented                                                                                                                  |
+| **Expected**        | StatCard "Total Runs" value increases by 1                                                                                                                                                                                                                            |
+| **Assertion**       | After reload: the Total Runs card shows the run count from `GET /runs` response's `total` field. Since we know we created 1 run, check `total >= 1`. Use `expect(page.locator('[data-testid] >> text=/\\d+/').first).to_be_visible()` to verify a number is rendered. |
+| **Data flow proof** | Dashboard.tsx: `useRuns({ page: 1, page_size: 50 })` → GET /runs → `data.total` → StatCard value                                                                                                                                                                      |
+| **False-pass risk** | LOW. Run counter is real. The `total` value from RunManager.list() is accurate. The risk is only if `page.reload()` happens before the POST /runs response returns — add a small wait.                                                                                |
 
 #### Test 6: Multiple runs listed in table
 
-| Aspect | Detail |
-|--------|--------|
-| **Prerequisite** | No prior runs (or use `clean_e2e_db`) |
-| **Steps** | 1. Create 3 runs via API 2. Navigate to `/runs` 3. Count table rows |
-| **Expected** | At least 3 rows in table body |
-| **Assertion** | `expect(page.locator("table tbody tr")).to_have_count(3)` (exact count, or `>= 3` if prior tests created runs) |
+| Aspect                     | Detail                                                                                                                                                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Prerequisite**           | No prior runs (or use `clean_e2e_db`)                                                                                                                                                                                                                                                      |
+| **Steps**                  | 1. Create 3 runs via API 2. Navigate to `/runs` 3. Count table rows                                                                                                                                                                                                                        |
+| **Expected**               | At least 3 rows in table body                                                                                                                                                                                                                                                              |
+| **Assertion**              | `expect(page.locator("table tbody tr")).to_have_count(3)` (exact count, or `>= 3` if prior tests created runs)                                                                                                                                                                             |
 | **Note on test isolation** | Runs persist in memory across tests within the same session. Using `clean_e2e_db` only cleans DB tables, NOT RunManager's in-memory dict. For cross-test isolation, either: (a) use `>= N` assertions, or (b) accept cumulative state. Recommended: use `>= 3` since run data is additive. |
 
 ### 6.4 ~~Removed: test_backtest_generates_orders~~
@@ -1142,58 +1153,58 @@ POST /runs/{id}/stop
 
 #### Test 1: Create paper run → visible in UI
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create paper run via API: `strategy_id="sample", mode="paper", symbols=["BTC/USD"]` 2. Navigate to `/runs` |
-| **Expected** | Run appears in table with status "pending", mode badge "paper" (purple badge) |
-| **Assertion** | `page.get_by_test_id(f"run-row-{run['id']}")` visible; text "pending" and "paper" within that row |
-| **Data flow** | POST /runs → RunManager.create() → in-memory → GET /runs → table row |
-| **Validity** | ✅ Real run creation, real data. No false-pass risk. |
+| Aspect        | Detail                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Steps**     | 1. Create paper run via API: `strategy_id="sample", mode="paper", symbols=["BTC/USD"]` 2. Navigate to `/runs` |
+| **Expected**  | Run appears in table with status "pending", mode badge "paper" (purple badge)                                 |
+| **Assertion** | `page.get_by_test_id(f"run-row-{run['id']}")` visible; text "pending" and "paper" within that row             |
+| **Data flow** | POST /runs → RunManager.create() → in-memory → GET /runs → table row                                          |
+| **Validity**  | ✅ Real run creation, real data. No false-pass risk.                                                          |
 
 #### Test 2: Start paper run → RUNNING status
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create paper run via API 2. Navigate to `/runs` 3. Wait for SSE connection 4. Start via API 5. Wait for SSE "run.Started" to update UI |
-| **Expected** | Status badge changes to "running" (green badge `bg-green-500/20 text-green-400`) |
-| **Assertion** | `expect(page.get_by_text("running")).to_be_visible(timeout=10000)` |
-| **Data flow** | POST /start → RunManager._start_live() → run.status = RUNNING → emits "run.Started" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
-| **Validity** | ✅ Real state transition. RealtimeClock actually starts (but we don't need to wait for ticks). |
-| **Timing** | The start API returns synchronously with status=running. SSE event arrives shortly after. Generous timeout needed. |
+| Aspect        | Detail                                                                                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**     | 1. Create paper run via API 2. Navigate to `/runs` 3. Wait for SSE connection 4. Start via API 5. Wait for SSE "run.Started" to update UI                   |
+| **Expected**  | Status badge changes to "running" (green badge `bg-green-500/20 text-green-400`)                                                                            |
+| **Assertion** | `expect(page.get_by_text("running")).to_be_visible(timeout=10000)`                                                                                          |
+| **Data flow** | POST /start → RunManager.\_start_live() → run.status = RUNNING → emits "run.Started" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
+| **Validity**  | ✅ Real state transition. RealtimeClock actually starts (but we don't need to wait for ticks).                                                              |
+| **Timing**    | The start API returns synchronously with status=running. SSE event arrives shortly after. Generous timeout needed.                                          |
 
 #### Test 3: Dashboard Active Runs counter
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create and start paper run 2. Navigate to `/dashboard` |
-| **Expected** | "Active Runs" StatCard shows value ≥ 1 |
+| Aspect        | Detail                                                                                                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**     | 1. Create and start paper run 2. Navigate to `/dashboard`                                                                                                                                                                                                              |
+| **Expected**  | "Active Runs" StatCard shows value ≥ 1                                                                                                                                                                                                                                 |
 | **Assertion** | The Active Runs card computes: `runs.items.filter(r => r.status === "running").length`. After starting 1 paper run, this should be ≥ 1. Since StatCard renders value as `<span class="text-3xl font-bold">`, assert that text near "Active Runs" contains a digit ≥ 1. |
-| **Data flow** | Dashboard.tsx: `useRuns()` → GET /runs → count items where status="running" → StatCard value |
-| **Validity** | ✅ Real. The run IS running. Counter IS computed from real data. |
-| **Note** | If multiple prior tests left runs in "running" state, counter may be > 1. This is fine — assert `>= 1`, not `== 1`. |
+| **Data flow** | Dashboard.tsx: `useRuns()` → GET /runs → count items where status="running" → StatCard value                                                                                                                                                                           |
+| **Validity**  | ✅ Real. The run IS running. Counter IS computed from real data.                                                                                                                                                                                                       |
+| **Note**      | If multiple prior tests left runs in "running" state, counter may be > 1. This is fine — assert `>= 1`, not `== 1`.                                                                                                                                                    |
 
 #### Test 4: Stop paper run → STOPPED status (via SSE)
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create and start paper run 2. Navigate to `/runs` 3. Wait for SSE connection 4. Stop via API 5. Wait for SSE "run.Stopped" to update UI |
-| **Expected** | Status badge changes to "stopped" (yellow badge `bg-yellow-500/20 text-yellow-400`) |
-| **Assertion** | `expect(page.get_by_text("stopped")).to_be_visible(timeout=10000)` |
-| **Data flow** | POST /stop → RunManager.stop() → clock.stop() → run.status = STOPPED → emits "run.Stopped" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
-| **Validity** | ✅ Real state transition. Clock actually stops. `stopped_at` gets set. |
-| **API verification** | After stop, call `api_client.get_run(id)` and assert `status == "stopped"` and `stopped_at is not None` — double-check the UI isn't lying. |
+| Aspect               | Detail                                                                                                                                                            |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**            | 1. Create and start paper run 2. Navigate to `/runs` 3. Wait for SSE connection 4. Stop via API 5. Wait for SSE "run.Stopped" to update UI                        |
+| **Expected**         | Status badge changes to "stopped" (yellow badge `bg-yellow-500/20 text-yellow-400`)                                                                               |
+| **Assertion**        | `expect(page.get_by_text("stopped")).to_be_visible(timeout=10000)`                                                                                                |
+| **Data flow**        | POST /stop → RunManager.stop() → clock.stop() → run.status = STOPPED → emits "run.Stopped" → SSE → invalidateQueries(["runs"]) → refetch → StatusBadge re-renders |
+| **Validity**         | ✅ Real state transition. Clock actually stops. `stopped_at` gets set.                                                                                            |
+| **API verification** | After stop, call `api_client.get_run(id)` and assert `status == "stopped"` and `stopped_at is not None` — double-check the UI isn't lying.                        |
 
 #### Test 5: Error state display (invalid strategy)
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create backtest run with `strategy_id="nonexistent-xyz-strategy"` (start/end times set) 2. Start via API (expect HTTP error or status change) 3. Navigate to `/runs` |
-| **Expected** | Run shows "error" status badge (red badge `bg-red-500/20 text-red-400`) |
-| **Behavior** | RunManager.start() → StrategyLoader.load("nonexistent-xyz-strategy") → raises exception → RunManager catches → sets run.status = ERROR, run.error = message → emits "run.Error" → SSE |
-| **API response** | POST /start may return 200 with status="error" (internal catch) or 500 (unhandled). Test should handle both: catch exception from `api_client.start_run()`, then check `api_client.get_run(id)["status"] == "error"`. |
-| **Assertion** | `expect(page.get_by_text("error")).to_be_visible()` |
-| **Validity** | ✅ Tests real error handling path. Strategy not found → ERROR status is the actual system behavior. |
-| **False-pass risk** | LOW. The error badge text "error" must match the StatusBadge component's rendering. Verify the badge renders the status string directly. |
+| Aspect              | Detail                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**           | 1. Create backtest run with `strategy_id="nonexistent-xyz-strategy"` (start/end times set) 2. Start via API (expect HTTP error or status change) 3. Navigate to `/runs`                                               |
+| **Expected**        | Run shows "error" status badge (red badge `bg-red-500/20 text-red-400`)                                                                                                                                               |
+| **Behavior**        | RunManager.start() → StrategyLoader.load("nonexistent-xyz-strategy") → raises exception → RunManager catches → sets run.status = ERROR, run.error = message → emits "run.Error" → SSE                                 |
+| **API response**    | POST /start may return 200 with status="error" (internal catch) or 500 (unhandled). Test should handle both: catch exception from `api_client.start_run()`, then check `api_client.get_run(id)["status"] == "error"`. |
+| **Assertion**       | `expect(page.get_by_text("error")).to_be_visible()`                                                                                                                                                                   |
+| **Validity**        | ✅ Tests real error handling path. Strategy not found → ERROR status is the actual system behavior.                                                                                                                   |
+| **False-pass risk** | LOW. The error badge text "error" must match the StatusBadge component's rendering. Verify the badge renders the status string directly.                                                                              |
 
 ### 7.3 Verification
 
@@ -1211,6 +1222,7 @@ pytest tests/e2e/test_paper_flow.py -v --timeout=60
 **Goal**: Test the orders page UI rendering and Server-Sent Events delivery for real-time updates.
 
 > **⚠️ Scope constraints (see §1.7)**:
+>
 > - GET /orders returns **MockOrderService** data (2 hardcoded orders) when VedaService = None. Orders tests verify UI rendering, NOT real trading results.
 > - GretaService emits `orders.Placed` but frontend listens for `orders.Created` — SSE order-creation tests for backtest would be **FALSE tests** (see §1.7.3).
 > - SSE tests focus on `run.*` events which ARE delivered end-to-end and proven to trigger UI updates.
@@ -1248,23 +1260,23 @@ Browser navigates to /orders
 
 #### Test 1: Orders page renders mock data
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Navigate to `/orders` 2. Wait for table to render |
-| **Expected** | Table shows 2 rows (mock orders). First row contains "BTC/USD", "buy", "filled". Second row contains "ETH/USD", "sell", "submitted". |
-| **Assertion** | `expect(page.locator("table tbody tr")).to_have_count(2)`. Check first row text includes "BTC/USD". Check second row text includes "ETH/USD". |
-| **Data flow** | GET /orders → MockOrderService → 2 hardcoded orders → table rows |
-| **False-pass risk** | LOW. MockOrderService ALWAYS returns these 2 orders. The test is stable but tests mock data, not real trading. This is the honest scope. |
-| **Note** | If the orders page has an empty state message instead of a table when MockOrderService is disabled, this test needs adjustment. Verify by reading the OrdersPage component at implementation time. |
+| Aspect              | Detail                                                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**           | 1. Navigate to `/orders` 2. Wait for table to render                                                                                                                                               |
+| **Expected**        | Table shows 2 rows (mock orders). First row contains "BTC/USD", "buy", "filled". Second row contains "ETH/USD", "sell", "submitted".                                                               |
+| **Assertion**       | `expect(page.locator("table tbody tr")).to_have_count(2)`. Check first row text includes "BTC/USD". Check second row text includes "ETH/USD".                                                      |
+| **Data flow**       | GET /orders → MockOrderService → 2 hardcoded orders → table rows                                                                                                                                   |
+| **False-pass risk** | LOW. MockOrderService ALWAYS returns these 2 orders. The test is stable but tests mock data, not real trading. This is the honest scope.                                                           |
+| **Note**            | If the orders page has an empty state message instead of a table when MockOrderService is disabled, this test needs adjustment. Verify by reading the OrdersPage component at implementation time. |
 
 #### Test 2: Order detail expands on click
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Navigate to `/orders` 2. Click first order row 3. Verify detail view appears |
-| **Expected** | Order detail panel/modal shows: order ID "order-123", symbol "BTC/USD", side "buy", quantity "1.0", status "filled" |
-| **Assertion** | After click: `expect(page.get_by_text("order-123")).to_be_visible()` and `expect(page.get_by_text("1.0")).to_be_visible()` |
-| **Data flow** | Click row → frontend state change → renders OrderDetail component with order data from cache |
+| Aspect              | Detail                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**           | 1. Navigate to `/orders` 2. Click first order row 3. Verify detail view appears                                                          |
+| **Expected**        | Order detail panel/modal shows: order ID "order-123", symbol "BTC/USD", side "buy", quantity "1.0", status "filled"                      |
+| **Assertion**       | After click: `expect(page.get_by_text("order-123")).to_be_visible()` and `expect(page.get_by_text("1.0")).to_be_visible()`               |
+| **Data flow**       | Click row → frontend state change → renders OrderDetail component with order data from cache                                             |
 | **False-pass risk** | MEDIUM. Depends on how detail view renders. Need to verify OrderDetail component exists and renders these fields at implementation time. |
 
 ### 8.3 Per-Test Specification — SSE Delivery (4 tests)
@@ -1272,6 +1284,7 @@ Browser navigates to /orders
 **File**: `tests/e2e/test_sse.py`
 
 > **SSE event flow verification**: The following events are emitted by the backend and have matching frontend listeners:
+>
 > - `run.Created` → listener ✓ → invalidateQueries(["runs"])
 > - `run.Started` → listener ✓ → invalidateQueries(["runs"])
 > - `run.Stopped` → listener ✓ → invalidateQueries(["runs"])
@@ -1282,56 +1295,56 @@ Browser navigates to /orders
 
 #### Test 3: ConnectionStatus shows "Connected"
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Navigate to `/dashboard` 2. Wait for SSE handshake (up to 5s) |
-| **Expected** | ConnectionStatus component shows text "Connected" with green indicator |
-| **Assertion** | `expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)` |
-| **Data flow** | Page load → `useSSE()` hook creates `EventSource("/api/v1/events/stream")` → Nginx proxy_pass → FastAPI SSE endpoint → `onopen` callback → `setIsConnected(true)` → ConnectionStatus renders "Connected" |
-| **False-pass risk** | LOW. The SSE endpoint exists, Nginx is configured with `proxy_buffering off`. If this test fails, the entire SSE subsystem is broken. |
-| **Prerequisite** | Nginx config must have: `location /api/v1/events/stream { proxy_buffering off; ... }`. Already in existing `nginx.conf`. |
+| Aspect              | Detail                                                                                                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**           | 1. Navigate to `/dashboard` 2. Wait for SSE handshake (up to 5s)                                                                                                                                         |
+| **Expected**        | ConnectionStatus component shows text "Connected" with green indicator                                                                                                                                   |
+| **Assertion**       | `expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)`                                                                                                                                     |
+| **Data flow**       | Page load → `useSSE()` hook creates `EventSource("/api/v1/events/stream")` → Nginx proxy_pass → FastAPI SSE endpoint → `onopen` callback → `setIsConnected(true)` → ConnectionStatus renders "Connected" |
+| **False-pass risk** | LOW. The SSE endpoint exists, Nginx is configured with `proxy_buffering off`. If this test fails, the entire SSE subsystem is broken.                                                                    |
+| **Prerequisite**    | Nginx config must have: `location /api/v1/events/stream { proxy_buffering off; ... }`. Already in existing `nginx.conf`.                                                                                 |
 
 #### Test 4: SSE delivers run.Started → UI updates without reload
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create backtest run via API (with seed data, so strategy="sample", start/end times within seed range) 2. Navigate to `/runs` 3. Verify "pending" status visible 4. Wait for SSE connection (2s) 5. Start run via API 6. Do NOT reload page 7. Wait for status to change |
-| **Expected** | Run status changes from "pending" → "completed" (backtest completes synchronously) WITHOUT page reload. |
-| **Assertion** | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)` |
-| **Data flow** | POST /start → RunManager → backtest runs → emits "run.Started" + "run.Completed" → SSEBroadcaster → EventSource → `addEventListener("run.Completed", ...)` → `invalidateQueries(["runs"])` → React Query refetches GET /runs → StatusBadge re-renders "completed" |
-| **False-pass risk** | LOW. This is the core SSE integration test. If runs page auto-updates, SSE is working end-to-end. |
-| **Timing consideration** | Backtest with 20 seed bars completes in <1s. SSE delivery adds ~100ms. React Query invalidation + refetch adds ~200ms. Combined: should complete within 5s, use 15s timeout for safety. |
+| Aspect                   | Detail                                                                                                                                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**                | 1. Create backtest run via API (with seed data, so strategy="sample", start/end times within seed range) 2. Navigate to `/runs` 3. Verify "pending" status visible 4. Wait for SSE connection (2s) 5. Start run via API 6. Do NOT reload page 7. Wait for status to change |
+| **Expected**             | Run status changes from "pending" → "completed" (backtest completes synchronously) WITHOUT page reload.                                                                                                                                                                    |
+| **Assertion**            | `expect(page.get_by_text("completed")).to_be_visible(timeout=15000)`                                                                                                                                                                                                       |
+| **Data flow**            | POST /start → RunManager → backtest runs → emits "run.Started" + "run.Completed" → SSEBroadcaster → EventSource → `addEventListener("run.Completed", ...)` → `invalidateQueries(["runs"])` → React Query refetches GET /runs → StatusBadge re-renders "completed"          |
+| **False-pass risk**      | LOW. This is the core SSE integration test. If runs page auto-updates, SSE is working end-to-end.                                                                                                                                                                          |
+| **Timing consideration** | Backtest with 20 seed bars completes in <1s. SSE delivery adds ~100ms. React Query invalidation + refetch adds ~200ms. Combined: should complete within 5s, use 15s timeout for safety.                                                                                    |
 
 #### Test 5: SSE reconnects after network interruption
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Navigate to `/dashboard` 2. Wait for "Connected" indicator (5s) 3. `page.context.set_offline(True)` 4. Wait 1s (force disconnection, EventSource fires onerror) 5. `page.context.set_offline(False)` 6. Wait for reconnection (up to 10s) |
-| **Expected** | ConnectionStatus returns to "Connected" after going offline and back online |
-| **Assertion** | After step 3: ConnectionStatus may show "Disconnected" or "Connecting..." (optional assert). After step 5: `expect(page.get_by_text("Connected")).to_be_visible(timeout=15000)` |
-| **Data flow** | Offline → EventSource.onerror → `useSSE` cleanup → RECONNECT_DELAY=3000ms → `new EventSource(...)` → handshake → `onopen` → "Connected" |
-| **False-pass risk** | MEDIUM. Browser `set_offline()` may not perfectly simulate SSE disconnection. If EventSource doesn't fire `onerror` synchronously, the reconnect path may not trigger within timeout. |
+| Aspect                   | Detail                                                                                                                                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steps**                | 1. Navigate to `/dashboard` 2. Wait for "Connected" indicator (5s) 3. `page.context.set_offline(True)` 4. Wait 1s (force disconnection, EventSource fires onerror) 5. `page.context.set_offline(False)` 6. Wait for reconnection (up to 10s) |
+| **Expected**             | ConnectionStatus returns to "Connected" after going offline and back online                                                                                                                                                                  |
+| **Assertion**            | After step 3: ConnectionStatus may show "Disconnected" or "Connecting..." (optional assert). After step 5: `expect(page.get_by_text("Connected")).to_be_visible(timeout=15000)`                                                              |
+| **Data flow**            | Offline → EventSource.onerror → `useSSE` cleanup → RECONNECT_DELAY=3000ms → `new EventSource(...)` → handshake → `onopen` → "Connected"                                                                                                      |
+| **False-pass risk**      | MEDIUM. Browser `set_offline()` may not perfectly simulate SSE disconnection. If EventSource doesn't fire `onerror` synchronously, the reconnect path may not trigger within timeout.                                                        |
 | **Alternative approach** | If `set_offline` is flaky: instead of simulating network failure, verify that SSE delivers MULTIPLE events (create two runs in sequence, verify both status updates appear). This proves the connection stays alive and delivers repeatedly. |
 
 #### Test 6: SSE delivers run.Stopped → real-time UI update
 
-| Aspect | Detail |
-|--------|--------|
-| **Steps** | 1. Create and start a paper run (stays in RUNNING) 2. Navigate to `/runs` 3. Verify "running" visible 4. Wait for SSE connection (2s) 5. Stop run via API 6. Do NOT reload page 7. Wait for status to change |
-| **Expected** | Run status changes from "running" → "stopped" WITHOUT page reload |
-| **Assertion** | `expect(page.get_by_text("stopped")).to_be_visible(timeout=15000)` |
-| **Data flow** | POST /stop → RunManager.stop() → emits "run.Stopped" → SSE → frontend `addEventListener("run.Stopped", ...)` → `invalidateQueries(["runs"])` → refetch → "stopped" badge |
-| **Validity** | ✅ Real state transition via SSE. Complements Test 4 (which tests backtest completion). Together they prove SSE works for both run.Completed and run.Stopped events. |
-| **False-pass risk** | LOW. Paper run genuinely enters RUNNING → stop genuinely transitions to STOPPED → SSE event genuinely fires. |
+| Aspect              | Detail                                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Steps**           | 1. Create and start a paper run (stays in RUNNING) 2. Navigate to `/runs` 3. Verify "running" visible 4. Wait for SSE connection (2s) 5. Stop run via API 6. Do NOT reload page 7. Wait for status to change |
+| **Expected**        | Run status changes from "running" → "stopped" WITHOUT page reload                                                                                                                                            |
+| **Assertion**       | `expect(page.get_by_text("stopped")).to_be_visible(timeout=15000)`                                                                                                                                           |
+| **Data flow**       | POST /stop → RunManager.stop() → emits "run.Stopped" → SSE → frontend `addEventListener("run.Stopped", ...)` → `invalidateQueries(["runs"])` → refetch → "stopped" badge                                     |
+| **Validity**        | ✅ Real state transition via SSE. Complements Test 4 (which tests backtest completion). Together they prove SSE works for both run.Completed and run.Stopped events.                                         |
+| **False-pass risk** | LOW. Paper run genuinely enters RUNNING → stop genuinely transitions to STOPPED → SSE event genuinely fires.                                                                                                 |
 
 ### 8.4 Tests intentionally NOT included
 
-| Removed Test | Reason |
-|---|---|
-| "Orders appear after backtest" | GET /orders returns MockOrderService data regardless of backtest results. Backtest fills live in GretaService memory only. See §1.7.2. |
-| "Orders filter by status" | MockOrderService has only 2 orders with fixed statuses. Filter test would be trivially true or depend on UI implementation details not yet finalized. |
-| "SSE delivers orders.Created during backtest" | GretaService emits "orders.Placed" but frontend has NO listener for this event. Test would never see the event. See §1.7.3. |
-| "SSE event triggers Activity Feed update" | Activity Feed component implementation not verified to listen to SSE events. Assertion would be vague. |
+| Removed Test                                  | Reason                                                                                                                                                |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Orders appear after backtest"                | GET /orders returns MockOrderService data regardless of backtest results. Backtest fills live in GretaService memory only. See §1.7.2.                |
+| "Orders filter by status"                     | MockOrderService has only 2 orders with fixed statuses. Filter test would be trivially true or depend on UI implementation details not yet finalized. |
+| "SSE delivers orders.Created during backtest" | GretaService emits "orders.Placed" but frontend has NO listener for this event. Test would never see the event. See §1.7.3.                           |
+| "SSE event triggers Activity Feed update"     | Activity Feed component implementation not verified to listen to SSE events. Assertion would be vague.                                                |
 
 ### 8.5 Verification
 
@@ -1675,15 +1688,15 @@ All items must pass for M10 to close:
 
 ### 10.6 Risk Assessment
 
-| Risk                                | Probability | Impact | Mitigation                                        |
-| ----------------------------------- | ----------- | ------ | ------------------------------------------------- |
-| Flaky E2E tests due to timing       | High        | Medium | Use Playwright auto-wait, generous timeouts (15s) |
-| CI E2E stack startup failure        | Medium      | High   | `--wait` flag + health checks + artifact upload   |
-| Locator fragility (UI text changes) | Medium      | Low    | Use `data-testid` for critical elements           |
-| Orders page tests mock data only    | Certain     | Low    | Documented in §1.7.1 — tests validate UI render   |
-| SSE orders.Placed not heard by FE   | Certain     | Medium | Documented in §1.7.3 — removed invalid tests      |
-| Paper run produces no orders        | Certain     | Low    | Documented in §1.7.7 — tests focus on lifecycle   |
-| Docker port conflicts in CI         | Low         | High   | Unique ports (3XXXX range) isolated from dev/prod |
+| Risk                                | Probability | Impact | Mitigation                                         |
+| ----------------------------------- | ----------- | ------ | -------------------------------------------------- |
+| Flaky E2E tests due to timing       | High        | Medium | Use Playwright auto-wait, generous timeouts (15s)  |
+| CI E2E stack startup failure        | Medium      | High   | `--wait` flag + health checks + artifact upload    |
+| Locator fragility (UI text changes) | Medium      | Low    | Use `data-testid` for critical elements            |
+| Orders page tests mock data only    | Certain     | Low    | Documented in §1.7.1 — tests validate UI render    |
+| SSE orders.Placed not heard by FE   | Certain     | Medium | Documented in §1.7.3 — removed invalid tests       |
+| Paper run produces no orders        | Certain     | Low    | Documented in §1.7.7 — tests focus on lifecycle    |
+| Docker port conflicts in CI         | Low         | High   | Unique ports (3XXXX range) isolated from dev/prod  |
 | SSE reconnect test flakiness        | Medium      | Low    | Alternative approach documented (multi-event test) |
 
 ---
