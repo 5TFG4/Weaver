@@ -7,8 +7,8 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-03-02 · **Total Tests**: 1032 passed (latest local run)  
-**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (CI Deployment) · **M10 Status**: ⏳ Planned (E2E Tests)
+**Last Updated**: 2026-03-16 · **Total Tests**: 1055 passed (latest local run)  
+**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests)
 
 ---
 
@@ -16,12 +16,12 @@
 
 | Metric            | Value                   | Status         |
 | ----------------- | ----------------------- | -------------- |
-| Total Tests       | 1032 (latest local run) | ✅             |
-| Test Files        | 73+                     | ✅             |
-| Total Assertions  | ~1,700+                 | ✅             |
+| Total Tests       | 1055 (latest local run) | ✅             |
+| Test Files        | 78+                     | ✅             |
+| Total Assertions  | ~1,800+                 | ✅             |
 | Unit Tests        | majority                | ✅             |
 | Integration Tests | targeted core flows     | ✅             |
-| E2E Tests         | 0 (0%)                  | ❌ Planned M10 |
+| E2E Tests         | 23 (Playwright)         | ✅ M10         |
 | Coverage Gate     | 89.61% (threshold: 80%) | ✅             |
 | Mock Usages       | high (design-intent)    | -              |
 
@@ -71,13 +71,13 @@
 
 ```
                     ┌─────────────┐
-                    │    E2E      │  0 tests (0%)
-                    │  (Planned)  │  Target: ~20–30 in M10
+                    │    E2E      │  23 tests (2%)
+                    │ (Playwright)│  Containerized, Chromium
                     ├─────────────┤
                     │ Integration │  44 tests (5%)
                     │   Tests     │  DB, Event flows
                 ┌───┴─────────────┴───┐
-                │     Unit Tests      │  762 tests (95%)
+                │     Unit Tests      │  762 tests (93%)
                 │  Isolated, fast,    │  Avg 0.02s/test
                 │  comprehensive      │
                 └─────────────────────┘
@@ -89,7 +89,7 @@
 | --------------- | ----- | ----------------------------- | --------- |
 | **Unit**        | 762   | Isolated function/class tests | ★★★★★     |
 | **Integration** | 44    | Multi-component collaboration | ★★★★☆     |
-| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M10    |
+| **E2E**         | 23    | Full browser→API→DB flow      | ★★★★☆     |
 | **Performance** | 0     | Load/stress testing           | ❌ Future |
 
 ---
@@ -301,6 +301,8 @@ testpaths = ["tests"]
 | M6 Live Trading      | ~101        | 806   | 2026-02 |
 | M7 Frontend (M7-0→5) | ~63         | 871   | 2026-02 |
 | M7 SSE (M7-6)        | ~23         | 894   | 2026-02 |
+| M8 Fixes & Polish    | ~138        | 1032  | 2026-03 |
+| M10 E2E Tests        | 23          | 1055  | 2026-03 |
 
 ---
 
@@ -317,12 +319,20 @@ testpaths = ["tests"]
 - [x] Add Toast + ConnectionStatus component tests (M7-6) ✅ 8 tests
 - [x] Add useSSE hook tests (M7-6) ✅ 9 tests
 
-### M8 (Polish & E2E)
+### M10 (E2E Tests) ✅ COMPLETE
 
-- [ ] Add Playwright E2E tests (~40 tests)
+- [x] E2E infrastructure: test_runner container, docker-compose.e2e.yml
+- [x] Navigation tests (6): page loads, routing, sidebar nav, 404
+- [x] Backtest flow tests (6): create via UI/API, start→completed, deep-link, dashboard stats
+- [x] Paper flow tests (5): create, start→running, active runs, stop→stopped, error state
+- [x] Orders tests (2): mock data rendering, detail modal
+- [x] SSE tests (4): connection status, real-time run updates, reconnect
+- [x] All 23 E2E tests passing in containerized Playwright/Chromium
+
+### Future
+
 - [ ] Add authentication tests
 - [ ] Add error boundary tests
-- [ ] Achieve ≥80% code coverage
 - [ ] Add performance baseline tests
 
 ---

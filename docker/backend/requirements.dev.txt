@@ -23,5 +23,9 @@ respx>=0.20.0                 # HTTPX mocking
 ruff>=0.0.280                 # Linter + formatter
 mypy>=1.4.0                   # Type checking
 
+# --- E2E Testing (Browser Automation) ---
+playwright>=1.40.0            # Browser automation for E2E tests
+pytest-playwright>=0.5.0      # Playwright pytest plugin
+
 # --- Type Stubs ---
 types-python-dateutil>=2.8.0
