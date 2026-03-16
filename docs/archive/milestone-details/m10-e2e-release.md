@@ -86,19 +86,27 @@ All results measured locally on 2026-03-15; these are facts, not assumptions.
 ### 1.5 Docker Service Topology (E2E Target)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Host Machine / CI Runner                                       │
-│                                                                 │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐ │
-│  │ PostgreSQL   │   │  Backend     │   │  Frontend (Nginx)    │ │
-│  │ :25432       │◀──│  :28919      │◀──│  :23579              │ │
-│  │              │   │  FastAPI     │   │  Serves SPA + proxy  │ │
-│  └──────────────┘   └──────────────┘   └──────────────────────┘ │
-│                                               ↑                  │
-│                                        Playwright tests          │
-│                                        (chromium headless)       │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────── Docker Compose Network (weaver-e2e) ────────────────────┐
+│                                                                             │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐             │
+│  │ PostgreSQL   │   │  Backend     │   │  Frontend (Nginx)    │             │
+│  │ db_e2e:5432  │◀──│  backend_e2e │◀──│  frontend_e2e:80     │             │
+│  │              │   │  :8000       │   │  Serves SPA + proxy  │             │
+│  └──────────────┘   └──────────────┘   └──────────────────────┘             │
+│                                               ↑                             │
+│                                   ┌───────────────────────┐                 │
+│                                   │  test_runner           │                 │
+│                                   │  Python 3.13 +         │                 │
+│                                   │  Playwright + Chromium │                 │
+│                                   │  pytest tests/e2e/     │                 │
+│                                   └───────────────────────┘                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+│  Host / CI Runner: only needs Docker — zero Python/browser dependencies     │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Portability**: The test-runner container runs inside the same Docker Compose network as the SUT (System Under Test). Host machines only need Docker installed — no Python, no Chromium, no dependency sync.
 
 ### 1.6 Test Pyramid — Current vs Target
 
@@ -257,7 +265,7 @@ The production frontend (Nginx) proxies API requests:
 - `/api/v1/events/stream` → special SSE config: `proxy_buffering off`, `proxy_read_timeout 86400s`
 - All other paths → serve static files, fallback to `index.html` (SPA routing)
 
-**In the E2E Docker stack**: The Playwright browser connects to the frontend (Nginx) on port 33579. All API calls from the React app go through Nginx to the backend. This is the same path production uses — which is what E2E should test.
+**In the E2E Docker stack**: The test-runner container connects to `frontend_e2e:80` via Docker internal DNS (same Compose network). All API calls from the React app go through Nginx to the backend. This is the same path production uses — which is what E2E should test. No host ports are needed for test execution; ports are only exposed for optional debugging.
 
 #### 1.7.9 Valid vs Invalid Test Summary
 
@@ -348,6 +356,23 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
 
 **Decision**: Playwright Python with `pytest-playwright` plugin — integrates directly with our existing pytest infrastructure, auto-collection hooks, and test markers.
 
+### 4.0.1 Containerized Execution (Portability Requirement)
+
+**Problem**: Running Playwright on the host requires Python 3.13 + Chromium + all project dependencies installed locally. This breaks cross-device portability and complicates CI setup.
+
+**Solution**: Run Playwright inside a dedicated `test_runner` container within the same Docker Compose network as the SUT. The host only needs Docker.
+
+| Aspect              | Host-based (REJECTED)                     | Containerized (ADOPTED)                              |
+| ------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| Host requirements   | Python 3.13 + Chromium + pip deps         | Docker only                                          |
+| Dependency sync     | Manual — host must match container Python | Automatic — same `requirements.dev.txt` in Dockerfile |
+| CI setup            | `setup-python` + `playwright install`     | `docker compose run test_runner`                     |
+| Network access      | Host ports (127.0.0.1:3XXXX)              | Docker internal DNS (`frontend_e2e:80`)              |
+| Cross-device        | ❌ Must reconfigure per machine            | ✅ Works anywhere Docker runs                         |
+| Debug access        | Direct browser DevTools                   | Ports exposed optionally; `--headed` not supported   |
+
+**Trade-off**: Headless-only execution inside container (no `--headed` debugging). Acceptable because E2E tests are designed for CI; local debugging uses optional host-port access + container logs.
+
 ### 4.1 M10-0a: Install Playwright + Dependencies
 
 **File changes**:
@@ -360,41 +385,76 @@ M10-5: Release Polish & Documentation  (deploy guide, doc sync, perf baseline)
    pytest-playwright>=0.5.0
    ```
 
+   > **Note**: These are added to `requirements.dev.txt` for IDE autocomplete/typing support. Primary execution is inside the test-runner container (see §4.1b). The backend container does NOT need Playwright browser binaries.
+
 2. **`pyproject.toml`** — Add Playwright base URL config under pytest options:
 
    ```toml
    [tool.pytest.ini_options]
    # ... existing config ...
    # Playwright settings (used only by E2E tests; base URL overridable via --base-url)
-   base_url = "http://127.0.0.1:23579"
+   base_url = "http://frontend_e2e:80"
    ```
 
-3. **Install browser binaries** (one-time, inside dev container or CI):
-   ```bash
-   pip install playwright pytest-playwright
-   playwright install chromium --with-deps
-   ```
-
-**Verification**:
-
-```bash
-pip install -r docker/backend/requirements.dev.txt
-playwright install chromium --with-deps
-python -c "from playwright.sync_api import sync_playwright; print('Playwright OK')"
-```
+   > **Note**: `base_url` uses Docker internal DNS. When running outside Docker (not recommended), override with `--base-url http://127.0.0.1:33579`.
 
 **Commit**: `build(e2e): add playwright and pytest-playwright dependencies`
 
+### 4.1b M10-0a2: E2E Test Runner Dockerfile
+
+Create a dedicated Dockerfile for the test-runner container. It reuses the same dependency files as the backend to eliminate sync issues.
+
+**File**: `docker/e2e/Dockerfile`
+
+```dockerfile
+FROM python:3.13-slim-bookworm
+
+# Install system dependencies required by Playwright/Chromium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Reuse the same dependency files as backend — zero sync cost
+COPY docker/backend/requirements.txt docker/backend/requirements.dev.txt /tmp/deps/
+RUN pip install --no-cache-dir -r /tmp/deps/requirements.dev.txt \
+    && rm -rf /tmp/deps
+
+# Install Playwright + Chromium browser binary
+RUN pip install --no-cache-dir playwright>=1.40.0 pytest-playwright>=0.5.0 \
+    && playwright install chromium --with-deps
+
+# Copy project source (tests + src needed for imports)
+COPY . /app
+
+# Default: run all E2E tests
+CMD ["pytest", "tests/e2e/", "-v", "--timeout=60"]
+```
+
+**Design decisions**:
+
+- **`FROM python:3.13-slim-bookworm`**: Same Python version as backend Dockerfile — guaranteed compatibility.
+- **Reuses `requirements.txt` + `requirements.dev.txt`**: Dependencies are defined once, used by both backend and test-runner. Changing deps in one place updates both.
+- **`playwright install chromium --with-deps`**: Installs Chromium and all required system libraries (fonts, libnss, etc.) at build time. No runtime downloads.
+- **`COPY . /app`**: Full project tree needed — `tests/` for test files, `src/` for any imports in helpers/fixtures.
+- **No Docker CLI inside container**: Test-runner does NOT manage the compose stack. Stack lifecycle is managed by the outer `docker compose` command or the launch script.
+
+**Commit**: `ci(e2e): add test-runner Dockerfile for containerized E2E execution`
+
 ### 4.2 M10-0b: E2E Docker Compose Stack
 
-Create a dedicated compose file for E2E testing that is isolated from dev/prod stacks.
+Create a dedicated compose file for E2E testing that is isolated from dev/prod stacks. Includes a `test_runner` service for containerized Playwright execution.
 
 **File**: `docker/docker-compose.e2e.yml`
 
 ```yaml
 # Docker Compose for E2E testing.
-# Spins up backend + frontend + db with deterministic ports.
-# Usage: docker compose -f docker/docker-compose.e2e.yml up -d --build
+# Spins up backend + frontend + db + test-runner in an isolated network.
+# Usage:
+#   Full run:  docker compose -f docker/docker-compose.e2e.yml run --rm test_runner
+#   Debug:     docker compose -f docker/docker-compose.e2e.yml up -d db_e2e backend_e2e frontend_e2e
+#              then inspect at http://127.0.0.1:38919/api/v1/healthz
 
 name: weaver-e2e
 
@@ -406,7 +466,7 @@ services:
       POSTGRES_USER: weaver
       POSTGRES_PASSWORD: weaver_e2e_password
     ports:
-      - "35432:5432"
+      - "35432:5432"   # Optional: host access for debugging only
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U weaver -d weaver_e2e_db"]
       interval: 3s
@@ -426,7 +486,7 @@ services:
       ALPACA_PAPER_API_KEY: ""
       ALPACA_PAPER_API_SECRET: ""
     ports:
-      - "38919:8000"
+      - "38919:8000"   # Optional: host access for debugging only
     depends_on:
       db_e2e:
         condition: service_healthy
@@ -436,17 +496,36 @@ services:
       context: ..
       dockerfile: docker/frontend/Dockerfile
     ports:
-      - "33579:80"
+      - "33579:80"     # Optional: host access for debugging only
     depends_on:
       - backend_e2e
+
+  test_runner:
+    build:
+      context: ..
+      dockerfile: docker/e2e/Dockerfile
+    environment:
+      # Playwright connects to frontend via Docker internal DNS
+      BASE_URL: "http://frontend_e2e:80"
+      API_BASE_URL: "http://backend_e2e:8000/api/v1"
+      DB_URL: "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
+    depends_on:
+      - frontend_e2e
+      - backend_e2e
+    # Not started by default with `up -d`; use `docker compose run --rm test_runner`
+    profiles:
+      - test
 ```
 
 **Design decisions**:
 
-- **Fixed ports** (35432, 38919, 33579): Predictable URLs for Playwright base URL; no port conflicts with dev/prod stacks.
+- **Fixed ports** (35432, 38919, 33579): For optional host debugging only — test execution uses Docker internal DNS.
 - **`tmpfs` for Postgres**: RAM-based data directory for speed (E2E data is ephemeral).
 - **No Alpaca credentials**: E2E tests use mock/degraded mode (no real exchange calls).
 - **Separate compose project name** (`weaver-e2e`): Isolated from dev/prod containers.
+- **`test_runner` uses `profiles: [test]`**: Not started by `docker compose up -d` — only runs via `docker compose run --rm test_runner` or `docker compose --profile test up`. This allows starting the SUT services separately for debugging.
+- **Environment variables in test_runner**: `BASE_URL`, `API_BASE_URL`, and `DB_URL` passed via env — helpers.py reads from env with Docker-internal defaults. Overridable for non-Docker execution.
+- **`test_runner` depends_on frontend + backend**: Compose ensures SUT is started before tests. Combined with health-check waits in conftest, this guarantees readiness.
 
 **Commit**: `ci(e2e): add docker-compose.e2e.yml for E2E test stack`
 
@@ -462,15 +541,20 @@ E2E Test Helpers
 
 Reusable utilities for browser-based end-to-end tests.
 Provides API client, wait utilities, and assertion helpers.
+
+URLs default to Docker internal DNS (test_runner container).
+Override via environment variables for non-Docker execution.
 """
 
 from __future__ import annotations
 
+import os
+
 import httpx
 
-# E2E stack ports (must match docker-compose.e2e.yml)
-E2E_API_BASE = "http://127.0.0.1:38919/api/v1"
-E2E_FRONTEND_BASE = "http://127.0.0.1:33579"
+# E2E stack URLs — Docker internal DNS by default, overridable via env
+E2E_API_BASE = os.environ.get("API_BASE_URL", "http://backend_e2e:8000/api/v1")
+E2E_FRONTEND_BASE = os.environ.get("BASE_URL", "http://frontend_e2e:80")
 
 # Timeouts
 DEFAULT_TIMEOUT_MS = 10_000  # 10 seconds for element waits
@@ -547,9 +631,11 @@ class E2EApiClient:
         self._client.close()
 ```
 
+**Key change from original**: URLs use Docker internal DNS (`backend_e2e:8000`, `frontend_e2e:80`) instead of `127.0.0.1:3XXXX`. Overridable via `API_BASE_URL` and `BASE_URL` environment variables (set in `docker-compose.e2e.yml`).
+
 **Commit**: `test(e2e): add E2E helper module with API client and constants`
 
-### 4.4 M10-0d: E2E conftest.py — Fixtures & Stack Management
+### 4.4 M10-0d: E2E conftest.py — Fixtures & Health Check
 
 **File**: `tests/e2e/conftest.py`
 
@@ -557,25 +643,27 @@ class E2EApiClient:
 """
 E2E Test Fixtures
 
-Manages the Docker Compose E2E stack lifecycle and provides
-Playwright fixtures for browser-based testing.
+Provides Playwright fixtures and health-check waits for browser-based testing.
+Stack lifecycle is managed EXTERNALLY by Docker Compose (not by pytest).
 """
 
 from __future__ import annotations
 
-import subprocess
+import os
 import time
 from collections.abc import Generator
-from pathlib import Path
 
 import httpx
+import psycopg2
 import pytest
 
 from tests.e2e.helpers import E2E_API_BASE, E2E_FRONTEND_BASE, E2EApiClient
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_FILE = PROJECT_ROOT / "docker" / "docker-compose.e2e.yml"
-COMPOSE_ARGS = ["docker", "compose", "-f", str(COMPOSE_FILE)]
+# DB connection string for direct cleanup (Docker internal DNS)
+E2E_DB_URL = os.environ.get(
+    "DB_URL",
+    "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db",
+)
 
 
 def _stack_is_healthy() -> bool:
@@ -598,46 +686,16 @@ def _wait_for_stack(timeout: int = 120) -> None:
     raise TimeoutError(f"E2E stack not healthy after {timeout}s")
 
 
-def _run_migrations() -> None:
-    """Run Alembic migrations against E2E database."""
-    result = subprocess.run(
-        [*COMPOSE_ARGS, "exec", "-T", "backend_e2e", "alembic", "upgrade", "head"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"E2E migration failed: {result.stderr}")
-
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def e2e_stack() -> Generator[None]:
     """
-    Manage the E2E Docker Compose stack lifecycle.
+    Wait for the E2E stack to become healthy.
 
-    Starts the stack once per test session, runs migrations,
-    waits for health, and tears down after all tests complete.
+    Stack lifecycle (up/down) is managed externally by Docker Compose
+    or the launch script. This fixture only blocks until the SUT is ready.
     """
-    # Build and start
-    subprocess.run(
-        [*COMPOSE_ARGS, "up", "-d", "--build", "--wait"],
-        cwd=PROJECT_ROOT,
-        check=True,
-        timeout=300,
-    )
-
-    try:
-        _wait_for_stack(timeout=120)
-        _run_migrations()
-        # Wait again after migrations
-        _wait_for_stack(timeout=30)
-        yield
-    finally:
-        subprocess.run(
-            [*COMPOSE_ARGS, "down", "-v"],
-            cwd=PROJECT_ROOT,
-            timeout=60,
-        )
+    _wait_for_stack(timeout=120)
+    yield
 
 
 @pytest.fixture(scope="session")
@@ -659,44 +717,30 @@ def clean_e2e_db(e2e_stack: None) -> None:
     """
     Reset database state between tests that require isolation.
 
-    Runs TRUNCATE on all tables via the backend container.
-    Most tests should NOT need this — only use when test data
-    must be completely clean (e.g., empty-state assertions).
+    Connects directly to the E2E database via psycopg2 (synchronous)
+    and truncates all tables. No Docker CLI or subprocess needed.
     """
-    subprocess.run(
-        [
-            *COMPOSE_ARGS,
-            "exec",
-            "-T",
-            "backend_e2e",
-            "python",
-            "-c",
-            (
-                "import asyncio; "
-                "from src.walle.database import Database; "
-                "from src.config import DatabaseConfig; "
-                "import os; "
-                "async def clean(): "
-                "    db = Database(DatabaseConfig(url=os.environ['DB_URL'])); "
-                "    async with db.session() as s: "
-                "        for t in ['fills','veda_orders','runs','bars','outbox','consumer_offsets']: "
-                "            await s.execute(__import__('sqlalchemy').text(f'TRUNCATE TABLE {t} CASCADE')); "
-                "        await s.commit(); "
-                "    await db.close(); "
-                "asyncio.run(clean())"
-            ),
-        ],
-        check=True,
-        timeout=30,
-    )
+    conn = psycopg2.connect(E2E_DB_URL)
+    conn.autocommit = True
+    try:
+        with conn.cursor() as cur:
+            for table in [
+                "fills", "veda_orders", "runs", "bars",
+                "outbox", "consumer_offsets",
+            ]:
+                cur.execute(f"TRUNCATE TABLE {table} CASCADE")
+    finally:
+        conn.close()
 ```
 
-**Design decisions**:
+**Key changes from original design**:
 
-- **Session-scoped stack**: Start Docker Compose once per session (expensive operation), not per test.
-- **`--wait` flag**: Docker Compose v2 natively waits for health checks before returning.
-- **`tmpfs` in compose**: RAM-based Postgres — fast table truncation for isolation.
-- **`clean_e2e_db` fixture**: Optional — only used by tests that need guaranteed empty state. Most tests don't need it because they query by specific IDs.
+- **No compose lifecycle management**: `e2e_stack` fixture is a health-check-only wait. Stack is started/stopped by Docker Compose externally (launch script or CI).
+- **No `subprocess.run` calls**: No need for Docker CLI inside the test container.
+- **Direct DB connection for `clean_e2e_db`**: Uses `psycopg2` (already in `requirements.txt`) to connect directly to `db_e2e:5432` via Docker internal DNS. Faster and simpler than exec-ing into the backend container.
+- **`autouse=True` on `e2e_stack`**: Every E2E test automatically waits for stack readiness without explicit fixture dependency.
+
+**Commit**: `test(e2e): add E2E conftest with health-check fixtures`
 
 **Commit**: `test(e2e): add E2E conftest with Docker stack management`
 
@@ -713,13 +757,15 @@ COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.e2e.yml"
 COMPOSE_ARGS=(-f "$COMPOSE_FILE")
 
 echo "=========================================="
-echo " E2E Test Runner"
+echo " E2E Test Runner (Containerized)"
 echo "=========================================="
 
 KEEP_UP=false
+PYTEST_ARGS=()
 for arg in "$@"; do
   case "$arg" in
     --keep-up) KEEP_UP=true ;;
+    *)         PYTEST_ARGS+=("$arg") ;;
   esac
 done
 
@@ -727,31 +773,34 @@ teardown() {
   if ! $KEEP_UP; then
     echo ""
     echo "--- Tearing down E2E stack ---"
-    docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+    docker compose "${COMPOSE_ARGS[@]}" --profile test down -v 2>/dev/null || true
   else
     echo ""
     echo "--- Stack left running (--keep-up). Tear down manually: ---"
-    echo "  docker compose ${COMPOSE_ARGS[*]} down -v"
+    echo "  docker compose ${COMPOSE_ARGS[*]} --profile test down -v"
   fi
 }
 trap teardown EXIT
 
 echo ""
-echo "--- Building & starting E2E stack ---"
-docker compose "${COMPOSE_ARGS[@]}" up -d --build --wait
+echo "--- Building images ---"
+docker compose "${COMPOSE_ARGS[@]}" --profile test build
+
+echo ""
+echo "--- Starting E2E stack (db + backend + frontend) ---"
+docker compose "${COMPOSE_ARGS[@]}" up -d --wait db_e2e backend_e2e frontend_e2e
 
 echo ""
 echo "--- Running Alembic migrations ---"
 docker compose "${COMPOSE_ARGS[@]}" exec -T backend_e2e alembic upgrade head
 
 echo ""
-echo "--- Installing Playwright browser ---"
-playwright install chromium --with-deps 2>/dev/null || true
-
-echo ""
-echo "--- Running E2E tests ---"
-cd "$ROOT_DIR"
-pytest tests/e2e/ -v --timeout=60 "$@"
+echo "--- Running E2E tests in container ---"
+if [[ ${#PYTEST_ARGS[@]} -gt 0 ]]; then
+  docker compose "${COMPOSE_ARGS[@]}" run --rm test_runner pytest tests/e2e/ -v --timeout=60 "${PYTEST_ARGS[@]}"
+else
+  docker compose "${COMPOSE_ARGS[@]}" run --rm test_runner
+fi
 
 echo ""
 echo "=========================================="
@@ -765,21 +814,28 @@ echo "=========================================="
 chmod +x scripts/ci/e2e-local.sh
 ./scripts/ci/e2e-local.sh              # Run and teardown
 ./scripts/ci/e2e-local.sh --keep-up    # Keep stack running for debugging
+./scripts/ci/e2e-local.sh -k test_navigation  # Run specific tests
 ```
+
+**Key change from original**: No host-side Python/Playwright needed. The script:
+1. Builds all images (including test_runner with Chromium pre-installed)
+2. Starts SUT services (db, backend, frontend)
+3. Runs pytest inside the test_runner container
+4. Tears down everything (unless `--keep-up`)
 
 **Commit**: `ci(e2e): add local E2E test runner script`
 
 ### 4.6 M10-0 Verification Checklist
 
 ```
-- [ ] pip install playwright pytest-playwright succeeds
-- [ ] playwright install chromium --with-deps succeeds
+- [ ] docker/e2e/Dockerfile builds successfully
 - [ ] docker compose -f docker/docker-compose.e2e.yml config validates
-- [ ] docker compose -f docker/docker-compose.e2e.yml up -d --build --wait starts all 3 services
-- [ ] curl http://127.0.0.1:38919/api/v1/healthz returns 200
-- [ ] curl http://127.0.0.1:33579/ returns 200 (HTML)
-- [ ] pytest tests/e2e/ --co collects 0 tests (no test files yet, but no import errors)
-- [ ] docker compose -f docker/docker-compose.e2e.yml down -v cleans up
+- [ ] docker compose -f docker/docker-compose.e2e.yml up -d --wait db_e2e backend_e2e frontend_e2e starts all 3 SUT services
+- [ ] curl http://127.0.0.1:38919/api/v1/healthz returns 200 (optional host debug)
+- [ ] curl http://127.0.0.1:33579/ returns 200 (optional host debug)
+- [ ] docker compose -f docker/docker-compose.e2e.yml run --rm test_runner pytest tests/e2e/ --co collects 0 tests (no test files yet, but no import errors)
+- [ ] docker compose -f docker/docker-compose.e2e.yml --profile test down -v cleans up
+- [ ] scripts/ci/e2e-local.sh runs end-to-end with zero host dependencies
 ```
 
 ---
@@ -897,8 +953,12 @@ class TestNavigation:
 ### 5.4 Verification
 
 ```bash
+# Inside test_runner container (or via launch script):
 pytest tests/e2e/test_navigation.py -v --timeout=30
 # Expected: 6 passed
+
+# From host:
+docker compose -f docker/docker-compose.e2e.yml run --rm test_runner pytest tests/e2e/test_navigation.py -v --timeout=30
 ```
 
 **Commit**: `test(e2e): add navigation and health E2E tests (6 tests)`
@@ -1106,8 +1166,12 @@ If existing locators prove too fragile, add these to React components:
 ### 6.5 Verification
 
 ```bash
+# Inside test_runner container (or via launch script):
 pytest tests/e2e/test_backtest_flow.py -v --timeout=60
 # Expected: 7 passed
+
+# From host:
+docker compose -f docker/docker-compose.e2e.yml run --rm test_runner pytest tests/e2e/test_backtest_flow.py -v --timeout=60
 ```
 
 **Commit**: `test(e2e): add backtest flow E2E tests (7 tests)`
@@ -1209,8 +1273,12 @@ POST /runs/{id}/stop
 ### 7.3 Verification
 
 ```bash
+# Inside test_runner container (or via launch script):
 pytest tests/e2e/test_paper_flow.py -v --timeout=60
 # Expected: 5 passed
+
+# From host:
+docker compose -f docker/docker-compose.e2e.yml run --rm test_runner pytest tests/e2e/test_paper_flow.py -v --timeout=60
 ```
 
 **Commit**: `test(e2e): add paper trading flow E2E tests (5 tests)`
@@ -1349,8 +1417,12 @@ Browser navigates to /orders
 ### 8.5 Verification
 
 ```bash
+# Inside test_runner container (or via launch script):
 pytest tests/e2e/test_orders.py tests/e2e/test_sse.py -v --timeout=60
 # Expected: 6 passed (2 orders + 4 SSE)
+
+# From host:
+docker compose -f docker/docker-compose.e2e.yml run --rm test_runner pytest tests/e2e/test_orders.py tests/e2e/test_sse.py -v --timeout=60
 ```
 
 **Commits**:
@@ -1510,18 +1582,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+      - name: Build E2E images
+        run: docker compose -f docker/docker-compose.e2e.yml --profile test build
 
-      - name: Install test dependencies
-        run: pip install -r docker/backend/requirements.dev.txt
-
-      - name: Install Playwright
-        run: playwright install chromium --with-deps
-
-      - name: Build & start E2E stack
-        run: docker compose -f docker/docker-compose.e2e.yml up -d --build --wait
+      - name: Start E2E stack
+        run: docker compose -f docker/docker-compose.e2e.yml up -d --wait db_e2e backend_e2e frontend_e2e
 
       - name: Run DB migrations
         run: docker compose -f docker/docker-compose.e2e.yml exec -T backend_e2e alembic upgrade head
@@ -1530,7 +1595,7 @@ jobs:
         run: docker compose -f docker/docker-compose.e2e.yml exec -T backend_e2e python -m tests.e2e.seed
 
       - name: Run E2E tests
-        run: pytest tests/e2e/ -v --timeout=60
+        run: docker compose -f docker/docker-compose.e2e.yml run --rm test_runner
 
       - name: Capture logs on failure
         if: failure()
@@ -1539,7 +1604,7 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f docker/docker-compose.e2e.yml down -v
+        run: docker compose -f docker/docker-compose.e2e.yml --profile test down -v
 
       - name: Upload failure logs
         if: failure()
@@ -1549,6 +1614,8 @@ jobs:
           path: /tmp/e2e_logs.out
           retention-days: 7
 ```
+
+**Key change from original**: No `setup-python` or `playwright install` steps. CI only needs Docker (pre-installed on `ubuntu-latest`). All Python/Chromium dependencies are baked into the test-runner image.
 
 ### 9.6 M10-5f: Strategy & Adapter Development Guides (Deferred from M8)
 
@@ -1590,16 +1657,16 @@ All items must pass for M10 to close:
 
 **E2E Tests**:
 
-- [ ] Playwright installed and configured in `requirements.dev.txt`
-- [ ] `docker-compose.e2e.yml` starts isolated test stack
-- [ ] E2E conftest manages stack lifecycle (session-scoped)
+- [ ] Playwright installed and configured in test-runner Dockerfile
+- [ ] `docker-compose.e2e.yml` starts isolated test stack with test_runner service
+- [ ] E2E conftest provides health-check waits and direct DB cleanup (no Docker CLI needed)
 - [ ] `test_navigation.py`: 6 tests passing (page loads, routing, 404)
 - [ ] `test_backtest_flow.py`: 6 tests passing (create → start → completion → status)
 - [ ] `test_paper_flow.py`: 5 tests passing (create → start → running → stop → error)
 - [ ] `test_orders.py`: 2 tests passing (mock data rendering, detail view)
 - [ ] `test_sse.py`: 4 tests passing (connection, run status delivery, reconnect)
-- [ ] `scripts/ci/e2e-local.sh` runs all E2E tests locally
-- [ ] `pytest tests/e2e/ -v` passes with all ~23 tests green
+- [ ] `scripts/ci/e2e-local.sh` runs all E2E tests via containerized execution (zero host deps)
+- [ ] `docker compose -f docker/docker-compose.e2e.yml run --rm test_runner` passes with all ~23 tests green
 
 **Documentation**:
 
@@ -1637,41 +1704,43 @@ All items must pass for M10 to close:
 
 ### 10.3 Commit Sequence
 
-| Order | Commit Message                                                   | Phase  |
-| ----- | ---------------------------------------------------------------- | ------ |
-| 1     | `build(e2e): add playwright and pytest-playwright dependencies`  | M10-0a |
-| 2     | `ci(e2e): add docker-compose.e2e.yml for E2E test stack`         | M10-0b |
-| 3     | `test(e2e): add E2E helper module with API client and constants` | M10-0c |
-| 4     | `test(e2e): add E2E conftest with Docker stack management`       | M10-0d |
-| 5     | `ci(e2e): add local E2E test runner script`                      | M10-0e |
-| 6     | `test(e2e): add navigation and health E2E tests (6 tests)`       | M10-1  |
-| 7     | `test(e2e): add bar data seeding for backtest E2E tests`         | M10-2  |
-| 8     | `test(e2e): add backtest flow E2E tests (6 tests)`               | M10-2  |
-| 9     | `test(e2e): add paper trading flow E2E tests (5 tests)`          | M10-3  |
-| 10    | `test(e2e): add orders page E2E tests (2 tests)`                 | M10-4  |
-| 11    | `test(e2e): add SSE delivery E2E tests (4 tests)`                | M10-4  |
-| 12    | `docs(deploy): add production deployment guide`                  | M10-5a |
-| 13    | `docs: update all test counts and coverage numbers`              | M10-5b |
-| 14    | `docs: add strategy and adapter development guides`              | M10-5f |
-| 15    | `ci(e2e): add E2E CI workflow`                                   | M10-5e |
+| Order | Commit Message                                                   | Phase   |
+| ----- | ---------------------------------------------------------------- | ------- |
+| 1     | `build(e2e): add playwright and pytest-playwright dependencies`  | M10-0a  |
+| 2     | `ci(e2e): add test-runner Dockerfile for containerized E2E`      | M10-0a2 |
+| 3     | `ci(e2e): add docker-compose.e2e.yml for E2E test stack`         | M10-0b  |
+| 4     | `test(e2e): add E2E helper module with API client and constants` | M10-0c  |
+| 5     | `test(e2e): add E2E conftest with health-check fixtures`         | M10-0d  |
+| 6     | `ci(e2e): add local E2E test runner script`                      | M10-0e  |
+| 7     | `test(e2e): add navigation and health E2E tests (6 tests)`       | M10-1   |
+| 8     | `test(e2e): add bar data seeding for backtest E2E tests`         | M10-2   |
+| 9     | `test(e2e): add backtest flow E2E tests (6 tests)`               | M10-2   |
+| 10    | `test(e2e): add paper trading flow E2E tests (5 tests)`          | M10-3   |
+| 11    | `test(e2e): add orders page E2E tests (2 tests)`                 | M10-4   |
+| 12    | `test(e2e): add SSE delivery E2E tests (4 tests)`                | M10-4   |
+| 13    | `docs(deploy): add production deployment guide`                  | M10-5a  |
+| 14    | `docs: update all test counts and coverage numbers`              | M10-5b  |
+| 15    | `docs: add strategy and adapter development guides`              | M10-5f  |
+| 16    | `ci(e2e): add E2E CI workflow`                                   | M10-5e  |
 
 ### 10.4 Files Created
 
-| File                                  | Purpose                                    |
-| ------------------------------------- | ------------------------------------------ |
-| `docker/docker-compose.e2e.yml`       | Isolated E2E test Docker stack             |
-| `tests/e2e/conftest.py`               | E2E fixtures (stack lifecycle, API client) |
-| `tests/e2e/helpers.py`                | E2E utility functions and constants        |
-| `tests/e2e/seed.py`                   | Database seeding for E2E backtest tests    |
-| `tests/e2e/test_navigation.py`        | Navigation & health E2E tests              |
-| `tests/e2e/test_backtest_flow.py`     | Backtest lifecycle E2E tests               |
-| `tests/e2e/test_paper_flow.py`        | Paper trading lifecycle E2E tests          |
-| `tests/e2e/test_orders.py`            | Orders page E2E tests                      |
-| `tests/e2e/test_sse.py`               | SSE event delivery E2E tests               |
-| `scripts/ci/e2e-local.sh`             | Local E2E test runner script               |
-| `.github/workflows/e2e.yml`           | E2E CI workflow for GitHub Actions         |
-| `docs/guides/strategy-development.md` | Strategy development guide                 |
-| `docs/guides/adapter-development.md`  | Adapter development guide                  |
+| File                                  | Purpose                                                  |
+| ------------------------------------- | -------------------------------------------------------- |
+| `docker/e2e/Dockerfile`               | Test-runner image (Python 3.13 + Playwright + Chromium)  |
+| `docker/docker-compose.e2e.yml`       | Isolated E2E test Docker stack (SUT + test-runner)       |
+| `tests/e2e/conftest.py`               | E2E fixtures (health-check waits, API client, DB cleanup)|
+| `tests/e2e/helpers.py`                | E2E utility functions and constants                      |
+| `tests/e2e/seed.py`                   | Database seeding for E2E backtest tests                  |
+| `tests/e2e/test_navigation.py`        | Navigation & health E2E tests                            |
+| `tests/e2e/test_backtest_flow.py`     | Backtest lifecycle E2E tests                             |
+| `tests/e2e/test_paper_flow.py`        | Paper trading lifecycle E2E tests                        |
+| `tests/e2e/test_orders.py`            | Orders page E2E tests                                    |
+| `tests/e2e/test_sse.py`              | SSE event delivery E2E tests                             |
+| `scripts/ci/e2e-local.sh`             | Local E2E test runner script                             |
+| `.github/workflows/e2e.yml`           | E2E CI workflow for GitHub Actions                       |
+| `docs/guides/strategy-development.md` | Strategy development guide                               |
+| `docs/guides/adapter-development.md`  | Adapter development guide                                |
 
 ### 10.5 Files Modified
 
@@ -1696,8 +1765,9 @@ All items must pass for M10 to close:
 | Orders page tests mock data only    | Certain     | Low    | Documented in §1.7.1 — tests validate UI render    |
 | SSE orders.Placed not heard by FE   | Certain     | Medium | Documented in §1.7.3 — removed invalid tests       |
 | Paper run produces no orders        | Certain     | Low    | Documented in §1.7.7 — tests focus on lifecycle    |
-| Docker port conflicts in CI         | Low         | High   | Unique ports (3XXXX range) isolated from dev/prod  |
+| Docker port conflicts in CI         | Low         | High   | Unique ports (3XXXX range) for debug only; tests use internal DNS |
 | SSE reconnect test flakiness        | Medium      | Low    | Alternative approach documented (multi-event test) |
+| Host env incompatibility             | None        | N/A    | Eliminated — containerized execution requires only Docker |
 
 ---
 

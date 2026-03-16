@@ -561,14 +561,14 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 6.1 Exit Gate (Definition of Done)
 
-- [ ] Playwright installed and E2E infrastructure configured
-- [ ] `docker-compose.e2e.yml` starts isolated test stack
+- [ ] Playwright installed in test-runner container (docker/e2e/Dockerfile)
+- [ ] `docker-compose.e2e.yml` starts isolated test stack with test_runner service
 - [ ] E2E tests pass (~25 tests): navigation, backtest, paper, orders, SSE
-- [ ] Full user workflow validated end-to-end (browser-based)
+- [ ] Full user workflow validated end-to-end (browser-based, containerized)
 - [ ] Production deployment guide complete
 - [ ] Strategy & adapter development guides complete
 - [ ] All doc test counts updated to final numbers
-- [ ] E2E CI workflow runs on PR
+- [ ] E2E CI workflow runs on PR (docker compose only, zero host deps)
 - [ ] Performance baselines documented
 
 ### 6.2 MVP Breakdown
@@ -588,11 +588,12 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ```
 - [ ] Add playwright + pytest-playwright to requirements.dev.txt
-- [ ] Create docker-compose.e2e.yml (isolated stack with fixed ports)
-- [ ] Create tests/e2e/helpers.py (API client, constants)
-- [ ] Create tests/e2e/conftest.py (stack lifecycle, fixtures)
-- [ ] Create scripts/ci/e2e-local.sh (local test runner)
-- [ ] Configure pyproject.toml base_url for Playwright
+- [ ] Create docker/e2e/Dockerfile (test-runner: Python 3.13 + Playwright + Chromium)
+- [ ] Create docker-compose.e2e.yml (isolated stack with test_runner container)
+- [ ] Create tests/e2e/helpers.py (API client, constants, Docker-internal URLs)
+- [ ] Create tests/e2e/conftest.py (health-check fixtures, direct DB cleanup)
+- [ ] Create scripts/ci/e2e-local.sh (containerized test runner)
+- [ ] Configure pyproject.toml base_url for Playwright (Docker internal DNS)
 ```
 
 #### M10-1: Core Navigation & Health (~6 tests)
