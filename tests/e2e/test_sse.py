@@ -11,9 +11,8 @@ import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
 
+from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
-
-DB_URL = "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
 
 
 @pytest.fixture()

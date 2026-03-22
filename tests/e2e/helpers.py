@@ -70,3 +70,15 @@ class E2EApiClient:
         )
         r.raise_for_status()
         return r.json()
+
+    def list_orders(self, **params: Any) -> dict[str, Any]:
+        r = self.session.get(
+            f"{self.base_url}/orders", params=params, timeout=5
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def get_order(self, order_id: str) -> dict[str, Any]:
+        r = self.session.get(f"{self.base_url}/orders/{order_id}", timeout=5)
+        r.raise_for_status()
+        return r.json()

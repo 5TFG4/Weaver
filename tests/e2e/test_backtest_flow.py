@@ -13,6 +13,7 @@ import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
 
+from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
 
 # 20 bars of BTC/USD 1m data: bars 1-10 are lookback, bars 11-20 are trade window.
@@ -44,8 +45,6 @@ for i in range(7):
         "BTC/USD", "1m", ts,
         101.0, 101.5, 100.5, 101.0, 1000.0
     ))
-
-DB_URL = "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
 
 
 @pytest.fixture()
@@ -198,3 +197,57 @@ class TestBacktestFlow:
         # Should have at least before+3 table rows
         rows = page.locator("table tbody tr")
         rows.nth(before + 2).wait_for(timeout=10000)
+
+
+@pytest.mark.e2e
+@pytest.mark.usefixtures("_clean_runs")
+class TestFormValidation:
+    """Form validation E2E tests for the Create Run form."""
+
+    def test_create_form_rejects_empty_strategy(
+        self, page: Page, e2e_base_url: str
+    ) -> None:
+        """Submitting with an empty strategy field is blocked by browser validation."""
+        page.goto(f"{e2e_base_url}/runs")
+        page.get_by_role("button", name="New Run").click()
+
+        form = page.get_by_test_id("create-run-form")
+        expect(form).to_be_visible(timeout=5000)
+
+        # Fill symbols but leave strategy empty
+        page.locator("#symbols").fill("BTC/USD")
+        page.get_by_role("button", name="Create").click()
+
+        # Browser blocks submission — form stays visible, button does NOT become "Creating..."
+        expect(form).to_be_visible()
+        expect(page.get_by_role("button", name="Create")).to_be_visible()
+
+        # Strategy input should be in invalid state
+        is_invalid = page.locator("#strategy-id").evaluate(
+            "el => !el.validity.valid"
+        )
+        assert is_invalid, "Expected strategy-id to be invalid when empty"
+
+    def test_create_form_rejects_empty_symbols(
+        self, page: Page, e2e_base_url: str
+    ) -> None:
+        """Submitting with an empty symbols field is blocked by browser validation."""
+        page.goto(f"{e2e_base_url}/runs")
+        page.get_by_role("button", name="New Run").click()
+
+        form = page.get_by_test_id("create-run-form")
+        expect(form).to_be_visible(timeout=5000)
+
+        # Fill strategy but leave symbols empty
+        page.locator("#strategy-id").fill("sample")
+        page.get_by_role("button", name="Create").click()
+
+        # Browser blocks submission — form stays visible
+        expect(form).to_be_visible()
+        expect(page.get_by_role("button", name="Create")).to_be_visible()
+
+        # Symbols input should be in invalid state
+        is_invalid = page.locator("#symbols").evaluate(
+            "el => !el.validity.valid"
+        )
+        assert is_invalid, "Expected symbols to be invalid when empty"
