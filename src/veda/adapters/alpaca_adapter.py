@@ -449,6 +449,20 @@ class AlpacaAdapter(ExchangeAdapter):
         raise NotImplementedError("stream_quotes is not yet implemented")
 
     # =========================================================================
+    # Bulk Operations (for test cleanup and account management)
+    # =========================================================================
+
+    async def cancel_all_orders(self) -> None:
+        """Cancel all open orders."""
+        self._require_connection()
+        await asyncio.to_thread(self._trading_client.cancel_orders)
+
+    async def close_all_positions(self) -> None:
+        """Close all open positions (liquidate everything)."""
+        self._require_connection()
+        await asyncio.to_thread(self._trading_client.close_all_positions, cancel_orders=True)
+
+    # =========================================================================
     # Mapping Helpers
     # =========================================================================
 

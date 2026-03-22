@@ -331,26 +331,190 @@ Adding these to `AlpacaAdapter` (or a separate test utility) would enable clean 
 
 ---
 
-## 7. Recommendations
+## 7. Resolution Log & Execution Plan
 
-### 7.1 Immediate (This Sprint)
+### 7.1 Completed (P0)
 
-1. **Fix G-1**: Add PostgreSQL service to Backend CI workflow so integration tests run
-2. **Fix F-1**: Add tests for core frontend hooks (`useCreateRun`, `useStartRun`, `useStopRun`)
-3. Add `cancel_all_orders()` and `close_all_positions()` to `AlpacaAdapter`
+**G-1: Integration tests not in CI** ✅
+- Added `services: postgres` (PostgreSQL 16 with health check) to `backend-ci.yml`
+- Set `DB_URL=postgresql+asyncpg://weaver:weaver@localhost:5432/weaver_test`
+- Added `alembic upgrade head` step before pytest
+- Added `--ignore=tests/e2e` to avoid playwright collection errors in non-Docker CI
+- Synced `scripts/ci/check-local.sh` with same `--ignore=tests/e2e` flag + DB_URL warning
+- **Verified**: 48 integration tests pass in dev container with DB_URL
 
-### 7.2 Next Sprint
+**F-1: Frontend hooks untested** ✅
+- Expanded `useRuns.test.tsx`: +5 tests covering `useRun`, `useCreateRun`, `useStartRun`, `useStopRun`
+- Created `useOrders.test.tsx`: 6 tests covering `useOrders`, `useOrder`, `useCancelOrder`
+- Created `useHealth.test.tsx`: 2 tests covering health query
+- **Verified**: 104 frontend tests pass (was 73)
 
-4. **Fix E-1**: Configure paper trading credentials → real order E2E tests using crypto (24/7)
-5. **Fix E-2**: Add form validation E2E tests
-6. Add `CreateRunForm` component tests
+---
 
-### 7.3 Backlog
+### 7.2 Remaining Gap Analysis
 
-7. Frontend coverage reporting in CI
-8. Concurrent operation tests
-9. Pagination/filtering E2E tests
-10. Connection resilience tests (DB disconnect, Alpaca timeout)
+After completing P0, the remaining gaps are re-classified below. The key principle: **gaps are organized by the system risk they address**, not by the layer they sit in (backend/frontend/E2E).
+
+#### Risk Category Overview
+
+| Category | What It Protects | Remaining Gaps | Highest Severity |
+|----------|-----------------|----------------|------------------|
+| **A: Exchange Connectivity** | Can we actually trade? | B-1, B-1-CI | 🔴 Critical |
+| **B: E2E Data Integrity** | Does the full stack produce correct data? | E-1 | 🟡 High |
+| **C: E2E Input Quality** | Does the UI reject bad input? | E-2 | 🟡 Medium |
+| **D: CI Observability** | Can we see problems in CI? | G-2 | 🟢 Low |
+| **E: Robustness** | Does the system handle edge cases? | B-2, E-3, R-1 | 🟢 Low |
+
+---
+
+### 7.3 Wave 1 — Exchange Connectivity (Critical)
+
+**Why this is the top priority**: The system's primary purpose is to trade via Alpaca. If the adapter code is broken — wrong parameter names, SDK version mismatch, authentication failure, response mapping error — **every live/paper trading feature is silently broken**. Currently there is zero validation that our adapter can communicate with the real Alpaca API.
+
+This is the only gap that is both **high-impact** and **invisible until production**.
+
+#### B-1: Alpaca Adapter Integration Tests
+
+**Problem**: All 21 adapter unit tests inject `MagicMock()` for the Alpaca SDK clients. `connect()` is never called against a real endpoint. Real API response-to-model mapping is never validated. Contract drift between our adapter and the Alpaca SDK goes undetected.
+
+**Scope**: New file `tests/integration/veda/test_alpaca_paper.py`
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_connect_succeeds` | `connect()` creates clients, account is ACTIVE |
+| `test_get_account_returns_real_data` | Account has equity, buying_power, status fields |
+| `test_submit_and_get_order_roundtrip` | Submit small crypto order → `get_order()` returns matching data |
+| `test_cancel_pending_order` | Limit order far from market → cancel → status is CANCELED |
+| `test_list_orders_includes_submitted` | Submit order → `list_orders()` includes it |
+| `test_get_positions_after_fill` | Market order fills → `get_positions()` shows position |
+
+**Safety design**:
+- Crypto only (BTC/USD) — trades 24/7, no market-hours dependency
+- Tiny quantities (0.001 BTC ≈ $60-100) to preserve paper balance
+- `cancel_all_orders()` + `close_all_positions()` in fixture teardown
+- Tests skip when `ALPACA_PAPER_API_KEY` not set (same pattern as DB integration tests)
+
+**Source changes needed**:
+- Add `cancel_all_orders()` and `close_all_positions()` to `AlpacaAdapter` (wraps existing SDK methods)
+- New test file with `@pytest.mark.integration` marker
+
+#### B-1-CI: Dedicated Alpaca Integration CI Workflow
+
+**Problem**: Alpaca tests require paper API keys. These secrets cannot be added to existing workflows because:
+1. `e2e.yml` uploads container logs as artifacts — artifact contents are NOT auto-masked by GitHub, anyone can download them from a public repo
+2. Adding secrets to general-purpose workflows increases the exposure surface
+
+**Scope**: New workflow `.github/workflows/alpaca-integration.yml`
+
+**Design**:
+```yaml
+name: Alpaca Integration
+on:
+  push:
+    branches: [main]
+    paths: [src/veda/**, tests/integration/veda/**]
+  pull_request:
+    paths: [src/veda/**, tests/integration/veda/**]
+
+jobs:
+  alpaca-paper:
+    # Fork protection — fork PRs receive empty secrets, tests skip gracefully
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/integration/veda/ -v --timeout=60
+        env:
+          ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}
+          ALPACA_PAPER_API_SECRET: ${{ secrets.ALPACA_PAPER_API_SECRET }}
+    # NO artifact uploads — this is intentional for secret safety
+```
+
+**Security rules** (see also §6.5):
+- Secrets injected only in the `run:` step `env`, not job-level
+- No `actions/upload-artifact` — ever
+- Fork protection via `if:` condition
+- Trigger limited to `src/veda/**` changes only
+- Uses `pull_request:` (safe), never `pull_request_target:` (unsafe)
+
+**Secret mapping** (see naming mismatch in §6.5):
+- `ALPACA_PAPER_API_KEY` secret → `ALPACA_PAPER_API_KEY` env var — names match, no mapping needed
+- `ALPACA_PAPER_API_SECRET` secret → `ALPACA_PAPER_API_SECRET` env var — names match
+
+---
+
+### 7.4 Wave 2 — E2E Data Integrity (High)
+
+These gaps affect test quality — the E2E suite validates the full stack but currently has blind spots in order data flow and input validation.
+
+#### E-1: Orders E2E with Real Database Data
+
+**Problem**: Orders page E2E tests (`test_orders.py`) render 2 hardcoded mock orders from `MockOrderService`. They only verify mock data renders — no real order-from-backtest lifecycle is tested.
+
+**Why it matters**: The order pipeline (strategy → fill simulator → order manager → DB → API → UI) is the core data flow of the system. Currently E2E tests skip the entire pipeline and render fake data instead.
+
+**Scope**: New file `tests/e2e/test_orders_lifecycle.py` + helper methods
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_orders_page_shows_backtest_orders` | Run backtest → `/orders` shows real orders with correct symbol, side, status |
+| `test_orders_filter_by_run` | 2 backtests → filter by run_id → only matching orders shown |
+| `test_order_detail_shows_fill_info` | Click order → modal shows fill price, qty, timestamps |
+| `test_orders_empty_state` | Clean DB → `/orders` → empty state message |
+
+**Infrastructure reuse**: `seed_bars` fixture + `api_client.create_run()` + `start_run()` (from `test_backtest_flow.py`) already produces real orders in DB. Add `list_orders(run_id)` and `get_order(id)` to `E2EApiClient` in `helpers.py`.
+
+#### E-2: Form Validation E2E Tests
+
+**Problem**: `CreateRunForm` uses only HTML `required` attributes. No custom validation, no E2E coverage for invalid input. Whitespace-only input passes `required` but produces `symbols: []`.
+
+**Scope**: Add to `tests/e2e/test_backtest_flow.py`
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_create_form_rejects_empty_strategy` | Submit with empty strategy ID blocked by browser validation |
+| `test_create_form_rejects_empty_symbols` | Submit with empty symbols blocked |
+| `test_create_form_shows_api_error` | Server returns error → user sees feedback |
+
+---
+
+### 7.5 Wave 3 — CI Observability (Low)
+
+#### G-2: Frontend Coverage Reporting in CI
+
+**Problem**: Frontend CI runs `npm run test` without `--coverage`. vitest.config.ts has coverage configured (v8 provider) but it is not invoked in CI.
+
+**Fix**: Add `--coverage` to frontend-ci.yml vitest step. Optionally add a threshold gate.
+
+---
+
+### 7.6 Backlog (Wave 4)
+
+These are real but low-priority gaps. Not planned for immediate execution.
+
+| ID | Gap | Impact | Layer |
+|----|-----|--------|-------|
+| B-2 | Concurrent run operations (simultaneous start/stop) | Race conditions possible | Backend |
+| E-3 | Pagination/filtering E2E (runs + orders pages) | UI features untested at system level | E2E |
+| R-1 | Connection resilience (DB disconnect, Alpaca timeout/retry) | Error recovery untested | Backend |
+| R-2 | Complex multi-symbol backtests | Only single-symbol tested | Integration |
+| R-3 | Strategy runtime errors during backtest | Exception propagation unvalidated | Backend |
+
+---
+
+### 7.7 Execution Summary
+
+| Wave | Items | Depends On | Risk | Stories |
+|------|-------|-----------|------|---------|
+| **Wave 1** | B-1 (adapter tests) + B-1-CI (workflow) | Paper API key in local env | Medium — external API | 6 tests + 2 adapter methods + 1 workflow |
+| **Wave 2** | E-1 (orders E2E) + E-2 (form validation E2E) | Docker E2E stack running | Low — internal only | 7 tests + 2 helper methods |
+| **Wave 3** | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
+| **Backlog** | B-2, E-3, R-1, R-2, R-3 | Various | Low | Deferred |
+
+**Rationale for Wave 1 first**: The system's #1 external dependency is Alpaca. If the adapter is broken, live/paper trading is entirely non-functional. This is the only remaining gap where a bug is both high-impact and completely undetectable by any existing test. Waves 2-3 improve coverage quality but test code paths that are already partially validated.
 
 ---
 

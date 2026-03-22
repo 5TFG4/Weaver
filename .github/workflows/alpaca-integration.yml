@@ -1,0 +1,53 @@
+name: Alpaca Integration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/veda/**"
+      - "tests/integration/veda/**"
+      - ".github/workflows/alpaca-integration.yml"
+  pull_request:
+    paths:
+      - "src/veda/**"
+      - "tests/integration/veda/**"
+      - ".github/workflows/alpaca-integration.yml"
+
+jobs:
+  alpaca-paper:
+    # Fork protection: fork PRs receive empty secrets, so tests would skip.
+    # This condition prevents wasting CI minutes on fork PRs entirely.
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('docker/backend/requirements.txt', 'docker/backend/requirements.dev.txt') }}
+          restore-keys: pip-
+
+      - name: Install dependencies
+        run: pip install -r docker/backend/requirements.dev.txt
+
+      - name: Run Alpaca integration tests
+        run: pytest tests/integration/veda/ -v --timeout=60
+        env:
+          ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}
+          ALPACA_PAPER_API_SECRET: ${{ secrets.ALPACA_PAPER_API_SECRET }}
+
+    # SECURITY: No artifact uploads — intentional.
+    # Container logs / test output could contain API responses.
+    # In a public repo, artifact contents are NOT auto-masked by GitHub.
