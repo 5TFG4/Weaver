@@ -1,0 +1,81 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docker/**"
+      - "src/**"
+      - "haro/**"
+      - "tests/e2e/**"
+      - "weaver.py"
+      - "pyproject.toml"
+      - "alembic.ini"
+      - ".github/workflows/e2e.yml"
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build E2E images
+        run: docker compose -f docker/docker-compose.e2e.yml --profile test build
+
+      - name: Start E2E stack
+        run: docker compose -f docker/docker-compose.e2e.yml up -d --wait db_e2e backend_e2e frontend_e2e
+
+      - name: Wait for API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            code="$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:38919/api/v1/healthz || true)"
+            if [[ "$code" == "200" ]]; then
+              echo "Backend healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API health check failed"
+          docker compose -f docker/docker-compose.e2e.yml logs backend_e2e db_e2e
+          exit 1
+
+      - name: Wait for frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            code="$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:33579/ || true)"
+            if [[ "$code" == "200" ]]; then
+              echo "Frontend healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend check failed"
+          docker compose -f docker/docker-compose.e2e.yml logs frontend_e2e
+          exit 1
+
+      - name: Run E2E tests
+        run: docker compose -f docker/docker-compose.e2e.yml run --rm test_runner
+
+      - name: Capture container logs
+        if: failure()
+        run: |
+          docker compose -f docker/docker-compose.e2e.yml logs --no-color > /tmp/weaver_e2e_logs.out 2>&1 || true
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker/docker-compose.e2e.yml --profile test down -v
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-logs
+          path: /tmp/weaver_e2e_logs.out
+          retention-days: 7
