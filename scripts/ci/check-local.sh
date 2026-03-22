@@ -46,7 +46,16 @@ echo ""
 run_step "Backend: ruff check"    ruff check src/ tests/
 run_step "Backend: ruff format"   ruff format --check src/ tests/
 run_step "Backend: mypy"          mypy src/
-run_step "Backend: pytest"        pytest -m "not container" --cov=src --cov-report=term-missing -q
+run_step "Backend: pytest"        pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing -q
+
+if [[ -n "${DB_URL:-}" ]]; then
+    echo ""
+    echo "  (DB_URL detected — integration tests included above)"
+else
+    echo ""
+    echo "  ⚠  DB_URL not set — 44 integration tests skipped"
+    echo "     Set DB_URL=postgresql+asyncpg://... to include them"
+fi
 
 echo ""
 run_step "Frontend: eslint"       bash -c 'cd haro && npm run lint --silent'

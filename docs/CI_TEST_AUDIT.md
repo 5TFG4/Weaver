@@ -280,11 +280,31 @@ Limitations:
 
 ### 6.5 Credentials for CI
 
-To enable real paper trading in CI, add these as GitHub repository secrets:
-- `ALPACA_PAPER_API_KEY`
-- `ALPACA_PAPER_API_SECRET`
+**Current GitHub Secrets** (already configured):
 
-Then inject into `docker-compose.e2e.yml` via environment variables. **Security note**: These are paper trading only — no real money risk, but treat API keys as secrets regardless.
+| Secret Name | Maps To (env var) | Purpose |
+|---|---|---|
+| `ALPACA_API_KEY` | `ALPACA_LIVE_API_KEY` | Live trading (NOT for CI) |
+| `ALPACA_API_SECRET` | `ALPACA_LIVE_API_SECRET` | Live trading (NOT for CI) |
+| `ALPACA_PAPER_API_KEY` | `ALPACA_PAPER_API_KEY` | Paper trading — safe for CI |
+| `ALPACA_PAPER_API_SECRET` | `ALPACA_PAPER_API_SECRET` | Paper trading — safe for CI |
+
+> ⚠️ **Naming mismatch**: The live secret on GitHub is `ALPACA_API_KEY` (no `LIVE_` prefix),
+> but `AlpacaConfig` expects `ALPACA_LIVE_API_KEY`. Mapping required when referencing:
+> `ALPACA_LIVE_API_KEY: ${{ secrets.ALPACA_API_KEY }}`
+
+**🔴 Public Repo Security Requirements** — This repo is **public**. Introducing secrets into CI must follow these rules strictly:
+
+1. **Current state**: CI does **not** reference any Alpaca secrets (all Alpaca tests are mocked)
+2. **When introducing secrets in the future**:
+   - Create a **dedicated** workflow (e.g. `alpaca-integration.yml`) — do not add to existing workflows
+   - Add fork protection: `if: github.event.pull_request.head.repo.full_name == github.repository`
+   - **Never** upload container logs containing secrets as artifacts (artifact contents are NOT automatically masked by GitHub)
+   - `pull_request:` trigger is safe — fork PRs receive empty strings for secrets
+   - `pull_request_target:` **must never be used** — it grants fork PRs access to secrets
+3. **Advanced option**: Consider GitHub Environments (supports approval workflows, branch restrictions) instead of repo-level secrets
+4. **E2E compose config**: Alpaca variables in `docker-compose.e2e.yml` are currently empty string literals.
+   When introducing secrets, change to `${ALPACA_PAPER_API_KEY:-}` for environment passthrough with empty default
 
 ### 6.6 What Our Adapter Already Supports
 
