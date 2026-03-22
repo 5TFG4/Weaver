@@ -11,10 +11,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 from uuid import uuid4
 
 import pytest
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.models import (
@@ -96,7 +98,7 @@ class TestAlpacaAdapterSubmitOrder:
     @pytest.fixture
     def mock_alpaca_client(self) -> MagicMock:
         """Create mock Alpaca trading client."""
-        mock = MagicMock()
+        mock = create_autospec(TradingClient, instance=True)
         # Mock order response
         mock_order = MagicMock()
         mock_order.id = "alpaca-order-123"
@@ -110,7 +112,7 @@ class TestAlpacaAdapterSubmitOrder:
         mock_order.side = "buy"
         mock_order.type = "market"
         mock_order.qty = "10"
-        mock.submit_order = MagicMock(return_value=mock_order)
+        mock.submit_order.return_value = mock_order
         return mock
 
     async def test_submit_order_calls_alpaca_api(
@@ -130,6 +132,11 @@ class TestAlpacaAdapterSubmitOrder:
         await adapter.submit_order(sample_intent)
 
         mock_alpaca_client.submit_order.assert_called_once()
+        # Verify OrderRequest object was passed (not kwargs)
+        order_request = mock_alpaca_client.submit_order.call_args[0][0]
+        assert isinstance(order_request, MarketOrderRequest)
+        assert order_request.symbol == "AAPL"
+        assert order_request.qty == 10.0
 
     async def test_submit_order_returns_result(
         self, sample_intent: OrderIntent, mock_alpaca_client: MagicMock
@@ -167,10 +174,11 @@ class TestAlpacaAdapterSubmitOrder:
 
         await adapter.submit_order(sample_intent)
 
-        # Check the call arguments
+        # Verify symbol mapping in OrderRequest
         call_args = mock_alpaca_client.submit_order.call_args
-        # Symbol should be passed to Alpaca
-        assert call_args is not None
+        order_request = call_args[0][0]
+        assert isinstance(order_request, MarketOrderRequest)
+        assert order_request.symbol == sample_intent.symbol
 
 
 # ============================================================================
@@ -184,7 +192,7 @@ class TestAlpacaAdapterOrderManagement:
     @pytest.fixture
     def mock_alpaca_client(self) -> MagicMock:
         """Create mock Alpaca trading client."""
-        mock = MagicMock()
+        mock = create_autospec(TradingClient, instance=True)
 
         # Mock get_order response
         mock_order = MagicMock()
@@ -199,9 +207,9 @@ class TestAlpacaAdapterOrderManagement:
         mock_order.side = "buy"
         mock_order.type = "market"
         mock_order.qty = "10"
-        mock.get_order_by_id = MagicMock(return_value=mock_order)
-        mock.cancel_order_by_id = MagicMock(return_value=None)
-        mock.get_orders = MagicMock(return_value=[mock_order])
+        mock.get_order_by_id.return_value = mock_order
+        mock.cancel_order_by_id.return_value = None
+        mock.get_orders.return_value = [mock_order]
 
         return mock
 
@@ -259,6 +267,9 @@ class TestAlpacaAdapterOrderManagement:
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], ExchangeOrder)
+        # Verify GetOrdersRequest was used (not kwargs)
+        filter_arg = mock_alpaca_client.get_orders.call_args[1]["filter"]
+        assert isinstance(filter_arg, GetOrdersRequest)
 
 
 # ============================================================================
@@ -272,7 +283,7 @@ class TestAlpacaAdapterAccount:
     @pytest.fixture
     def mock_alpaca_client(self) -> MagicMock:
         """Create mock Alpaca trading client."""
-        mock = MagicMock()
+        mock = create_autospec(TradingClient, instance=True)
 
         # Mock account
         mock_account = MagicMock()
@@ -282,7 +293,7 @@ class TestAlpacaAdapterAccount:
         mock_account.portfolio_value = "150000.00"
         mock_account.currency = "USD"
         mock_account.status = "ACTIVE"
-        mock.get_account = MagicMock(return_value=mock_account)
+        mock.get_account.return_value = mock_account
 
         # Mock positions
         mock_position = MagicMock()
@@ -293,8 +304,8 @@ class TestAlpacaAdapterAccount:
         mock_position.market_value = "15500.00"
         mock_position.unrealized_pl = "500.00"
         mock_position.unrealized_plpc = "0.0333"
-        mock.get_all_positions = MagicMock(return_value=[mock_position])
-        mock.get_open_position = MagicMock(return_value=mock_position)
+        mock.get_all_positions.return_value = [mock_position]
+        mock.get_open_position.return_value = mock_position
 
         return mock
 
@@ -499,8 +510,8 @@ class TestAlpacaAdapterErrorHandling:
         )
 
         # Mock rejection
-        mock_client = MagicMock()
-        mock_client.submit_order = MagicMock(side_effect=Exception("Insufficient buying power"))
+        mock_client = create_autospec(TradingClient, instance=True)
+        mock_client.submit_order.side_effect = Exception("Insufficient buying power")
         adapter._trading_client = mock_client
         adapter._connected = True  # Simulate connected state
 
@@ -544,8 +555,8 @@ class TestAlpacaAdapterAsyncWrapping:
         mock_response = MagicMock()
         mock_response.id = "order-1"
         mock_response.status = "accepted"
-        mock_client = MagicMock()
-        mock_client.submit_order = MagicMock(return_value=mock_response)
+        mock_client = create_autospec(TradingClient, instance=True)
+        mock_client.submit_order.return_value = mock_response
         adapter._trading_client = mock_client
 
         intent = OrderIntent(
@@ -568,6 +579,9 @@ class TestAlpacaAdapterAsyncWrapping:
             mock_to_thread.assert_called_once()
             # First positional arg must be the SDK method
             assert mock_to_thread.call_args[0][0] is mock_client.submit_order
+            # Second positional arg must be an OrderRequest object
+            order_request = mock_to_thread.call_args[0][1]
+            assert isinstance(order_request, MarketOrderRequest)
 
     async def test_get_account_runs_in_thread_pool(self, adapter) -> None:
         """get_account delegates the sync SDK call to asyncio.to_thread."""
@@ -578,8 +592,8 @@ class TestAlpacaAdapterAsyncWrapping:
         mock_response.portfolio_value = "150000"
         mock_response.currency = "USD"
         mock_response.status = "ACTIVE"
-        mock_client = MagicMock()
-        mock_client.get_account = MagicMock(return_value=mock_response)
+        mock_client = create_autospec(TradingClient, instance=True)
+        mock_client.get_account.return_value = mock_response
         adapter._trading_client = mock_client
 
         with patch(

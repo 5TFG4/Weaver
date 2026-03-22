@@ -31,6 +31,14 @@ try:
         StockHistoricalDataClient,
     )
     from alpaca.trading.client import TradingClient
+    from alpaca.trading.requests import (
+        GetOrdersRequest,
+        LimitOrderRequest,
+        MarketOrderRequest,
+        OrderRequest,
+        StopLimitOrderRequest,
+        StopOrderRequest,
+    )
 except ImportError:
     # SDK not installed - will fail at connect() time
     TradingClient = None  # type: ignore
@@ -209,28 +217,42 @@ class AlpacaAdapter(ExchangeAdapter):
         try:
             # Map order parameters
             side = "buy" if intent.side == OrderSide.BUY else "sell"
-            order_type = self._map_order_type(intent.order_type)
             time_in_force = self._map_time_in_force(intent.time_in_force)
 
-            # Build order request
-            order_params: dict[str, Any] = {
+            # Common parameters for all order types
+            common_params: dict[str, Any] = {
                 "symbol": intent.symbol,
-                "qty": str(intent.qty),
+                "qty": float(intent.qty),
                 "side": side,
-                "type": order_type,
                 "time_in_force": time_in_force,
                 "client_order_id": intent.client_order_id,
             }
-
-            if intent.limit_price is not None:
-                order_params["limit_price"] = str(intent.limit_price)
-            if intent.stop_price is not None:
-                order_params["stop_price"] = str(intent.stop_price)
             if intent.extended_hours:
-                order_params["extended_hours"] = True
+                common_params["extended_hours"] = True
 
-            # Submit to Alpaca
-            response = await asyncio.to_thread(self._trading_client.submit_order, **order_params)
+            # Build the appropriate OrderRequest based on order type
+            order_request: OrderRequest
+            if intent.order_type == OrderType.LIMIT:
+                order_request = LimitOrderRequest(
+                    **common_params,
+                    limit_price=float(intent.limit_price),  # type: ignore[arg-type]
+                )
+            elif intent.order_type == OrderType.STOP:
+                order_request = StopOrderRequest(
+                    **common_params,
+                    stop_price=float(intent.stop_price),  # type: ignore[arg-type]
+                )
+            elif intent.order_type == OrderType.STOP_LIMIT:
+                order_request = StopLimitOrderRequest(
+                    **common_params,
+                    limit_price=float(intent.limit_price),  # type: ignore[arg-type]
+                    stop_price=float(intent.stop_price),  # type: ignore[arg-type]
+                )
+            else:
+                order_request = MarketOrderRequest(**common_params)
+
+            # Submit to Alpaca (SDK expects a single OrderRequest object)
+            response = await asyncio.to_thread(self._trading_client.submit_order, order_request)
 
             return OrderSubmitResult(
                 success=True,
@@ -317,7 +339,10 @@ class AlpacaAdapter(ExchangeAdapter):
             if symbols is not None:
                 params["symbols"] = symbols
 
-            response = await asyncio.to_thread(self._trading_client.get_orders, **params)
+            filter_request = GetOrdersRequest(**params)
+            response = await asyncio.to_thread(
+                self._trading_client.get_orders, filter=filter_request
+            )
             return [self._map_alpaca_order(o) for o in response]
         except Exception:
             return []
