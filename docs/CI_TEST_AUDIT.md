@@ -581,23 +581,11 @@ Same issue as C-2: expects a `GetOrdersRequest` object, not keyword args.
 
 **Risk**: Low — same pattern as C-2.
 
-#### C-4: Dev Container Alpaca Test Skip Logic
+#### C-4: Dev Container Alpaca Test Skip Logic → **Moved to Backlog (B-10)**
 
-**Problem**: `docker-compose.dev.yml` passes placeholder values `ALPACA_PAPER_API_KEY=your_alpaca_paper_api_key_here`. The test skip condition `skipif(not os.environ.get("ALPACA_PAPER_API_KEY"))` evaluates the non-empty placeholder as truthy, so tests run instead of skipping. All 6 Alpaca integration tests fail/error in the dev container.
+Deferred — does not affect CI. Only causes 6 spurious failures when running full `pytest` in the dev container with placeholder credentials. See B-10 in §7.7 for full analysis and proposed fix.
 
-**Impact**: Local dev experience only — 6 test failures when running full suite in dev container. Does not affect CI (CI has real secrets or empty env vars).
-
-**Fix**:
-- File: `tests/integration/veda/test_alpaca_paper.py`
-- Change: Replace simple `not os.environ.get(...)` with a check that also filters out placeholder values:
-  ```python
-  _alpaca_key = os.environ.get("ALPACA_PAPER_API_KEY", "")
-  _skip_alpaca = not _alpaca_key or _alpaca_key.startswith("your_")
-  ```
-
-**Risk**: Trivial.
-
-#### C-5: Document Sync (Stale Status/Numbers)
+#### C-5: Document Sync (Stale Status/Numbers) ✅
 
 **Problem**: Three docs have outdated information after Waves 1-3 and audit findings.
 
@@ -610,6 +598,28 @@ Same issue as C-2: expects a `GetOrdersRequest` object, not keyword args.
 **Fix**: Pure text updates to match actual measured values.
 
 **Risk**: None — documentation only.
+
+**Status**: ✅ Completed — 5 documentation files updated (MILESTONE_PLAN.md, roadmap.md, TEST_COVERAGE.md, m10-e2e-release.md, CI_TEST_AUDIT.md).
+
+#### C-6: Unit Test Mock Hardening — `create_autospec`
+
+**Problem**: All 21 unit tests in `tests/unit/veda/test_alpaca_adapter.py` use `MagicMock()` for `TradingClient`. `MagicMock` accepts **any** call signature silently — `mock.submit_order(symbol="AAPL")` and `mock.submit_order(some_request)` both succeed. This is why the C-2/C-3 SDK contract bugs were invisible to unit tests.
+
+**Impact**: Unit tests give false confidence. Future SDK contract changes would again be invisible.
+
+**Fix**:
+- File: `tests/unit/veda/test_alpaca_adapter.py`
+- Change: Replace `MagicMock()` with `create_autospec(TradingClient, instance=True)` for the trading client mock. Autospec constrains mock calls to match the real method signatures. If `submit_order` is called with kwargs instead of a positional `OrderRequest`, autospec raises `TypeError` immediately.
+- Also update `test_submit_order_calls_alpaca_api` and related tests to verify the actual parameter types:
+  ```python
+  call_args = mock_client.submit_order.call_args
+  order_request = call_args[0][0]  # first positional arg
+  assert isinstance(order_request, MarketOrderRequest)
+  ```
+
+**Note on two improvement directions**: `create_autospec` (signature enforcement) and explicit parameter type assertions are **complementary**, not redundant. Autospec catches "wrong calling convention" (kwargs vs positional); type assertions catch "wrong request class" (e.g., `MarketOrderRequest` when it should be `LimitOrderRequest`). Both are applied.
+
+**Risk**: Low — test-only change. May require adjusting some mock setup code.
 
 ---
 
@@ -626,6 +636,9 @@ These are real but low-priority gaps. Not planned for immediate execution.
 | R-1 | Connection resilience (DB disconnect, Alpaca timeout/retry) | Error recovery untested | Backend |
 | R-2 | Complex multi-symbol backtests | Only single-symbol tested | Integration |
 | R-3 | Strategy runtime errors during backtest | Exception propagation unvalidated | Backend |
+| B-8 | Unified dev container (Python + Node + Docker CLI + socket mount) | Dev environment fragmented — see §7.9 for full design discussion | Infra |
+| B-9 | Local CI via Docker (`check-local.sh` rewrite) | Current script runs on bare host — see §7.9 | Infra |
+| B-10 | Dev container Alpaca test skip logic | Placeholder `ALPACA_PAPER_API_KEY=your_paper_api_key` in `.env` bypasses `skipif` → 6 spurious failures in dev container. Fix: filter placeholder values in skip condition. Does not affect CI. Deferred to be bundled with B-8/B-9 dev environment rebuild | Infra |
 
 ---
 
@@ -636,10 +649,84 @@ These are real but low-priority gaps. Not planned for immediate execution.
 | **Wave 1** ✅ | B-1 (adapter tests) + B-1-CI (workflow) | Paper API key in local env | Medium — external API | 6 tests + 2 adapter methods + 1 workflow |
 | **Wave 2** ✅ | E-1 (orders E2E) + E-2 (form validation E2E) | Docker E2E stack running | Low — internal only | 10 tests + 2 helper methods (3 xfail due to backtest race) |
 | **Wave 3** ✅ | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
-| **Wave 4** | C-1 (init_tables path) + C-2 (submit_order) + C-3 (list_orders) + C-4 (skip logic) + C-5 (doc sync) | Nothing | Medium — production code change (C-2/C-3) | 2 adapter fixes + 1 conftest fix + 1 test fix + 3 doc updates |
-| **Backlog** | B-2, B-3, E-3, F-2, R-1, R-2, R-3 | Various | Low | Deferred |
+| **Wave 4** | C-1 (path fix) + C-2 (submit_order) + C-3 (list_orders) + C-5 (doc sync ✅) + C-6 (autospec) | Nothing | Medium — production code change (C-2/C-3) | 2 adapter fixes + 1 conftest fix + mock hardening + doc updates |
+| **Backlog** | B-2, B-3, E-3, F-2, R-1, R-2, R-3, B-8, B-9, B-10 | Various | Low | Deferred |
 
 **Rationale for Wave 4 now**: Backend CI and Alpaca Integration CI have been red since PR #15 opened. C-2 (submit_order) is a **real production bug** — live/paper order submission is broken. These must be fixed before merge.
+
+---
+
+### 7.9 Dev Environment Architecture — Discussion & Design (Backlog B-8/B-9/B-10)
+
+This section records the analysis and design decisions from the Wave 4 planning discussion. These items are deferred but fully scoped for future implementation.
+
+#### Current State (Problems)
+
+1. **Fragmented dev containers**: `backend_dev` (Python 3.13 + Node 20) and `frontend_dev` (Node 20 only) are separate services. Developers remote into one container and lose IDE support for the other stack.
+
+2. **`check-local.sh` runs on bare host**: The local CI script invokes `ruff`, `pytest`, `npm run test` etc. directly on the host machine. If the developer works inside Docker (the intended workflow), the host may lack Python/Node dependencies, making `check-local.sh` fail or produce inconsistent results vs CI.
+
+3. **No Docker access from dev container**: The dev container cannot run `docker compose` commands, so compose-smoke and e2e tests cannot be validated locally before push.
+
+4. **Alpaca test skip logic**: `docker/example.env` has placeholder `ALPACA_PAPER_API_KEY=your_paper_api_key`. The `skipif(not os.environ.get(...))` condition treats this non-empty placeholder as truthy → 6 Alpaca integration tests run with fake credentials and fail. GitHub Secrets only exist in Actions runner runtime — they never auto-sync to local environments.
+
+#### Existing Asset
+
+`docker/backend/Dockerfile.dev` already installs Node 20 alongside Python 3.13:
+```dockerfile
+# Install Node.js 20 LTS (for VS Code TypeScript/ESLint extensions support)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+```
+This means `backend_dev` is already a near-complete full-stack dev container.
+
+#### Designed Solution
+
+**B-8: Unified dev container** — Merge `backend_dev` and `frontend_dev` into a single `dev` service:
+- Base: `python:3.13-bookworm` + Node 20 (already in Dockerfile.dev)
+- Add: Docker CLI (static binary, ~50 MB) — no daemon needed
+- Add: Mount `/var/run/docker.sock` from host (Docker Socket Mount / "DooD")
+- Remove: Separate `frontend_dev` service
+- Run `npm install` in container entrypoint or Dockerfile to ensure `node_modules` is available for IDE
+- VS Code Remote: Single window, single container, full-stack code intelligence (Pylance + TypeScript/ESLint)
+
+**Docker Socket Mount explained**: The host Docker daemon listens on `/var/run/docker.sock`. By volume-mounting this socket into the dev container, the container's `docker` CLI commands are forwarded to the host daemon. Containers started this way are **sibling containers** on the host, not nested. This avoids Docker-in-Docker complexity.
+
+```
+┌─ Host ──────────────────────────────────────┐
+│  dockerd ◄── /var/run/docker.sock           │
+│       ▲              ▲ (volume mount)       │
+│       │              │                      │
+│  ┌─ dev container ───┼─────┐                │
+│  │  docker CLI ──────┘     │                │
+│  │  python, node, ruff ... │                │
+│  └─────────────────────────┘                │
+│       │ (sibling containers via socket)     │
+│  ┌─ prod stack ─┐  ┌─ e2e stack ──┐        │
+│  │  backend     │  │  test_runner  │        │
+│  │  frontend    │  │  backend_e2e  │        │
+│  └──────────────┘  └──────────────┘        │
+└─────────────────────────────────────────────┘
+```
+
+**Security note**: Socket mount grants host-level Docker control (equivalent to root). Acceptable for dev only — never use in production containers.
+
+**Known caveats**:
+- File path mismatch: container paths (`/weaver/...`) differ from host paths. Compose files invoked from inside the container need host-relative paths or env var mapping.
+- Socket permissions: may need `--group-add` or `chmod` on the socket file.
+- Docker CLI version in container should be compatible with host daemon.
+
+**B-9: Local CI rewrite** — Rewrite `scripts/ci/check-local.sh` to run inside the unified dev container:
+- Workflows 1-3 (backend-ci, alpaca-integration, frontend-ci): Execute directly in container — all tools available natively.
+- Workflows 4-5 (compose-smoke, e2e): Use `docker compose` via socket mount to spin up sibling containers.
+- Alternative: Integrate [`act`](https://github.com/nektos/act) to parse `.github/workflows/*.yml` and replay them locally.
+
+**B-10: Alpaca test skip logic** — Fix `skipif` condition to filter placeholder values:
+```python
+_alpaca_key = os.environ.get("ALPACA_PAPER_API_KEY", "")
+_skip_alpaca = not _alpaca_key or _alpaca_key.startswith("your_")
+```
+Bundle with B-8/B-9 since the dev environment rebuild will change how credentials flow into the container.
 
 ---
 
