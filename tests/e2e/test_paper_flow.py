@@ -11,6 +11,8 @@ Tests focus on lifecycle state transitions only.
 
 from __future__ import annotations
 
+import contextlib
+
 import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
@@ -43,9 +45,7 @@ class TestPaperFlow:
         self, page: Page, e2e_base_url: str, api_client: E2EApiClient
     ) -> None:
         """Paper run created via API appears in runs table with pending status."""
-        run = api_client.create_run(
-            strategy_id="sample", mode="paper", symbols=["BTC/USD"]
-        )
+        run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
         page.goto(f"{e2e_base_url}/runs")
         run_row = page.get_by_test_id(f"run-row-{run['id']}")
         expect(run_row).to_be_visible(timeout=10000)
@@ -56,9 +56,7 @@ class TestPaperFlow:
         self, page: Page, e2e_base_url: str, api_client: E2EApiClient
     ) -> None:
         """Starting a paper run transitions to running status."""
-        run = api_client.create_run(
-            strategy_id="sample", mode="paper", symbols=["BTC/USD"]
-        )
+        run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
         page.goto(f"{e2e_base_url}/runs")
         # Start via API
         result = api_client.start_run(run["id"])
@@ -74,9 +72,7 @@ class TestPaperFlow:
         self, page: Page, e2e_base_url: str, api_client: E2EApiClient
     ) -> None:
         """Dashboard Active Runs counter shows running paper runs."""
-        run = api_client.create_run(
-            strategy_id="sample", mode="paper", symbols=["BTC/USD"]
-        )
+        run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
         api_client.start_run(run["id"])
 
         page.goto(f"{e2e_base_url}/dashboard")
@@ -89,9 +85,7 @@ class TestPaperFlow:
         self, page: Page, e2e_base_url: str, api_client: E2EApiClient
     ) -> None:
         """Stopping a running paper run transitions to stopped status."""
-        run = api_client.create_run(
-            strategy_id="sample", mode="paper", symbols=["BTC/USD"]
-        )
+        run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
         api_client.start_run(run["id"])
         api_client.stop_run(run["id"])
 
@@ -114,10 +108,8 @@ class TestPaperFlow:
             mode="paper",
             symbols=["BTC/USD"],
         )
-        try:
+        with contextlib.suppress(Exception):
             api_client.start_run(run["id"])
-        except Exception:
-            pass  # May return error status or raise
 
         page.goto(f"{e2e_base_url}/runs")
         run_row = page.get_by_test_id(f"run-row-{run['id']}")

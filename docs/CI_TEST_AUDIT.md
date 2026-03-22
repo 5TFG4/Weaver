@@ -490,11 +490,11 @@ These gaps affect test quality — the E2E suite validates the full stack but cu
 
 ### 7.5 Wave 3 — CI Observability (Low)
 
-#### G-2: Frontend Coverage Reporting in CI
+#### G-2: Frontend Coverage Reporting in CI ✅
 
 **Problem**: Frontend CI runs `npm run test` without `--coverage`. vitest.config.ts has coverage configured (v8 provider) but it is not invoked in CI.
 
-**Fix**: Add `--coverage` to frontend-ci.yml vitest step. Optionally add a threshold gate.
+**Fix applied**: Changed `npm run test` → `npm run test:coverage` in `.github/workflows/frontend-ci.yml`. This invokes `vitest run --coverage` which uses the v8 provider already configured in `vitest.config.ts`. Local verification: 104 tests passed, 94.8% statement coverage.
 
 ---
 
@@ -520,7 +520,7 @@ These are real but low-priority gaps. Not planned for immediate execution.
 |------|-------|-----------|------|---------|
 | **Wave 1** ✅ | B-1 (adapter tests) + B-1-CI (workflow) | Paper API key in local env | Medium — external API | 6 tests + 2 adapter methods + 1 workflow |
 | **Wave 2** ✅ | E-1 (orders E2E) + E-2 (form validation E2E) | Docker E2E stack running | Low — internal only | 10 tests + 2 helper methods (3 xfail due to backtest race) |
-| **Wave 3** | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
+| **Wave 3** ✅ | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
 | **Backlog** | B-2, E-3, R-1, R-2, R-3, backtest async race fix | Various | Low | Deferred |
 
 **Rationale for Wave 1 first**: The system's #1 external dependency is Alpaca. If the adapter is broken, live/paper trading is entirely non-functional. This is the only remaining gap where a bug is both high-impact and completely undetectable by any existing test. Waves 2-3 improve coverage quality but test code paths that are already partially validated.

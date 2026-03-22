@@ -16,8 +16,6 @@ Therefore these tests verify:
 
 from __future__ import annotations
 
-import json
-
 import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
@@ -106,7 +104,9 @@ class TestBacktestOrderEvents:
     xfail markers can be removed.
     """
 
-    @pytest.mark.xfail(reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True)
+    @pytest.mark.xfail(
+        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
+    )
     def test_backtest_generates_order_events(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
@@ -126,10 +126,16 @@ class TestBacktestOrderEvents:
         event_types = [e["type"] for e in events]
 
         # Strategy should produce at least one Placed and one Filled event
-        assert "orders.Placed" in event_types, f"No orders.Placed event found. Events: {event_types}"
-        assert "orders.Filled" in event_types, f"No orders.Filled event found. Events: {event_types}"
+        assert "orders.Placed" in event_types, (
+            f"No orders.Placed event found. Events: {event_types}"
+        )
+        assert "orders.Filled" in event_types, (
+            f"No orders.Filled event found. Events: {event_types}"
+        )
 
-    @pytest.mark.xfail(reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True)
+    @pytest.mark.xfail(
+        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
+    )
     def test_order_event_payloads_have_required_fields(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
@@ -164,7 +170,9 @@ class TestBacktestOrderEvents:
         assert "fill_price" in filled_payload
         assert float(filled_payload["fill_price"]) > 0
 
-    @pytest.mark.xfail(reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True)
+    @pytest.mark.xfail(
+        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
+    )
     def test_backtest_strategy_signals_match_seed_data(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
@@ -195,9 +203,7 @@ class TestBacktestOrderEvents:
 class TestOrdersApi:
     """Verify orders API returns well-structured data."""
 
-    def test_list_orders_returns_paginated_response(
-        self, api_client: E2EApiClient
-    ) -> None:
+    def test_list_orders_returns_paginated_response(self, api_client: E2EApiClient) -> None:
         """GET /orders should return paginated response with expected fields."""
         data = api_client.list_orders()
 
@@ -207,9 +213,7 @@ class TestOrdersApi:
         assert "page_size" in data
         assert isinstance(data["items"], list)
 
-    def test_list_orders_items_have_required_fields(
-        self, api_client: E2EApiClient
-    ) -> None:
+    def test_list_orders_items_have_required_fields(self, api_client: E2EApiClient) -> None:
         """Each order item should have all required fields."""
         data = api_client.list_orders()
 
@@ -243,13 +247,15 @@ class TestOrdersPage:
         headers = page.locator("table thead th")
         header_texts = [h.text_content().strip().lower() for h in headers.all()]
 
-        assert any("symbol" in h for h in header_texts), f"No 'symbol' column. Headers: {header_texts}"
+        assert any("symbol" in h for h in header_texts), (
+            f"No 'symbol' column. Headers: {header_texts}"
+        )
         assert any("side" in h for h in header_texts), f"No 'side' column. Headers: {header_texts}"
-        assert any("status" in h for h in header_texts), f"No 'status' column. Headers: {header_texts}"
+        assert any("status" in h for h in header_texts), (
+            f"No 'status' column. Headers: {header_texts}"
+        )
 
-    def test_order_detail_modal_shows_all_fields(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_order_detail_modal_shows_all_fields(self, page: Page, e2e_base_url: str) -> None:
         """Clicking an order row opens modal with full order details."""
         page.goto(f"{e2e_base_url}/orders")
 

@@ -34,9 +34,7 @@ def _clean_runs():
 class TestSSE:
     """SSE connection and real-time update tests."""
 
-    def test_connection_status_shows_connected(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_connection_status_shows_connected(self, page: Page, e2e_base_url: str) -> None:
         """ConnectionStatus indicator shows 'Connected' after SSE handshake."""
         page.goto(f"{e2e_base_url}/dashboard")
         expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)
@@ -69,9 +67,7 @@ class TestSSE:
         # Wait for SSE to deliver completed status — no reload
         expect(run_row.get_by_text("completed")).to_be_visible(timeout=15000)
 
-    def test_sse_reconnects_after_interruption(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_sse_reconnects_after_interruption(self, page: Page, e2e_base_url: str) -> None:
         """SSE reconnects after network interruption."""
         page.goto(f"{e2e_base_url}/dashboard")
         expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)
@@ -92,9 +88,7 @@ class TestSSE:
         self, page: Page, e2e_base_url: str, api_client: E2EApiClient
     ) -> None:
         """SSE delivers run.Stopped → real-time UI update."""
-        run = api_client.create_run(
-            strategy_id="sample", mode="paper", symbols=["BTC/USD"]
-        )
+        run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
         api_client.start_run(run["id"])
 
         # Navigate to runs page

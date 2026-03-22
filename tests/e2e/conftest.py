@@ -18,7 +18,9 @@ from tests.e2e.helpers import E2EApiClient
 
 BASE_URL = os.environ.get("BASE_URL", "http://frontend_e2e:80")
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://backend_e2e:8000/api/v1")
-DB_URL = os.environ.get("DB_URL", "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db")
+DB_URL = os.environ.get(
+    "DB_URL", "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -35,9 +37,7 @@ def e2e_stack_ready() -> None:
         except Exception as exc:
             last_err = exc
         time.sleep(1)
-    raise RuntimeError(
-        f"Backend not healthy at {healthz} after 30s. Last error: {last_err}"
-    )
+    raise RuntimeError(f"Backend not healthy at {healthz} after 30s. Last error: {last_err}")
 
 
 @pytest.fixture()

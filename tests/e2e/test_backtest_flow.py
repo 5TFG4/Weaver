@@ -7,7 +7,7 @@ and visibility across pages.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import psycopg2
 import pytest
@@ -21,30 +21,27 @@ from tests.e2e.helpers import E2EApiClient
 # Bar 11: close drops >1% below avg → BUY signal
 # Bar 13: close rises >1% above avg → SELL signal
 SEED_BARS = []
-_base_ts = datetime(2024, 1, 15, 9, 30, tzinfo=timezone.utc)
+_base_ts = datetime(2024, 1, 15, 9, 30, tzinfo=UTC)
 # Bars 1-10: stable around 100.00 (establishes moving average)
 for i in range(10):
-    ts = datetime(2024, 1, 15, 9, 30 + i, tzinfo=timezone.utc)
-    SEED_BARS.append((
-        "BTC/USD", "1m", ts,
-        100.0, 100.5, 99.5, 100.0, 1000.0
-    ))
+    ts = datetime(2024, 1, 15, 9, 30 + i, tzinfo=UTC)
+    SEED_BARS.append(("BTC/USD", "1m", ts, 100.0, 100.5, 99.5, 100.0, 1000.0))
 # Bar 11: price drops to 98.5 (>1% below 100 avg) → triggers BUY
-SEED_BARS.append(("BTC/USD", "1m", datetime(2024, 1, 15, 9, 40, tzinfo=timezone.utc),
-                  100.0, 100.0, 98.0, 98.5, 1500.0))
+SEED_BARS.append(
+    ("BTC/USD", "1m", datetime(2024, 1, 15, 9, 40, tzinfo=UTC), 100.0, 100.0, 98.0, 98.5, 1500.0)
+)
 # Bar 12: price recovers slightly
-SEED_BARS.append(("BTC/USD", "1m", datetime(2024, 1, 15, 9, 41, tzinfo=timezone.utc),
-                  98.5, 99.5, 98.0, 99.5, 1200.0))
+SEED_BARS.append(
+    ("BTC/USD", "1m", datetime(2024, 1, 15, 9, 41, tzinfo=UTC), 98.5, 99.5, 98.0, 99.5, 1200.0)
+)
 # Bar 13: price rises to 101.5 (>1% above avg) → triggers SELL
-SEED_BARS.append(("BTC/USD", "1m", datetime(2024, 1, 15, 9, 42, tzinfo=timezone.utc),
-                  99.5, 102.0, 99.5, 101.5, 1800.0))
+SEED_BARS.append(
+    ("BTC/USD", "1m", datetime(2024, 1, 15, 9, 42, tzinfo=UTC), 99.5, 102.0, 99.5, 101.5, 1800.0)
+)
 # Bars 14-20: stable again
 for i in range(7):
-    ts = datetime(2024, 1, 15, 9, 43 + i, tzinfo=timezone.utc)
-    SEED_BARS.append((
-        "BTC/USD", "1m", ts,
-        101.0, 101.5, 100.5, 101.0, 1000.0
-    ))
+    ts = datetime(2024, 1, 15, 9, 43 + i, tzinfo=UTC)
+    SEED_BARS.append(("BTC/USD", "1m", ts, 101.0, 101.5, 100.5, 101.0, 1000.0))
 
 
 @pytest.fixture()
@@ -94,9 +91,7 @@ def _clean_runs():
 class TestBacktestFlow:
     """Backtest run lifecycle E2E tests."""
 
-    def test_create_backtest_via_ui(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_create_backtest_via_ui(self, page: Page, e2e_base_url: str) -> None:
         """Create a backtest run through the UI form → shows pending status."""
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
@@ -190,9 +185,7 @@ class TestBacktestFlow:
         # Record count before
         before = api_client.list_runs()["total"]
         for _ in range(3):
-            api_client.create_run(
-                strategy_id="sample", mode="backtest", symbols=["BTC/USD"]
-            )
+            api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"])
         page.goto(f"{e2e_base_url}/runs")
         # Should have at least before+3 table rows
         rows = page.locator("table tbody tr")
@@ -204,9 +197,7 @@ class TestBacktestFlow:
 class TestFormValidation:
     """Form validation E2E tests for the Create Run form."""
 
-    def test_create_form_rejects_empty_strategy(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_create_form_rejects_empty_strategy(self, page: Page, e2e_base_url: str) -> None:
         """Submitting with an empty strategy field is blocked by browser validation."""
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
@@ -223,14 +214,10 @@ class TestFormValidation:
         expect(page.get_by_role("button", name="Create")).to_be_visible()
 
         # Strategy input should be in invalid state
-        is_invalid = page.locator("#strategy-id").evaluate(
-            "el => !el.validity.valid"
-        )
+        is_invalid = page.locator("#strategy-id").evaluate("el => !el.validity.valid")
         assert is_invalid, "Expected strategy-id to be invalid when empty"
 
-    def test_create_form_rejects_empty_symbols(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_create_form_rejects_empty_symbols(self, page: Page, e2e_base_url: str) -> None:
         """Submitting with an empty symbols field is blocked by browser validation."""
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
@@ -247,7 +234,5 @@ class TestFormValidation:
         expect(page.get_by_role("button", name="Create")).to_be_visible()
 
         # Symbols input should be in invalid state
-        is_invalid = page.locator("#symbols").evaluate(
-            "el => !el.validity.valid"
-        )
+        is_invalid = page.locator("#symbols").evaluate("el => !el.validity.valid")
         assert is_invalid, "Expected symbols to be invalid when empty"

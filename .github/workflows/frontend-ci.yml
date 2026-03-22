@@ -34,8 +34,8 @@ jobs:
       - name: TypeScript check
         run: npx tsc -b --noEmit
 
-      - name: Vitest tests
-        run: npm run test
+      - name: Vitest tests with coverage
+        run: npm run test:coverage
 
       - name: Vite build
         run: npm run build

@@ -19,9 +19,7 @@ from playwright.sync_api import Page, expect
 class TestOrders:
     """Orders page rendering tests."""
 
-    def test_orders_page_renders_mock_data(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_orders_page_renders_mock_data(self, page: Page, e2e_base_url: str) -> None:
         """Orders page shows the 2 mock orders with correct data."""
         page.goto(f"{e2e_base_url}/orders")
 
@@ -43,9 +41,7 @@ class TestOrders:
         expect(table.get_by_text("sell").first).to_be_visible()
         expect(table.get_by_text("submitted")).to_be_visible()
 
-    def test_order_detail_modal(
-        self, page: Page, e2e_base_url: str
-    ) -> None:
+    def test_order_detail_modal(self, page: Page, e2e_base_url: str) -> None:
         """Clicking an order row opens detail modal."""
         page.goto(f"{e2e_base_url}/orders")
 

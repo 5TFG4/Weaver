@@ -39,9 +39,7 @@ class E2EApiClient:
             payload["end_time"] = kwargs["end_time"]
         if "config" in kwargs:
             payload["config"] = kwargs["config"]
-        r = self.session.post(
-            f"{self.base_url}/runs", json=payload, timeout=10
-        )
+        r = self.session.post(f"{self.base_url}/runs", json=payload, timeout=10)
         r.raise_for_status()
         return r.json()
 
@@ -51,30 +49,22 @@ class E2EApiClient:
         return r.json()
 
     def list_runs(self, **params: Any) -> dict[str, Any]:
-        r = self.session.get(
-            f"{self.base_url}/runs", params=params, timeout=5
-        )
+        r = self.session.get(f"{self.base_url}/runs", params=params, timeout=5)
         r.raise_for_status()
         return r.json()
 
     def start_run(self, run_id: str) -> dict[str, Any]:
-        r = self.session.post(
-            f"{self.base_url}/runs/{run_id}/start", timeout=30
-        )
+        r = self.session.post(f"{self.base_url}/runs/{run_id}/start", timeout=30)
         r.raise_for_status()
         return r.json()
 
     def stop_run(self, run_id: str) -> dict[str, Any]:
-        r = self.session.post(
-            f"{self.base_url}/runs/{run_id}/stop", timeout=10
-        )
+        r = self.session.post(f"{self.base_url}/runs/{run_id}/stop", timeout=10)
         r.raise_for_status()
         return r.json()
 
     def list_orders(self, **params: Any) -> dict[str, Any]:
-        r = self.session.get(
-            f"{self.base_url}/orders", params=params, timeout=5
-        )
+        r = self.session.get(f"{self.base_url}/orders", params=params, timeout=5)
         r.raise_for_status()
         return r.json()
 
