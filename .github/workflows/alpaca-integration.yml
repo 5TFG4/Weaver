@@ -14,6 +14,9 @@ on:
       - "tests/integration/veda/**"
       - ".github/workflows/alpaca-integration.yml"
 
+permissions:
+  contents: read
+
 jobs:
   alpaca-paper:
     # Fork protection: fork PRs receive empty secrets, so tests would skip.

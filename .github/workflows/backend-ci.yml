@@ -11,6 +11,9 @@ on:
       - "alembic.ini"
       - ".github/workflows/backend-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
   backend-checks:
     runs-on: ubuntu-latest

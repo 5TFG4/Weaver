@@ -7,6 +7,9 @@ on:
       - "haro/**"
       - ".github/workflows/frontend-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest

@@ -12,6 +12,9 @@ on:
       - "alembic.ini"
       - ".github/workflows/compose-smoke.yml"
 
+permissions:
+  contents: read
+
 jobs:
   compose-smoke:
     runs-on: ubuntu-latest
