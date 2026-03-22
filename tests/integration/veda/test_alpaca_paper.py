@@ -119,7 +119,7 @@ class TestAlpacaOrderLifecycle:
         # Retrieve the order
         order = await adapter.get_order(result.exchange_order_id)
         assert order is not None
-        assert order.symbol == SYMBOL.replace("/", "")  # Alpaca strips slash
+        assert order.symbol == SYMBOL  # Alpaca preserves slash for crypto
         assert order.side == OrderSide.BUY
         assert order.qty == QTY
 
@@ -133,7 +133,7 @@ class TestAlpacaOrderLifecycle:
             side=OrderSide.BUY,
             order_type=OrderType.LIMIT,
             qty=QTY,
-            limit_price=Decimal("1.00"),  # Far below market — will never fill
+            limit_price=Decimal("15000.00"),  # Far below market — will never fill
             stop_price=None,
             time_in_force=TimeInForce.GTC,
         )
@@ -162,7 +162,7 @@ class TestAlpacaOrderLifecycle:
             side=OrderSide.BUY,
             order_type=OrderType.LIMIT,
             qty=QTY,
-            limit_price=Decimal("1.00"),
+            limit_price=Decimal("15000.00"),
             stop_price=None,
             time_in_force=TimeInForce.GTC,
         )
