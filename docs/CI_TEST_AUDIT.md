@@ -26,10 +26,11 @@
 
 | Workflow | File | Trigger Paths | What It Does | Duration |
 |----------|------|--------------|--------------|----------|
-| Backend CI | `backend-ci.yml` | `src/`, `tests/`, `pyproject.toml` | ruff lint + mypy + pytest (unit only) | ~1m |
-| Frontend CI | `frontend-ci.yml` | `haro/` | ESLint + tsc + vitest + vite build | ~40s |
-| Compose Smoke | `compose-smoke.yml` | `docker/`, `src/`, `haro/` | Build images → start → health check curl | ~1m |
-| E2E Tests | `e2e.yml` | `docker/`, `src/`, `haro/`, `tests/e2e/` | Build E2E stack → Playwright (23 tests) | ~3-5m |
+| Backend CI | `backend-ci.yml` | `src/`, `tests/`, `pyproject.toml` | ruff lint + mypy + pytest (unit + integration with DB) | ~2m |
+| Frontend CI | `frontend-ci.yml` | `haro/` | ESLint + tsc + vitest coverage + vite build | ~1m |
+| Compose Smoke | `compose-smoke.yml` | `docker/`, `src/`, `haro/` | Build images → start → health check curl | ~3m |
+| E2E Tests | `e2e.yml` | `docker/`, `src/`, `haro/`, `tests/e2e/` | Build E2E stack → Playwright (33 tests) | ~5m |
+| Alpaca Integration | `alpaca-integration.yml` | `src/veda/`, `tests/integration/veda/` | Paper API integration tests (6 tests) | ~1m |
 
 ### 1.2 Pipeline Gaps
 
@@ -649,10 +650,52 @@ These are real but low-priority gaps. Not planned for immediate execution.
 | **Wave 1** ✅ | B-1 (adapter tests) + B-1-CI (workflow) | Paper API key in local env | Medium — external API | 6 tests + 2 adapter methods + 1 workflow |
 | **Wave 2** ✅ | E-1 (orders E2E) + E-2 (form validation E2E) | Docker E2E stack running | Low — internal only | 10 tests + 2 helper methods (3 xfail due to backtest race) |
 | **Wave 3** ✅ | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
-| **Wave 4** | C-1 (path fix) + C-2 (submit_order) + C-3 (list_orders) + C-5 (doc sync ✅) + C-6 (autospec) | Nothing | Medium — production code change (C-2/C-3) | 2 adapter fixes + 1 conftest fix + mock hardening + doc updates |
+| **Wave 4** ✅ | C-1 (path fix) + C-2 (submit_order) + C-3 (list_orders) + C-5 (doc sync ✅) + C-6 (autospec) | Nothing | Medium — production code change (C-2/C-3) | 2 adapter fixes + 1 conftest fix + mock hardening + doc updates |
+| **Post-Wave 4** ✅ | CI hardening: Actions Node.js 24 upgrade, npm vulnerability patches, permissions lockdown, coverage artifact cleanup | Nothing | Low | 5 workflow upgrades + 2 npm fixes + 5 permissions + .gitignore |
 | **Backlog** | B-2, B-3, E-3, F-2, R-1, R-2, R-3, B-8, B-9, B-10 | Various | Low | Deferred |
 
 **Rationale for Wave 4 now**: Backend CI and Alpaca Integration CI have been red since PR #15 opened. C-2 (submit_order) is a **real production bug** — live/paper order submission is broken. These must be fixed before merge.
+
+**Wave 4 outcome**: All 6 items completed. Backend CI and Alpaca Integration CI turned green. PR #15 all 5 workflows passing.
+
+---
+
+### 7.8a Post-Wave 4 — CI Hardening (2026-03-22) ✅
+
+Additional improvements applied after Wave 4 to resolve GitHub security alerts, deprecation warnings, and repository hygiene issues discovered during PR #15 review.
+
+#### H-1: GitHub Actions Node.js 24 Upgrade ✅
+
+All 5 workflow files upgraded to Node.js 24-compatible action versions:
+
+| Action | Old | New | Breaking Changes |
+|--------|-----|-----|------------------|
+| `actions/checkout` | v4 | **v6** | Credential persistence to separate file |
+| `actions/setup-python` | v5 | **v6** | Node 24 runtime |
+| `actions/setup-node` | v4 | **v6** | Auto-caching when lock file detected (npm only) |
+| `actions/cache` | v4 | **v5** | Node 24 runtime |
+| `actions/upload-artifact` | v4 | **v5** | Node 24 runtime |
+
+**Rationale**: GitHub will force Node.js 24 starting June 2, 2026. Proactive upgrade eliminates deprecation warnings.
+
+#### H-2: npm Dependency Vulnerability Patches ✅
+
+| Package | Old | New | Vulnerability | Severity |
+|---------|-----|-----|--------------|----------|
+| `flatted` | 3.3.3 | **3.4.2** | Prototype Pollution via `parse()` (CVE) | High |
+| `undici` | 7.x (vulnerable) | **7.24.5** | HTTP smuggling, WebSocket DoS, CRLF injection (6 CVEs) | High |
+
+- `flatted`: Fixed via `overrides` in `haro/package.json` (eslint → flat-cache → flatted transitive dep)
+- `undici`: Fixed via `npm audit fix` (vitest transitive dep, semver-compatible upgrade)
+- Both are devDependencies — do not affect production bundle
+
+#### H-3: Workflow Permissions Lockdown ✅
+
+All 5 workflows now declare explicit `permissions: contents: read` (CodeQL alert #3 fix). This enforces least-privilege for `GITHUB_TOKEN` — prevents supply-chain attacks from modifying the repository even if an action is compromised.
+
+#### H-4: Coverage Artifact Cleanup ✅
+
+54 generated istanbul coverage report files (`haro/coverage/`) were committed to git by accident. Removed from tracking via `git rm --cached` and added `coverage` to `haro/.gitignore`. This also resolves CodeQL alert #6 (DOM XSS in istanbul's `sorter.js`).
 
 ---
 

@@ -6,9 +6,9 @@
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
 > **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests)  
-> **Tests (latest verified)**: 946 backend + 104 frontend + 33 E2E = 1083 passed (2026-03-22)  
-> **Remaining Work**: CI audit Wave 4 (fix CI failures + adapter bug) → then backlog only  
-> **Completed**: All planned milestones (M5–M10), CI audit Waves 1–3
+> **Tests (latest verified)**: 946 backend + 104 frontend + 33 E2E + 6 Alpaca integration = 1089 passed (2026-03-22)  
+> **Remaining Work**: Backlog only (B-2, B-3, B-8–B-10, E-3, F-2, R-1–R-3)  
+> **Completed**: All planned milestones (M5–M10), CI audit Waves 1–4, PR #15 merged
 
 ---
 
@@ -17,7 +17,7 @@
 All pending tasks have been consolidated and reorganized into 6 milestones.
 M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests.
 
-**Post-M10 CI Audit** (2026-03-21 – ongoing): Waves 1–3 complete (10 new E2E tests, Alpaca integration tests, coverage reporting). Wave 4 in progress — fixing 2 CI failures discovered during first PR #15 run. See `CI_TEST_AUDIT.md` §7.6 for details.
+**Post-M10 CI Audit** (2026-03-21 – 2026-03-22): ✅ All 4 waves complete. Waves 1–3 added 10 E2E tests, 6 Alpaca integration tests, and frontend coverage reporting. Wave 4 fixed 2 production bugs (submit_order/list_orders SDK contract mismatch), CI path resolution, and mock hardening. Post-Wave 4 hardening: GitHub Actions upgraded to Node.js 24, npm dependency vulnerabilities patched (flatted, undici), workflow permissions locked to least-privilege, coverage artifacts removed from git. PR #15 merged to main with all 5 CI workflows green. See `CI_TEST_AUDIT.md` for full details.
 
 | Milestone | Name               | Core Objective                                         | Tests  | Status                                |
 | --------- | ------------------ | ------------------------------------------------------ | ------ | ------------------------------------- |

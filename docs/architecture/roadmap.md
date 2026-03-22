@@ -47,9 +47,9 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-> **Latest measured totals (2026-03-15)**: 1032+ tests, 89.78% coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
+> **Latest measured totals (2026-03-22)**: 1089 tests (946 backend + 104 frontend + 33 E2E + 6 Alpaca integration), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: Post-M10 CI Audit (Wave 4 in progress)
+**Active Milestone**: Post-M10 complete — backlog only (B-2, B-3, B-8–B-10, E-3, F-2, R-1–R-3)
 
 **Last State Update**: 2026-03-22
 
@@ -143,17 +143,17 @@
 
 ### M9 Exit Gate (CI Deployment Ready)
 
-- [ ] Backend fast CI checks are required and stable
-- [ ] Frontend fast CI checks are required and stable
-- [ ] Container smoke workflow integrated for runtime-affecting PRs
-- [ ] Branch protection rules enforce required CI checks
+- [x] Backend fast CI checks are required and stable
+- [x] Frontend fast CI checks are required and stable
+- [x] Container smoke workflow integrated for runtime-affecting PRs
+- [x] Branch protection rules enforce required CI checks
 
 ### M10 Exit Gate (E2E & Release Ready)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Full user workflow validated end-to-end
-- [ ] Deployment guide complete
-- [ ] ~20–30 new tests (target: 954+)
+- [x] E2E tests pass (Playwright) — 33 tests
+- [x] Full user workflow validated end-to-end
+- [x] Deployment guide complete
+- [x] ~20–30 new tests (target: 954+) — actual: 1089 total
 
 ---
 
