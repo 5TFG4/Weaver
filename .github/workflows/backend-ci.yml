@@ -35,14 +35,14 @@ jobs:
       DB_URL: postgresql+asyncpg://weaver:weaver@localhost:5432/weaver_test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('docker/backend/requirements.txt', 'docker/backend/requirements.dev.txt') }}

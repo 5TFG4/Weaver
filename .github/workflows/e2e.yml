@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build E2E images
         run: docker compose -f docker/docker-compose.e2e.yml --profile test build
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload failure logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-test-logs
           path: /tmp/weaver_e2e_logs.out
