@@ -6,9 +6,9 @@
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
 > **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests)  
-> **Tests (latest verified)**: 1055 passed (latest local run)  
-> **Remaining Work**: Backlog items only  
-> **Completed**: All planned milestones (M5–M10)
+> **Tests (latest verified)**: 946 backend + 104 frontend + 33 E2E = 1083 passed (2026-03-22)  
+> **Remaining Work**: CI audit Wave 4 (fix CI failures + adapter bug) → then backlog only  
+> **Completed**: All planned milestones (M5–M10), CI audit Waves 1–3
 
 ---
 
@@ -16,6 +16,8 @@
 
 All pending tasks have been consolidated and reorganized into 6 milestones.
 M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests.
+
+**Post-M10 CI Audit** (2026-03-21 – ongoing): Waves 1–3 complete (10 new E2E tests, Alpaca integration tests, coverage reporting). Wave 4 in progress — fixing 2 CI failures discovered during first PR #15 run. See `CI_TEST_AUDIT.md` §7.6 for details.
 
 | Milestone | Name               | Core Objective                                         | Tests  | Status                                |
 | --------- | ------------------ | ------------------------------------------------------ | ------ | ------------------------------------- |

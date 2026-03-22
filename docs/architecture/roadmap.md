@@ -49,9 +49,9 @@
 
 > **Latest measured totals (2026-03-15)**: 1032+ tests, 89.78% coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: M9 (CI Deployment Pipeline)
+**Active Milestone**: Post-M10 CI Audit (Wave 4 in progress)
 
-**Last State Update**: 2026-02-25
+**Last State Update**: 2026-03-22
 
 ## 2. Milestones (Revised 2026-02-19)
 
@@ -65,7 +65,7 @@
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)  |
 | **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE         |
 | **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE         |
-| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                                                                       | ⏳ PLANNED          |
+| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)|
 
 ## 3. Phase Timeline
 
@@ -76,8 +76,8 @@
 | **6**  | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
 | **7**  | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
 | **8**  | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
-| **9**  | CI Deployment Pipeline        | -          | ⏳ PLANNED           |
-| **10** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
+| **9**  | CI Deployment Pipeline        | -          | ✅ COMPLETE          |
+| **10** | E2E Tests + Release Prep      | 33         | ✅ COMPLETE          |
 
 ## 4. Architecture Invariants
 

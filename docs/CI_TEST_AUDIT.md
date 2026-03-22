@@ -498,7 +498,122 @@ These gaps affect test quality — the E2E suite validates the full stack but cu
 
 ---
 
-### 7.6 Backlog (Wave 4)
+### 7.6 Wave 4 — CI Fix & Hardening (Critical)
+
+Wave 1-3 test code is correct but exposed **real production bugs** and **CI infrastructure issues** that must be fixed before merge. These were discovered during the first CI run of PR #15.
+
+#### C-1: Backend CI — `init_tables` Fixture Uses Hardcoded Path
+
+**Problem**: `tests/conftest.py` line 222 hardcodes `PROJECT_ROOT` default to `/weaver` (the Docker container workdir). In GitHub Actions the project root is `/home/runner/work/Weaver/Weaver`. The `init_tables` fixture calls `alembic upgrade head` with `cwd=project_root` which raises `FileNotFoundError: [Errno 2] No such file or directory: '/weaver'`.
+
+**Impact**: 4 integration tests in `tests/unit/veda/test_persistence.py` ERROR in Backend CI. These tests use the `db_session` fixture → `init_tables` → broken path. Backend CI has been red since PR #15 opened (8 consecutive runs).
+
+**CI log evidence**:
+```
+ERROR tests/unit/veda/test_persistence.py::TestOrderRepositorySave::test_save_order_persists_to_db
+  - FileNotFoundError: [Errno 2] No such file or directory: '/weaver'
+ERROR tests/unit/veda/test_persistence.py::TestOrderRepositoryQuery::test_get_by_id_returns_order
+  - FileNotFoundError: [Errno 2] No such file or directory: '/weaver'
+(... 2 more identical errors)
+```
+
+**Fix**:
+- File: `tests/conftest.py`
+- Change: Replace hardcoded `/weaver` default with dynamic path computation using `Path(__file__).resolve().parent.parent` (conftest.py is at `tests/conftest.py`, parent.parent = project root)
+- Verification: `alembic.ini` exists in the computed project root
+
+**Risk**: Low — only changes the default value; Docker containers already set `PROJECT_ROOT=/weaver` via env.
+
+#### C-2: Alpaca Adapter `submit_order()` SDK Contract Mismatch
+
+**Problem**: `AlpacaAdapter.submit_order()` (line 236) calls:
+```python
+response = await asyncio.to_thread(self._trading_client.submit_order, **order_params)
+```
+But `TradingClient.submit_order()` signature is:
+```python
+submit_order(self, order_data: OrderRequest) -> Order
+```
+It accepts a single `OrderRequest` object, not keyword arguments. Passing `**order_params` causes `TypeError: TradingClient.submit_order() got an unexpected keyword argument 'symbol'`.
+
+**Impact**: **Every real order submission fails.** Paper trading and live trading are completely broken. This was invisible to the 21 unit tests because they all mock `TradingClient`. The Alpaca Integration CI caught this immediately — 4 out of 6 tests fail (the 2 connection/account tests pass).
+
+**CI log evidence**:
+```
+OrderSubmitResult(success=False, exchange_order_id=None,
+  status=<OrderStatus.REJECTED: 'rejected'>,
+  error_code='ALPACA_ERROR',
+  error_message="TradingClient.submit_order() got an unexpected keyword argument 'symbol'")
+```
+
+**Fix**:
+- File: `src/veda/adapters/alpaca_adapter.py`
+- Change: Import `MarketOrderRequest`, `LimitOrderRequest`, `StopOrderRequest`, `StopLimitOrderRequest` from `alpaca.trading.requests`. Construct the appropriate request object based on `intent.order_type`, then pass it as a single argument:
+  ```python
+  order_data = MarketOrderRequest(**order_params)  # (or LimitOrderRequest etc.)
+  response = await asyncio.to_thread(self._trading_client.submit_order, order_data)
+  ```
+- The Alpaca SDK's Pydantic models accept string values for enum fields (`"buy"` → `OrderSide.BUY`), so the existing `_map_order_type()` / `_map_time_in_force()` string output is compatible.
+
+**Risk**: Medium — changes production order execution code path. Requires both unit test updates (mocks must expect `OrderRequest` objects) and integration test re-verification.
+
+#### C-3: Alpaca Adapter `list_orders()` SDK Contract Mismatch (Latent)
+
+**Problem**: `AlpacaAdapter.list_orders()` (line 329) calls:
+```python
+response = await asyncio.to_thread(self._trading_client.get_orders, **params)
+```
+But `TradingClient.get_orders()` signature is:
+```python
+get_orders(self, filter: Optional[GetOrdersRequest] = None) -> List[Order]
+```
+Same issue as C-2: expects a `GetOrdersRequest` object, not keyword args.
+
+**Impact**: **Every order listing call fails.** This bug was masked in CI because `submit_order` fails first (the test never reaches `list_orders`). In production, any page load of the Orders page with a real VedaService would crash.
+
+**Fix**:
+- File: `src/veda/adapters/alpaca_adapter.py`
+- Change: Import `GetOrdersRequest` from `alpaca.trading.requests`. Construct the filter object:
+  ```python
+  filter_request = GetOrdersRequest(**params)
+  response = await asyncio.to_thread(self._trading_client.get_orders, filter=filter_request)
+  ```
+
+**Risk**: Low — same pattern as C-2.
+
+#### C-4: Dev Container Alpaca Test Skip Logic
+
+**Problem**: `docker-compose.dev.yml` passes placeholder values `ALPACA_PAPER_API_KEY=your_alpaca_paper_api_key_here`. The test skip condition `skipif(not os.environ.get("ALPACA_PAPER_API_KEY"))` evaluates the non-empty placeholder as truthy, so tests run instead of skipping. All 6 Alpaca integration tests fail/error in the dev container.
+
+**Impact**: Local dev experience only — 6 test failures when running full suite in dev container. Does not affect CI (CI has real secrets or empty env vars).
+
+**Fix**:
+- File: `tests/integration/veda/test_alpaca_paper.py`
+- Change: Replace simple `not os.environ.get(...)` with a check that also filters out placeholder values:
+  ```python
+  _alpaca_key = os.environ.get("ALPACA_PAPER_API_KEY", "")
+  _skip_alpaca = not _alpaca_key or _alpaca_key.startswith("your_")
+  ```
+
+**Risk**: Trivial.
+
+#### C-5: Document Sync (Stale Status/Numbers)
+
+**Problem**: Three docs have outdated information after Waves 1-3 and audit findings.
+
+| Document | Issue |
+|----------|-------|
+| `docs/architecture/roadmap.md` | M9, M10 show `⏳ PLANNED` in §2 and §3 — should be `✅ COMPLETE` |
+| `docs/TEST_COVERAGE.md` | E2E count = 23 (should be 33), frontend tests = 90 (should be 104), M9 = `⏳ Planned` |
+| `docs/archive/milestone-details/m10-e2e-release.md` | Status header = `⏳ PLANNED` |
+
+**Fix**: Pure text updates to match actual measured values.
+
+**Risk**: None — documentation only.
+
+---
+
+### 7.7 Backlog (Wave 5+)
 
 These are real but low-priority gaps. Not planned for immediate execution.
 
@@ -514,16 +629,17 @@ These are real but low-priority gaps. Not planned for immediate execution.
 
 ---
 
-### 7.7 Execution Summary
+### 7.8 Execution Summary
 
 | Wave | Items | Depends On | Risk | Stories |
 |------|-------|-----------|------|---------|
 | **Wave 1** ✅ | B-1 (adapter tests) + B-1-CI (workflow) | Paper API key in local env | Medium — external API | 6 tests + 2 adapter methods + 1 workflow |
 | **Wave 2** ✅ | E-1 (orders E2E) + E-2 (form validation E2E) | Docker E2E stack running | Low — internal only | 10 tests + 2 helper methods (3 xfail due to backtest race) |
 | **Wave 3** ✅ | G-2 (coverage reporting) | Nothing | Trivial | 1 CI config change |
-| **Backlog** | B-2, E-3, R-1, R-2, R-3, backtest async race fix | Various | Low | Deferred |
+| **Wave 4** | C-1 (init_tables path) + C-2 (submit_order) + C-3 (list_orders) + C-4 (skip logic) + C-5 (doc sync) | Nothing | Medium — production code change (C-2/C-3) | 2 adapter fixes + 1 conftest fix + 1 test fix + 3 doc updates |
+| **Backlog** | B-2, B-3, E-3, F-2, R-1, R-2, R-3 | Various | Low | Deferred |
 
-**Rationale for Wave 1 first**: The system's #1 external dependency is Alpaca. If the adapter is broken, live/paper trading is entirely non-functional. This is the only remaining gap where a bug is both high-impact and completely undetectable by any existing test. Waves 2-3 improve coverage quality but test code paths that are already partially validated.
+**Rationale for Wave 4 now**: Backend CI and Alpaca Integration CI have been red since PR #15 opened. C-2 (submit_order) is a **real production bug** — live/paper order submission is broken. These must be fixed before merge.
 
 ---
 

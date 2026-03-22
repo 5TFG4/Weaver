@@ -5,10 +5,10 @@
 > **Authoritative for**: M10 task breakdown, file-level change specs, test requirements, and execution order.
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: ⏳ PLANNED
+> **Status**: ✅ COMPLETE (2026-03-16)
 > **Prerequisite**: M9 ✅ (946 backend tests, 91 frontend tests, 89.61% backend coverage, all CI green)
 > **Estimated Effort**: 1.5–2 weeks
-> **Branch**: `e2e-release`
+> **Branch**: `e2e_release`
 > **Key Inputs**: `MILESTONE_PLAN.md` §6, M9 CI infrastructure, existing compose-smoke flow
 
 ---

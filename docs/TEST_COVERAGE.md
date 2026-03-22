@@ -7,25 +7,26 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-03-16 · **Total Tests**: 1055 passed (latest local run)  
-**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests)
+**Last Updated**: 2026-03-22 · **Total Tests**: 1083 passed (946 backend + 104 frontend + 33 E2E)  
+**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ✅ Complete (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests)
 
 ---
 
 ## 1. Executive Summary
 
-| Metric            | Value                   | Status         |
-| ----------------- | ----------------------- | -------------- |
-| Total Tests       | 1055 (latest local run) | ✅             |
-| Test Files        | 78+                     | ✅             |
-| Total Assertions  | ~1,800+                 | ✅             |
-| Unit Tests        | majority                | ✅             |
-| Integration Tests | targeted core flows     | ✅             |
-| E2E Tests         | 23 (Playwright)         | ✅ M10         |
-| Coverage Gate     | 89.61% (threshold: 80%) | ✅             |
-| Mock Usages       | high (design-intent)    | -              |
+| Metric            | Value                       | Status         |
+| ----------------- | --------------------------- | -------------- |
+| Total Tests       | 1083 (946 + 104 + 33)       | ✅             |
+| Test Files        | 80+                         | ✅             |
+| Total Assertions  | ~2,000+                     | ✅             |
+| Unit Tests        | majority                    | ✅             |
+| Integration Tests | targeted core flows         | ✅             |
+| E2E Tests         | 33 (Playwright)             | ✅ M10         |
+| Frontend Tests    | 104 (Vitest)                | ✅ 94.8% cov   |
+| Coverage Gate     | 89.73% (threshold: 80%)     | ✅             |
+| Mock Usages       | high (design-intent)        | -              |
 
-**Overall Assessment**: Test breadth is strong and M8 test growth target remains exceeded. Coverage gate remains passed (`pytest --cov=src tests` threshold: 80%). E2E testing remains planned for M10.
+**Overall Assessment**: Test breadth is strong. CI audit Waves 1–3 added Alpaca integration tests (6), E2E order lifecycle tests (10), and frontend coverage reporting. Coverage gate remains passed. Wave 4 (CI fix & adapter bug) in progress.
 
 ---
 
@@ -46,7 +47,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 15    | 90    | 21      | 8.8%       |
+| **Haro (Frontend)**    | 17    | 104   | 25      | 9.6%       |
 
 ### 2.2 Top Test Files by Count
 
