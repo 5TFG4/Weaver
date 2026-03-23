@@ -106,6 +106,13 @@ class RunManager:
         self._strategy_loader = strategy_loader
         self._run_repository = run_repository
         self._run_contexts: dict[str, RunContext] = {}
+        self._run_locks: dict[str, asyncio.Lock] = {}
+
+    def _get_run_lock(self, run_id: str) -> asyncio.Lock:
+        """Get or create a per-run asyncio.Lock."""
+        if run_id not in self._run_locks:
+            self._run_locks[run_id] = asyncio.Lock()
+        return self._run_locks[run_id]
 
     async def _emit_event(self, event_type: str, run: Run) -> None:
         """Emit an event if event_log is configured."""
@@ -173,6 +180,7 @@ class RunManager:
             await ctx.greta.cleanup()
 
         del self._run_contexts[run_id]
+        self._run_locks.pop(run_id, None)
 
     async def create(self, request: RunCreate) -> Run:
         """
@@ -254,33 +262,34 @@ class RunManager:
             RunNotFoundError: If run doesn't exist
             RunNotStartableError: If run is not in PENDING status
         """
-        run = self._runs.get(run_id)
-        if run is None:
-            raise RunNotFoundError(run_id)
+        async with self._get_run_lock(run_id):
+            run = self._runs.get(run_id)
+            if run is None:
+                raise RunNotFoundError(run_id)
 
-        # Only start if pending
-        if run.status != RunStatus.PENDING:
-            raise RunNotStartableError(run_id, run.status.value)
+            # Only start if pending
+            if run.status != RunStatus.PENDING:
+                raise RunNotStartableError(run_id, run.status.value)
 
-        run.status = RunStatus.RUNNING
-        run.started_at = datetime.now(UTC)
-        await self._emit_event(RunEvents.STARTED, run)
-        await self._persist_run(run)
-
-        try:
-            if run.mode == RunMode.BACKTEST:
-                await self._start_backtest(run)
-            else:
-                # LIVE/PAPER use RealtimeClock
-                await self._start_live(run)
-        except Exception:
-            await self._persist_run(run)
-            raise
-
-        if run.status != RunStatus.RUNNING:
+            run.status = RunStatus.RUNNING
+            run.started_at = datetime.now(UTC)
+            await self._emit_event(RunEvents.STARTED, run)
             await self._persist_run(run)
 
-        return run
+            try:
+                if run.mode == RunMode.BACKTEST:
+                    await self._start_backtest(run)
+                else:
+                    # LIVE/PAPER use RealtimeClock
+                    await self._start_live(run)
+            except Exception:
+                await self._persist_run(run)
+                raise
+
+            if run.status != RunStatus.RUNNING:
+                await self._persist_run(run)
+
+            return run
 
     async def _start_live(self, run: Run) -> None:
         """
@@ -453,21 +462,22 @@ class RunManager:
         Raises:
             RunNotFoundError: If run doesn't exist
         """
-        run = self._runs.get(run_id)
-        if run is None:
-            raise RunNotFoundError(run_id)
+        async with self._get_run_lock(run_id):
+            run = self._runs.get(run_id)
+            if run is None:
+                raise RunNotFoundError(run_id)
 
-        # Cleanup per-run context
-        await self._cleanup_run_context(run_id)
+            # Cleanup per-run context
+            await self._cleanup_run_context(run_id)
 
-        # Idempotent: if already stopped, just return
-        if run.status != RunStatus.STOPPED:
-            run.status = RunStatus.STOPPED
-            run.stopped_at = datetime.now(UTC)
-            await self._emit_event(RunEvents.STOPPED, run)
-            await self._persist_run(run)
+            # Idempotent: if already stopped, just return
+            if run.status != RunStatus.STOPPED:
+                run.status = RunStatus.STOPPED
+                run.stopped_at = datetime.now(UTC)
+                await self._emit_event(RunEvents.STOPPED, run)
+                await self._persist_run(run)
 
-        return run
+            return run
 
     async def recover(self) -> int:
         """

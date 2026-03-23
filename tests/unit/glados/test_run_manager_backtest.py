@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest_asyncio
 
+from src.glados.exceptions import RunNotStartableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.glados.services.run_manager import RunContext, RunManager
 
@@ -595,3 +596,195 @@ class TestBacktestErrorPropagation:
         event_types = [c[0][0].type for c in calls]
         assert "run.Error" not in event_types
         assert "run.Completed" in event_types
+
+
+# =============================================================================
+# M11-3: Concurrent Run Operation Safety tests
+# =============================================================================
+
+
+def _make_manager_with_deps() -> RunManager:
+    """Helper: create RunManager with full mocked deps."""
+    mock_event_log = AsyncMock()
+    mock_event_log.append = AsyncMock()
+    mock_bar_repo = AsyncMock()
+    mock_bar_repo.get_bars = AsyncMock(return_value=[])
+    mock_strategy_loader = MagicMock()
+    mock_strategy = MagicMock()
+    mock_strategy.initialize = AsyncMock()
+    mock_strategy.on_tick = AsyncMock(return_value=[])
+    mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+    return RunManager(
+        event_log=mock_event_log,
+        bar_repository=mock_bar_repo,
+        strategy_loader=mock_strategy_loader,
+    )
+
+
+class TestConcurrentRunSafety:
+    """Tests for M11-3: per-run asyncio.Lock prevents race conditions."""
+
+    async def test_get_run_lock_returns_same_lock_for_same_id(self) -> None:
+        """_get_run_lock returns the same Lock for the same run_id."""
+        manager = RunManager()
+        lock_a = manager._get_run_lock("run-1")
+        lock_b = manager._get_run_lock("run-1")
+        assert lock_a is lock_b
+
+    async def test_get_run_lock_returns_different_locks_for_different_ids(self) -> None:
+        """_get_run_lock returns distinct Locks for different run_ids."""
+        manager = RunManager()
+        lock_1 = manager._get_run_lock("run-1")
+        lock_2 = manager._get_run_lock("run-2")
+        assert lock_1 is not lock_2
+
+    async def test_concurrent_start_same_run_only_one_succeeds(self) -> None:
+        """Two concurrent start() calls for the same run → only one succeeds."""
+        manager = _make_manager_with_deps()
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["BTC/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            )
+        )
+
+        results = await asyncio.gather(
+            manager.start(run.id),
+            manager.start(run.id),
+            return_exceptions=True,
+        )
+
+        # One should succeed (COMPLETED), the other should raise RunNotStartableError
+        statuses = [r.status for r in results if not isinstance(r, BaseException)]
+        errors = [r for r in results if isinstance(r, BaseException)]
+
+        assert len(statuses) == 1
+        assert statuses[0] in (RunStatus.COMPLETED, RunStatus.ERROR)
+        assert len(errors) == 1
+        assert isinstance(errors[0], RunNotStartableError)
+
+    async def test_concurrent_start_different_runs_both_succeed(self) -> None:
+        """Two concurrent start() calls for different runs → both succeed."""
+        manager = _make_manager_with_deps()
+        run_a = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["BTC/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            )
+        )
+        run_b = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["ETH/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            )
+        )
+
+        results = await asyncio.gather(
+            manager.start(run_a.id),
+            manager.start(run_b.id),
+        )
+
+        assert results[0].status == RunStatus.COMPLETED
+        assert results[1].status == RunStatus.COMPLETED
+
+    async def test_stop_during_start_waits_for_lock(self) -> None:
+        """stop() blocks until start() releases the lock, then runs cleanly."""
+        manager = _make_manager_with_deps()
+
+        # Make strategy slow so start holds the lock for a while
+        strategy_loader = cast(MagicMock, manager._strategy_loader)
+        mock_strategy = strategy_loader.load.return_value
+
+        start_entered = asyncio.Event()
+
+        async def slow_tick(tick):  # type: ignore[no-untyped-def]
+            start_entered.set()
+            await asyncio.sleep(0.1)
+            return []
+
+        mock_strategy.on_tick = slow_tick
+
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["BTC/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 31, tzinfo=UTC),
+            )
+        )
+
+        stop_order: list[str] = []
+
+        async def do_start() -> None:
+            await manager.start(run.id)
+            stop_order.append("start_done")
+
+        async def do_stop() -> None:
+            await start_entered.wait()
+            await manager.stop(run.id)
+            stop_order.append("stop_done")
+
+        await asyncio.gather(do_start(), do_stop())
+
+        # start completes before stop can acquire the lock
+        assert stop_order[0] == "start_done"
+
+    async def test_double_stop_is_idempotent(self) -> None:
+        """Two stop() calls for same run → no error, second is no-op."""
+        manager = _make_manager_with_deps()
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["BTC/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            )
+        )
+        await manager.start(run.id)
+
+        # Double stop — should not raise
+        await manager.stop(run.id)
+        await manager.stop(run.id)
+
+        assert run.status == RunStatus.STOPPED
+
+    async def test_run_lock_cleaned_up_after_run(self) -> None:
+        """Lock dict doesn't leak entries after run completes."""
+        manager = _make_manager_with_deps()
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test",
+                mode=RunMode.BACKTEST,
+                symbols=["BTC/USD"],
+                timeframe="1m",
+                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+            )
+        )
+
+        await manager.start(run.id)
+
+        # After backtest completes, lock should be cleaned up
+        assert run.id not in manager._run_locks
+
+    async def test_run_lock_exists_during_init(self) -> None:
+        """_run_locks dict is initialized as empty."""
+        manager = RunManager()
+        assert hasattr(manager, "_run_locks")
+        assert manager._run_locks == {}
