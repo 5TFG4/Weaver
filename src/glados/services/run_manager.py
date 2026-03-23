@@ -170,9 +170,13 @@ class RunManager:
         # 1. Stop clock — no more ticks
         await ctx.clock.stop()
 
-        # 2. Safety drain — tasks should already be empty if _start_backtest drained
-        if ctx.pending_tasks:
-            await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
+        # 2. Drain pending tasks — tasks may spawn children (e.g.
+        #    fetch_window → on_data_ready → handle_place_order).
+        #    Snapshot + explicit removal avoids set-mutation races.
+        while ctx.pending_tasks:
+            snapshot = list(ctx.pending_tasks)
+            await asyncio.gather(*snapshot, return_exceptions=True)
+            ctx.pending_tasks -= set(snapshot)
 
         # 3-4. Unsubscribe (safe now — all tasks complete)
         await ctx.runner.cleanup()
@@ -417,11 +421,16 @@ class RunManager:
             await clock.start(run.id)
             await clock.wait()
 
-            # 6. Check for errors: clock tick error OR spawned task errors
+            # 6. Drain spawned tasks and collect errors.
+            #    Tasks may spawn children (fetch_window → on_data_ready
+            #    → handle_place_order).  Done-callbacks remove finished
+            #    tasks from the set; loop exits when nothing remains.
             drain_errors: list[BaseException] = []
-            if ctx.pending_tasks:
-                results = await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
-                drain_errors = [r for r in results if isinstance(r, BaseException)]
+            while ctx.pending_tasks:
+                snapshot = list(ctx.pending_tasks)
+                results = await asyncio.gather(*snapshot, return_exceptions=True)
+                ctx.pending_tasks -= set(snapshot)
+                drain_errors.extend(r for r in results if isinstance(r, BaseException))
 
             clock_error = clock._error
             if clock_error is not None or drain_errors:

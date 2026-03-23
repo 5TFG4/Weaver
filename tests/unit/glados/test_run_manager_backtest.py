@@ -251,6 +251,7 @@ class TestRunManagerStopWithContext:
         mock_ctx.runner.cleanup = AsyncMock()
         mock_ctx.greta = AsyncMock()
         mock_ctx.greta.cleanup = AsyncMock()
+        mock_ctx.pending_tasks = set()
         manager._run_contexts[run.id] = mock_ctx
 
         return manager, run.id
@@ -319,9 +320,10 @@ class TestCleanupRunContextDrain:
 
         ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
 
-        # Simulate a pending task
+        # Simulate a pending task (with discard callback, matching spawn_tracked_task)
         task = asyncio.create_task(slow_task())
         ctx.pending_tasks.add(task)
+        task.add_done_callback(ctx.pending_tasks.discard)
 
         run_id = "test-drain"
         manager._run_contexts[run_id] = ctx
@@ -347,6 +349,7 @@ class TestCleanupRunContextDrain:
         ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
         task = asyncio.create_task(failing_task())
         ctx.pending_tasks.add(task)
+        task.add_done_callback(ctx.pending_tasks.discard)
 
         run_id = "test-fail"
         manager._run_contexts[run_id] = ctx
@@ -375,6 +378,56 @@ class TestCleanupRunContextDrain:
 
         mock_runner.cleanup.assert_called_once()
         assert run_id not in manager._run_contexts
+
+    async def test_drain_handles_multi_level_task_chains(self) -> None:
+        """Drain loops until all child tasks spawned by parent tasks complete.
+
+        Simulates the real E2E chain:
+          TASK A (fetch_window) → spawns TASK B (on_data_ready)
+          TASK B → spawns TASK C (handle_place_order)
+          TASK C → writes result (no further tasks)
+        """
+        manager = RunManager()
+
+        results: list[str] = []
+
+        mock_runner = AsyncMock()
+        mock_runner.cleanup = AsyncMock()
+        mock_clock = AsyncMock()
+        mock_clock.stop = AsyncMock()
+
+        ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
+        run_id = "test-deep-drain"
+        manager._run_contexts[run_id] = ctx
+
+        task_set = ctx.pending_tasks
+
+        async def task_c() -> None:
+            results.append("C")
+
+        async def task_b() -> None:
+            results.append("B")
+            # Spawn child task (like handle_place_order)
+            t = asyncio.create_task(task_c())
+            task_set.add(t)
+            t.add_done_callback(task_set.discard)
+
+        async def task_a() -> None:
+            results.append("A")
+            # Spawn child task (like on_data_ready)
+            t = asyncio.create_task(task_b())
+            task_set.add(t)
+            t.add_done_callback(task_set.discard)
+
+        # Only level-1 task is pending initially
+        t_a = asyncio.create_task(task_a())
+        task_set.add(t_a)
+        t_a.add_done_callback(task_set.discard)
+
+        await manager._cleanup_run_context(run_id)
+
+        # All three levels should have completed
+        assert results == ["A", "B", "C"]
 
 
 # =============================================================================
