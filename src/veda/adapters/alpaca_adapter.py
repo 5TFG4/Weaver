@@ -248,7 +248,9 @@ class AlpacaAdapter(ExchangeAdapter):
                 )
             elif intent.order_type == OrderType.STOP_LIMIT:
                 if intent.limit_price is None or intent.stop_price is None:
-                    raise ValueError("limit_price and stop_price are required for STOP_LIMIT orders")
+                    raise ValueError(
+                        "limit_price and stop_price are required for STOP_LIMIT orders"
+                    )
                 order_request = StopLimitOrderRequest(
                     **common_params,
                     limit_price=float(intent.limit_price),
