@@ -5,28 +5,30 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests)  
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 🟡 DECISIONS LOCKED**  
 > **Tests (latest verified)**: 946 backend + 104 frontend + 33 E2E + 6 Alpaca integration = 1089 passed (2026-03-22)  
-> **Remaining Work**: Backlog only (B-2, B-3, B-8–B-10, E-3, F-2, R-1–R-3)  
+> **Active Milestone**: M11 — Runtime Robustness & UX Polish (B-2, B-3, B-8–B-10, F-2, R-3)  
+> **Remaining Backlog**: E-3, R-1, R-2  
 > **Completed**: All planned milestones (M5–M10), CI audit Waves 1–4, PR #15 merged
 
 ---
 
 ## Executive Summary
 
-All pending tasks have been consolidated and reorganized into 6 milestones.
-M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests.
+All pending tasks have been consolidated and reorganized into 7 milestones (M5–M11).
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests. **M11 (Runtime Robustness & UX Polish) is planned** — fixes backtest async race, adds concurrency safety, strategy error propagation, frontend error feedback, and unifies the dev environment.
 
 **Post-M10 CI Audit** (2026-03-21 – 2026-03-22): ✅ All 4 waves complete. Waves 1–3 added 10 E2E tests, 6 Alpaca integration tests, and frontend coverage reporting. Wave 4 fixed 2 production bugs (submit_order/list_orders SDK contract mismatch), CI path resolution, and mock hardening. Post-Wave 4 hardening: GitHub Actions upgraded to Node.js 24, npm dependency vulnerabilities patched (flatted, undici), workflow permissions locked to least-privilege, coverage artifacts removed from git. PR #15 merged to main with all 5 CI workflows green. See `CI_TEST_AUDIT.md` for full details.
 
-| Milestone | Name               | Core Objective                                         | Tests  | Status                                |
-| --------- | ------------------ | ------------------------------------------------------ | ------ | ------------------------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture                  | 74     | ✅ DONE                               |
-| **M6**    | Live Trading       | Paper/Live trading flow                                | 101    | ✅ DONE (808 total)                   |
-| **M7**    | Haro Frontend      | React UI + SSE                                         | 86     | ✅ DONE (894 total)                   |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality              | 129    | ✅ DONE (historical cumulative: 1023) |
-| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection | -      | ✅ COMPLETE                           |
-| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                        | 23     | ✅ DONE (1055 total)                  |
+| Milestone | Name               | Core Objective                                            | Tests | Status                                |
+| --------- | ------------------ | --------------------------------------------------------- | ----- | ------------------------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture                     | 74    | ✅ DONE                               |
+| **M6**    | Live Trading       | Paper/Live trading flow                                   | 101   | ✅ DONE (808 total)                   |
+| **M7**    | Haro Frontend      | React UI + SSE                                            | 86    | ✅ DONE (894 total)                   |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality                 | 129   | ✅ DONE (historical cumulative: 1023) |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection    | -     | ✅ COMPLETE                           |
+| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                           | 23    | ✅ DONE (1055 total)                  |
+| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | ~18   | 🟡 DECISIONS LOCKED                   |
 
 **M6 Complete** (101 tests added):
 
@@ -656,11 +658,75 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ---
 
-## 7. Backlog (Deferred Tasks)
+## 7. M11: Runtime Robustness & UX Polish
+
+> **Goal**: Fix backtest async race (B-3), add concurrency safety (B-2), strategy error propagation (R-3), UX error feedback (F-2), and unify dev environment (B-8/B-9/B-10)  
+> **Prerequisite**: M10 ✅  
+> **Estimated Effort**: 2–3 weeks  
+> **Status**: 🟡 DECISIONS LOCKED — Ready for implementation  
+> **Design Doc**: [m11-runtime-robustness.md](archive/milestone-details/m11-runtime-robustness.md)
+
+### 7.1 Exit Gate (Definition of Done)
+
+- [x] All 5 design decisions (D-1–D-5) locked ✅ (2026-03-23)
+- [ ] Dev container has Docker CLI + socket mount; `check-all.sh` runs full CI inside container
+- [ ] Backtest order events (`orders.Placed`, `orders.Filled`) reach outbox — 3 xfail E2E tests pass
+- [ ] Strategy runtime errors produce `RunStatus.ERROR` + proper cleanup
+- [ ] Concurrent `start()`/`stop()` calls are safe (no state corruption)
+- [ ] `CreateRunForm` shows error toast on API failure
+- [ ] Alpaca integration tests skip correctly with placeholder credentials
+- [ ] All xfail markers removed from E2E tests
+- [ ] All CI workflows green
+- [ ] ~18 new tests
+
+### 7.2 MVP Breakdown
+
+| MVP   | Focus                                   | Est. Tests | Dependencies | Status |
+| ----- | --------------------------------------- | ---------- | ------------ | ------ |
+| M11-0 | Dev Container Unification (B-8, B-9)    | 0          | D-4, D-5     | ⏳     |
+| M11-1 | Backtest Async Race Fix (B-3)           | ~5         | D-1          | ⏳     |
+| M11-2 | Strategy Error Propagation (R-3)        | ~4         | D-3, M11-1   | ⏳     |
+| M11-3 | Concurrent Run Safety (B-2)             | ~5         | D-2, M11-1   | ⏳     |
+| M11-4 | CreateRunForm Error Feedback (F-2)      | ~4         | - (parallel) | ⏳     |
+| M11-5 | Cleanup & Exit Gate (B-10, xfail, docs) | 0          | M11-1        | ⏳     |
+
+### 7.3 Design Decisions (All Locked — 2026-03-23)
+
+| #   | Question                            | Chosen Option                        | Status    |
+| --- | ----------------------------------- | ------------------------------------ | --------- |
+| D-1 | Backtest task drain strategy        | **(a)** Task registry in RunContext  | 🔒 Locked |
+| D-2 | Concurrent run protection scope     | **(a)** Per-run asyncio.Lock         | 🔒 Locked |
+| D-3 | Strategy error propagation boundary | **(a)** Fail fast → ERROR + cleanup  | 🔒 Locked |
+| D-4 | Dev container Docker socket access  | **(a)** Bind-mount Docker socket     | 🔒 Locked |
+| D-5 | check-local.sh rewrite strategy     | **(b)** Two scripts: wrapper + inner | 🔒 Locked |
+
+**See [detailed design doc](archive/milestone-details/m11-runtime-robustness.md) §3 for full trade-off analysis of each decision.**
+
+### 7.4 Execution Order
+
+```
+M11-0: Dev Container (B-8 + B-9) ── D-4, D-5 must lock
+    │ (not a hard blocker, but provides better debug env)
+    ▼
+M11-1: Backtest Async Race (B-3) ── D-1 must lock ← highest priority
+    │
+    ├─► M11-2: Error Propagation (R-3) ── D-3 must lock
+    │
+    └─► M11-3: Concurrent Safety (B-2) ── D-2 must lock
+         │
+M11-4: Frontend Error Feedback (F-2) ── independent, can run in parallel
+         │
+         ▼
+M11-5: Cleanup (B-10 + xfail removal + docs)
+```
+
+---
+
+## 8. Backlog (Deferred Tasks)
 
 The following tasks have been incorporated into milestones or deferred:
 
-### Incorporated into Milestones
+### Incorporated into Milestones (M5–M10)
 
 | Task                               | Source     | Assigned To |
 | ---------------------------------- | ---------- | ----------- |
@@ -673,27 +739,43 @@ The following tasks have been incorporated into milestones or deferred:
 | Sharpe ratio                       | greta TODO | M8-Q        |
 | Max drawdown                       | greta TODO | M8-Q        |
 
-### Deferred (M11+)
+### Incorporated into M11
 
-| Task                             | Reason                              |
-| -------------------------------- | ----------------------------------- |
-| Multiple simultaneous strategies | High complexity, future enhancement |
-| Strategy optimization            | Requires more infrastructure        |
-| Real money trading               | Requires more security measures     |
-| WebSocket streaming              | Polling sufficient for MVP          |
-| Multi-exchange support           | Complete Alpaca first               |
+| Task                                     | Source             | Assigned To |
+| ---------------------------------------- | ------------------ | ----------- |
+| Backtest async race fix (B-3)            | CI Audit §7.7      | M11-1       |
+| Strategy runtime error propagation (R-3) | Independent Review | M11-2       |
+| Concurrent run operation safety (B-2)    | Independent Review | M11-3       |
+| CreateRunForm error feedback (F-2)       | CI Audit §7.7      | M11-4       |
+| Dev container unification (B-8)          | CI Audit §7.7      | M11-0       |
+| Local CI rewrite (B-9)                   | CI Audit §7.7      | M11-0       |
+| Alpaca test skip placeholder fix (B-10)  | CI Audit §7.7      | M11-5       |
+
+### Deferred (M12+)
+
+| Task                             | Reason                                     |
+| -------------------------------- | ------------------------------------------ |
+| Pagination/filtering E2E (E-3)   | Low-priority test coverage addition        |
+| Connection resilience (R-1)      | Requires retry/circuit-breaker design      |
+| Multi-symbol backtests (R-2)     | Requires Greta/WallE architectural changes |
+| Multiple simultaneous strategies | High complexity, future enhancement        |
+| Strategy optimization            | Requires more infrastructure               |
+| Real money trading               | Requires more security measures            |
+| WebSocket streaming              | Polling sufficient for MVP                 |
+| Multi-exchange support           | Complete Alpaca first                      |
 
 ---
 
-## 8. Timeline
+## 9. Timeline
 
 ```
 Week 1-2   │██████████████████████│ M5: Marvin Core          ✅
 Week 3-4   │██████████████████│     M6: Live Trading         ✅
 Week 5-6   │██████████████████│     M7: Haro Frontend        ✅
-Week 7-8   │██████████████████████│ M8: Fixes & Improve      🔄
-Week 9     │████████████│           M9: CI Deployment         ⏳
-Week 10    │████████████│           M10: E2E & Release        ⏳
+Week 7-8   │██████████████████████│ M8: Fixes & Improve      ✅
+Week 9     │████████████│           M9: CI Deployment         ✅
+Week 10    │████████████│           M10: E2E & Release        ✅
+Week 11-12 │██████████████████│     M11: Runtime Robustness  ⏳
 ```
 
 ### Key Dependencies
@@ -718,11 +800,14 @@ M9: CI Deployment
     │
     ▼
 M10: E2E & Release
+    │
+    ▼
+M11: Runtime Robustness
 ```
 
 ---
 
-## 9. Risks & Mitigations
+## 10. Risks & Mitigations
 
 | Risk                           | Probability | Impact | Mitigation                                    |
 | ------------------------------ | ----------- | ------ | --------------------------------------------- |
@@ -734,7 +819,7 @@ M10: E2E & Release
 
 ---
 
-## 10. Success Metrics
+## 11. Success Metrics
 
 ### Test Count
 
@@ -747,6 +832,7 @@ M10: E2E & Release
 | M8        | 129       | 1023       |
 | M9        | -         | 1033       |
 | M10       | ~20–30    | ~1053–1063 |
+| M11       | ~18       | ~1107      |
 
 ¹ Backend count is 808; some docs historically reported 806/809 due to timing.
 
@@ -764,10 +850,11 @@ M10: E2E & Release
 
 ---
 
-_Last Updated: 2026-03-02_  
+_Last Updated: 2026-03-23_  
 _M7 Formally Closed: 2026-02-19_  
 _M8 Complete: 2026-02-26_  
-_Total Tests (latest local run): 1033 passed_  
+_Total Tests (latest verified): 1089 passed (2026-03-22)_  
 _M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
-_M9 Scope: CI deployment pipeline + merge gates (~1 week)_
-_M10 Scope: E2E tests + Release prep (~20–30 tests, ~1–1.5 weeks)_
+_M9 Scope: CI deployment pipeline + merge gates_  
+_M10 Scope: E2E tests + Release prep (33 E2E tests)_  
+_M11 Scope: Runtime robustness + UX polish + Dev env unification (~18 tests, ~2–3 weeks)_
