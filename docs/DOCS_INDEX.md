@@ -2,7 +2,7 @@
 
 > Last updated: 2026-03-21  
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
-> **Current State**: M7 ✅ Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests) · 1055 tests (982 backend + 73 frontend)
+> **Current State**: M7 ✅ Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests) · Tests: see [TEST_COVERAGE.md](TEST_COVERAGE.md) for current counts
 
 ## 1) Entry Layer (Start Here)
 

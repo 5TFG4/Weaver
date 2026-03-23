@@ -565,12 +565,12 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 - [x] Playwright installed in test-runner container (docker/e2e/Dockerfile)
 - [x] `docker-compose.e2e.yml` starts isolated test stack with test_runner service
-- [x] E2E tests pass (23 tests): navigation, backtest, paper, orders, SSE
+- [x] E2E tests pass (33 tests): navigation, backtest, paper, orders, orders lifecycle, SSE
 - [x] Full user workflow validated end-to-end (browser-based, containerized)
 - [ ] Production deployment guide complete (deferred to backlog)
 - [ ] Strategy & adapter development guides complete (deferred to backlog)
 - [x] All doc test counts updated to final numbers
-- [ ] E2E CI workflow runs on PR (deferred to backlog)
+- [x] E2E CI workflow runs on PR (`.github/workflows/e2e.yml`)
 - [ ] Performance baselines documented (deferred to backlog)
 
 ### 6.2 MVP Breakdown

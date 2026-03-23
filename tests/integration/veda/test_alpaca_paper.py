@@ -30,8 +30,9 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
     pytest.mark.skipif(
-        not os.environ.get("ALPACA_PAPER_API_KEY"),
-        reason="ALPACA_PAPER_API_KEY environment variable not set",
+        not os.environ.get("ALPACA_PAPER_API_KEY")
+        or not os.environ.get("ALPACA_PAPER_API_SECRET"),
+        reason="ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET environment variables must both be set",
     ),
 ]
 

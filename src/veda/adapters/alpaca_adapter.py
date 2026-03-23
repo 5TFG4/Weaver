@@ -233,20 +233,26 @@ class AlpacaAdapter(ExchangeAdapter):
             # Build the appropriate OrderRequest based on order type
             order_request: OrderRequest
             if intent.order_type == OrderType.LIMIT:
+                if intent.limit_price is None:
+                    raise ValueError("limit_price is required for LIMIT orders")
                 order_request = LimitOrderRequest(
                     **common_params,
-                    limit_price=float(intent.limit_price),  # type: ignore[arg-type]
+                    limit_price=float(intent.limit_price),
                 )
             elif intent.order_type == OrderType.STOP:
+                if intent.stop_price is None:
+                    raise ValueError("stop_price is required for STOP orders")
                 order_request = StopOrderRequest(
                     **common_params,
-                    stop_price=float(intent.stop_price),  # type: ignore[arg-type]
+                    stop_price=float(intent.stop_price),
                 )
             elif intent.order_type == OrderType.STOP_LIMIT:
+                if intent.limit_price is None or intent.stop_price is None:
+                    raise ValueError("limit_price and stop_price are required for STOP_LIMIT orders")
                 order_request = StopLimitOrderRequest(
                     **common_params,
-                    limit_price=float(intent.limit_price),  # type: ignore[arg-type]
-                    stop_price=float(intent.stop_price),  # type: ignore[arg-type]
+                    limit_price=float(intent.limit_price),
+                    stop_price=float(intent.stop_price),
                 )
             else:
                 order_request = MarketOrderRequest(**common_params)
