@@ -14,6 +14,7 @@ Multi-Run Architecture (M4+):
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -32,6 +33,8 @@ from src.marvin.strategy_loader import StrategyLoader
 from src.marvin.strategy_runner import StrategyRunner
 from src.walle.repositories.bar_repository import BarRepository
 from src.walle.repositories.run_repository import RunRepository
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -160,7 +163,7 @@ class RunManager:
         # 1. Stop clock — no more ticks
         await ctx.clock.stop()
 
-        # 2. Drain in-flight tasks
+        # 2. Safety drain — tasks should already be empty if _start_backtest drained
         if ctx.pending_tasks:
             await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
 
@@ -403,7 +406,21 @@ class RunManager:
 
             # 5. Run to completion (backtest is synchronous)
             await clock.start(run.id)
-            run.status = RunStatus.COMPLETED
+            await clock.wait()
+
+            # 6. Check for errors: clock tick error OR spawned task errors
+            drain_errors: list[BaseException] = []
+            if ctx.pending_tasks:
+                results = await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
+                drain_errors = [r for r in results if isinstance(r, BaseException)]
+
+            clock_error = clock._error
+            if clock_error is not None or drain_errors:
+                run.status = RunStatus.ERROR
+                error_msg = str(clock_error) if clock_error else str(drain_errors[0])
+                logger.error("Backtest %s failed: %s", run.id, error_msg)
+            else:
+                run.status = RunStatus.COMPLETED
         except Exception:
             run.status = RunStatus.ERROR
             raise
@@ -412,8 +429,11 @@ class RunManager:
             run.stopped_at = datetime.now(UTC)
             await self._cleanup_run_context(run.id)
 
-        # 6. Emit completion event
-        await self._emit_event(RunEvents.COMPLETED, run)
+        # Emit terminal event
+        if run.status == RunStatus.ERROR:
+            await self._emit_event(RunEvents.ERROR, run)
+        else:
+            await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:
         """

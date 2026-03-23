@@ -4,9 +4,10 @@ Tests for StrategyRunner
 Unit tests for the strategy execution runner.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -274,3 +275,66 @@ class TestStrategyRunnerOnDataReady:
         mock_event_log.append.assert_called()
         call_args = mock_event_log.append.call_args[0][0]
         assert call_args.type == "strategy.PlaceRequest"
+
+
+# =============================================================================
+# M11-1: task_set wiring tests
+# =============================================================================
+
+
+class TestStrategyRunnerTaskSetWiring:
+    """Tests for task_set parameter plumbing in StrategyRunner (M11-1)."""
+
+    async def test_task_set_none_by_default(self) -> None:
+        """_task_set is None before initialize."""
+        runner = StrategyRunner(strategy=DummyStrategy(), event_log=AsyncMock())
+        assert runner._task_set is None
+
+    async def test_initialize_stores_task_set(self) -> None:
+        """initialize(task_set=...) stores the set."""
+        runner = StrategyRunner(strategy=DummyStrategy(), event_log=AsyncMock())
+        ts: set[asyncio.Task[Any]] = set()
+        await runner.initialize(run_id="run-1", symbols=["BTC/USD"], task_set=ts)
+        assert runner._task_set is ts
+
+    async def test_initialize_without_task_set_stays_none(self) -> None:
+        """initialize() without task_set keeps _task_set as None."""
+        runner = StrategyRunner(strategy=DummyStrategy(), event_log=AsyncMock())
+        await runner.initialize(run_id="run-1", symbols=["BTC/USD"])
+        assert runner._task_set is None
+
+    async def test_on_window_ready_adds_task_to_set(self) -> None:
+        """_on_window_ready spawns a task registered in _task_set."""
+        strategy = DummyStrategy()
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        ts: set[asyncio.Task[Any]] = set()
+        await runner.initialize(run_id="run-1", symbols=["BTC/USD"], task_set=ts)
+
+        envelope = MagicMock()
+        envelope.payload = {"bars": []}
+
+        runner._on_window_ready(envelope)
+        assert len(ts) == 1
+
+        task = next(iter(ts))
+        await task
+        assert len(ts) == 0
+
+    async def test_on_window_ready_without_task_set(self) -> None:
+        """_on_window_ready works when task_set is None (backward compat)."""
+        strategy = DummyStrategy()
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        await runner.initialize(run_id="run-1", symbols=["BTC/USD"])
+
+        envelope = MagicMock()
+        envelope.payload = {"bars": []}
+
+        runner._on_window_ready(envelope)
+        # Should not raise — no task_set to add to
+        await asyncio.sleep(0.05)  # Let task finish
