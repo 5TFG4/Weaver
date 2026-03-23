@@ -1424,16 +1424,16 @@ After M11-1 is verified, remove `@pytest.mark.xfail(...)` from:
 ### 11.1 Definition of Done
 
 - [x] D-1 through D-5 design decisions all locked ✅ (2026-03-23)
-- [ ] Dev container has Docker CLI and socket mount (M11-0)
-- [ ] `scripts/ci/check-all.sh` runs full CI inside container (M11-0)
-- [ ] Backtest order events reach outbox — 3 xfail tests pass (M11-1)
-- [ ] Strategy runtime errors produce `RunStatus.ERROR` + cleanup (M11-2)
-- [ ] Concurrent `start()`/`stop()` calls are safe (M11-3)
-- [ ] CreateRunForm shows error toast on API failure (M11-4)
-- [ ] Alpaca tests skip correctly with placeholder credentials (M11-5)
-- [ ] All xfail markers removed from E2E tests (M11-5)
-- [ ] All CI workflows green
-- [ ] Documentation updated with final test counts
+- [x] Dev container has Docker CLI and socket mount (M11-0) ✅
+- [x] `scripts/ci/check-all.sh` runs full CI inside container (M11-0) ✅
+- [x] Backtest order events reach outbox — 3 xfail tests pass (M11-1) ✅
+- [x] Strategy runtime errors produce `RunStatus.ERROR` + cleanup (M11-2) ✅
+- [x] Concurrent `start()`/`stop()` calls are safe (M11-3) ✅
+- [x] CreateRunForm shows error toast on API failure (M11-4) ✅
+- [x] Alpaca tests skip correctly with placeholder credentials (M11-5) ✅
+- [x] All xfail markers removed from E2E tests (M11-5) ✅
+- [x] All CI workflows green ✅
+- [x] Documentation updated with final test counts ✅
 
 ### 11.2 Test Targets
 

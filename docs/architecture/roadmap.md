@@ -47,26 +47,26 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-> **Latest measured totals (2026-03-22)**: 1089 tests (946 backend + 104 frontend + 33 E2E + 6 Alpaca integration), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
+> **Latest measured totals (2026-03-24)**: 1136 tests (945 backend unit + 50 integration + 108 frontend + 33 E2E), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: **M11 — Runtime Robustness & UX Polish** (B-2, B-3, B-8–B-10, F-2, R-3)
+**Active Milestone**: None — all planned milestones (M0–M11) complete
 
-**Last State Update**: 2026-03-23
+**Last State Update**: 2026-03-24
 
 ## 2. Milestones (Revised 2026-03-23)
 
-| Milestone | Definition of Done                                                                                                                | Status                          |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| M0–M3     | Foundation, API, Trading                                                                                                          | ✅ DONE                         |
-| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)                                                             | ✅ DONE                         |
-| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                                                                        | ✅ DONE                         |
-| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)                                                      | ✅ DONE (74 tests)              |
-| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests)             |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)              |
-| **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE                     |
-| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE                     |
-| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)            |
-| **M11**   | [Runtime Robustness & UX Polish](../archive/milestone-details/m11-runtime-robustness.md) (Async race + Concurrency + Dev env)     | 🟡 DECISIONS LOCKED (~18 tests) |
+| Milestone | Definition of Done                                                                                                                | Status                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| M0–M3     | Foundation, API, Trading                                                                                                          | ✅ DONE                |
+| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)                                                             | ✅ DONE                |
+| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                                                                        | ✅ DONE                |
+| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)                                                      | ✅ DONE (74 tests)     |
+| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests)    |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)     |
+| **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE            |
+| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE            |
+| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)   |
+| **M11**   | [Runtime Robustness & UX Polish](../archive/milestone-details/m11-runtime-robustness.md) (Async race + Concurrency + Dev env)     | ✅ COMPLETE (47 tests) |
 
 ## 3. Phase Timeline
 
@@ -79,7 +79,7 @@
 | **8**  | Critical Fixes + Improvements  | ~96        | ✅ COMPLETE          |
 | **9**  | CI Deployment Pipeline         | -          | ✅ COMPLETE          |
 | **10** | E2E Tests + Release Prep       | 33         | ✅ COMPLETE          |
-| **11** | Runtime Robustness + UX Polish | ~18        | ⏳ PLANNED           |
+| **11** | Runtime Robustness + UX Polish | 47         | ✅ COMPLETE          |
 
 ## 4. Architecture Invariants
 

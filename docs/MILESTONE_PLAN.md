@@ -5,18 +5,18 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 🟡 DECISIONS LOCKED**  
-> **Tests (latest verified)**: 946 backend + 104 frontend + 33 E2E + 6 Alpaca integration = 1089 passed (2026-03-22)  
-> **Active Milestone**: M11 — Runtime Robustness & UX Polish (B-2, B-3, B-8–B-10, F-2, R-3)  
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 ✅ Complete**  
+> **Tests (latest verified)**: 945 backend unit + 50 integration + 108 frontend + 33 E2E = 1136 passed (2026-03-24)  
+> **Active Milestone**: None — all planned milestones complete  
 > **Remaining Backlog**: E-3, R-1, R-2  
-> **Completed**: All planned milestones (M5–M10), CI audit Waves 1–4, PR #15 merged
+> **Completed**: All planned milestones (M5–M11), CI audit Waves 1–4, PR #15 merged
 
 ---
 
 ## Executive Summary
 
 All pending tasks have been consolidated and reorganized into 7 milestones (M5–M11).
-M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests. **M11 (Runtime Robustness & UX Polish) is planned** — fixes backtest async race, adds concurrency safety, strategy error propagation, frontend error feedback, and unifies the dev environment.
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests. **M11 (Runtime Robustness & UX Polish) is complete** as of 2026-03-24 — fixed backtest async race, added concurrency safety, strategy error propagation, frontend error feedback, and unified dev environment. 47 new tests added (1136 total).
 
 **Post-M10 CI Audit** (2026-03-21 – 2026-03-22): ✅ All 4 waves complete. Waves 1–3 added 10 E2E tests, 6 Alpaca integration tests, and frontend coverage reporting. Wave 4 fixed 2 production bugs (submit_order/list_orders SDK contract mismatch), CI path resolution, and mock hardening. Post-Wave 4 hardening: GitHub Actions upgraded to Node.js 24, npm dependency vulnerabilities patched (flatted, undici), workflow permissions locked to least-privilege, coverage artifacts removed from git. PR #15 merged to main with all 5 CI workflows green. See `CI_TEST_AUDIT.md` for full details.
 
@@ -28,7 +28,7 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality                 | 129   | ✅ DONE (historical cumulative: 1023) |
 | **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection    | -     | ✅ COMPLETE                           |
 | **M10**   | E2E & Release Prep | End-to-end tests + Final polish                           | 23    | ✅ DONE (1055 total)                  |
-| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | ~18   | 🟡 DECISIONS LOCKED                   |
+| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | 47    | ✅ DONE (1136 total)                  |
 
 **M6 Complete** (101 tests added):
 
@@ -663,32 +663,32 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 > **Goal**: Fix backtest async race (B-3), add concurrency safety (B-2), strategy error propagation (R-3), UX error feedback (F-2), and unify dev environment (B-8/B-9/B-10)  
 > **Prerequisite**: M10 ✅  
 > **Estimated Effort**: 2–3 weeks  
-> **Status**: 🟡 DECISIONS LOCKED — Ready for implementation  
+> **Status**: ✅ COMPLETE  
 > **Design Doc**: [m11-runtime-robustness.md](archive/milestone-details/m11-runtime-robustness.md)
 
 ### 7.1 Exit Gate (Definition of Done)
 
 - [x] All 5 design decisions (D-1–D-5) locked ✅ (2026-03-23)
-- [ ] Dev container has Docker CLI + socket mount; `check-all.sh` runs full CI inside container
-- [ ] Backtest order events (`orders.Placed`, `orders.Filled`) reach outbox — 3 xfail E2E tests pass
-- [ ] Strategy runtime errors produce `RunStatus.ERROR` + proper cleanup
-- [ ] Concurrent `start()`/`stop()` calls are safe (no state corruption)
-- [ ] `CreateRunForm` shows error toast on API failure
-- [ ] Alpaca integration tests skip correctly with placeholder credentials
-- [ ] All xfail markers removed from E2E tests
-- [ ] All CI workflows green
-- [ ] ~18 new tests
+- [x] Dev container has Docker CLI + socket mount; `check-all.sh` runs full CI inside container ✅ (M11-0)
+- [x] Backtest order events (`orders.Placed`, `orders.Filled`) reach outbox — 3 xfail E2E tests pass ✅ (M11-1)
+- [x] Strategy runtime errors produce `RunStatus.ERROR` + proper cleanup ✅ (M11-2)
+- [x] Concurrent `start()`/`stop()` calls are safe (no state corruption) ✅ (M11-3)
+- [x] `CreateRunForm` shows error toast on API failure ✅ (M11-4)
+- [x] Alpaca integration tests skip correctly with placeholder credentials ✅ (M11-5)
+- [x] All xfail markers removed from E2E tests ✅ (M11-5)
+- [x] All CI workflows green ✅
+- [x] 47 new tests (target was ~18) ✅
 
 ### 7.2 MVP Breakdown
 
 | MVP   | Focus                                   | Est. Tests | Dependencies | Status |
 | ----- | --------------------------------------- | ---------- | ------------ | ------ |
-| M11-0 | Dev Container Unification (B-8, B-9)    | 0          | D-4, D-5     | ⏳     |
-| M11-1 | Backtest Async Race Fix (B-3)           | ~5         | D-1          | ⏳     |
-| M11-2 | Strategy Error Propagation (R-3)        | ~4         | D-3, M11-1   | ⏳     |
-| M11-3 | Concurrent Run Safety (B-2)             | ~5         | D-2, M11-1   | ⏳     |
-| M11-4 | CreateRunForm Error Feedback (F-2)      | ~4         | - (parallel) | ⏳     |
-| M11-5 | Cleanup & Exit Gate (B-10, xfail, docs) | 0          | M11-1        | ⏳     |
+| M11-0 | Dev Container Unification (B-8, B-9)    | 0          | D-4, D-5     | ✅     |
+| M11-1 | Backtest Async Race Fix (B-3)           | 18         | D-1          | ✅     |
+| M11-2 | Strategy Error Propagation (R-3)        | 10         | D-3, M11-1   | ✅     |
+| M11-3 | Concurrent Run Safety (B-2)             | 8          | D-2, M11-1   | ✅     |
+| M11-4 | CreateRunForm Error Feedback (F-2)      | 4          | - (parallel) | ✅     |
+| M11-5 | Cleanup & Exit Gate (B-10, xfail, docs) | 5+2        | M11-1        | ✅     |
 
 ### 7.3 Design Decisions (All Locked — 2026-03-23)
 
@@ -775,7 +775,7 @@ Week 5-6   │██████████████████│     M7: 
 Week 7-8   │██████████████████████│ M8: Fixes & Improve      ✅
 Week 9     │████████████│           M9: CI Deployment         ✅
 Week 10    │████████████│           M10: E2E & Release        ✅
-Week 11-12 │██████████████████│     M11: Runtime Robustness  ⏳
+Week 11-12 │██████████████████│     M11: Runtime Robustness  ✅
 ```
 
 ### Key Dependencies
