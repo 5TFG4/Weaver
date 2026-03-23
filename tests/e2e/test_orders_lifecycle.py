@@ -88,25 +88,8 @@ def _get_order_events(run_id: str) -> list[dict]:
 @pytest.mark.e2e
 @pytest.mark.usefixtures("_clean_runs")
 class TestBacktestOrderEvents:
-    """Verify backtest produces correct order events in the event log.
+    """Verify backtest produces correct order events in the event log."""
 
-    NOTE: These tests are currently xfail due to an async race condition
-    in the backtest execution path.  GretaService, StrategyRunner, and
-    DomainRouter each use ``spawn_tracked_task`` (fire-and-forget), creating
-    a 3-hop async chain:
-        FetchWindow → data.WindowReady → PlaceRequest → PlaceOrder → place_order()
-    BacktestClock only yields once (``asyncio.sleep(0)``) between ticks, which
-    is insufficient for the 3 chained tasks to complete. Additionally,
-    ``_cleanup_run_context()`` runs immediately after the clock exits and
-    unsubscribes Greta before in-flight tasks finish.
-
-    When the race condition is fixed these tests should turn green and the
-    xfail markers can be removed.
-    """
-
-    @pytest.mark.xfail(
-        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
-    )
     def test_backtest_generates_order_events(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
@@ -133,9 +116,6 @@ class TestBacktestOrderEvents:
             f"No orders.Filled event found. Events: {event_types}"
         )
 
-    @pytest.mark.xfail(
-        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
-    )
     def test_order_event_payloads_have_required_fields(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
@@ -170,9 +150,6 @@ class TestBacktestOrderEvents:
         assert "fill_price" in filled_payload
         assert float(filled_payload["fill_price"]) > 0
 
-    @pytest.mark.xfail(
-        reason="backtest async race: 3 spawn_tracked_task hops vs 1 sleep(0)", strict=True
-    )
     def test_backtest_strategy_signals_match_seed_data(
         self, api_client: E2EApiClient, seed_bars: None
     ) -> None:
