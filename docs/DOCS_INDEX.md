@@ -1,8 +1,8 @@
 # Weaver Documentation Index
 
-> Last updated: 2026-03-02  
+> Last updated: 2026-03-21  
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
-> **Current State**: M7 ✅ Closed · M8 ✅ Complete (Fixes & Improvements) · M9 ⏳ Planned (E2E) · 1032 tests (latest local run)
+> **Current State**: M7 ✅ Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests) · Tests: see [TEST_COVERAGE.md](TEST_COVERAGE.md) for current counts
 
 ## 1) Entry Layer (Start Here)
 
@@ -28,13 +28,15 @@
 
 ## 3) Execution Layer (Frequently Updated)
 
-| Document                                                                                                 | Responsibility                                | Rule                                               |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
-| [MILESTONE_PLAN.md](MILESTONE_PLAN.md)                                                                   | Current and upcoming milestone execution plan | This is the authoritative milestone status         |
-| [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md) | M8/M8-R detailed TDD/MVP execution plan       | Keep detailed tasks here, not in milestone summary |
-| [archive/milestone-details/m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)               | M9 CI pipeline detailed implementation plan   | Keep detailed tasks here, not in milestone summary |
-| [DESIGN_AUDIT.md](DESIGN_AUDIT.md)                                                                       | Active quality gate and open findings         | Keep only current actionable findings              |
-| [TEST_COVERAGE.md](TEST_COVERAGE.md)                                                                     | Current test coverage snapshot and gaps       | Avoid duplicating roadmap logic                    |
+| Document                                                                                                 | Responsibility                                 | Rule                                               |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------- |
+| [MILESTONE_PLAN.md](MILESTONE_PLAN.md)                                                                   | Current and upcoming milestone execution plan  | This is the authoritative milestone status         |
+| [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md) | M8/M8-R detailed TDD/MVP execution plan        | Keep detailed tasks here, not in milestone summary |
+| [archive/milestone-details/m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)               | M9 CI pipeline detailed implementation plan    | Keep detailed tasks here, not in milestone summary |
+| [archive/milestone-details/m10-e2e-release.md](archive/milestone-details/m10-e2e-release.md)             | M10 E2E & Release detailed implementation plan | Keep detailed tasks here, not in milestone summary |
+| [DESIGN_AUDIT.md](DESIGN_AUDIT.md)                                                                       | Active quality gate and open findings          | Keep only current actionable findings              |
+| [CI_TEST_AUDIT.md](CI_TEST_AUDIT.md)                                                                     | CI pipeline + test quality audit and gaps      | Re-run after each milestone                        |
+| [TEST_COVERAGE.md](TEST_COVERAGE.md)                                                                     | Current test coverage snapshot and gaps        | Avoid duplicating roadmap logic                    |
 
 ## 4) Governance & History
 

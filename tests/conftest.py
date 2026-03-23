@@ -217,7 +217,9 @@ def init_tables(database_url: str) -> None:
 
     This ensures migrations are tested alongside the application code.
     """
-    project_root = os.environ.get("PROJECT_ROOT", "/weaver")
+    from pathlib import Path
+
+    project_root = os.environ.get("PROJECT_ROOT") or str(Path(__file__).resolve().parent.parent)
     result = subprocess.run(
         ["alembic", "upgrade", "head"],
         cwd=project_root,

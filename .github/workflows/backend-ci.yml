@@ -11,20 +11,41 @@ on:
       - "alembic.ini"
       - ".github/workflows/backend-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
   backend-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
-    steps:
-      - uses: actions/checkout@v4
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weaver
+          POSTGRES_PASSWORD: weaver
+          POSTGRES_DB: weaver_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      - uses: actions/setup-python@v5
+    env:
+      DB_URL: postgresql+asyncpg://weaver:weaver@localhost:5432/weaver_test
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('docker/backend/requirements.txt', 'docker/backend/requirements.dev.txt') }}
@@ -42,5 +63,8 @@ jobs:
       - name: MyPy type check
         run: mypy src/
 
-      - name: Pytest (unit tests + coverage)
-        run: pytest -m "not container" --cov=src --cov-report=term-missing
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Pytest (unit + integration tests with coverage)
+        run: pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing

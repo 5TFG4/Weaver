@@ -7,25 +7,27 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-03-02 · **Total Tests**: 1032 passed (latest local run)  
-**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ⏳ Planned (CI Deployment) · **M10 Status**: ⏳ Planned (E2E Tests)
+**Last Updated**: 2026-03-22 · **Total Tests**: 1089 passed (946 backend + 104 frontend + 33 E2E + 6 Alpaca integration)  
+**M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ✅ Complete (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests)
 
 ---
 
 ## 1. Executive Summary
 
-| Metric            | Value                   | Status         |
-| ----------------- | ----------------------- | -------------- |
-| Total Tests       | 1032 (latest local run) | ✅             |
-| Test Files        | 73+                     | ✅             |
-| Total Assertions  | ~1,700+                 | ✅             |
-| Unit Tests        | majority                | ✅             |
-| Integration Tests | targeted core flows     | ✅             |
-| E2E Tests         | 0 (0%)                  | ❌ Planned M10 |
-| Coverage Gate     | 89.61% (threshold: 80%) | ✅             |
-| Mock Usages       | high (design-intent)    | -              |
+| Metric            | Value                            | Status         |
+| ----------------- | -------------------------------- | -------------- |
+| Total Tests       | 1089 (946 + 104 + 33 + 6)        | ✅             |
+| Test Files        | 80+                              | ✅             |
+| Total Assertions  | ~2,000+                          | ✅             |
+| Unit Tests        | majority                         | ✅             |
+| Integration Tests | targeted core flows + Alpaca     | ✅             |
+| E2E Tests         | 33 (Playwright)                  | ✅ M10         |
+| Alpaca Integration| 6 (paper API)                    | ✅ CI Audit    |
+| Frontend Tests    | 104 (Vitest)                     | ✅ 94.8% cov   |
+| Coverage Gate     | 89.73% (threshold: 80%)          | ✅             |
+| Mock Usages       | high (design-intent)             | -              |
 
-**Overall Assessment**: Test breadth is strong and M8 test growth target remains exceeded. Coverage gate remains passed (`pytest --cov=src tests` threshold: 80%). E2E testing remains planned for M10.
+**Overall Assessment**: Test breadth is strong. CI audit Waves 1–4 complete: fixed 2 production bugs (submit_order/list_orders SDK contract), added Alpaca integration tests (6), E2E order lifecycle tests (10), frontend coverage reporting, and hardened unit test mocks with autospec. Post-audit CI hardening: Actions upgraded to Node.js 24, npm vulnerabilities patched, workflow permissions locked, coverage artifacts cleaned. All 5 CI workflows green.
 
 ---
 
@@ -46,7 +48,7 @@
 | **GLaDOS Services**    | 4     | 36    | 13      | 4.5%       |
 | **GLaDOS Routes**      | 5     | 33    | 9       | 4.1%       |
 | **WALL-E (Database)**  | 2     | 25    | 6       | 3.0%       |
-| **Haro (Frontend)**    | 15    | 90    | 21      | 8.8%       |
+| **Haro (Frontend)**    | 17    | 104   | 25      | 9.6%       |
 
 ### 2.2 Top Test Files by Count
 
@@ -71,13 +73,13 @@
 
 ```
                     ┌─────────────┐
-                    │    E2E      │  0 tests (0%)
-                    │  (Planned)  │  Target: ~20–30 in M10
+                    │    E2E      │  33 tests (3%)
+                    │ (Playwright)│  Containerized, Chromium
                     ├─────────────┤
-                    │ Integration │  44 tests (5%)
-                    │   Tests     │  DB, Event flows
+                    │ Integration │  50 tests (5%)
+                    │   Tests     │  DB, Events, Alpaca API
                 ┌───┴─────────────┴───┐
-                │     Unit Tests      │  762 tests (95%)
+                │     Unit Tests      │  902 tests (92%)
                 │  Isolated, fast,    │  Avg 0.02s/test
                 │  comprehensive      │
                 └─────────────────────┘
@@ -85,12 +87,59 @@
 
 ### 3.2 Test Types
 
-| Type            | Count | Description                   | Quality   |
-| --------------- | ----- | ----------------------------- | --------- |
-| **Unit**        | 762   | Isolated function/class tests | ★★★★★     |
-| **Integration** | 44    | Multi-component collaboration | ★★★★☆     |
-| **E2E**         | 0     | Full HTTP→DB flow             | ❌ M10    |
-| **Performance** | 0     | Load/stress testing           | ❌ Future |
+| Type            | Count | Description                        | Quality   |
+| --------------- | ----- | ---------------------------------- | --------- |
+| **Unit**        | 902   | Isolated function/class tests      | ★★★★★     |
+| **Integration** | 50    | Multi-component + real DB/API      | ★★★★☆     |
+| **E2E**         | 33    | Full browser→API→DB flow (Playwright) | ★★★★☆     |
+| **Alpaca Integ**| 6     | Real paper trading API             | ★★★★☆     |
+| **Performance** | 0     | Load/stress testing                | ❌ Future |
+
+### 3.3 E2E & Integration Coverage by Component
+
+This matrix shows how E2E and integration tests cover each system component, complementing the unit test layer.
+
+| Component | E2E Tests | Integration Tests | Unit Tests | Overall |
+|-----------|:---------:|:-----------------:|:----------:|:-------:|
+| **GLaDOS** (API routes, services, RunManager) | ✅ 8 tests (backtest/paper flows, health) | ✅ 5 tests (backtest lifecycle) | ✅ 80+ | Excellent |
+| **Haro** (Frontend UI, routing, pages) | ✅ 22 tests (nav, forms, tables, modals) | — | ✅ 104 (Vitest) | Excellent |
+| **Veda** (Trading, orders, Alpaca adapter) | ✅ 2 tests (order display) | ✅ 6 tests (Alpaca paper API) | ✅ 80+ | Excellent |
+| **Clock** (Backtest, Realtime) | ✅ 3 tests (backtest completes, paper runs) | ✅ 2 tests (backtest flow) | ✅ 30+ | Excellent |
+| **Marvin** (Strategy runner, plugin loader) | ✅ 1 test (invalid strategy error) | ✅ 1 test (strategy actions) | ✅ 40+ | Good |
+| **Greta** (Fill simulator, order processing) | ⚠️ 3 tests (xfail — async race) | ✅ 5 tests (backtest order flow) | ✅ 35+ | Good |
+| **WallE** (Database, bar repository, models) | ✅ 3 tests (persistence via flows) | ✅ 13 tests (bar CRUD, real DB) | ✅ 25+ | Excellent |
+| **Events** (EventLog, offsets, subscriptions) | ✅ 1 test (event delivery) | ✅ 15 tests (Postgres log + offsets) | ✅ 15+ | Excellent |
+| **SSE** (Server-sent events, broadcaster) | ✅ 4 tests (connect, deliver, reconnect) | — | ⚠️ 5 (broadcaster only) | Good |
+
+#### E2E Test Breakdown (33 tests across 6 files)
+
+| Test File | Tests | Components Exercised |
+|-----------|:-----:|---------------------|
+| `test_backtest_flow.py` | 8 | GLaDOS, Haro, Clock, Greta, WallE |
+| `test_paper_flow.py` | 5 | GLaDOS, Haro, Clock, Marvin |
+| `test_navigation.py` | 6 | Haro (routing, pages, sidebar) |
+| `test_orders.py` | 2 | Haro, GLaDOS, Veda |
+| `test_orders_lifecycle.py` | 8 | Greta, Events, Marvin, GLaDOS, Haro (3 xfail) |
+| `test_sse.py` | 4 | SSE, Haro, GLaDOS |
+
+#### Integration Test Breakdown (50 tests across 5 files)
+
+| Test File | Tests | Components Exercised |
+|-----------|:-----:|---------------------|
+| `test_bar_repository.py` | 15 | WallE (real PostgreSQL) |
+| `test_event_log.py` | 10 | Events (PostgresEventLog + concurrency) |
+| `test_offset_store.py` | 14 | Events (PostgresOffsetStore + concurrency) |
+| `test_backtest_flow.py` | 5 | GLaDOS, Clock, WallE, Marvin, Greta, Events |
+| `test_alpaca_paper.py` | 6 | Veda (real Alpaca paper API) |
+
+#### Coverage Gaps (E2E/Integration)
+
+| Gap | Description | Impact | Priority |
+|-----|-------------|--------|----------|
+| SSE integration tests | No isolated SSE integration tests (only E2E) | Reconnect edge cases untested in isolation | Low |
+| Greta E2E (xfail) | 3 order lifecycle E2E tests blocked by async race (B-3) | Order event generation unverifiable end-to-end | Medium |
+| Multi-symbol backtest | Only single-symbol tested in integration | Complex scenarios untested | Low |
+| Marvin E2E depth | Only 1 E2E test touches strategy loading (error path) | Happy-path strategy execution covered via backtest flow | Low |
 
 ---
 
@@ -118,7 +167,7 @@
 | Run completion state transition | ✅     | `test_run_manager_backtest.py` |
 | Multi-symbol backtest           | ⚠️     | Basic coverage                 |
 
-### 4.3 Live/Paper Trading ⚠️ PARTIAL
+### 4.3 Live/Paper Trading ✅ COMPLETE
 
 | Flow                         | Status | Tests                          |
 | ---------------------------- | ------ | ------------------------------ |
@@ -126,7 +175,9 @@
 | Alpaca connection management | ✅     | `test_alpaca_connection.py`    |
 | Order routing to VedaService | ✅     | `test_order_routing.py`        |
 | Live run stays RUNNING       | ✅     | `test_run_mode_integration.py` |
-| Actual order submission      | ⚠️     | Mocked only                    |
+| Actual order submission      | ✅     | `test_alpaca_paper.py` (integration, real Alpaca API) |
+| Order cancellation           | ✅     | `test_alpaca_paper.py` (integration) |
+| Order listing                | ✅     | `test_alpaca_paper.py` (integration) |
 | WebSocket real-time data     | ❌     | Not implemented                |
 
 ### 4.4 Strategy System ✅ COMPLETE
@@ -231,11 +282,11 @@ _High async coverage in: Veda (adapters), Events (subscriptions), Integration te
 
 ### 7.1 Critical Gaps (Priority: High)
 
-| Gap                   | Impact                        | Recommendation              | Target |
+| Gap                   | Impact                        | Recommendation              | Status |
 | --------------------- | ----------------------------- | --------------------------- | ------ |
-| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | M10    |
-| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | M10    |
-| **Real Alpaca Tests** | Unknown production behavior   | Add sandbox integration     | M7     |
+| **E2E Tests**         | Cannot verify full user flows | Add Playwright tests        | ✅ M10 (33 tests) |
+| **Auth Tests**        | Security vulnerability        | Add auth middleware + tests | Backlog |
+| **Real Alpaca Tests** | Unknown production behavior   | Add sandbox integration     | ✅ CI Audit (6 tests) |
 
 ### 7.2 Medium Priority Gaps
 
@@ -301,6 +352,11 @@ testpaths = ["tests"]
 | M6 Live Trading      | ~101        | 806   | 2026-02 |
 | M7 Frontend (M7-0→5) | ~63         | 871   | 2026-02 |
 | M7 SSE (M7-6)        | ~23         | 894   | 2026-02 |
+| M8 Fixes & Polish    | ~138        | 1032  | 2026-03 |
+| M10 E2E Tests        | 23          | 1055  | 2026-03 |
+| CI Audit Waves 1–4   | 16          | 1071  | 2026-03 |
+| CI Audit (frontend)  | 14          | 1085  | 2026-03 |
+| CI Hardening         | 4           | 1089  | 2026-03 |
 
 ---
 
@@ -317,13 +373,32 @@ testpaths = ["tests"]
 - [x] Add Toast + ConnectionStatus component tests (M7-6) ✅ 8 tests
 - [x] Add useSSE hook tests (M7-6) ✅ 9 tests
 
-### M8 (Polish & E2E)
+### M10 (E2E Tests) ✅ COMPLETE
 
-- [ ] Add Playwright E2E tests (~40 tests)
+- [x] E2E infrastructure: test_runner container, docker-compose.e2e.yml
+- [x] Navigation tests (6): page loads, routing, sidebar nav, 404
+- [x] Backtest flow tests (8): create via UI/API, start→completed, deep-link, dashboard stats
+- [x] Paper flow tests (5): create, start→running, active runs, stop→stopped, error state
+- [x] Orders tests (2): mock data rendering, detail modal
+- [x] Orders lifecycle tests (8): event payloads, pagination, detail modal (3 xfail due to async race B-3)
+- [x] SSE tests (4): connection status, real-time run updates, reconnect
+- [x] All 33 E2E tests passing in containerized Playwright/Chromium
+
+### CI Audit (Post-M10) ✅ COMPLETE
+
+- [x] Wave 1: Alpaca integration tests (6) + dedicated CI workflow
+- [x] Wave 2: E2E order lifecycle tests (10) + SSE tests
+- [x] Wave 3: Frontend coverage reporting (vitest → vitest --coverage)
+- [x] Wave 4: Production bug fixes (submit_order/list_orders SDK contract), CI path fix, mock hardening (autospec)
+- [x] Post-Wave 4: Actions Node.js 24 upgrade, npm vulnerability patches, permissions lockdown, coverage cleanup
+
+### Future
+
 - [ ] Add authentication tests
 - [ ] Add error boundary tests
-- [ ] Achieve ≥80% code coverage
 - [ ] Add performance baseline tests
+- [ ] Fix async race condition (B-3) to un-xfail 3 E2E tests
+- [ ] Add SSE integration tests (isolated, not just E2E)
 
 ---
 

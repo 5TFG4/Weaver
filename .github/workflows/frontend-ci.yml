@@ -7,6 +7,9 @@ on:
       - "haro/**"
       - ".github/workflows/frontend-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
@@ -17,9 +20,9 @@ jobs:
         working-directory: haro
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -34,8 +37,8 @@ jobs:
       - name: TypeScript check
         run: npx tsc -b --noEmit
 
-      - name: Vitest tests
-        run: npm run test
+      - name: Vitest tests with coverage
+        run: npm run test:coverage
 
       - name: Vite build
         run: npm run build

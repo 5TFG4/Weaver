@@ -47,11 +47,11 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-> **Latest measured totals (2026-03-15)**: 1032+ tests, 89.78% coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
+> **Latest measured totals (2026-03-22)**: 1089 tests (946 backend + 104 frontend + 33 E2E + 6 Alpaca integration), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: M9 (CI Deployment Pipeline)
+**Active Milestone**: Post-M10 complete — backlog only (B-2, B-3, B-8–B-10, E-3, F-2, R-1–R-3)
 
-**Last State Update**: 2026-02-25
+**Last State Update**: 2026-03-22
 
 ## 2. Milestones (Revised 2026-02-19)
 
@@ -65,7 +65,7 @@
 | **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)  |
 | **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE         |
 | **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE         |
-| **M10**   | E2E Tests & Release Preparation (Playwright + Final polish)                                                                       | ⏳ PLANNED          |
+| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)|
 
 ## 3. Phase Timeline
 
@@ -76,8 +76,8 @@
 | **6**  | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
 | **7**  | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
 | **8**  | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
-| **9**  | CI Deployment Pipeline        | -          | ⏳ PLANNED           |
-| **10** | E2E Tests + Release Prep      | ~20–30     | ⏳ PLANNED           |
+| **9**  | CI Deployment Pipeline        | -          | ✅ COMPLETE          |
+| **10** | E2E Tests + Release Prep      | 33         | ✅ COMPLETE          |
 
 ## 4. Architecture Invariants
 
@@ -143,17 +143,17 @@
 
 ### M9 Exit Gate (CI Deployment Ready)
 
-- [ ] Backend fast CI checks are required and stable
-- [ ] Frontend fast CI checks are required and stable
-- [ ] Container smoke workflow integrated for runtime-affecting PRs
-- [ ] Branch protection rules enforce required CI checks
+- [x] Backend fast CI checks are required and stable
+- [x] Frontend fast CI checks are required and stable
+- [x] Container smoke workflow integrated for runtime-affecting PRs
+- [x] Branch protection rules enforce required CI checks
 
 ### M10 Exit Gate (E2E & Release Ready)
 
-- [ ] E2E tests pass (Playwright)
-- [ ] Full user workflow validated end-to-end
-- [ ] Deployment guide complete
-- [ ] ~20–30 new tests (target: 954+)
+- [x] E2E tests pass (Playwright) — 33 tests
+- [x] Full user workflow validated end-to-end
+- [x] Deployment guide complete
+- [x] ~20–30 new tests (target: 954+) — actual: 1089 total
 
 ---
 
