@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -8,6 +8,9 @@ import {
   useStartRun,
   useStopRun,
 } from "../../../src/hooks/useRuns";
+import { useNotificationStore } from "../../../src/stores/notificationStore";
+import { server } from "../../mocks/server";
+import { http, HttpResponse } from "msw";
 import { mockRuns } from "../../mocks/handlers";
 import type { ReactNode } from "react";
 
@@ -157,5 +160,122 @@ describe("useStopRun", () => {
     expect(result.current.data?.stopped_at).toBeDefined();
     expect(setQueryDataSpy).toHaveBeenCalled();
     expect(invalidateSpy).toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// M11-4: Error notification tests
+// =============================================================================
+
+describe("useCreateRun error notification", () => {
+  beforeEach(() => {
+    useNotificationStore.getState().clearAll();
+  });
+
+  it("shows error notification on API failure", async () => {
+    server.use(
+      http.post("/api/v1/runs", () =>
+        HttpResponse.json({ detail: "Validation failed" }, { status: 422 }),
+      ),
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useCreateRun(), { wrapper });
+
+    result.current.mutate({
+      strategy_id: "test",
+      mode: "backtest",
+      symbols: ["BTC/USD"],
+      timeframe: "1h",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    const notifications = useNotificationStore.getState().notifications;
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("error");
+  });
+});
+
+describe("useStartRun error notification", () => {
+  beforeEach(() => {
+    useNotificationStore.getState().clearAll();
+  });
+
+  it("shows error notification on API failure", async () => {
+    server.use(
+      http.post("/api/v1/runs/:id/start", () =>
+        HttpResponse.json({ detail: "Run not startable" }, { status: 409 }),
+      ),
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useStartRun(), { wrapper });
+
+    result.current.mutate("run-1");
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    const notifications = useNotificationStore.getState().notifications;
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("error");
+  });
+});
+
+describe("useStopRun error notification", () => {
+  beforeEach(() => {
+    useNotificationStore.getState().clearAll();
+  });
+
+  it("shows error notification on API failure", async () => {
+    server.use(
+      http.post("/api/v1/runs/:id/stop", () =>
+        HttpResponse.json({ detail: "Run not found" }, { status: 404 }),
+      ),
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useStopRun(), { wrapper });
+
+    result.current.mutate("run-1");
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    const notifications = useNotificationStore.getState().notifications;
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("error");
   });
 });

@@ -7,6 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchOrders, fetchOrder, cancelOrder } from "../api/orders";
 import type { Order, OrderListResponse } from "../api/types";
+import { useNotificationStore } from "../stores/notificationStore";
 
 // Query keys for cache invalidation
 export const orderKeys = {
@@ -49,6 +50,7 @@ export function useOrder(orderId: string) {
  */
 export function useCancelOrder() {
   const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   return useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
@@ -56,6 +58,12 @@ export function useCancelOrder() {
       // Invalidate order cache
       queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId) });
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+    onError: (error: Error) => {
+      addNotification({
+        type: "error",
+        message: error.message || "Failed to cancel order",
+      });
     },
   });
 }
