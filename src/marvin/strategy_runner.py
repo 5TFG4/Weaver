@@ -5,6 +5,7 @@ Runs strategy code in response to clock ticks.
 Mode-agnostic: doesn't know if backtest or live.
 """
 
+import asyncio
 import logging
 from typing import Any
 
@@ -46,6 +47,7 @@ class StrategyRunner:
         self._run_id: str | None = None
         self._symbols: list[str] = []
         self._subscription_id: str | None = None
+        self._task_set: set[asyncio.Task[Any]] | None = None
 
     @property
     def run_id(self) -> str | None:
@@ -57,16 +59,20 @@ class StrategyRunner:
         """Trading symbols for this run."""
         return self._symbols
 
-    async def initialize(self, run_id: str, symbols: list[str]) -> None:
+    async def initialize(
+        self, run_id: str, symbols: list[str], task_set: set[asyncio.Task[Any]] | None = None
+    ) -> None:
         """
         Initialize for a run.
 
         Args:
             run_id: Unique run identifier
             symbols: List of symbols to trade
+            task_set: Optional task set for tracking spawned tasks
         """
         self._run_id = run_id
         self._symbols = symbols
+        self._task_set = task_set
         await self._strategy.initialize(symbols)
 
         # Subscribe to data.WindowReady events for this run
@@ -97,6 +103,7 @@ class StrategyRunner:
             self.on_data_ready(envelope),
             logger=logger,
             context=f"marvin.window_ready run_id={self._run_id}",
+            task_set=self._task_set,
         )
 
     async def on_tick(self, tick: Any) -> None:

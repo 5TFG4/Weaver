@@ -13,7 +13,8 @@ Multi-Run Architecture (M4+):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import asyncio
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -66,6 +67,7 @@ class RunContext:
     greta: GretaService | None
     runner: StrategyRunner
     clock: BaseClock  # BacktestClock or RealtimeClock
+    pending_tasks: set[asyncio.Task[Any]] = field(default_factory=set)
 
 
 class RunManager:
@@ -144,17 +146,25 @@ class RunManager:
     async def _cleanup_run_context(self, run_id: str) -> None:
         """Cleanup per-run runtime resources if context exists.
 
-        Cleanup contract (best-effort, idempotent by run_id):
-        1. Stop clock
-        2. Cleanup StrategyRunner subscriptions
-        3. Cleanup GretaService subscriptions/state (backtest runs)
-        4. Remove context from manager
+        Cleanup contract (ordered for correctness):
+        1. Stop clock (no more ticks generated)
+        2. Drain pending tasks (spawned work completes before unsubscribe)
+        3. Cleanup StrategyRunner subscriptions
+        4. Cleanup GretaService subscriptions/state
+        5. Remove context from manager
         """
         ctx = self._run_contexts.get(run_id)
         if ctx is None:
             return
 
+        # 1. Stop clock — no more ticks
         await ctx.clock.stop()
+
+        # 2. Drain in-flight tasks
+        if ctx.pending_tasks:
+            await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
+
+        # 3-4. Unsubscribe (safe now — all tasks complete)
         await ctx.runner.cleanup()
         if ctx.greta is not None:
             await ctx.greta.cleanup()
@@ -303,7 +313,11 @@ class RunManager:
             self._run_contexts[run.id] = ctx
 
             # 3. Initialize runner
-            await runner.initialize(run_id=run.id, symbols=run.symbols)
+            await runner.initialize(
+                run_id=run.id,
+                symbols=run.symbols,
+                task_set=ctx.pending_tasks,
+            )
 
             # 4. Wire tick handler
             async def on_tick(tick: ClockTick) -> None:
@@ -370,8 +384,13 @@ class RunManager:
                 timeframe=run.timeframe,
                 start=run.start_time,
                 end=run.end_time,
+                task_set=ctx.pending_tasks,
             )
-            await runner.initialize(run_id=run.id, symbols=run.symbols)
+            await runner.initialize(
+                run_id=run.id,
+                symbols=run.symbols,
+                task_set=ctx.pending_tasks,
+            )
 
             # 4. Wire tick handler
             async def on_tick(tick: ClockTick) -> None:

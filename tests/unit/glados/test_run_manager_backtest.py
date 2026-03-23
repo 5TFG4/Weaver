@@ -4,6 +4,7 @@ Tests for RunManager backtest orchestration (M4)
 Unit tests for backtest flow orchestration in RunManager.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
@@ -45,6 +46,17 @@ class TestRunContext:
         )
 
         assert ctx.greta is None
+
+    def test_pending_tasks_defaults_to_empty_set(self) -> None:
+        """RunContext.pending_tasks defaults to an empty set."""
+        ctx = RunContext(
+            greta=None,
+            runner=MagicMock(),
+            clock=MagicMock(),
+        )
+
+        assert ctx.pending_tasks == set()
+        assert isinstance(ctx.pending_tasks, set)
 
 
 class TestRunManagerBacktestStart:
@@ -282,3 +294,83 @@ class TestRunManagerStopWithContext:
         await manager.stop(run_id)
 
         cast(AsyncMock, ctx.greta.cleanup).assert_called_once()
+
+
+class TestCleanupRunContextDrain:
+    """Tests for pending task drain in _cleanup_run_context (M11-1)."""
+
+    async def test_cleanup_awaits_pending_tasks_before_unsubscribe(self) -> None:
+        """_cleanup_run_context waits for pending tasks before calling cleanup."""
+        manager = RunManager()
+
+        execution_order: list[str] = []
+
+        async def slow_task() -> None:
+            await asyncio.sleep(0.05)
+            execution_order.append("task_done")
+
+        mock_runner = AsyncMock()
+        mock_runner.cleanup = AsyncMock(
+            side_effect=lambda: execution_order.append("runner_cleanup")
+        )
+        mock_clock = AsyncMock()
+        mock_clock.stop = AsyncMock()
+
+        ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
+
+        # Simulate a pending task
+        task = asyncio.create_task(slow_task())
+        ctx.pending_tasks.add(task)
+
+        run_id = "test-drain"
+        manager._run_contexts[run_id] = ctx
+
+        await manager._cleanup_run_context(run_id)
+
+        # Task should finish BEFORE runner.cleanup
+        assert execution_order == ["task_done", "runner_cleanup"]
+        assert run_id not in manager._run_contexts
+
+    async def test_cleanup_handles_failed_pending_tasks(self) -> None:
+        """_cleanup_run_context still cleans up even if a pending task fails."""
+        manager = RunManager()
+
+        async def failing_task() -> None:
+            raise ValueError("task error")
+
+        mock_runner = AsyncMock()
+        mock_runner.cleanup = AsyncMock()
+        mock_clock = AsyncMock()
+        mock_clock.stop = AsyncMock()
+
+        ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
+        task = asyncio.create_task(failing_task())
+        ctx.pending_tasks.add(task)
+
+        run_id = "test-fail"
+        manager._run_contexts[run_id] = ctx
+
+        # Should not raise — return_exceptions=True
+        await manager._cleanup_run_context(run_id)
+
+        # Cleanup still happens
+        mock_runner.cleanup.assert_called_once()
+        assert run_id not in manager._run_contexts
+
+    async def test_cleanup_with_empty_pending_tasks(self) -> None:
+        """_cleanup_run_context works fine with no pending tasks."""
+        manager = RunManager()
+
+        mock_runner = AsyncMock()
+        mock_runner.cleanup = AsyncMock()
+        mock_clock = AsyncMock()
+        mock_clock.stop = AsyncMock()
+
+        ctx = RunContext(greta=None, runner=mock_runner, clock=mock_clock)
+        run_id = "test-empty"
+        manager._run_contexts[run_id] = ctx
+
+        await manager._cleanup_run_context(run_id)
+
+        mock_runner.cleanup.assert_called_once()
+        assert run_id not in manager._run_contexts

@@ -7,9 +7,11 @@ Each backtest run gets its own GretaService instance.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 from src.events.log import EventLog
@@ -91,6 +93,7 @@ class GretaService:
         self._current_bars: dict[str, Bar] = {}
         self._cash: Decimal = initial_cash
         self._subscription_ids: list[str] = []
+        self._task_set: set[asyncio.Task[Any]] | None = None
 
     # =========================================================================
     # Properties
@@ -146,6 +149,7 @@ class GretaService:
         timeframe: str,
         start: datetime,
         end: datetime,
+        task_set: set[asyncio.Task[Any]] | None = None,
     ) -> None:
         """
         Initialize for a backtest run.
@@ -157,7 +161,9 @@ class GretaService:
             timeframe: Bar timeframe (e.g., "1m", "5m")
             start: Backtest start time
             end: Backtest end time
+            task_set: Optional task set for tracking spawned tasks
         """
+        self._task_set = task_set
         self._symbols = symbols
         self._timeframe = timeframe
         self._start = start
@@ -244,6 +250,7 @@ class GretaService:
             self._handle_fetch_window(envelope),
             logger=logger,
             context=f"greta.fetch_window run_id={self._run_id}",
+            task_set=self._task_set,
         )
 
     async def _handle_fetch_window(self, envelope: Envelope) -> None:
@@ -316,6 +323,7 @@ class GretaService:
             self._handle_place_order(envelope),
             logger=logger,
             context=f"greta.place_order run_id={self._run_id}",
+            task_set=self._task_set,
         )
 
     async def _handle_place_order(self, envelope: Envelope) -> None:
