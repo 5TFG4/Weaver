@@ -1,33 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# E2E test runner — matches .github/workflows/e2e.yml exactly.
+# NO FLAGS. Builds, runs ALL E2E tests, tears down. No shortcuts.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.e2e.yml"
 COMPOSE_ARGS=(-f "$COMPOSE_FILE")
 
+if [[ $# -gt 0 ]]; then
+    echo "ERROR: e2e-local.sh takes NO arguments. It runs the full E2E suite."
+    exit 1
+fi
+
 echo "=========================================="
 echo " E2E Test Runner (Containerized)"
 echo "=========================================="
 
-KEEP_UP=false
-PYTEST_ARGS=()
-for arg in "$@"; do
-  case "$arg" in
-    --keep-up) KEEP_UP=true ;;
-    *)         PYTEST_ARGS+=("$arg") ;;
-  esac
-done
-
 teardown() {
-  if ! $KEEP_UP; then
     echo ""
     echo "--- Tearing down E2E stack ---"
     docker compose "${COMPOSE_ARGS[@]}" --profile test down -v 2>/dev/null || true
-  else
-    echo ""
-    echo "--- Stack left running (--keep-up). Tear down manually: ---"
-    echo "  docker compose ${COMPOSE_ARGS[*]} --profile test down -v"
-  fi
 }
 trap teardown EXIT
 
@@ -41,11 +33,7 @@ docker compose "${COMPOSE_ARGS[@]}" up -d --wait db_e2e backend_e2e frontend_e2e
 
 echo ""
 echo "--- Running E2E tests in container ---"
-if [[ ${#PYTEST_ARGS[@]} -gt 0 ]]; then
-  docker compose "${COMPOSE_ARGS[@]}" run --rm test_runner pytest tests/e2e/ -v --timeout=60 "${PYTEST_ARGS[@]}"
-else
-  docker compose "${COMPOSE_ARGS[@]}" run --rm test_runner
-fi
+docker compose "${COMPOSE_ARGS[@]}" run --rm test_runner
 
 echo ""
 echo "=========================================="

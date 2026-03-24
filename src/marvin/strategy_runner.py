@@ -7,12 +7,16 @@ Mode-agnostic: doesn't know if backtest or live.
 
 import asyncio
 import logging
+from decimal import Decimal
 from typing import Any
+
+from dateutil.parser import isoparse
 
 from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.glados.task_utils import spawn_tracked_task
 from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
+from src.walle.repositories.bar_repository import Bar
 
 logger = logging.getLogger(__name__)
 
@@ -125,11 +129,30 @@ class StrategyRunner:
         Handle data.WindowReady event.
 
         Passes data to strategy and emits any resulting events.
+        Deserializes bar dicts from the event payload into Bar objects
+        so strategies can use attribute access (bar.close, etc.).
 
         Args:
             envelope: Event envelope with data payload
         """
-        actions = await self._strategy.on_data(envelope.payload)
+        data = dict(envelope.payload)
+        symbol = data.get("symbol", "")
+        if "bars" in data:
+            data["bars"] = [
+                Bar(
+                    symbol=symbol,
+                    timeframe="",
+                    timestamp=isoparse(b["timestamp"]),
+                    open=Decimal(b["open"]),
+                    high=Decimal(b["high"]),
+                    low=Decimal(b["low"]),
+                    close=Decimal(b["close"]),
+                    volume=Decimal(b["volume"]),
+                )
+                for b in data["bars"]
+            ]
+
+        actions = await self._strategy.on_data(data)
 
         for action in actions:
             await self._emit_action(action)

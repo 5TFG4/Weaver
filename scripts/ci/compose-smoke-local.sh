@@ -1,63 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Compose smoke test — matches .github/workflows/compose-smoke.yml exactly.
+# NO FLAGS. Builds, starts, health-checks, tears down. No shortcuts.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
 ENV_FILE="$ROOT_DIR/docker/.env"
 EXAMPLE_ENV_FILE="$ROOT_DIR/docker/example.env"
-
-KEEP_UP=0
-NO_BUILD=0
 TIMEOUT_SECONDS=120
 
-usage() {
-  cat <<'USAGE'
-Run local compose smoke flow aligned with .github/workflows/compose-smoke.yml.
-
-Usage:
-  scripts/ci/compose-smoke-local.sh [options]
-
-Options:
-  --keep-up           Keep backend/frontend/db running after successful smoke.
-  --no-build          Skip image build step.
-  --timeout <seconds> Health check timeout per service (default: 120).
-  -h, --help          Show this help message.
-
-Environment:
-  COMPOSE_PROJECT_NAME   Optional project name override for docker compose
-                         (default: weaver_smoke).
-USAGE
-}
+if [[ $# -gt 0 ]]; then
+    echo "ERROR: compose-smoke-local.sh takes NO arguments."
+    exit 1
+fi
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
 }
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --keep-up)
-      KEEP_UP=1
-      shift
-      ;;
-    --no-build)
-      NO_BUILD=1
-      shift
-      ;;
-    --timeout)
-      TIMEOUT_SECONDS="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1"
-      usage
-      exit 2
-      ;;
-  esac
-done
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker is required"
@@ -73,10 +32,8 @@ fi
 COMPOSE_ARGS=(-p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE")
 
 teardown() {
-  if [[ "$KEEP_UP" -eq 0 ]]; then
     log "Teardown compose stack"
     docker compose "${COMPOSE_ARGS[@]}" down -v || true
-  fi
 }
 trap teardown EXIT
 
@@ -90,12 +47,8 @@ sed -i 's|^ALPACA_PAPER_API_SECRET=.*|ALPACA_PAPER_API_SECRET=|' "$ENV_FILE"
 log "Validate compose config"
 docker compose "${COMPOSE_ARGS[@]}" config
 
-if [[ "$NO_BUILD" -eq 0 ]]; then
-  log "Build backend/frontend images"
-  docker compose "${COMPOSE_ARGS[@]}" build backend frontend
-else
-  log "Skip build (requested)"
-fi
+log "Build backend/frontend images"
+docker compose "${COMPOSE_ARGS[@]}" build backend frontend
 
 log "Start database"
 docker compose "${COMPOSE_ARGS[@]}" up -d db
@@ -155,7 +108,3 @@ fi
 log "SMOKE_OK"
 cat /tmp/weaver_api_smoke.out
 head -n 5 /tmp/weaver_front_smoke.out
-
-if [[ "$KEEP_UP" -eq 1 ]]; then
-  log "Keep-up enabled; stack left running for inspection (project: $COMPOSE_PROJECT_NAME)"
-fi

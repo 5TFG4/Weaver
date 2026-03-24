@@ -3,106 +3,76 @@ set -euo pipefail
 # Designed to run INSIDE the dev container (backend_dev).
 # All tools (Python, Node, ruff, mypy, Docker CLI) are pre-installed.
 # DB_URL is set via docker-compose.dev.yml environment.
+#
+# NO FLAGS. NO SHORTCUTS. Runs the FULL CI pipeline every time:
+#   backend-ci  → ruff, mypy, alembic, pytest (unit+integration)
+#   frontend-ci → eslint, tsc, vitest --coverage, vite build
+#   e2e         → docker compose E2E suite (all 33 tests)
+#   smoke       → docker compose production smoke test
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-MODE="full"
-VERBOSE=false
-RUN_E2E=false
-RUN_SMOKE=false
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --fast)  MODE="fast"; shift ;;
-        --full)  MODE="full"; shift ;;
-        --e2e)   RUN_E2E=true; shift ;;
-        --smoke) RUN_SMOKE=true; shift ;;
-        --all)   RUN_E2E=true; RUN_SMOKE=true; MODE="full"; shift ;;
-        -v)      VERBOSE=true; shift ;;
-        *)       echo "Unknown option: $1"; exit 1 ;;
-    esac
-done
+if [[ $# -gt 0 ]]; then
+    echo "ERROR: check-all.sh takes NO arguments. It always runs the full CI pipeline."
+    echo "Usage: bash scripts/ci/check-all.sh"
+    exit 1
+fi
 
 # run_step NAME CMD...
 run_step() {
     local name="$1"; shift
-    if $VERBOSE; then
-        echo ""
-        echo "--- $name ---"
-        "$@"
-        echo "  ✅ $name"
+    local tmp
+    tmp=$(mktemp)
+    printf "  %-35s" "$name"
+    if "$@" > "$tmp" 2>&1; then
+        echo "✅"
     else
-        local tmp
-        tmp=$(mktemp)
-        printf "  %-35s" "$name"
-        if "$@" > "$tmp" 2>&1; then
-            echo "✅"
-        else
-            echo "❌"
-            echo ""
-            cat "$tmp"
-            rm -f "$tmp"
-            exit 1
-        fi
+        echo "❌"
+        echo ""
+        cat "$tmp"
         rm -f "$tmp"
+        exit 1
     fi
+    rm -f "$tmp"
 }
 
 echo "=========================================="
-echo " CI Check (inside container)"
-echo " Mode: $MODE | E2E: $RUN_E2E | Smoke: $RUN_SMOKE"
+echo " Full CI Check (no shortcuts)"
 echo "=========================================="
 echo ""
 
-# ── Backend ──────────────────────────────────
+# ── 1. Backend CI (matches .github/workflows/backend-ci.yml) ──
 run_step "Backend: ruff check"    ruff check src/ tests/
 run_step "Backend: ruff format"   ruff format --check src/ tests/
 run_step "Backend: mypy"          mypy src/
 
-if [[ "$MODE" == "fast" ]]; then
-    run_step "Backend: pytest (unit)" \
-        pytest -m "not container" --ignore=tests/e2e --ignore=tests/integration -q
+if [[ -n "${DB_URL:-}" ]]; then
+    run_step "Backend: alembic upgrade head" \
+        alembic upgrade head
 else
-    if [[ -n "${DB_URL:-}" ]]; then
-        run_step "Backend: alembic upgrade head" \
-            alembic upgrade head
-    fi
-
-    run_step "Backend: pytest (unit+integration)" \
-        pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing -q
-
-    if [[ -z "${DB_URL:-}" ]]; then
-        echo "  ⚠  DB_URL not set — skipping alembic & integration tests"
-    fi
+    echo "  ⚠  DB_URL not set — alembic skipped (integration tests may fail)"
 fi
 
-# ── Frontend ─────────────────────────────────
+run_step "Backend: pytest (unit+integration)" \
+    pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing -q
+
+# ── 2. Frontend CI (matches .github/workflows/frontend-ci.yml) ──
 echo ""
 run_step "Frontend: eslint"       bash -c 'cd haro && npm run lint --silent'
 run_step "Frontend: tsc"          bash -c 'cd haro && npx tsc -b --noEmit'
-
-if [[ "$MODE" == "fast" ]]; then
-    run_step "Frontend: vitest"   bash -c 'cd haro && npm run test --silent'
-else
-    run_step "Frontend: vitest"   bash -c 'cd haro && npm run test:coverage --silent'
-fi
-
+run_step "Frontend: vitest"       bash -c 'cd haro && npm run test:coverage --silent'
 run_step "Frontend: build"        bash -c 'cd haro && npm run build --silent'
 
-# ── E2E tests (same docker-compose.e2e.yml as GitHub Actions e2e.yml) ──
-if $RUN_E2E; then
-    echo ""
-    run_step "E2E: full suite" \
-        bash scripts/ci/e2e-local.sh
-fi
+# ── 3. E2E (matches .github/workflows/e2e.yml) ──
+echo ""
+run_step "E2E: full suite" \
+    bash scripts/ci/e2e-local.sh
 
-# ── Compose smoke (same docker-compose.yml as GitHub Actions compose-smoke.yml) ──
-if $RUN_SMOKE; then
-    echo ""
-    run_step "Smoke: compose up" \
-        bash scripts/ci/compose-smoke-local.sh
-fi
+# ── 4. Compose smoke (matches .github/workflows/compose-smoke.yml) ──
+echo ""
+run_step "Smoke: compose up" \
+    bash scripts/ci/compose-smoke-local.sh
 
 echo ""
 echo "=========================================="

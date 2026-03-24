@@ -76,11 +76,19 @@ class TestStrategyRunnerEventSubscription:
         """data.WindowReady event triggers strategy.on_data()."""
         await runner.initialize("run-001", ["BTC/USD"])
 
-        # Emit WindowReady event
+        # Emit WindowReady event with realistic bar payload (matches Greta output)
+        bar = {
+            "timestamp": "2024-01-15T09:30:00+00:00",
+            "open": "100.0",
+            "high": "100.5",
+            "low": "99.5",
+            "close": "100.0",
+            "volume": "1000.0",
+        }
         await event_log.append(
             Envelope(
                 type=DataEvents.WINDOW_READY,
-                payload={"symbol": "BTC/USD", "bars": [{"close": "100"}]},
+                payload={"symbol": "BTC/USD", "bars": [bar]},
                 run_id="run-001",
                 producer="test",
             )
@@ -139,11 +147,19 @@ class TestStrategyRunnerEventSubscription:
 
         await runner.initialize("run-001", ["BTC/USD"])
 
-        # Emit WindowReady
+        # Emit WindowReady with realistic bar payload
+        bar = {
+            "timestamp": "2024-01-15T09:30:00+00:00",
+            "open": "100.0",
+            "high": "100.5",
+            "low": "99.5",
+            "close": "100.0",
+            "volume": "1000.0",
+        }
         await event_log.append(
             Envelope(
                 type=DataEvents.WINDOW_READY,
-                payload={"symbol": "BTC/USD", "bars": [{"close": "100"}]},
+                payload={"symbol": "BTC/USD", "bars": [bar]},
                 run_id="run-001",
                 producer="test",
             )
