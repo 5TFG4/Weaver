@@ -338,4 +338,4 @@ class TestStrategyRunnerTaskSetWiring:
 
         runner._on_window_ready(envelope)
         # Should not raise — no task_set to add to
-        await asyncio.sleep(0.05)  # Let task finish
+        await asyncio.sleep(0)  # Yield to let spawned task complete

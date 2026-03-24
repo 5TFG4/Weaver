@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-from tests.integration.veda.test_alpaca_paper import _has_real_alpaca_creds
+from tests.alpaca_helpers import has_real_alpaca_creds
 
 
 class TestHasRealAlpacaCreds:
@@ -20,7 +20,7 @@ class TestHasRealAlpacaCreds:
     def test_returns_false_when_env_vars_missing(self) -> None:
         """No env vars set → False."""
         with patch.dict(os.environ, {}, clear=True):
-            assert _has_real_alpaca_creds() is False
+            assert has_real_alpaca_creds() is False
 
     def test_returns_false_with_placeholder_key(self) -> None:
         """Placeholder from example.env → False."""
@@ -32,7 +32,7 @@ class TestHasRealAlpacaCreds:
             },
             clear=True,
         ):
-            assert _has_real_alpaca_creds() is False
+            assert has_real_alpaca_creds() is False
 
     def test_returns_false_with_empty_strings(self) -> None:
         """Empty string env vars → False."""
@@ -44,7 +44,7 @@ class TestHasRealAlpacaCreds:
             },
             clear=True,
         ):
-            assert _has_real_alpaca_creds() is False
+            assert has_real_alpaca_creds() is False
 
     def test_returns_false_when_only_key_is_real(self) -> None:
         """Only key is real, secret is placeholder → False."""
@@ -56,7 +56,7 @@ class TestHasRealAlpacaCreds:
             },
             clear=True,
         ):
-            assert _has_real_alpaca_creds() is False
+            assert has_real_alpaca_creds() is False
 
     def test_returns_true_with_real_credentials(self) -> None:
         """Real-looking credentials → True."""
@@ -68,4 +68,4 @@ class TestHasRealAlpacaCreds:
             },
             clear=True,
         ):
-            assert _has_real_alpaca_creds() is True
+            assert has_real_alpaca_creds() is True
