@@ -40,11 +40,13 @@ Lifecycle:
 
 1. `initialize(run_id, symbols)` calls strategy initialize and subscribes to `data.WindowReady` filtered by run.
 2. `on_tick()` executes strategy logic and emits translated events.
-3. `on_data_ready()` feeds data payload back into strategy and emits follow-up actions.
+3. `on_data_ready()` deserializes bar dicts from `data.WindowReady` payload into `Bar` objects (with `Decimal` fields and `datetime` timestamps), then feeds them into strategy and emits follow-up actions.
 4. `cleanup()` unsubscribes from EventLog.
 
 `cleanup()` is invoked explicitly by `RunManager` during stop/completion/error teardown,
 so per-run subscriptions are not left behind across run lifecycle transitions.
+
+**Bar Deserialization (M11 fix)**: Greta serializes `Bar` objects into plain dicts when emitting `data.WindowReady`. `on_data_ready()` converts these dicts back to `Bar` objects before passing to strategies, ensuring strategies can use attribute access (e.g., `bar.close`) as expected.
 
 ## 4. Action → Event Translation
 
@@ -92,4 +94,4 @@ This keeps strategy code shared across live and simulation paths.
 
 ---
 
-_Last updated: 2026-02-26 (M8-D)_
+_Last updated: 2026-03-24 (M11)_

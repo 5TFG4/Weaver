@@ -103,12 +103,13 @@ These provide real value but are invisible to CI (see G-1).
 
 ### 2.4 Missing Backend Tests
 
-| Gap                                     | Severity  | Description                                         |
-| --------------------------------------- | --------- | --------------------------------------------------- |
-| Concurrent run operations               | 🔴 High   | No tests for multiple simultaneous start/stop calls |
-| Database connection failure recovery    | 🟡 Medium | No tests for DB disconnect/reconnect behavior       |
-| Complex multi-symbol backtests          | 🟡 Medium | Only single-symbol tested                           |
-| Strategy runtime errors during backtest | 🟡 Medium | Unhandled exception propagation not validated       |
+| Gap                                     | Severity  | Description                                               | Status                        |
+| --------------------------------------- | --------- | --------------------------------------------------------- | ----------------------------- |
+| Concurrent run operations               | 🔴 High   | No tests for multiple simultaneous start/stop calls       | ✅ Fixed M11-3 (per-run Lock) |
+| Database connection failure recovery    | 🟡 Medium | No tests for DB disconnect/reconnect behavior             | Backlog (R-1)                 |
+| Complex multi-symbol backtests          | 🟡 Medium | Only single-symbol tested                                 | Backlog (R-2)                 |
+| Strategy runtime errors during backtest | 🟡 Medium | Unhandled exception propagation not validated             | ✅ Fixed M11-2                |
+| Bar dict→Bar deserialization            | 🔴 High   | Greta serializes bars as dicts; strategies expect objects | ✅ Fixed M11 PR review        |
 
 ---
 
@@ -501,7 +502,7 @@ These gaps affect test quality — the E2E suite validates the full stack but cu
 
 **Note**: `test_create_form_shows_api_error` was dropped because there is no visible error feedback in the current UI — `useCreateRun()` mutation has no `onError` handler, so API failures silently reset the button.
 
-**E2E suite total**: 33 tests (30 passed, 3 xfailed) — up from 23 tests.
+**E2E suite total**: 33 tests (33 passed, 0 xfailed) — all xfail markers removed after M11 async race fix + bar deserialization fix.
 
 ---
 

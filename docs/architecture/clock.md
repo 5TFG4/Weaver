@@ -121,6 +121,7 @@ class BacktestClock(BaseClock):
 
 - **Speed**: Limited only by strategy execution time and I/O.
 - **Determinism**: Same inputs produce same tick sequence.
+- **Error Property (M11)**: `BacktestClock` exposes a public `error` property (`@property`) for reading any exception captured during tick processing. `RunManager` uses `clock.error` to detect and propagate strategy errors to run status.
 
 ## 4. Clock Selection (GLaDOS Responsibility)
 

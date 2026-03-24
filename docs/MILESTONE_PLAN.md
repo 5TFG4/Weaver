@@ -6,17 +6,17 @@
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
 > **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 ✅ Complete**
-> **Tests (latest verified)**: 945 backend unit + 50 integration + 108 frontend + 33 E2E = 1136 passed (2026-03-24)
+> **Tests (latest verified)**: 946 backend unit + 50 integration + 108 frontend + 33 E2E = 1137 passed (2026-03-24)
 > **Active Milestone**: None — all planned milestones complete
 > **Remaining Backlog**: E-3, R-1, R-2
-> **Completed**: All planned milestones (M5–M11), CI audit Waves 1–4, PR #15 merged
+> **Completed**: All planned milestones (M5–M11), CI audit Waves 1–4, PR #15 merged, PR #16 (M11)
 
 ---
 
 ## Executive Summary
 
 All pending tasks have been consolidated and reorganized into 7 milestones (M5–M11).
-M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests. **M11 (Runtime Robustness & UX Polish) is complete** as of 2026-03-24 — fixed backtest async race, added concurrency safety, strategy error propagation, frontend error feedback, and unified dev environment. 47 new tests added (1136 total).
+M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI) is complete. M10 (E2E Tests) is complete as of 2026-03-16 with 23 Playwright E2E tests. **M11 (Runtime Robustness & UX Polish) is complete** as of 2026-03-24 — fixed backtest async race, added concurrency safety, strategy error propagation, frontend error feedback, unified dev environment, and bar dict→Bar deserialization in StrategyRunner. Post-PR-review fixes: extracted shared Alpaca credential helper, added public `BacktestClock.error` property, hardened CI scripts to reject all arguments. 48 new tests added (1137 total).
 
 **Post-M10 CI Audit** (2026-03-21 – 2026-03-22): ✅ All 4 waves complete. Waves 1–3 added 10 E2E tests, 6 Alpaca integration tests, and frontend coverage reporting. Wave 4 fixed 2 production bugs (submit_order/list_orders SDK contract mismatch), CI path resolution, and mock hardening. Post-Wave 4 hardening: GitHub Actions upgraded to Node.js 24, npm dependency vulnerabilities patched (flatted, undici), workflow permissions locked to least-privilege, coverage artifacts removed from git. PR #15 merged to main with all 5 CI workflows green. See `CI_TEST_AUDIT.md` for full details.
 
@@ -28,7 +28,7 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality                 | 129   | ✅ DONE (historical cumulative: 1023) |
 | **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection    | -     | ✅ COMPLETE                           |
 | **M10**   | E2E & Release Prep | End-to-end tests + Final polish                           | 23    | ✅ DONE (1055 total)                  |
-| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | 47    | ✅ DONE (1136 total)                  |
+| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | 48    | ✅ DONE (1137 total)                  |
 
 **M6 Complete** (101 tests added):
 
@@ -677,9 +677,20 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 - [x] Alpaca integration tests skip correctly with placeholder credentials ✅ (M11-5)
 - [x] All xfail markers removed from E2E tests ✅ (M11-5)
 - [x] All CI workflows green ✅
-- [x] 47 new tests (target was ~18) ✅
+- [x] 48 new tests (target was ~18) ✅
 
-### 7.2 MVP Breakdown
+### 7.2 PR Review Fixes (Post-M11 Completion)
+
+PR #16 review addressed the following:
+
+- **Bar deserialization fix**: `StrategyRunner.on_data_ready()` now converts bar dicts from `data.WindowReady` payload into `Bar` objects with `Decimal` fields and `datetime` timestamps. This was the root cause of E2E `Events: []` failures.
+- **Shared Alpaca credential helper**: Extracted `has_real_alpaca_creds()` to `tests/alpaca_helpers.py`, used by both unit and integration tests.
+- **Public `BacktestClock.error` property**: Added `@property error` to `BacktestClock`, replacing direct `_error` attribute access in `RunManager` and tests.
+- **CI scripts hardened**: All 4 CI scripts (`check-all.sh`, `check-local.sh`, `e2e-local.sh`, `compose-smoke-local.sh`) reject all arguments — no shortcuts allowed.
+- **Docker socket comment**: Added inline comment explaining `/var/run/docker.sock` bind-mount purpose.
+- **Pre-commit note**: Added dev container requirement comment to `.pre-commit-config.yaml`.
+
+### 7.3 MVP Breakdown
 
 | MVP   | Focus                                   | Est. Tests | Dependencies | Status |
 | ----- | --------------------------------------- | ---------- | ------------ | ------ |

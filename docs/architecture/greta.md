@@ -70,6 +70,8 @@ For strategy data requests:
 3. Greta receives run-filtered request, reads from preloaded cache, emits `data.WindowReady`.
 4. Marvin consumes `data.WindowReady` and continues strategy logic.
 
+**Bar Serialization Note (M11)**: When emitting `data.WindowReady`, Greta serializes `Bar` objects into plain dicts (JSON-safe). `StrategyRunner.on_data_ready()` is responsible for deserializing these dicts back into `Bar` objects before passing them to strategies. This ensures strategies can use attribute access (e.g., `bar.close`) rather than dict key access.
+
 ## 5. Fill Simulation
 
 `DefaultFillSimulator` supports:
@@ -119,4 +121,4 @@ Event names are case-sensitive and forwarded to SSE as `event: <Envelope.type>`.
 
 ---
 
-_Last updated: 2026-02-26 (M8-D)_
+_Last updated: 2026-03-24 (M11)_

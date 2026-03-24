@@ -7,7 +7,7 @@
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-03-24 · **Total Tests**: 1136 passed (945 backend unit + 50 integration + 108 frontend + 33 E2E)
+**Last Updated**: 2026-03-24 · **Total Tests**: 1137 passed (946 backend unit + 50 integration + 108 frontend + 33 E2E)
 **M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ✅ Complete (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests) · **M11 Status**: ✅ Complete (Runtime Robustness)
 
 ---
@@ -16,7 +16,7 @@
 
 | Metric             | Value                        | Status       |
 | ------------------ | ---------------------------- | ------------ |
-| Total Tests        | 1136 (945 + 50 + 108 + 33)   | ✅           |
+| Total Tests        | 1137 (946 + 50 + 108 + 33)   | ✅           |
 | Test Files         | 80+                          | ✅           |
 | Total Assertions   | ~2,000+                      | ✅           |
 | Unit Tests         | majority                     | ✅           |
@@ -27,7 +27,7 @@
 | Coverage Gate      | 89.73% (threshold: 80%)      | ✅           |
 | Mock Usages        | high (design-intent)         | -            |
 
-**Overall Assessment**: Test breadth is strong. CI audit Waves 1–4 complete: fixed 2 production bugs (submit_order/list_orders SDK contract), added Alpaca integration tests (6), E2E order lifecycle tests (10), frontend coverage reporting, and hardened unit test mocks with autospec. Post-audit CI hardening: Actions upgraded to Node.js 24, npm vulnerabilities patched, workflow permissions locked, coverage artifacts cleaned. M11 (Runtime Robustness) added 47 tests: backtest async race fix, strategy error propagation, concurrent run safety, frontend error hooks, and Alpaca credential skip logic. All 5 CI workflows green.
+**Overall Assessment**: Test breadth is strong. CI audit Waves 1–4 complete: fixed 2 production bugs (submit_order/list_orders SDK contract), added Alpaca integration tests (6), E2E order lifecycle tests (10), frontend coverage reporting, and hardened unit test mocks with autospec. Post-audit CI hardening: Actions upgraded to Node.js 24, npm vulnerabilities patched, workflow permissions locked, coverage artifacts cleaned. M11 (Runtime Robustness) added 48 tests: backtest async race fix, bar dict→Bar deserialization in StrategyRunner, strategy error propagation, concurrent run safety, frontend error hooks, Alpaca credential skip logic, and PR review fixes (shared test helper, public `BacktestClock.error` property). All 5 CI workflows green.
 
 ---
 
@@ -79,7 +79,7 @@
                     │ Integration │  50 tests (5%)
                     │   Tests     │  DB, Events, Alpaca API
                 ┌───┴─────────────┴───┐
-                │     Unit Tests      │  902 tests (92%)
+                │     Unit Tests      │  946 tests (92%)
                 │  Isolated, fast,    │  Avg 0.02s/test
                 │  comprehensive      │
                 └─────────────────────┘
@@ -89,7 +89,7 @@
 
 | Type             | Count | Description                                    | Quality   |
 | ---------------- | ----- | ---------------------------------------------- | --------- |
-| **Unit**         | 945   | Isolated function/class tests                  | ★★★★★     |
+| **Unit**         | 946   | Isolated function/class tests                  | ★★★★★     |
 | **Integration**  | 50    | Multi-component + real DB/API                  | ★★★★☆     |
 | **E2E**          | 33    | Full browser→API→DB flow (Playwright, 0 xfail) | ★★★★☆     |
 | **Alpaca Integ** | 6     | Real paper trading API                         | ★★★★☆     |
@@ -157,14 +157,15 @@ This matrix shows how E2E and integration tests cover each system component, com
 
 ### 4.2 Backtest Flow ✅ COMPLETE
 
-| Flow                            | Status | Tests                          |
-| ------------------------------- | ------ | ------------------------------ |
-| Create backtest Run             | ✅     | `test_run_manager.py`          |
-| BacktestClock time progression  | ✅     | `test_backtest.py`             |
-| Strategy receives ClockTick     | ✅     | `test_strategy_runner.py`      |
-| Fill simulation                 | ✅     | `test_fill_simulator.py`       |
-| Run completion state transition | ✅     | `test_run_manager_backtest.py` |
-| Multi-symbol backtest           | ⚠️     | Basic coverage                 |
+| Flow                            | Status | Tests                            |
+| ------------------------------- | ------ | -------------------------------- |
+| Create backtest Run             | ✅     | `test_run_manager.py`            |
+| BacktestClock time progression  | ✅     | `test_backtest.py`               |
+| Strategy receives ClockTick     | ✅     | `test_strategy_runner.py`        |
+| Fill simulation                 | ✅     | `test_fill_simulator.py`         |
+| Run completion state transition | ✅     | `test_run_manager_backtest.py`   |
+| Bar dict→Bar deserialization    | ✅     | `test_strategy_runner_events.py` |
+| Multi-symbol backtest           | ⚠️     | Basic coverage                   |
 
 ### 4.3 Live/Paper Trading ✅ COMPLETE
 
@@ -357,6 +358,7 @@ testpaths = ["tests"]
 | CI Audit (frontend)  | 14          | 1085  | 2026-03 |
 | CI Hardening         | 4           | 1089  | 2026-03 |
 | M11 Runtime Robust.  | 47          | 1136  | 2026-03 |
+| M11 PR Review Fixes  | 1           | 1137  | 2026-03 |
 
 ---
 

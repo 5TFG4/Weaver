@@ -313,7 +313,9 @@ Go to **Settings → Branches → Add branch protection rule**:
 
 ### Local Pre-Push Check
 
-Run `scripts/ci/check-local.sh` before pushing to catch errors locally. This script mirrors all CI checks (backend: ruff, mypy, pytest; frontend: eslint, tsc, vitest, build).
+Run `scripts/ci/check-local.sh` before pushing to catch errors locally. This script delegates to `scripts/ci/check-all.sh` which runs the **full** CI pipeline: backend (ruff, mypy, alembic, pytest) → frontend (eslint, tsc, vitest, build) → E2E → compose smoke.
+
+**No shortcuts**: All CI scripts reject arguments. There are no `--fast`, `--skip`, or `--only` flags. The full pipeline always runs to ensure nothing slips through.
 
 ### CI Troubleshooting
 
