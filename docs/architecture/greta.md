@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: backtest execution model, simulated fills, and per-run lifecycle.  
-> **Authoritative for**: Greta runtime behavior, state isolation, and output artifacts.  
+> **Document Charter**
+> **Primary role**: backtest execution model, simulated fills, and per-run lifecycle.
+> **Authoritative for**: Greta runtime behavior, state isolation, and output artifacts.
 > **Not authoritative for**: live-trading order submission path (see `veda.md`).
 
 ## 1. Responsibility & Boundary

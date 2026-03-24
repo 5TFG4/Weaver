@@ -245,6 +245,7 @@ class TestStrategyRunnerEventSubscription:
         assert len(fetch_events) == 1
         assert fetch_events[0].payload["symbol"] == "BTC/USD"
         assert fetch_events[0].payload["lookback"] == 20
+        assert "as_of" in fetch_events[0].payload
 
     # -------------------------------------------------------------------------
     # Test 8: Subscription ID is stored for cleanup

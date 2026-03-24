@@ -1,9 +1,9 @@
 # CI & Test Coverage Audit (2026-03-21)
 
-> **Document Charter**  
-> **Primary role**: Test coverage quality gate — identifies what CI actually validates, what tests are real vs shallow, and where critical gaps exist.  
-> **Authoritative for**: CI pipeline coverage analysis, test quality assessment, testing gap priorities.  
-> **Not authoritative for**: milestone execution (see `MILESTONE_PLAN.md`), test counts (see `TEST_COVERAGE.md`).  
+> **Document Charter**
+> **Primary role**: Test coverage quality gate — identifies what CI actually validates, what tests are real vs shallow, and where critical gaps exist.
+> **Authoritative for**: CI pipeline coverage analysis, test quality assessment, testing gap priorities.
+> **Not authoritative for**: milestone execution (see `MILESTONE_PLAN.md`), test counts (see `TEST_COVERAGE.md`).
 > **Audit date**: 2026-03-21 · **Milestone context**: Post-M10 (E2E Tests complete)
 
 ---

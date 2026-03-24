@@ -1,0 +1,53 @@
+# Pre-commit hooks — keep in sync with backend-ci.yml / frontend-ci.yml.
+# Install:  pre-commit install
+# Run all:  pre-commit run --all-files
+
+repos:
+  # ── General ──────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+
+  # ── Python (ruff) ───────────────────────────
+  # Config lives in pyproject.toml [tool.ruff]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.4
+    hooks:
+      - id: ruff # lint
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format # format
+        types_or: [python, pyi]
+
+  # ── Python (mypy) ───────────────────────────
+  # Config lives in pyproject.toml [tool.mypy]
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy src/
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: ^src/
+
+  # ── Frontend (ESLint + TypeScript) ──────────
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd haro && npm run lint --silent'
+        language: system
+        pass_filenames: false
+        files: ^haro/.*\.(ts|tsx|js|jsx)$
+      - id: tsc
+        name: tsc
+        entry: bash -c 'cd haro && npx tsc -b --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^haro/.*\.(ts|tsx)$

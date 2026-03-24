@@ -1,14 +1,14 @@
 # Weaver Milestone Plan (2026-02-19)
 
-> **Document Charter**  
-> **Primary role**: authoritative milestone execution plan and current status.  
-> **Authoritative for**: milestone progress, task breakdown, timeline, and risks.  
+> **Document Charter**
+> **Primary role**: authoritative milestone execution plan and current status.
+> **Authoritative for**: milestone progress, task breakdown, timeline, and risks.
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 ✅ Complete**  
-> **Tests (latest verified)**: 945 backend unit + 50 integration + 108 frontend + 33 E2E = 1136 passed (2026-03-24)  
-> **Active Milestone**: None — all planned milestones complete  
-> **Remaining Backlog**: E-3, R-1, R-2  
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 ✅ Complete**
+> **Tests (latest verified)**: 945 backend unit + 50 integration + 108 frontend + 33 E2E = 1136 passed (2026-03-24)
+> **Active Milestone**: None — all planned milestones complete
+> **Remaining Backlog**: E-3, R-1, R-2
 > **Completed**: All planned milestones (M5–M11), CI audit Waves 1–4, PR #15 merged
 
 ---
@@ -53,9 +53,9 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 
 ## 1. M5: Marvin Core (Strategy System) ✅ COMPLETE
 
-> **Goal**: Complete strategy loading, execution, and backtest core flow  
+> **Goal**: Complete strategy loading, execution, and backtest core flow
 > **Status**: ✅ COMPLETE (74 tests, 705 total)
-> **Prerequisite**: M4 ✅  
+> **Prerequisite**: M4 ✅
 > **Estimated Effort**: 2-3 weeks
 
 ### 1.1 Exit Gate (Definition of Done)
@@ -139,9 +139,9 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 
 ## 2. M6: Live Trading
 
-> **Goal**: Complete paper/live trading full flow  
-> **Prerequisite**: M5 ✅  
-> **Estimated Effort**: 1.5-2 weeks  
+> **Goal**: Complete paper/live trading full flow
+> **Prerequisite**: M5 ✅
+> **Estimated Effort**: 1.5-2 weeks
 > **Design Doc**: [m6-live-trading.md](archive/milestone-details/m6-live-trading.md)
 
 ### 2.1 Exit Gate (Definition of Done)
@@ -275,9 +275,9 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 
 ## 3. M7: Haro Frontend
 
-> **Goal**: React frontend to display trading status and data  
-> **Prerequisite**: M6 ✅  
-> **Estimated Effort**: 1.5-2 weeks  
+> **Goal**: React frontend to display trading status and data
+> **Prerequisite**: M6 ✅
+> **Estimated Effort**: 1.5-2 weeks
 > **Design Document**: [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md)
 
 ### 3.1 Exit Gate (Definition of Done)
@@ -336,10 +336,10 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ## 4. M8: Critical Fixes & Improvements
 
-> **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality  
-> **Prerequisite**: M7 ✅  
-> **Estimated Effort**: 1.5–2 weeks  
-> **Status**: ✅ COMPLETE  
+> **Goal**: Fix all P0 critical issues, wire runtime pipeline, improve code quality
+> **Prerequisite**: M7 ✅
+> **Estimated Effort**: 1.5–2 weeks
+> **Status**: ✅ COMPLETE
 > **Key Input**: [INDEPENDENT_DESIGN_REVIEW.md](INDEPENDENT_DESIGN_REVIEW.md) (N-01–N-10, D-1–D-5)
 
 ### 4.1 Exit Gate (Definition of Done)
@@ -464,9 +464,9 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ### 4.5 M8-R: Audit Closeout Plan (TDD + MVP, planning only)
 
-> **Purpose**: final closeout of deployment blockers + runtime/doc consistency before M9.  
-> **Style**: TDD + MVP phased execution (RED → GREEN → REFACTOR).  
-> **Detailed plan document**: [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only)  
+> **Purpose**: final closeout of deployment blockers + runtime/doc consistency before M9.
+> **Style**: TDD + MVP phased execution (RED → GREEN → REFACTOR).
+> **Detailed plan document**: [archive/milestone-details/m8-fixes-improvements.md](archive/milestone-details/m8-fixes-improvements.md#9-m8-r-audit-closeout-plan-tdd--mvp-planning-only)
 > **Audit baseline**: [M8_FINAL_PYRAMID_REVIEW.md](M8_FINAL_PYRAMID_REVIEW.md)
 
 #### 4.5.1 High-Level Phases
@@ -494,10 +494,10 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ## 5. M9: CI Deployment Pipeline
 
-> **Goal**: establish stable PR quality gates and container smoke verification before E2E expansion  
-> **Prerequisite**: M8 ✅  
-> **Estimated Effort**: 1 week  
-> **Status**: ✅ COMPLETE  
+> **Goal**: establish stable PR quality gates and container smoke verification before E2E expansion
+> **Prerequisite**: M8 ✅
+> **Estimated Effort**: 1 week
+> **Status**: ✅ COMPLETE
 > **Design Doc**: [m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)
 
 ### 5.1 Exit Gate (Definition of Done)
@@ -557,10 +557,10 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ## 6. M10: E2E Tests & Release Preparation
 
-> **Goal**: Full end-to-end test coverage + final release polish  
-> **Prerequisite**: M9 ✅  
-> **Estimated Effort**: 1.5–2 weeks  
-> **Status**: ✅ COMPLETE  
+> **Goal**: Full end-to-end test coverage + final release polish
+> **Prerequisite**: M9 ✅
+> **Estimated Effort**: 1.5–2 weeks
+> **Status**: ✅ COMPLETE
 > **Design Doc**: [m10-e2e-release.md](archive/milestone-details/m10-e2e-release.md)
 
 ### 6.1 Exit Gate (Definition of Done)
@@ -660,10 +660,10 @@ See [design doc §3](archive/milestone-details/m7-haro-frontend.md#3-development
 
 ## 7. M11: Runtime Robustness & UX Polish
 
-> **Goal**: Fix backtest async race (B-3), add concurrency safety (B-2), strategy error propagation (R-3), UX error feedback (F-2), and unify dev environment (B-8/B-9/B-10)  
-> **Prerequisite**: M10 ✅  
-> **Estimated Effort**: 2–3 weeks  
-> **Status**: ✅ COMPLETE  
+> **Goal**: Fix backtest async race (B-3), add concurrency safety (B-2), strategy error propagation (R-3), UX error feedback (F-2), and unify dev environment (B-8/B-9/B-10)
+> **Prerequisite**: M10 ✅
+> **Estimated Effort**: 2–3 weeks
+> **Status**: ✅ COMPLETE
 > **Design Doc**: [m11-runtime-robustness.md](archive/milestone-details/m11-runtime-robustness.md)
 
 ### 7.1 Exit Gate (Definition of Done)
@@ -850,11 +850,11 @@ M11: Runtime Robustness
 
 ---
 
-_Last Updated: 2026-03-23_  
-_M7 Formally Closed: 2026-02-19_  
-_M8 Complete: 2026-02-26_  
-_Total Tests (latest verified): 1089 passed (2026-03-22)_  
-_M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_  
-_M9 Scope: CI deployment pipeline + merge gates_  
-_M10 Scope: E2E tests + Release prep (33 E2E tests)_  
+_Last Updated: 2026-03-23_
+_M7 Formally Closed: 2026-02-19_
+_M8 Complete: 2026-02-26_
+_Total Tests (latest verified): 1089 passed (2026-03-22)_
+_M8 Scope: Critical fixes + Improvements (129 tests added; all gates passed)_
+_M9 Scope: CI deployment pipeline + merge gates_
+_M10 Scope: E2E tests + Release prep (33 E2E tests)_
 _M11 Scope: Runtime robustness + UX polish + Dev env unification (~18 tests, ~2–3 weeks)_

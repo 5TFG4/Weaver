@@ -1,14 +1,14 @@
 # Design Audit Report & M8 Quality Gate
 
-> **Document Charter**  
-> **Primary role**: M8-R closeout snapshot for design-code-test quality gate.  
-> **Authoritative for**: current closeout status and remaining release-gate items.  
+> **Document Charter**
+> **Primary role**: M8-R closeout snapshot for design-code-test quality gate.
+> **Authoritative for**: current closeout status and remaining release-gate items.
 > **Not authoritative for**: historical closed-finding narrative (use `AUDIT_FINDINGS.md`).
 
-> **Audit Date**: 2026-02-26 (final closeout)  
-> **Scope**: Full project — design docs ↔ code ↔ tests cross-validation  
-> **Branch**: `improvements`  
-> **Purpose**: Quality gate closeout for M8 (all phases complete)  
+> **Audit Date**: 2026-02-26 (final closeout)
+> **Scope**: Full project — design docs ↔ code ↔ tests cross-validation
+> **Branch**: `improvements`
+> **Purpose**: Quality gate closeout for M8 (all phases complete)
 > **Status**: M8 ✅ Complete (all R0/R1/R2/R3 phases delivered and verified)
 
 > **Closeout Note (2026-02-26)**: All M8 phases complete. R0 deployment blockers resolved (replaced gunicorn command with uvicorn, Dockerfile CMD fixed, smoke tests added). Sections 2–8 retained as audit baseline. Next milestone: M9 (E2E Tests).

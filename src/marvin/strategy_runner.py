@@ -118,7 +118,7 @@ class StrategyRunner:
         actions = await self._strategy.on_tick(tick)
 
         for action in actions:
-            await self._emit_action(action)
+            await self._emit_action(action, tick=tick)
 
     async def on_data_ready(self, envelope: Envelope) -> None:
         """
@@ -134,33 +134,38 @@ class StrategyRunner:
         for action in actions:
             await self._emit_action(action)
 
-    async def _emit_action(self, action: StrategyAction) -> None:
+    async def _emit_action(self, action: StrategyAction, tick: Any = None) -> None:
         """
         Emit event for a strategy action.
 
         Args:
             action: The strategy action to emit
+            tick: Optional clock tick for timestamp context
         """
         if action.type == ActionType.FETCH_WINDOW:
-            await self._emit_fetch_window(action)
+            await self._emit_fetch_window(action, tick=tick)
         elif action.type == ActionType.PLACE_ORDER:
             if action.symbol is None or action.side is None or action.qty is None:
                 raise ValueError("PLACE_ORDER action requires symbol, side, and qty")
             await self._emit_place_request(action)
 
-    async def _emit_fetch_window(self, action: StrategyAction) -> None:
+    async def _emit_fetch_window(self, action: StrategyAction, tick: Any = None) -> None:
         """
         Emit strategy.FetchWindow event.
 
         Args:
             action: Fetch window action
+            tick: Optional clock tick for as_of timestamp
         """
+        payload: dict[str, Any] = {
+            "symbol": action.symbol,
+            "lookback": action.lookback,
+        }
+        if tick is not None and hasattr(tick, "ts"):
+            payload["as_of"] = tick.ts.isoformat()
         envelope = Envelope(
             type="strategy.FetchWindow",
-            payload={
-                "symbol": action.symbol,
-                "lookback": action.lookback,
-            },
+            payload=payload,
             run_id=self._run_id,
             producer="marvin.runner",
         )

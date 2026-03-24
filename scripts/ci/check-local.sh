@@ -3,9 +3,11 @@ set -euo pipefail
 # Host-side wrapper: delegates all CI checks to the dev container.
 #
 # Usage:
-#   bash scripts/ci/check-local.sh           # full check
+#   bash scripts/ci/check-local.sh           # full check (matches GitHub Actions)
 #   bash scripts/ci/check-local.sh --fast    # lint + type + unit only
-#   bash scripts/ci/check-local.sh --smoke   # include compose smoke test
+#   bash scripts/ci/check-local.sh --e2e     # full check + E2E tests
+#   bash scripts/ci/check-local.sh --smoke   # full check + compose smoke test
+#   bash scripts/ci/check-local.sh --all     # full + E2E + smoke (everything)
 #   bash scripts/ci/check-local.sh -v        # verbose output
 #
 # Prerequisites: docker compose services must be running

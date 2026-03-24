@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: strategy plugin model, strategy execution loop, and action-to-event translation.  
-> **Authoritative for**: Marvin lifecycle and strategy integration contract.  
+> **Document Charter**
+> **Primary role**: strategy plugin model, strategy execution loop, and action-to-event translation.
+> **Authoritative for**: Marvin lifecycle and strategy integration contract.
 > **Not authoritative for**: exchange adapter behavior (see `veda.md`).
 
 ## 1. Responsibility & Boundary

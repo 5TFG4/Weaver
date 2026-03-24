@@ -252,24 +252,24 @@ class SSETickEvent(BaseModel):
 class RunManager(ABC):
     """
     Manages trading run lifecycle.
-    
+
     Responsibilities:
     - CRUD operations for runs
     - State transitions (pending → running → stopped)
     - Coordinating with Marvin (strategy) and Clock
-    
+
     Note: Does NOT directly interact with Veda/Greta.
     Strategy decisions flow through events.
     """
-    
+
     @abstractmethod
     async def create(self, request: RunCreate) -> Run:
         """Create a new run in PENDING status."""
-    
+
     @abstractmethod
     async def get(self, run_id: str) -> Run | None:
         """Get run by ID."""
-    
+
     @abstractmethod
     async def list(
         self,
@@ -279,19 +279,19 @@ class RunManager(ABC):
         page_size: int = 20,
     ) -> tuple[list[Run], int]:
         """List runs with optional filters. Returns (runs, total_count)."""
-    
+
     @abstractmethod
     async def start(self, run_id: str) -> Run:
         """Start a pending run. Raises if not startable."""
-    
+
     @abstractmethod
     async def stop(self, run_id: str) -> Run:
         """Stop a running run. Idempotent if already stopped."""
-    
+
     @abstractmethod
     async def delete(self, run_id: str) -> None:
         """Delete a run. Only allowed if not running."""
-    
+
     @abstractmethod
     async def update_stats(self, run_id: str, stats: RunStats) -> Run:
         """Update run statistics."""
@@ -301,15 +301,15 @@ class RunManager(ABC):
 class OrderService(ABC):
     """
     Provides order query capabilities.
-    
+
     Note: Order creation happens through events (strategy → live/backtest).
     This service is READ-ONLY for the API layer.
     """
-    
+
     @abstractmethod
     async def get(self, order_id: str) -> Order | None:
         """Get order by ID."""
-    
+
     @abstractmethod
     async def list(
         self,
@@ -328,10 +328,10 @@ class OrderService(ABC):
 class MarketDataService(ABC):
     """
     Provides market data queries.
-    
+
     Delegates to Veda (live) or WallE (historical).
     """
-    
+
     @abstractmethod
     async def get_candles(
         self,
@@ -342,7 +342,7 @@ class MarketDataService(ABC):
         limit: int = 100,
     ) -> list[Candle]:
         """Get OHLCV candles."""
-    
+
     @abstractmethod
     async def get_symbols(self) -> list[str]:
         """Get available trading symbols."""
@@ -352,33 +352,33 @@ class MarketDataService(ABC):
 class SSEBroadcaster:
     """
     Manages SSE connections and broadcasts events to all clients.
-    
+
     Features:
     - Multi-client support
     - Event ID tracking for reconnection
     - Heartbeat to keep connections alive
     - Graceful disconnect handling
     """
-    
+
     async def subscribe(
         self,
         last_event_id: int | None = None,
     ) -> AsyncIterator[ServerSentEvent]:
         """Subscribe to event stream. Optionally resume from last_event_id."""
-    
+
     async def publish(
         self,
         event_type: SSEEventType,
         data: dict,
     ) -> None:
         """Publish event to all connected clients."""
-    
+
     async def start_heartbeat(self, interval: float = 30.0) -> None:
         """Start heartbeat task to keep connections alive."""
-    
+
     async def stop(self) -> None:
         """Stop broadcaster and close all connections."""
-    
+
     @property
     def client_count(self) -> int:
         """Number of connected clients."""
@@ -562,28 +562,28 @@ tests/unit/glados/
 # tests/unit/glados/test_app.py
 class TestCreateApp:
     """Tests for application factory."""
-    
+
     def test_returns_fastapi_instance(self):
         """create_app() should return a FastAPI instance."""
         app = create_app()
         assert isinstance(app, FastAPI)
-    
+
     def test_app_has_configured_title(self):
         """App should have title 'Weaver API'."""
         app = create_app()
         assert app.title == "Weaver API"
-    
+
     def test_app_has_configured_version(self):
         """App should have version from settings."""
         app = create_app()
         assert app.version == "0.1.0"
-    
+
     def test_accepts_custom_settings(self):
         """create_app() should accept custom Settings."""
         settings = Settings(api_version="0.2.0")
         app = create_app(settings=settings)
         assert app.state.settings == settings
-    
+
     def test_healthz_route_registered(self):
         """App should have /healthz route."""
         app = create_app()
@@ -594,17 +594,17 @@ class TestCreateApp:
 # tests/unit/glados/routes/test_health.py
 class TestHealthEndpoint:
     """Tests for GET /healthz endpoint."""
-    
+
     def test_returns_200_ok(self, client: TestClient):
         """GET /healthz should return HTTP 200."""
         response = client.get("/healthz")
         assert response.status_code == 200
-    
+
     def test_returns_status_ok(self, client: TestClient):
         """Response should contain status: ok."""
         response = client.get("/healthz")
         assert response.json()["status"] == "ok"
-    
+
     def test_returns_version(self, client: TestClient):
         """Response should contain version string."""
         response = client.get("/healthz")
@@ -618,20 +618,20 @@ class TestHealthEndpoint:
 # tests/unit/glados/services/test_run_manager.py
 class TestRunManagerCreate:
     """Tests for RunManager.create()."""
-    
+
     async def test_creates_run_with_id(self, run_manager: RunManager):
         """create() should return Run with generated UUID."""
         request = RunCreate(strategy_id="test", mode=RunMode.PAPER, symbols=["BTC/USD"])
         run = await run_manager.create(request)
         assert run.id is not None
         assert len(run.id) == 36  # UUID format
-    
+
     async def test_initial_status_is_pending(self, run_manager: RunManager):
         """New run should have status=PENDING."""
         request = RunCreate(strategy_id="test", mode=RunMode.PAPER, symbols=["BTC/USD"])
         run = await run_manager.create(request)
         assert run.status == RunStatus.PENDING
-    
+
     async def test_preserves_request_fields(self, run_manager: RunManager):
         """Run should contain all fields from request."""
         request = RunCreate(
@@ -649,7 +649,7 @@ class TestRunManagerCreate:
 
 class TestRunManagerGet:
     """Tests for RunManager.get()."""
-    
+
     async def test_returns_existing_run(self, run_manager: RunManager):
         """get() should return run by ID."""
         request = RunCreate(strategy_id="test", mode=RunMode.PAPER, symbols=["BTC/USD"])
@@ -657,7 +657,7 @@ class TestRunManagerGet:
         fetched = await run_manager.get(created.id)
         assert fetched is not None
         assert fetched.id == created.id
-    
+
     async def test_returns_none_for_unknown_id(self, run_manager: RunManager):
         """get() should return None for non-existent ID."""
         result = await run_manager.get("non-existent-id")
@@ -666,13 +666,13 @@ class TestRunManagerGet:
 
 class TestRunManagerList:
     """Tests for RunManager.list()."""
-    
+
     async def test_empty_returns_empty_list(self, run_manager: RunManager):
         """list() should return empty list when no runs exist."""
         runs, total = await run_manager.list()
         assert runs == []
         assert total == 0
-    
+
     async def test_returns_all_runs(self, run_manager: RunManager):
         """list() should return all created runs."""
         for i in range(3):
@@ -686,7 +686,7 @@ class TestRunManagerList:
 
 class TestRunManagerStop:
     """Tests for RunManager.stop()."""
-    
+
     async def test_transitions_to_stopped(self, run_manager: RunManager):
         """stop() should change status to STOPPED."""
         request = RunCreate(strategy_id="test", mode=RunMode.PAPER, symbols=["BTC/USD"])
@@ -695,7 +695,7 @@ class TestRunManagerStop:
         run.status = RunStatus.RUNNING
         stopped = await run_manager.stop(run.id)
         assert stopped.status == RunStatus.STOPPED
-    
+
     async def test_already_stopped_is_idempotent(self, run_manager: RunManager):
         """stop() on stopped run should not raise."""
         request = RunCreate(strategy_id="test", mode=RunMode.PAPER, symbols=["BTC/USD"])
@@ -703,7 +703,7 @@ class TestRunManagerStop:
         run.status = RunStatus.STOPPED
         stopped = await run_manager.stop(run.id)
         assert stopped.status == RunStatus.STOPPED
-    
+
     async def test_not_found_raises_error(self, run_manager: RunManager):
         """stop() on non-existent run should raise RunNotFoundError."""
         with pytest.raises(RunNotFoundError):
@@ -713,12 +713,12 @@ class TestRunManagerStop:
 # tests/unit/glados/routes/test_runs.py
 class TestListRunsEndpoint:
     """Tests for GET /api/v1/runs."""
-    
+
     def test_returns_200(self, client: TestClient):
         """GET /runs should return HTTP 200."""
         response = client.get("/api/v1/runs")
         assert response.status_code == 200
-    
+
     def test_empty_returns_empty_items(self, client: TestClient):
         """GET /runs with no runs returns empty items list."""
         response = client.get("/api/v1/runs")
@@ -727,7 +727,7 @@ class TestListRunsEndpoint:
 
 class TestCreateRunEndpoint:
     """Tests for POST /api/v1/runs."""
-    
+
     def test_returns_201(self, client: TestClient):
         """POST /runs with valid data returns HTTP 201."""
         response = client.post("/api/v1/runs", json={
@@ -736,12 +736,12 @@ class TestCreateRunEndpoint:
             "symbols": ["BTC/USD"],
         })
         assert response.status_code == 201
-    
+
     def test_validates_required_fields(self, client: TestClient):
         """POST /runs without required fields returns 422."""
         response = client.post("/api/v1/runs", json={})
         assert response.status_code == 422
-    
+
     def test_validates_mode_enum(self, client: TestClient):
         """POST /runs with invalid mode returns 422."""
         response = client.post("/api/v1/runs", json={
@@ -754,7 +754,7 @@ class TestCreateRunEndpoint:
 
 class TestGetRunEndpoint:
     """Tests for GET /api/v1/runs/{id}."""
-    
+
     def test_returns_run(self, client: TestClient):
         """GET /runs/{id} returns the run details."""
         # Create a run first
@@ -768,7 +768,7 @@ class TestGetRunEndpoint:
         response = client.get(f"/api/v1/runs/{run_id}")
         assert response.status_code == 200
         assert response.json()["id"] == run_id
-    
+
     def test_not_found_returns_404(self, client: TestClient):
         """GET /runs/{id} with unknown ID returns 404."""
         response = client.get("/api/v1/runs/non-existent-id")
@@ -777,7 +777,7 @@ class TestGetRunEndpoint:
 
 class TestStopRunEndpoint:
     """Tests for POST /api/v1/runs/{id}/stop."""
-    
+
     def test_stops_running_run(self, client: TestClient):
         """POST /runs/{id}/stop changes status to stopped."""
         # Create and start a run
@@ -799,82 +799,82 @@ class TestStopRunEndpoint:
 # tests/unit/glados/test_sse_broadcaster.py
 class TestSSEBroadcasterSubscribe:
     """Tests for SSEBroadcaster.subscribe()."""
-    
+
     async def test_returns_async_iterator(self, broadcaster: SSEBroadcaster):
         """subscribe() should return an async iterator."""
         subscription = broadcaster.subscribe()
         assert hasattr(subscription, "__anext__")
-    
+
     async def test_receives_published_events(self, broadcaster: SSEBroadcaster):
         """Subscriber should receive published events."""
         received = []
-        
+
         async def collect():
             async for event in broadcaster.subscribe():
                 received.append(event)
                 if len(received) >= 1:
                     break
-        
+
         task = asyncio.create_task(collect())
         await asyncio.sleep(0.01)  # Let subscriber connect
         await broadcaster.publish("test.event", {"data": "hello"})
         await asyncio.wait_for(task, timeout=1.0)
-        
+
         assert len(received) == 1
         assert received[0].event == "test.event"
 
 
 class TestSSEBroadcasterPublish:
     """Tests for SSEBroadcaster.publish()."""
-    
+
     async def test_increments_event_id(self, broadcaster: SSEBroadcaster):
         """publish() should increment event ID."""
         # Publish multiple events
         await broadcaster.publish("event1", {})
         await broadcaster.publish("event2", {})
         assert broadcaster._event_id == 2
-    
+
     async def test_sends_to_all_clients(self, broadcaster: SSEBroadcaster):
         """publish() should send to all connected clients."""
         received_1 = []
         received_2 = []
-        
+
         async def collect_1():
             async for event in broadcaster.subscribe():
                 received_1.append(event)
                 if len(received_1) >= 1:
                     break
-        
+
         async def collect_2():
             async for event in broadcaster.subscribe():
                 received_2.append(event)
                 if len(received_2) >= 1:
                     break
-        
+
         task1 = asyncio.create_task(collect_1())
         task2 = asyncio.create_task(collect_2())
         await asyncio.sleep(0.01)
-        
+
         await broadcaster.publish("broadcast", {"msg": "to all"})
         await asyncio.gather(task1, task2, return_exceptions=True)
-        
+
         assert len(received_1) == 1
         assert len(received_2) == 1
-    
+
     async def test_event_has_correct_format(self, broadcaster: SSEBroadcaster):
         """Published event should have id, event, and data fields."""
         received = []
-        
+
         async def collect():
             async for event in broadcaster.subscribe():
                 received.append(event)
                 break
-        
+
         task = asyncio.create_task(collect())
         await asyncio.sleep(0.01)
         await broadcaster.publish("test.type", {"key": "value"})
         await asyncio.wait_for(task, timeout=1.0)
-        
+
         event = received[0]
         assert event.id is not None
         assert event.event == "test.type"
@@ -883,32 +883,32 @@ class TestSSEBroadcasterPublish:
 
 class TestSSEBroadcasterClientManagement:
     """Tests for SSE client connection management."""
-    
+
     async def test_client_count_increases_on_subscribe(self, broadcaster: SSEBroadcaster):
         """Client count should increase when subscribing."""
         assert broadcaster.client_count == 0
-        
+
         async def hold_connection():
             async for _ in broadcaster.subscribe():
                 break
-        
+
         task = asyncio.create_task(hold_connection())
         await asyncio.sleep(0.01)
         assert broadcaster.client_count == 1
-        
+
         await broadcaster.publish("close", {})
         await task
-    
+
     async def test_client_count_decreases_on_disconnect(self, broadcaster: SSEBroadcaster):
         """Client count should decrease when client disconnects."""
         async def short_lived():
             async for _ in broadcaster.subscribe():
                 break  # Disconnect immediately after first event
-        
+
         task = asyncio.create_task(short_lived())
         await asyncio.sleep(0.01)
         assert broadcaster.client_count == 1
-        
+
         await broadcaster.publish("trigger", {})
         await task
         await asyncio.sleep(0.01)
@@ -918,30 +918,30 @@ class TestSSEBroadcasterClientManagement:
 # tests/unit/glados/routes/test_sse.py
 class TestSSEStreamEndpoint:
     """Tests for GET /api/v1/events/stream."""
-    
+
     async def test_returns_event_stream_content_type(self, async_client: AsyncClient):
         """SSE endpoint should return text/event-stream content type."""
         async with async_client.stream("GET", "/api/v1/events/stream") as response:
             assert response.headers["content-type"].startswith("text/event-stream")
-    
+
     async def test_receives_events(self, async_client: AsyncClient, broadcaster: SSEBroadcaster):
         """SSE endpoint should receive published events."""
         events = []
-        
+
         async def read_stream():
             async with async_client.stream("GET", "/api/v1/events/stream") as response:
                 async for line in response.aiter_lines():
                     if line.startswith("data:"):
                         events.append(line)
                         break
-        
+
         task = asyncio.create_task(read_stream())
         await asyncio.sleep(0.1)
         await broadcaster.publish("test", {"hello": "world"})
         await asyncio.wait_for(task, timeout=2.0)
-        
+
         assert len(events) == 1
-    
+
     async def test_supports_last_event_id(self, async_client: AsyncClient):
         """SSE endpoint should accept Last-Event-ID header."""
         headers = {"Last-Event-ID": "42"}
@@ -957,13 +957,13 @@ class TestSSEStreamEndpoint:
 # tests/unit/glados/services/test_order_service.py
 class TestOrderServiceGet:
     """Tests for OrderService.get()."""
-    
+
     async def test_returns_order_by_id(self, order_service: OrderService):
         """get() should return order with matching ID."""
         order = await order_service.get("order-123")
         assert order is not None
         assert order.id == "order-123"
-    
+
     async def test_returns_none_for_unknown_id(self, order_service: OrderService):
         """get() should return None for non-existent ID."""
         order = await order_service.get("non-existent")
@@ -972,13 +972,13 @@ class TestOrderServiceGet:
 
 class TestOrderServiceList:
     """Tests for OrderService.list()."""
-    
+
     async def test_returns_orders_list(self, order_service: OrderService):
         """list() should return list of orders."""
         orders, total = await order_service.list()
         assert isinstance(orders, list)
         assert total >= 0
-    
+
     async def test_filters_by_run_id(self, order_service: OrderService):
         """list() should filter by run_id."""
         orders, _ = await order_service.list(run_id="run-123")
@@ -989,18 +989,18 @@ class TestOrderServiceList:
 # tests/unit/glados/routes/test_orders.py
 class TestListOrdersEndpoint:
     """Tests for GET /api/v1/orders."""
-    
+
     def test_returns_200(self, client: TestClient):
         """GET /orders should return HTTP 200."""
         response = client.get("/api/v1/orders")
         assert response.status_code == 200
-    
+
     def test_returns_items_list(self, client: TestClient):
         """Response should contain items list."""
         response = client.get("/api/v1/orders")
         assert "items" in response.json()
         assert isinstance(response.json()["items"], list)
-    
+
     def test_accepts_run_id_filter(self, client: TestClient):
         """GET /orders should accept run_id query param."""
         response = client.get("/api/v1/orders?run_id=test-run")
@@ -1009,13 +1009,13 @@ class TestListOrdersEndpoint:
 
 class TestGetOrderEndpoint:
     """Tests for GET /api/v1/orders/{id}."""
-    
+
     def test_returns_order(self, client: TestClient):
         """GET /orders/{id} should return order details."""
         response = client.get("/api/v1/orders/order-123")
         assert response.status_code == 200
         assert response.json()["id"] == "order-123"
-    
+
     def test_not_found_returns_404(self, client: TestClient):
         """GET /orders/{id} with unknown ID returns 404."""
         response = client.get("/api/v1/orders/non-existent")
@@ -1028,13 +1028,13 @@ class TestGetOrderEndpoint:
 # tests/unit/glados/services/test_market_data_service.py
 class TestMarketDataServiceGetCandles:
     """Tests for MarketDataService.get_candles()."""
-    
+
     async def test_returns_candle_list(self, market_data_service: MarketDataService):
         """get_candles() should return list of candles."""
         candles = await market_data_service.get_candles("BTC/USD", "1m")
         assert isinstance(candles, list)
         assert len(candles) > 0
-    
+
     async def test_candle_has_ohlcv_fields(self, market_data_service: MarketDataService):
         """Each candle should have OHLCV fields."""
         candles = await market_data_service.get_candles("BTC/USD", "1m")
@@ -1049,22 +1049,22 @@ class TestMarketDataServiceGetCandles:
 # tests/unit/glados/routes/test_candles.py
 class TestCandlesEndpoint:
     """Tests for GET /api/v1/candles."""
-    
+
     def test_returns_200(self, client: TestClient):
         """GET /candles should return HTTP 200."""
         response = client.get("/api/v1/candles?symbol=BTC/USD&timeframe=1m")
         assert response.status_code == 200
-    
+
     def test_requires_symbol_param(self, client: TestClient):
         """GET /candles without symbol should return 422."""
         response = client.get("/api/v1/candles?timeframe=1m")
         assert response.status_code == 422
-    
+
     def test_requires_timeframe_param(self, client: TestClient):
         """GET /candles without timeframe should return 422."""
         response = client.get("/api/v1/candles?symbol=BTC/USD")
         assert response.status_code == 422
-    
+
     def test_returns_items_with_ohlcv(self, client: TestClient):
         """Response should contain OHLCV data."""
         response = client.get("/api/v1/candles?symbol=BTC/USD&timeframe=1m")
@@ -1085,12 +1085,12 @@ class TestCandlesEndpoint:
 # tests/unit/glados/test_exceptions.py
 class TestDomainExceptions:
     """Tests for domain exception classes."""
-    
+
     def test_run_not_found_error_has_run_id(self):
         """RunNotFoundError should store run_id."""
         exc = RunNotFoundError("test-id")
         assert exc.run_id == "test-id"
-    
+
     def test_run_not_startable_error_has_details(self):
         """RunNotStartableError should store run_id and status."""
         exc = RunNotStartableError("test-id", RunStatus.COMPLETED)
@@ -1101,12 +1101,12 @@ class TestDomainExceptions:
 # tests/unit/glados/test_middleware.py
 class TestCorrelationIdMiddleware:
     """Tests for CorrelationIdMiddleware."""
-    
+
     def test_adds_correlation_id_to_response(self, client: TestClient):
         """Response should have X-Correlation-ID header."""
         response = client.get("/healthz")
         assert "x-correlation-id" in response.headers
-    
+
     def test_uses_provided_correlation_id(self, client: TestClient):
         """Should use X-Correlation-ID from request if provided."""
         response = client.get(
@@ -1114,7 +1114,7 @@ class TestCorrelationIdMiddleware:
             headers={"X-Correlation-ID": "my-custom-id"}
         )
         assert response.headers["x-correlation-id"] == "my-custom-id"
-    
+
     def test_generates_uuid_if_not_provided(self, client: TestClient):
         """Should generate UUID if no correlation ID provided."""
         response = client.get("/healthz")
@@ -1125,7 +1125,7 @@ class TestCorrelationIdMiddleware:
 
 class TestErrorHandling:
     """Tests for global error handling."""
-    
+
     def test_not_found_returns_error_response(self, client: TestClient):
         """404 should return ErrorResponse format."""
         response = client.get("/api/v1/runs/non-existent")
@@ -1134,14 +1134,14 @@ class TestErrorHandling:
         assert "code" in data
         assert "message" in data
         assert "correlation_id" in data
-    
+
     def test_validation_error_returns_422(self, client: TestClient):
         """Validation error should return 422 with details."""
         response = client.post("/api/v1/runs", json={"invalid": "data"})
         assert response.status_code == 422
         data = response.json()
         assert data["code"] == "VALIDATION_ERROR"
-    
+
     def test_error_includes_timestamp(self, client: TestClient):
         """Error response should include timestamp."""
         response = client.get("/api/v1/runs/non-existent")
@@ -1152,13 +1152,13 @@ class TestErrorHandling:
 # tests/unit/glados/test_app.py (additions for MVP-6)
 class TestAppErrorHandlers:
     """Tests for app-level error handlers."""
-    
+
     def test_unhandled_exception_returns_500(self, client: TestClient):
         """Unhandled exceptions should return 500."""
         # This would require a route that raises an unexpected exception
         # Typically done with a test-only route
         pass
-    
+
     def test_internal_error_hides_details(self, client: TestClient):
         """500 errors should not leak internal details."""
         # details field should be None for 500 errors
@@ -1226,7 +1226,7 @@ def market_data_service() -> MarketDataService:
 ### B.3 MVP-1: Bootable Skeleton
 
 > **Implements**: app.py, dependencies.py (partial), schemas.py (partial), /healthz
-> 
+>
 > **From Full Design**: HealthResponse, basic app factory
 
 **Deliverables**:
@@ -1249,7 +1249,7 @@ src/glados/
 ### B.4 MVP-2: Run Lifecycle
 
 > **Implements**: RunManager, /runs endpoints (partial)
-> 
+>
 > **From Full Design**: RunCreate, RunResponse, RunStatus, RunMode
 
 **What we build**:
@@ -1275,7 +1275,7 @@ src/glados/
 ### B.5 MVP-3: SSE Real-time Push
 
 > **Implements**: SSEBroadcaster, /events/stream
-> 
+>
 > **From Full Design**: SSEEventType, thin event models
 
 **What we build**:
@@ -1298,7 +1298,7 @@ src/glados/
 ### B.6 MVP-4: Order Queries
 
 > **Implements**: OrderService (mock), /orders endpoints
-> 
+>
 > **From Full Design**: OrderResponse, OrderStatus, OrderSide, OrderType
 
 **What we build**:
@@ -1320,7 +1320,7 @@ src/glados/
 ### B.7 MVP-5: Candle Queries
 
 > **Implements**: MarketDataService (mock), /candles endpoint
-> 
+>
 > **From Full Design**: CandleResponse
 
 **What we build**:
@@ -1341,7 +1341,7 @@ src/glados/
 ### B.8 MVP-6: Production Polish
 
 > **Implements**: Error handling, middleware, logging
-> 
+>
 > **From Full Design**: ErrorResponse, ErrorCode, middleware stack
 
 **What we build**:
@@ -1870,4 +1870,3 @@ When documenting a new milestone, use this structure:
 ❌ "This MVP is taking too long, let's skip some tests"
    → Tests ARE the deliverable; reduce MVP scope instead
 ```
-

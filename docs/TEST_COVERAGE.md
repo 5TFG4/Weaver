@@ -1,13 +1,13 @@
 # Weaver Test Coverage Report
 
-> **Document Charter**  
-> **Primary role**: current test coverage snapshot and gap analysis.  
-> **Authoritative for**: latest test counts and coverage trend statements (with snapshot date).  
+> **Document Charter**
+> **Primary role**: current test coverage snapshot and gap analysis.
+> **Authoritative for**: latest test counts and coverage trend statements (with snapshot date).
 > **Not authoritative for**: milestone planning details (use `MILESTONE_PLAN.md`).
 
 > Comprehensive analysis of test depth, breadth, and business logic coverage.
 
-**Last Updated**: 2026-03-24 · **Total Tests**: 1136 passed (945 backend unit + 50 integration + 108 frontend + 33 E2E)  
+**Last Updated**: 2026-03-24 · **Total Tests**: 1136 passed (945 backend unit + 50 integration + 108 frontend + 33 E2E)
 **M8 Status**: ✅ Complete (Fixes & Improvements) · **M9 Status**: ✅ Complete (CI Deployment) · **M10 Status**: ✅ Complete (E2E Tests) · **M11 Status**: ✅ Complete (Runtime Robustness)
 
 ---

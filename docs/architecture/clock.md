@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: runtime time semantics and clock component behavior.  
-> **Authoritative for**: realtime/backtest clock behavior and tick cadence constraints.  
+> **Document Charter**
+> **Primary role**: runtime time semantics and clock component behavior.
+> **Authoritative for**: realtime/backtest clock behavior and tick cadence constraints.
 > **Not authoritative for**: API endpoints and milestone sequencing.
 
 **Critical Design Note**: Python's `asyncio.sleep()` is not precise. The clock system must handle both realtime trading (strict wall‑clock alignment) and backtesting (fast‑forward simulation).

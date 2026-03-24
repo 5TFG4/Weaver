@@ -1,8 +1,8 @@
 # Development Methodology
 
-> **Document Charter**  
-> **Primary role**: development process, engineering workflow, and documentation governance.  
-> **Authoritative for**: development standards, TDD flow, and doc update process.  
+> **Document Charter**
+> **Primary role**: development process, engineering workflow, and documentation governance.
+> **Authoritative for**: development standards, TDD flow, and doc update process.
 > **Reference map**: [DOCS_INDEX.md](DOCS_INDEX.md).
 
 > **IMPORTANT**: This methodology applies to ALL development in this project.

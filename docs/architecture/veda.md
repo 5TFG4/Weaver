@@ -1,11 +1,11 @@
 # Veda Trading Architecture
 
-> Part of [Architecture Documentation](../ARCHITECTURE.md)  
+> Part of [Architecture Documentation](../ARCHITECTURE.md)
 > Last Updated: 2026-02-04 (M6 Complete)
 >
-> **Document Charter**  
-> **Primary role**: Veda internals (adapter contract, order flow, domain models).  
-> **Authoritative for**: Veda architecture and integration patterns inside trading subsystem.  
+> **Document Charter**
+> **Primary role**: Veda internals (adapter contract, order flow, domain models).
+> **Authoritative for**: Veda architecture and integration patterns inside trading subsystem.
 > **Not authoritative for**: global credential policy and security baseline (use `config.md`).
 
 ## 1. Overview

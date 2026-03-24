@@ -1,8 +1,8 @@
 # M5: Marvin Core (Strategy System)
 
-> **Status**: ✅ COMPLETE  
-> **Prerequisite**: M4 (Greta Backtesting Engine) ✅  
-> **Result**: SMA strategy backtested successfully + Plugin architecture complete  
+> **Status**: ✅ COMPLETE
+> **Prerequisite**: M4 (Greta Backtesting Engine) ✅
+> **Result**: SMA strategy backtested successfully + Plugin architecture complete
 > **Final Tests**: 74 new tests (705 total)
 
 ---
@@ -160,7 +160,7 @@ class SMAStrategy(BaseStrategy):
 # Option B: Module-level constant (simpler)
 STRATEGY_META = {
     "id": "sma-crossover",
-    "name": "SMA Crossover Strategy", 
+    "name": "SMA Crossover Strategy",
     "version": "1.0.0",
     "dependencies": [],
     "class": "SMAStrategy",
@@ -212,17 +212,17 @@ class AlpacaAdapter(ExchangeAdapter):
 class PluginStrategyLoader(StrategyLoader):
     """
     Auto-discovering strategy loader.
-    
+
     Scans strategies/ directory for valid strategy plugins,
     resolves dependencies, and loads on demand.
     """
-    
+
     def __init__(self, plugin_dir: Path | None = None):
         self._plugin_dir = plugin_dir or Path(__file__).parent / "strategies"
         self._registry: dict[str, StrategyMeta] = {}
         self._loaded: dict[str, type[BaseStrategy]] = {}
         self._scan_plugins()
-    
+
     def _scan_plugins(self) -> None:
         """Scan plugin directory for strategy metadata (without importing)."""
         for py_file in self._plugin_dir.rglob("*.py"):
@@ -235,34 +235,34 @@ class PluginStrategyLoader(StrategyLoader):
             except Exception as e:
                 # Log warning but don't fail - plugin is skipped
                 logger.warning(f"Failed to scan {py_file}: {e}")
-    
+
     def _extract_metadata(self, path: Path) -> StrategyMeta | None:
         """Extract STRATEGY_META from file without full import."""
         # Use AST parsing to read STRATEGY_META constant
         ...
-    
+
     def list_available(self) -> list[StrategyMeta]:
         """List all discovered strategies."""
         return list(self._registry.values())
-    
+
     def load(self, strategy_id: str) -> BaseStrategy:
         """Load strategy with dependency resolution."""
         if strategy_id not in self._registry:
             raise StrategyNotFoundError(f"Strategy not found: {strategy_id}")
-        
+
         meta = self._registry[strategy_id]
-        
+
         # Resolve dependencies first
         for dep_id in meta.dependencies:
             if dep_id not in self._loaded:
                 self.load(dep_id)  # Recursive load
-        
+
         # Now import and instantiate
         if strategy_id not in self._loaded:
             module = import_module(meta.module_path)
             strategy_class = getattr(module, meta.class_name)
             self._loaded[strategy_id] = strategy_class
-        
+
         return self._loaded[strategy_id]()
 ```
 
@@ -282,21 +282,21 @@ STRATEGY_META = {
 class EnsembleStrategy(BaseStrategy):
     """
     Combines signals from multiple sub-strategies.
-    
+
     Dependencies are automatically loaded by PluginStrategyLoader.
     """
-    
+
     def __init__(self, loader: StrategyLoader):
         super().__init__()
         # Load dependent strategies
         self._sma = loader.load("sma-crossover")
         self._rsi = loader.load("rsi-oversold")
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         # Combine signals from sub-strategies
         sma_actions = await self._sma.on_data(data)
         rsi_actions = await self._rsi.on_data(data)
-        
+
         # Only trade if both agree
         if sma_actions and rsi_actions:
             if sma_actions[0].side == rsi_actions[0].side:
@@ -370,10 +370,10 @@ from src.glados.clock.base import ClockTick
 class DummyStrategy(BaseStrategy):
     """
     No-op strategy with configurable return actions.
-    
+
     Use for unit tests where you need to control what the strategy returns.
     """
-    
+
     def __init__(self) -> None:
         super().__init__()
         # Configure these before running tests
@@ -382,11 +382,11 @@ class DummyStrategy(BaseStrategy):
         # Records all inputs for assertions
         self.received_ticks: list[ClockTick] = []
         self.received_data: list[dict] = []
-    
+
     async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
         self.received_ticks.append(tick)
         return self.tick_actions
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         self.received_data.append(data)
         return self.data_actions
@@ -395,20 +395,20 @@ class DummyStrategy(BaseStrategy):
 class RecordingStrategy(BaseStrategy):
     """
     Strategy that records all inputs without producing actions.
-    
+
     Use for integration tests where you need to verify what data
     the strategy received.
     """
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.tick_history: list[ClockTick] = []
         self.data_history: list[dict] = []
-    
+
     async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
         self.tick_history.append(tick)
         return []
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         self.data_history.append(data)
         return []
@@ -417,10 +417,10 @@ class RecordingStrategy(BaseStrategy):
 class PredictableStrategy(BaseStrategy):
     """
     Strategy that returns pre-configured sequence of actions.
-    
+
     Use when you need to test specific action sequences.
     """
-    
+
     def __init__(
         self,
         tick_actions: list[list[StrategyAction]] | None = None,
@@ -431,14 +431,14 @@ class PredictableStrategy(BaseStrategy):
         self._data_actions = data_actions or []
         self._tick_index = 0
         self._data_index = 0
-    
+
     async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
         if self._tick_index < len(self._tick_actions):
             actions = self._tick_actions[self._tick_index]
             self._tick_index += 1
             return actions
         return []
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         if self._data_index < len(self._data_actions):
             actions = self._data_actions[self._data_index]
@@ -450,15 +450,15 @@ class PredictableStrategy(BaseStrategy):
 class SimpleTestStrategy(BaseStrategy):
     """
     Simple strategy that buys once when data is available.
-    
+
     Use for end-to-end integration tests that need a working strategy.
     Migrated from test_backtest_flow.py.
     """
-    
+
     def __init__(self) -> None:
         super().__init__()
         self._bought = False
-    
+
     async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
         return [
             StrategyAction(
@@ -467,7 +467,7 @@ class SimpleTestStrategy(BaseStrategy):
                 lookback=5,
             )
         ]
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         bars = data.get("bars", [])
         if len(bars) >= 2 and not self._bought:
@@ -487,14 +487,14 @@ class SimpleTestStrategy(BaseStrategy):
 class MockStrategyLoader(StrategyLoader):
     """
     Mock strategy loader for testing.
-    
+
     Returns a pre-configured strategy instead of loading from file.
     Migrated from test_backtest_flow.py.
     """
-    
+
     def __init__(self, strategy: BaseStrategy | None = None) -> None:
         self._strategy = strategy or SimpleTestStrategy()
-    
+
     def load(self, strategy_id: str) -> BaseStrategy:
         return self._strategy
 ```
@@ -721,14 +721,14 @@ class StrategyRunner:
         self._run_id = run_id
         self._symbols = symbols
         await self._strategy.initialize(symbols)
-        
+
         # Subscribe to data.WindowReady for this run
         await self._event_log.subscribe(
             event_types=[DataEvents.WINDOW_READY],
             callback=self._on_data_ready,
             filter_fn=lambda e: e.metadata.get("run_id") == self._run_id
         )
-    
+
     async def _on_data_ready(self, envelope: Envelope) -> None:
         """Handle data.WindowReady event."""
         actions = await self._strategy.on_data(envelope.payload)
@@ -744,21 +744,21 @@ class StrategyRunner:
 class GretaService:
     async def initialize(self, ...):
         # Existing initialization...
-        
+
         # Subscribe to backtest events for this run
         await self._event_log.subscribe(
             event_types=[BacktestEvents.FETCH_WINDOW, BacktestEvents.PLACE_ORDER],
             callback=self._handle_backtest_event,
             filter_fn=lambda e: e.metadata.get("run_id") == self._run_id
         )
-    
+
     async def _handle_backtest_event(self, envelope: Envelope) -> None:
         """Route backtest events to handlers."""
         if envelope.type == BacktestEvents.FETCH_WINDOW:
             await self._handle_fetch_window(envelope)
         elif envelope.type == BacktestEvents.PLACE_ORDER:
             await self._handle_place_order(envelope)
-    
+
     async def _handle_fetch_window(self, envelope: Envelope) -> None:
         """Handle backtest.FetchWindow → emit data.WindowReady."""
         payload = envelope.payload
@@ -767,7 +767,7 @@ class GretaService:
             lookback=payload["lookback"],
             end_time=payload.get("end_time")
         )
-        
+
         await self._event_log.append(
             Envelope(
                 type=DataEvents.WINDOW_READY,
@@ -797,7 +797,7 @@ class EventLog(Protocol):
     ) -> str:
         """Subscribe to events. Returns subscription ID."""
         ...
-    
+
     async def unsubscribe(self, subscription_id: str) -> None:
         """Unsubscribe from events."""
         ...
@@ -818,23 +818,23 @@ class SMAConfig:
     fast_period: int = 10
     slow_period: int = 20
     qty: Decimal = Decimal("0.1")
-    
+
 class SMAStrategy(BaseStrategy):
     """
     Simple Moving Average Crossover Strategy.
-    
+
     - BUY when fast SMA crosses ABOVE slow SMA
     - SELL when fast SMA crosses BELOW slow SMA
-    
+
     Requires lookback = slow_period + 1 bars for crossover detection.
     """
-    
+
     def __init__(self, config: SMAConfig | None = None):
         super().__init__()
         self._config = config or SMAConfig()
         self._prev_fast: Decimal | None = None
         self._prev_slow: Decimal | None = None
-    
+
     async def on_tick(self, tick) -> list[StrategyAction]:
         """Request data window on each tick."""
         return [
@@ -844,21 +844,21 @@ class SMAStrategy(BaseStrategy):
                 lookback=self._config.slow_period + 1
             )
         ]
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         """Calculate SMA crossover and generate signals."""
         bars = data.get("bars", [])
         if len(bars) < self._config.slow_period + 1:
             return []
-        
+
         closes = [bar["close"] for bar in bars]
-        
+
         # Calculate SMAs
         fast_sma = self._calculate_sma(closes, self._config.fast_period)
         slow_sma = self._calculate_sma(closes, self._config.slow_period)
-        
+
         actions = []
-        
+
         # Detect crossover
         if self._prev_fast is not None and self._prev_slow is not None:
             # Bullish crossover: fast crosses above slow
@@ -872,7 +872,7 @@ class SMAStrategy(BaseStrategy):
                         order_type="market"
                     ))
                     self._has_position = True
-            
+
             # Bearish crossover: fast crosses below slow
             elif self._prev_fast >= self._prev_slow and fast_sma < slow_sma:
                 if self._has_position:
@@ -884,13 +884,13 @@ class SMAStrategy(BaseStrategy):
                         order_type="market"
                     ))
                     self._has_position = False
-        
+
         # Store for next comparison
         self._prev_fast = fast_sma
         self._prev_slow = slow_sma
-        
+
         return actions
-    
+
     def _calculate_sma(self, values: list, period: int) -> Decimal:
         """Calculate simple moving average of last N values."""
         recent = values[-period:]
@@ -908,7 +908,7 @@ class StrategyConfig:
     strategy_id: str
     strategy_class: str  # e.g., "src.marvin.strategies.sma_strategy.SMAStrategy"
     params: dict[str, Any]  # Strategy-specific parameters
-    
+
 # Example YAML config:
 # strategies:
 #   - id: sma-btc
@@ -932,41 +932,41 @@ import yaml
 
 class ConfigurableStrategyLoader(StrategyLoader):
     """Load strategies from configuration file."""
-    
+
     def __init__(self, config_path: Path | None = None):
         self._config_path = config_path
         self._strategies: dict[str, StrategyConfig] = {}
         if config_path:
             self._load_config(config_path)
-    
+
     def _load_config(self, path: Path) -> None:
         """Load strategy configurations from YAML."""
         with open(path) as f:
             config = yaml.safe_load(f)
-        
+
         for entry in config.get("strategies", []):
             self._strategies[entry["id"]] = StrategyConfig(
                 strategy_id=entry["id"],
                 strategy_class=entry["class"],
                 params=entry.get("params", {})
             )
-    
+
     def register(self, strategy_id: str, config: StrategyConfig) -> None:
         """Register a strategy configuration programmatically."""
         self._strategies[strategy_id] = config
-    
+
     def load(self, strategy_id: str) -> BaseStrategy:
         """Load and instantiate a strategy by ID."""
         if strategy_id not in self._strategies:
             raise ValueError(f"Strategy not found: {strategy_id}")
-        
+
         config = self._strategies[strategy_id]
-        
+
         # Dynamic import
         module_path, class_name = config.strategy_class.rsplit(".", 1)
         module = import_module(module_path)
         strategy_class = getattr(module, class_name)
-        
+
         # Instantiate with params
         return strategy_class(**config.params)
 ```
@@ -1008,7 +1008,7 @@ from src.glados.clock.base import ClockTick
 
 class ControllableClock:
     """Test clock for deterministic testing."""
-    
+
     async def emit_tick(self, timestamp: datetime) -> ClockTick:
         tick = ClockTick(
             timestamp=timestamp,
@@ -1025,7 +1025,7 @@ class ControllableClock:
 
 ## 5. MVP Implementation Plan
 
-> **Development Methodology**: TDD (Test-Driven Development)  
+> **Development Methodology**: TDD (Test-Driven Development)
 > **Pattern**: Write tests (RED) → Implement (GREEN) → Refactor (BLUE)
 
 ### MVP Overview
@@ -1100,11 +1100,11 @@ from src.events.protocol import Envelope
 
 class TestEventLogSubscription:
     """Tests for EventLog subscription functionality."""
-    
+
     @pytest.fixture
     def event_log(self) -> InMemoryEventLog:
         return InMemoryEventLog()
-    
+
     # --- Test 1: Basic subscription ---
     async def test_subscribe_returns_subscription_id(self, event_log):
         """subscribe() returns a unique subscription ID."""
@@ -1115,55 +1115,55 @@ class TestEventLogSubscription:
         )
         assert sub_id is not None
         assert isinstance(sub_id, str)
-    
+
     # --- Test 2: Subscriber receives matching events ---
     async def test_subscriber_receives_matching_events(self, event_log):
         """Subscriber receives events matching type filter."""
         received = []
         async def callback(envelope):
             received.append(envelope)
-        
+
         await event_log.subscribe(
             event_types=["test.Event"],
             callback=callback
         )
-        
+
         envelope = Envelope(type="test.Event", payload={"data": "value"})
         await event_log.append(envelope)
-        
+
         assert len(received) == 1
         assert received[0].type == "test.Event"
-    
+
     # --- Test 3: Subscriber does NOT receive non-matching events ---
     async def test_subscriber_ignores_non_matching_events(self, event_log):
         """Subscriber does not receive events not in type filter."""
         received = []
         async def callback(envelope):
             received.append(envelope)
-        
+
         await event_log.subscribe(
             event_types=["test.Event"],
             callback=callback
         )
-        
+
         envelope = Envelope(type="other.Event", payload={})
         await event_log.append(envelope)
-        
+
         assert len(received) == 0
-    
+
     # --- Test 4: Custom filter function ---
     async def test_subscribe_with_filter_fn(self, event_log):
         """Subscriber can filter by custom function."""
         received = []
         async def callback(envelope):
             received.append(envelope)
-        
+
         await event_log.subscribe(
             event_types=["test.Event"],
             callback=callback,
             filter_fn=lambda e: e.payload.get("run_id") == "run-001"
         )
-        
+
         # Should receive this
         await event_log.append(Envelope(
             type="test.Event",
@@ -1174,39 +1174,39 @@ class TestEventLogSubscription:
             type="test.Event",
             payload={"run_id": "run-002"}
         ))
-        
+
         assert len(received) == 1
         assert received[0].payload["run_id"] == "run-001"
-    
+
     # --- Test 5: Unsubscribe stops delivery ---
     async def test_unsubscribe_stops_delivery(self, event_log):
         """Unsubscribed callback no longer receives events."""
         received = []
         async def callback(envelope):
             received.append(envelope)
-        
+
         sub_id = await event_log.subscribe(
             event_types=["test.Event"],
             callback=callback
         )
-        
+
         # Should receive
         await event_log.append(Envelope(type="test.Event", payload={}))
         assert len(received) == 1
-        
+
         # Unsubscribe
         await event_log.unsubscribe(sub_id)
-        
+
         # Should NOT receive
         await event_log.append(Envelope(type="test.Event", payload={}))
         assert len(received) == 1  # Still 1, not 2
-    
+
     # --- Test 6: Multiple subscribers same event ---
     async def test_multiple_subscribers_same_event(self, event_log):
         """Multiple subscribers receive same event."""
         received_1 = []
         received_2 = []
-        
+
         await event_log.subscribe(
             event_types=["test.Event"],
             callback=lambda e: received_1.append(e)
@@ -1215,62 +1215,62 @@ class TestEventLogSubscription:
             event_types=["test.Event"],
             callback=lambda e: received_2.append(e)
         )
-        
+
         await event_log.append(Envelope(type="test.Event", payload={}))
-        
+
         assert len(received_1) == 1
         assert len(received_2) == 1
-    
+
     # --- Test 7: Subscriber error doesn't break others ---
     async def test_subscriber_error_doesnt_break_others(self, event_log):
         """Error in one subscriber doesn't affect others."""
         received = []
-        
+
         async def bad_callback(e):
             raise ValueError("Intentional error")
-        
+
         async def good_callback(e):
             received.append(e)
-        
+
         await event_log.subscribe(event_types=["test.Event"], callback=bad_callback)
         await event_log.subscribe(event_types=["test.Event"], callback=good_callback)
-        
+
         # Should not raise, good_callback should still receive
         await event_log.append(Envelope(type="test.Event", payload={}))
-        
+
         assert len(received) == 1
-    
+
     # --- Test 8: Wildcard subscription ---
     async def test_wildcard_subscription(self, event_log):
         """Subscriber with '*' receives all events."""
         received = []
-        
+
         await event_log.subscribe(
             event_types=["*"],
             callback=lambda e: received.append(e)
         )
-        
+
         await event_log.append(Envelope(type="test.Event", payload={}))
         await event_log.append(Envelope(type="other.Event", payload={}))
-        
+
         assert len(received) == 2
-    
+
     # --- Test 9: Subscription with multiple types ---
     async def test_subscription_multiple_types(self, event_log):
         """Subscriber can listen to multiple event types."""
         received = []
-        
+
         await event_log.subscribe(
             event_types=["type.A", "type.B"],
             callback=lambda e: received.append(e)
         )
-        
+
         await event_log.append(Envelope(type="type.A", payload={}))
         await event_log.append(Envelope(type="type.B", payload={}))
         await event_log.append(Envelope(type="type.C", payload={}))
-        
+
         assert len(received) == 2
-    
+
     # --- Test 10: Unsubscribe unknown ID is safe ---
     async def test_unsubscribe_unknown_id_is_safe(self, event_log):
         """Unsubscribing with unknown ID doesn't raise."""
@@ -1302,7 +1302,7 @@ class InMemoryEventLog:
     def __init__(self):
         self._events: list[Envelope] = []
         self._subscriptions: dict[str, Subscription] = {}
-    
+
     async def subscribe(
         self,
         event_types: list[str],
@@ -1317,16 +1317,16 @@ class InMemoryEventLog:
         )
         self._subscriptions[sub.id] = sub
         return sub.id
-    
+
     async def unsubscribe(self, subscription_id: str) -> None:
         """Unsubscribe from events."""
         self._subscriptions.pop(subscription_id, None)
-    
+
     async def append(self, envelope: Envelope) -> int:
         """Append event and notify subscribers."""
         self._events.append(envelope)
         offset = len(self._events) - 1
-        
+
         # Notify matching subscribers
         for sub in self._subscriptions.values():
             if self._matches(envelope, sub):
@@ -1334,9 +1334,9 @@ class InMemoryEventLog:
                     await sub.callback(envelope)
                 except Exception as e:
                     logger.warning(f"Subscriber error: {e}")
-        
+
         return offset
-    
+
     def _matches(self, envelope: Envelope, sub: Subscription) -> bool:
         """Check if envelope matches subscription."""
         # Check event type
@@ -1381,37 +1381,37 @@ class InMemoryEventLog:
 
 class TestStrategyRunnerEvents:
     """Tests for StrategyRunner event-driven data flow."""
-    
+
     @pytest.fixture
     def event_log(self):
         return InMemoryEventLog()
-    
+
     @pytest.fixture
     def runner(self, event_log):
         strategy = Mock(spec=BaseStrategy)
         return StrategyRunner(strategy=strategy, event_log=event_log)
-    
+
     # --- Test 1: on_tick emits strategy.FetchWindow ---
     async def test_on_tick_emits_fetch_window_event(self, runner, event_log):
         """When strategy returns fetch_window action, emit strategy.FetchWindow."""
         runner._strategy.on_tick = AsyncMock(return_value=[
             StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=20)
         ])
-        
+
         await runner.initialize("run-001", ["BTC/USD"])
         await runner.on_tick(ClockTick(timestamp=datetime.now(), ...))
-        
+
         events = await event_log.read_from(0)
         assert len(events) == 1
         assert events[0].type == "strategy.FetchWindow"
         assert events[0].payload["symbol"] == "BTC/USD"
         assert events[0].payload["lookback"] == 20
-    
+
     # --- Test 2: Runner subscribes to data.WindowReady ---
     async def test_runner_subscribes_to_window_ready(self, runner, event_log):
         """After initialize, runner is subscribed to data.WindowReady."""
         await runner.initialize("run-001", ["BTC/USD"])
-        
+
         # Manually append a data.WindowReady event
         runner._strategy.on_data = AsyncMock(return_value=[])
         await event_log.append(Envelope(
@@ -1419,26 +1419,26 @@ class TestStrategyRunnerEvents:
             payload={"run_id": "run-001", "bars": []},
             metadata={"run_id": "run-001"}
         ))
-        
+
         # Strategy.on_data should have been called
         runner._strategy.on_data.assert_called_once()
-    
+
     # --- Test 3: Filters by run_id ---
     async def test_filters_window_ready_by_run_id(self, runner, event_log):
         """Only receives data.WindowReady for own run_id."""
         await runner.initialize("run-001", ["BTC/USD"])
         runner._strategy.on_data = AsyncMock(return_value=[])
-        
+
         # Event for different run
         await event_log.append(Envelope(
             type="data.WindowReady",
             payload={"run_id": "run-002", "bars": []},
             metadata={"run_id": "run-002"}
         ))
-        
+
         # Should NOT call on_data
         runner._strategy.on_data.assert_not_called()
-    
+
     # --- Test 4: on_data emits place_request ---
     async def test_on_data_emits_place_request(self, runner, event_log):
         """When strategy.on_data returns place_order, emit strategy.PlaceRequest."""
@@ -1446,31 +1446,31 @@ class TestStrategyRunnerEvents:
         runner._strategy.on_data = AsyncMock(return_value=[
             StrategyAction(type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("0.1"))
         ])
-        
+
         # Simulate receiving WindowReady
         await event_log.append(Envelope(
             type="data.WindowReady",
             payload={"run_id": "run-001", "bars": [{"close": "100"}]},
             metadata={"run_id": "run-001"}
         ))
-        
+
         events = [e for e in await event_log.read_from(0) if e.type == "strategy.PlaceRequest"]
         assert len(events) == 1
         assert events[0].payload["side"] == "buy"
-    
+
     # --- Test 5: Cleanup unsubscribes ---
     async def test_cleanup_unsubscribes(self, runner, event_log):
         """cleanup() removes subscription."""
         await runner.initialize("run-001", ["BTC/USD"])
         await runner.cleanup()
-        
+
         runner._strategy.on_data = AsyncMock()
         await event_log.append(Envelope(
             type="data.WindowReady",
             payload={"run_id": "run-001", "bars": []},
             metadata={"run_id": "run-001"}
         ))
-        
+
         # Should NOT call after cleanup
         runner._strategy.on_data.assert_not_called()
 
@@ -1479,11 +1479,11 @@ class TestStrategyRunnerEvents:
 
 class TestGretaServiceEvents:
     """Tests for GretaService event handling."""
-    
+
     @pytest.fixture
     def event_log(self):
         return InMemoryEventLog()
-    
+
     @pytest.fixture
     def greta(self, event_log):
         bar_repo = Mock()
@@ -1493,23 +1493,23 @@ class TestGretaServiceEvents:
             bar_repository=bar_repo,
             fill_simulator=Mock()
         )
-    
+
     # --- Test 6: Subscribes to backtest.FetchWindow ---
     async def test_subscribes_to_backtest_fetch_window(self, greta, event_log):
         """After initialize, greta subscribes to backtest.FetchWindow."""
         await greta.initialize()
-        
+
         assert len(event_log._subscriptions) > 0
-    
+
     # --- Test 7: Handles backtest.FetchWindow ---
     async def test_handles_fetch_window_emits_window_ready(self, greta, event_log):
         """backtest.FetchWindow → fetch bars → emit data.WindowReady."""
         greta._bar_repository.get_bars = AsyncMock(return_value=[
             Bar(symbol="BTC/USD", timestamp=datetime.now(), close=Decimal("100"), ...)
         ])
-        
+
         await greta.initialize()
-        
+
         # Emit backtest.FetchWindow
         await event_log.append(Envelope(
             type="backtest.FetchWindow",
@@ -1517,45 +1517,45 @@ class TestGretaServiceEvents:
             metadata={"run_id": "run-001"},
             correlation_id="req-001"
         ))
-        
+
         # Should emit data.WindowReady
         events = [e for e in await event_log.read_from(0) if e.type == "data.WindowReady"]
         assert len(events) == 1
         assert events[0].payload["symbol"] == "BTC/USD"
         assert events[0].correlation_id == "req-001"
-    
+
     # --- Test 8: Handles backtest.PlaceOrder ---
     async def test_handles_place_order_emits_filled(self, greta, event_log):
         """backtest.PlaceOrder → simulate fill → emit orders.Filled."""
         greta._fill_simulator.simulate = Mock(return_value=SimulatedFill(...))
-        
+
         await greta.initialize()
-        
+
         await event_log.append(Envelope(
             type="backtest.PlaceOrder",
             payload={"run_id": "run-001", "symbol": "BTC/USD", "side": "buy", "qty": "0.1"},
             metadata={"run_id": "run-001"}
         ))
-        
+
         events = [e for e in await event_log.read_from(0) if e.type == "orders.Filled"]
         assert len(events) == 1
-    
+
     # --- Test 9: Filters by run_id ---
     async def test_filters_by_run_id(self, greta, event_log):
         """Only handles events for own run_id."""
         greta._bar_repository.get_bars = AsyncMock()
         await greta.initialize()
-        
+
         # Event for different run
         await event_log.append(Envelope(
             type="backtest.FetchWindow",
             payload={"run_id": "run-002", "symbol": "BTC/USD"},
             metadata={"run_id": "run-002"}
         ))
-        
+
         # Should NOT call bar_repository
         greta._bar_repository.get_bars.assert_not_called()
-    
+
     # --- Test 10: Uses bar cache ---
     async def test_fetch_window_uses_bar_cache(self, greta, event_log):
         """backtest.FetchWindow uses preloaded bar cache when available."""
@@ -1563,15 +1563,15 @@ class TestGretaServiceEvents:
         greta._bar_cache = {
             "BTC/USD": [Bar(...), Bar(...)]
         }
-        
+
         await greta.initialize()
-        
+
         await event_log.append(Envelope(
             type="backtest.FetchWindow",
             payload={"run_id": "run-001", "symbol": "BTC/USD", "lookback": 2},
             metadata={"run_id": "run-001"}
         ))
-        
+
         # Should NOT call repository (used cache)
         greta._bar_repository.get_bars.assert_not_called()
 
@@ -1580,12 +1580,12 @@ class TestGretaServiceEvents:
 
 class TestDataWindowFlowIntegration:
     """End-to-end tests for data window flow."""
-    
+
     # --- Test 11-15: Integration scenarios ---
     async def test_full_fetch_window_to_on_data_flow(self):
         """Complete flow: tick → FetchWindow → WindowReady → on_data."""
         ...
-    
+
     async def test_multiple_symbols_parallel_fetch(self):
         """Multiple symbols can fetch data in parallel."""
         ...
@@ -1602,23 +1602,23 @@ class StrategyRunner:
         self._event_log = event_log
         self._run_id: str | None = None
         self._subscription_id: str | None = None
-    
+
     async def initialize(self, run_id: str, symbols: list[str]) -> None:
         self._run_id = run_id
         await self._strategy.initialize(symbols)
-        
+
         # Subscribe to data.WindowReady
         self._subscription_id = await self._event_log.subscribe(
             event_types=["data.WindowReady"],
             callback=self._on_window_ready,
             filter_fn=lambda e: e.metadata.get("run_id") == self._run_id
         )
-    
+
     async def cleanup(self) -> None:
         if self._subscription_id:
             await self._event_log.unsubscribe(self._subscription_id)
             self._subscription_id = None
-    
+
     async def _on_window_ready(self, envelope: Envelope) -> None:
         """Handle data.WindowReady event."""
         actions = await self._strategy.on_data(envelope.payload)
@@ -1661,33 +1661,33 @@ from src.marvin.strategies.sma_strategy import SMAStrategy, SMAConfig
 
 class TestSMAStrategy:
     """Tests for SMA crossover strategy."""
-    
+
     @pytest.fixture
     def strategy(self):
         return SMAStrategy(SMAConfig(fast_period=5, slow_period=10, qty=Decimal("1.0")))
-    
+
     # --- Test 1: on_tick requests data ---
     async def test_on_tick_returns_fetch_window_action(self, strategy):
         """on_tick returns fetch_window action with correct lookback."""
         await strategy.initialize(["BTC/USD"])
         actions = await strategy.on_tick(ClockTick(...))
-        
+
         assert len(actions) == 1
         assert actions[0].type == "fetch_window"
         assert actions[0].lookback == 11  # slow_period + 1
-    
+
     # --- Test 2: SMA calculation ---
     async def test_calculate_sma_correctly(self, strategy):
         """SMA calculation is mathematically correct."""
         values = [10, 20, 30, 40, 50]  # avg = 30
         sma = strategy._calculate_sma(values, period=5)
         assert sma == Decimal("30")
-    
+
     # --- Test 3: Bullish crossover buy ---
     async def test_bullish_crossover_generates_buy(self, strategy):
         """Fast crossing above slow generates buy signal."""
         await strategy.initialize(["BTC/USD"])
-        
+
         # First call: establish baseline (no crossover yet)
         # fast < slow initially
         bars_initial = self._make_bars(closes=[
@@ -1695,105 +1695,105 @@ class TestSMAStrategy:
             9, 10, 10, 10, 10, 10  # slow avg = 9.83
         ])
         await strategy.on_data({"bars": bars_initial})
-        
+
         # Second call: fast crosses above slow
         bars_cross = self._make_bars(closes=[
             10, 11, 12, 20, 25,  # fast avg = 15.6
             9, 10, 10, 10, 10, 12  # slow avg = 10
         ])
         actions = await strategy.on_data({"bars": bars_cross})
-        
+
         assert len(actions) == 1
         assert actions[0].type == "place_order"
         assert actions[0].side == "buy"
-    
+
     # --- Test 4: Bearish crossover sell ---
     async def test_bearish_crossover_generates_sell(self, strategy):
         """Fast crossing below slow generates sell signal."""
         await strategy.initialize(["BTC/USD"])
         strategy._has_position = True
-        
+
         # Establish baseline: fast > slow
         bars_initial = self._make_bars(closes=[
             20, 21, 22, 23, 24,  # fast high
             10, 10, 10, 10, 10, 10  # slow low
         ])
         await strategy.on_data({"bars": bars_initial})
-        
+
         # Cross: fast drops below slow
         bars_cross = self._make_bars(closes=[
             5, 6, 7, 8, 9,  # fast drops
             10, 10, 10, 10, 10, 10
         ])
         actions = await strategy.on_data({"bars": bars_cross})
-        
+
         assert len(actions) == 1
         assert actions[0].type == "place_order"
         assert actions[0].side == "sell"
-    
+
     # --- Test 5: No signal without crossover ---
     async def test_no_signal_without_crossover(self, strategy):
         """No signal when SMAs don't cross."""
         await strategy.initialize(["BTC/USD"])
-        
+
         # Both calls: fast > slow (no cross)
         bars = self._make_bars(closes=[20, 20, 20, 20, 20, 10, 10, 10, 10, 10, 10])
         await strategy.on_data({"bars": bars})
         actions = await strategy.on_data({"bars": bars})
-        
+
         assert len(actions) == 0
-    
+
     # --- Test 6: Insufficient data no signal ---
     async def test_insufficient_data_no_signal(self, strategy):
         """No signal when bars < slow_period."""
         await strategy.initialize(["BTC/USD"])
-        
+
         bars = self._make_bars(closes=[10, 20, 30])  # Only 3 bars
         actions = await strategy.on_data({"bars": bars})
-        
+
         assert len(actions) == 0
-    
+
     # --- Test 7: Custom parameters ---
     async def test_custom_parameters_respected(self):
         """Strategy respects custom period/qty config."""
         config = SMAConfig(fast_period=3, slow_period=7, qty=Decimal("2.5"))
         strategy = SMAStrategy(config)
         await strategy.initialize(["ETH/USD"])
-        
+
         actions = await strategy.on_tick(ClockTick(...))
         assert actions[0].lookback == 8  # slow + 1
-    
+
     # --- Test 8: Position tracking ---
     async def test_only_buys_when_no_position(self, strategy):
         """Buy signal ignored if already has position."""
         await strategy.initialize(["BTC/USD"])
         strategy._has_position = True  # Already in
-        
+
         # Create bullish crossover
         # ... but should NOT generate buy
         actions = await self._trigger_bullish_cross(strategy)
-        
+
         assert len(actions) == 0
-    
+
     # --- Test 9: Multiple symbols ---
     async def test_multiple_symbols_tracking(self):
         """Tracks position per symbol."""
         strategy = SMAStrategy()
         await strategy.initialize(["BTC/USD", "ETH/USD"])
-        
+
         # Buy BTC
-        # ... 
+        # ...
         # Should still be able to buy ETH
-    
+
     # --- Test 10-12: Edge cases ---
     async def test_first_tick_no_signal(self, strategy):
         """First tick never generates signal (need previous for crossover)."""
         ...
-    
+
     async def test_handles_decimal_prices(self, strategy):
         """Works correctly with Decimal prices."""
         ...
-    
+
     async def test_empty_bars_no_error(self, strategy):
         """Empty bars list doesn't raise error."""
         await strategy.initialize(["BTC/USD"])
@@ -1805,7 +1805,7 @@ class TestSMAStrategy:
 
 class TestSMABacktestIntegration:
     """Integration tests for SMA strategy backtest."""
-    
+
     async def test_sma_backtest_produces_trades(self, db_session):
         """SMA strategy produces actual trades in backtest."""
         # Load bars with known crossovers
@@ -1855,13 +1855,13 @@ from src.marvin.exceptions import StrategyNotFoundError, DependencyError
 
 class TestPluginStrategyLoader:
     """Tests for plugin-based strategy loading."""
-    
+
     @pytest.fixture
     def temp_plugin_dir(self, tmp_path):
         """Create temp directory with test strategy files."""
         plugin_dir = tmp_path / "strategies"
         plugin_dir.mkdir()
-        
+
         # Create test strategy file
         (plugin_dir / "test_strategy.py").write_text('''
 STRATEGY_META = {
@@ -1879,32 +1879,32 @@ class TestStrategy(BaseStrategy):
     async def on_data(self, data): return []
 ''')
         return plugin_dir
-    
+
     @pytest.fixture
     def loader(self, temp_plugin_dir):
         return PluginStrategyLoader(plugin_dir=temp_plugin_dir)
-    
+
     # --- Test 1: Discovers strategies ---
     def test_discovers_strategies_in_directory(self, loader):
         """Scans strategies/ directory and finds all plugins."""
         available = loader.list_available()
         assert len(available) >= 1
         assert any(s.id == "test-strategy" for s in available)
-    
+
     # --- Test 2: Load by ID ---
     def test_load_strategy_by_id(self, loader):
         """Loads strategy by its declared ID."""
         strategy = loader.load("test-strategy")
         assert strategy is not None
         assert hasattr(strategy, "on_tick")
-    
+
     # --- Test 3: Unknown strategy ---
     def test_unknown_strategy_raises_not_found(self, loader):
         """StrategyNotFoundError for unknown strategy_id."""
         with pytest.raises(StrategyNotFoundError) as exc:
             loader.load("nonexistent")
         assert "nonexistent" in str(exc.value)
-    
+
     # --- Test 4: Extracts metadata without importing ---
     def test_extracts_metadata_without_importing(self, temp_plugin_dir):
         """Reads STRATEGY_META without full module import."""
@@ -1918,13 +1918,13 @@ STRATEGY_META = {
 
 import nonexistent_module  # This would fail on import
 ''')
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         available = loader.list_available()
-        
+
         # Should still discover metadata
         assert any(s.id == "broken-strategy" for s in available)
-    
+
     # --- Test 5: Dependency resolution ---
     def test_resolves_dependencies(self, temp_plugin_dir):
         """Loads dependent strategies before requested strategy."""
@@ -1936,12 +1936,12 @@ class BaseSMA(BaseStrategy):
     async def on_tick(self, tick): return []
     async def on_data(self, data): return []
 ''')
-        
+
         # Create dependent strategy
         (temp_plugin_dir / "ensemble.py").write_text('''
 STRATEGY_META = {
-    "id": "ensemble", 
-    "name": "Ensemble", 
+    "id": "ensemble",
+    "name": "Ensemble",
     "class": "Ensemble",
     "dependencies": ["base-sma"]
 }
@@ -1950,13 +1950,13 @@ class Ensemble(BaseStrategy):
     async def on_tick(self, tick): return []
     async def on_data(self, data): return []
 ''')
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         strategy = loader.load("ensemble")
-        
+
         # base-sma should be loaded first
         assert "base-sma" in loader._loaded
-    
+
     # --- Test 6: Missing dependency ---
     def test_missing_dependency_raises_error(self, temp_plugin_dir):
         """DependencyError if required strategy not found."""
@@ -1972,13 +1972,13 @@ class NeedsMissing(BaseStrategy):
     async def on_tick(self, tick): return []
     async def on_data(self, data): return []
 ''')
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
-        
+
         with pytest.raises(DependencyError) as exc:
             loader.load("needs-missing")
         assert "does-not-exist" in str(exc.value)
-    
+
     # --- Test 7: Circular dependency ---
     def test_circular_dependency_detected(self, temp_plugin_dir):
         """CircularDependencyError for A→B→A cycles."""
@@ -1996,27 +1996,27 @@ class B(BaseStrategy):
     async def on_tick(self, tick): return []
     async def on_data(self, data): return []
 ''')
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
-        
+
         with pytest.raises(CircularDependencyError):
             loader.load("cycle-a")
-    
+
     # --- Test 8: Deleted strategy not discovered ---
     def test_deleted_strategy_not_discovered(self, temp_plugin_dir):
         """Deleted .py file is not in available list."""
         # Create then delete
         file = temp_plugin_dir / "to_delete.py"
         file.write_text('''STRATEGY_META = {"id": "to-delete", "class": "X"}''')
-        
+
         loader1 = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         assert any(s.id == "to-delete" for s in loader1.list_available())
-        
+
         file.unlink()
-        
+
         loader2 = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         assert not any(s.id == "to-delete" for s in loader2.list_available())
-    
+
     # --- Test 9: System works after deletion ---
     def test_system_works_after_strategy_deleted(self, temp_plugin_dir):
         """Other strategies still load after one is deleted."""
@@ -2030,13 +2030,13 @@ class Keeper(BaseStrategy):
         (temp_plugin_dir / "to_delete.py").write_text('''
 STRATEGY_META = {"id": "to-delete", "class": "X"}
 ''')
-        
+
         (temp_plugin_dir / "to_delete.py").unlink()
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         strategy = loader.load("keeper")  # Should work
         assert strategy is not None
-    
+
     # --- Test 10: Lazy loading ---
     def test_lazy_loading(self, temp_plugin_dir):
         """Strategy not imported until load() called."""
@@ -2049,27 +2049,27 @@ class Lazy(BaseStrategy):
     async def on_tick(self, tick): return []
     async def on_data(self, data): return []
 ''')
-        
+
         import io
         import sys
         captured = io.StringIO()
         sys.stdout = captured
-        
+
         loader = PluginStrategyLoader(plugin_dir=temp_plugin_dir)
         _ = loader.list_available()
-        
+
         sys.stdout = sys.__stdout__
         assert "LAZY STRATEGY IMPORTED" not in captured.getvalue()
-    
+
     # --- Test 11-15: Additional tests ---
     def test_ignores_files_starting_with_underscore(self, temp_plugin_dir):
         """Files like __init__.py are ignored."""
         ...
-    
+
     def test_handles_syntax_error_gracefully(self, temp_plugin_dir):
         """Syntax error in plugin file doesn't crash loader."""
         ...
-    
+
     def test_strategy_meta_without_dependencies_field(self, temp_plugin_dir):
         """STRATEGY_META without dependencies field defaults to []."""
         ...
@@ -2159,71 +2159,71 @@ tests/unit/test_type_safety.py (4 tests)
 
 class TestDummyStrategy:
     """Tests for DummyStrategy fixture."""
-    
+
     async def test_returns_configured_tick_actions(self):
         """DummyStrategy returns tick_actions when set."""
         from tests.fixtures.strategies import DummyStrategy
-        
+
         strategy = DummyStrategy()
         strategy.tick_actions = [StrategyAction(type="fetch_window", symbol="BTC/USD", lookback=5)]
-        
+
         actions = await strategy.on_tick(make_tick())
         assert len(actions) == 1
         assert actions[0].type == "fetch_window"
-    
+
     async def test_returns_configured_data_actions(self):
         """DummyStrategy returns data_actions when set."""
         from tests.fixtures.strategies import DummyStrategy
-        
+
         strategy = DummyStrategy()
         strategy.data_actions = [StrategyAction(type="place_order", symbol="BTC/USD", side="buy", qty=Decimal("1.0"))]
-        
+
         actions = await strategy.on_data({"bars": []})
         assert len(actions) == 1
-    
+
     async def test_records_received_ticks(self):
         """DummyStrategy records ticks for assertions."""
         from tests.fixtures.strategies import DummyStrategy
-        
+
         strategy = DummyStrategy()
         tick = make_tick()
         await strategy.on_tick(tick)
-        
+
         assert len(strategy.received_ticks) == 1
         assert strategy.received_ticks[0] == tick
-    
+
     async def test_records_received_data(self):
         """DummyStrategy records data for assertions."""
         from tests.fixtures.strategies import DummyStrategy
-        
+
         strategy = DummyStrategy()
         data = {"bars": [{"close": Decimal("100")}]}
         await strategy.on_data(data)
-        
+
         assert len(strategy.received_data) == 1
         assert strategy.received_data[0] == data
 
 
 class TestMockStrategyLoader:
     """Tests for MockStrategyLoader fixture."""
-    
+
     def test_returns_configured_strategy(self):
         """MockStrategyLoader returns the strategy it was given."""
         from tests.fixtures.strategies import MockStrategyLoader, DummyStrategy
-        
+
         dummy = DummyStrategy()
         loader = MockStrategyLoader(strategy=dummy)
-        
+
         loaded = loader.load("any-id")
         assert loaded is dummy
-    
+
     def test_default_returns_simple_test_strategy(self):
         """MockStrategyLoader defaults to SimpleTestStrategy."""
         from tests.fixtures.strategies import MockStrategyLoader, SimpleTestStrategy
-        
+
         loader = MockStrategyLoader()
         loaded = loader.load("any-id")
-        
+
         assert isinstance(loaded, SimpleTestStrategy)
 ```
 
@@ -2234,7 +2234,7 @@ class TestMockStrategyLoader:
 
 class TestSimulatedFillTypeSafety:
     """Tests for SimulatedFill type improvements."""
-    
+
     def test_side_is_order_side_enum(self):
         """SimulatedFill.side is OrderSide, not str."""
         fill = SimulatedFill(
@@ -2246,7 +2246,7 @@ class TestSimulatedFillTypeSafety:
             timestamp=datetime.now(UTC)
         )
         assert isinstance(fill.side, OrderSide)
-    
+
     def test_fill_simulator_returns_order_side_enum(self):
         """FillSimulator returns fills with OrderSide enum."""
         # ... test implementation
@@ -2256,17 +2256,17 @@ class TestSimulatedFillTypeSafety:
 
 class TestClockFixture:
     """Tests for clock test fixtures."""
-    
+
     def test_controllable_clock_uses_production_clock_tick(self):
         """ControllableClock uses ClockTick from production code."""
         from tests.fixtures.clock import ControllableClock
         from src.glados.clock.base import ClockTick
-        
+
         clock = ControllableClock()
         tick = clock.make_tick(datetime.now(UTC))
-        
+
         assert isinstance(tick, ClockTick)
-    
+
     def test_no_duplicate_clock_tick_definition(self):
         """There is only one ClockTick definition in codebase."""
         # This test verifies we import from production, not define locally
@@ -2351,16 +2351,16 @@ These tests verify that existing tests still pass after migration:
 
 class MockStrategy(BaseStrategy):
     """Configurable mock strategy for testing."""
-    
+
     def __init__(self, actions: list[StrategyAction] | None = None):
         super().__init__()
         self._actions = actions or []
         self._tick_count = 0
-    
+
     async def on_tick(self, tick) -> list[StrategyAction]:
         self._tick_count += 1
         return self._actions
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         return []
 

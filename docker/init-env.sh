@@ -35,16 +35,16 @@ sync_env_file() {
   while IFS='=' read -r VAR_NAME _; do
     # Skip comments and empty lines
     [[ -z "$VAR_NAME" || "$VAR_NAME" =~ ^[[:space:]]*# ]] && continue
-    
+
     # Trim whitespace
     VAR_NAME=$(echo "$VAR_NAME" | xargs)
 
     # Validate variable name
     [[ ! "$VAR_NAME" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && continue
-    
+
     # Get value from environment (GitHub Secret or Codespace Env)
     local CURRENT_VALUE="${!VAR_NAME:-}"
-    
+
     if [[ -n "$CURRENT_VALUE" ]]; then
       # Replace existing value (using | as delimiter for URLs)
       sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${CURRENT_VALUE}|" "${TARGET_FILE}"

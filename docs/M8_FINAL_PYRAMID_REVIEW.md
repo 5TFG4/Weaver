@@ -1,7 +1,7 @@
 # M8 Final Pyramid Review (Full-Scope)
 
-> **Date**: 2026-02-26  
-> **Review Mode**: M8 design-first, pyramid-layer, code-doc-test cross-validation  
+> **Date**: 2026-02-26
+> **Review Mode**: M8 design-first, pyramid-layer, code-doc-test cross-validation
 > **Scope**: backend + frontend + architecture docs + milestone/quality-gate docs
 
 ---

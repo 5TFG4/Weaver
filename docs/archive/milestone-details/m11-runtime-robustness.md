@@ -1,15 +1,15 @@
 # M11: Runtime Robustness & UX Polish — Detailed Implementation Plan
 
-> **Document Charter**  
-> **Primary role**: M11 milestone detailed implementation guide.  
-> **Authoritative for**: M11 task breakdown, file-level change specs, design decisions, test requirements, and execution order.  
+> **Document Charter**
+> **Primary role**: M11 milestone detailed implementation guide.
+> **Authoritative for**: M11 task breakdown, file-level change specs, design decisions, test requirements, and execution order.
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: ✅ DECISIONS LOCKED — Ready for implementation  
-> **Prerequisite**: M10 ✅ (1089 tests: 946 backend + 104 frontend + 33 E2E + 6 Alpaca integration)  
-> **Estimated Effort**: 2–3 weeks  
-> **Branch**: `m11-runtime-robustness`  
-> **Key Inputs**: `CI_TEST_AUDIT.md` §7.7 (Backlog), `MILESTONE_PLAN.md` §7  
+> **Status**: ✅ DECISIONS LOCKED — Ready for implementation
+> **Prerequisite**: M10 ✅ (1089 tests: 946 backend + 104 frontend + 33 E2E + 6 Alpaca integration)
+> **Estimated Effort**: 2–3 weeks
+> **Branch**: `m11-runtime-robustness`
+> **Key Inputs**: `CI_TEST_AUDIT.md` §7.7 (Backlog), `MILESTONE_PLAN.md` §7
 > **Decisions Locked**: D-1(a), D-2(a), D-3(a), D-4(a), D-5(b) — 2026-03-23
 
 ---
@@ -253,9 +253,9 @@ M11-5: Cleanup & Exit Gate (B-10 + xfail removal + docs)
 
 ## 5. M11-0: Dev Container Unification
 
-> **Goal**: Developer can run all CI checks (lint, type-check, unit tests, integration tests) from inside the VS Code dev container with a single command.  
-> **Backlog Items**: B-8 (unified dev container), B-9 (local CI rewrite)  
-> **Estimated Tests**: 0 (infrastructure only)  
+> **Goal**: Developer can run all CI checks (lint, type-check, unit tests, integration tests) from inside the VS Code dev container with a single command.
+> **Backlog Items**: B-8 (unified dev container), B-9 (local CI rewrite)
+> **Estimated Tests**: 0 (infrastructure only)
 > **Prerequisite Design Decisions**: D-4 (socket access), D-5 (script strategy)
 
 ### 5.1 Current State (Problem)
@@ -545,9 +545,9 @@ docker compose -f docker/docker-compose.dev.yml exec -T backend_dev \
 
 ## 6. M11-1: Backtest Async Race Fix (B-3)
 
-> **Goal**: All `spawn_tracked_task` calls within a backtest run complete before `_cleanup_run_context()` unsubscribes event handlers.  
-> **Backlog Item**: B-3  
-> **Estimated Tests**: ~5 new  
+> **Goal**: All `spawn_tracked_task` calls within a backtest run complete before `_cleanup_run_context()` unsubscribes event handlers.
+> **Backlog Item**: B-3
+> **Estimated Tests**: ~5 new
 > **Design Decision**: D-1(a) Task registry in RunContext 🔒
 
 ### 6.1 Root Cause Analysis
@@ -899,10 +899,10 @@ The `@pytest.mark.xfail` markers will be removed in M11-5.
 
 ## 7. M11-2: Strategy Runtime Error Propagation (R-3)
 
-> **Goal**: A strategy that raises an exception during backtest execution results in a clean `RunStatus.ERROR` state with proper cleanup, not silent failure or zombie run.  
-> **Backlog Item**: R-3  
-> **Estimated Tests**: ~4 new  
-> **Design Decision**: D-3(a) Fail fast → ERROR + cleanup 🔒  
+> **Goal**: A strategy that raises an exception during backtest execution results in a clean `RunStatus.ERROR` state with proper cleanup, not silent failure or zombie run.
+> **Backlog Item**: R-3
+> **Estimated Tests**: ~4 new
+> **Design Decision**: D-3(a) Fail fast → ERROR + cleanup 🔒
 > **Depends On**: M11-1 (task registry must exist for drain-exception inspection)
 
 ### 7.1 Current Behavior Analysis
@@ -1059,10 +1059,10 @@ Since M11-2 moves the primary drain into `_start_backtest`, `_cleanup_run_contex
 
 ## 8. M11-3: Concurrent Run Operation Safety (B-2)
 
-> **Goal**: Concurrent calls to `RunManager.start()` and `stop()` for the same or different runs do not corrupt internal state.  
-> **Backlog Item**: B-2  
-> **Estimated Tests**: ~5 new  
-> **Design Decision**: D-2(a) Per-run asyncio.Lock 🔒  
+> **Goal**: Concurrent calls to `RunManager.start()` and `stop()` for the same or different runs do not corrupt internal state.
+> **Backlog Item**: B-2
+> **Estimated Tests**: ~5 new
+> **Design Decision**: D-2(a) Per-run asyncio.Lock 🔒
 > **Depends On**: M11-1 (same code, avoid conflicting changes)
 
 ### 8.1 Current Vulnerability Analysis
@@ -1214,9 +1214,9 @@ Each run gets its own `asyncio.Lock`. Operations on unrelated runs proceed concu
 
 ## 9. M11-4: CreateRunForm Error Feedback (F-2)
 
-> **Goal**: When creating a run fails (API error), the user sees a clear error notification instead of silent button reset.  
-> **Backlog Item**: F-2  
-> **Estimated Tests**: ~4 new  
+> **Goal**: When creating a run fails (API error), the user sees a clear error notification instead of silent button reset.
+> **Backlog Item**: F-2
+> **Estimated Tests**: ~4 new
 > **Prerequisite Design Decisions**: None (independent frontend work)
 
 ### 9.1 Current Behavior
@@ -1364,8 +1364,8 @@ export function useCancelOrder() {
 
 ## 10. M11-5: Cleanup & Exit Gate (B-10)
 
-> **Goal**: Remove test noise, confirm all fixes work end-to-end, update documentation.  
-> **Backlog Items**: B-10 (Alpaca skip fix)  
+> **Goal**: Remove test noise, confirm all fixes work end-to-end, update documentation.
+> **Backlog Items**: B-10 (Alpaca skip fix)
 > **Estimated Tests**: 0 new (fix existing)
 
 ### 10.1 B-10: Alpaca Test Skip Placeholder Fix
@@ -1459,6 +1459,6 @@ After M11-1 is verified, remove `@pytest.mark.xfail(...)` from:
 
 ---
 
-_Created: 2026-03-23_  
-_Decisions Locked: 2026-03-23 — D-1(a), D-2(a), D-3(a), D-4(a), D-5(b)_  
+_Created: 2026-03-23_
+_Decisions Locked: 2026-03-23 — D-1(a), D-2(a), D-3(a), D-4(a), D-5(b)_
 _Status: 🟡 DECISIONS LOCKED — Ready for implementation_

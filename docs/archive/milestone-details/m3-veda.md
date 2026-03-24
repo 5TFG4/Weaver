@@ -1,7 +1,7 @@
 ## 10. Veda Trading Implementation Plan (M3: Trading Works)
 
 > **Status**: ⏳ PENDING | **Target**: M3 completion
-> 
+>
 > **Definition of Done**: Veda tests pass with mocked exchange; Order idempotency proven
 
 This section follows the **Design-Complete, Execute-MVP** approach:
@@ -78,7 +78,7 @@ This section follows the **Design-Complete, Execute-MVP** approach:
 class OrderIntent:
     """
     Strategy's order intent - what the strategy WANTS to do.
-    
+
     This is the INPUT to Veda, coming from strategy.PlaceRequest events.
     """
     run_id: str
@@ -105,7 +105,7 @@ class TimeInForce(str, Enum):
 class OrderState:
     """
     Full order state tracked by Veda.
-    
+
     Combines the original intent with exchange response and fill status.
     """
     # Identity
@@ -113,7 +113,7 @@ class OrderState:
     client_order_id: str           # From intent (idempotency key)
     exchange_order_id: str | None  # Exchange's order ID (after submit)
     run_id: str
-    
+
     # Order details (from intent)
     symbol: str
     side: OrderSide
@@ -122,21 +122,21 @@ class OrderState:
     limit_price: Decimal | None
     stop_price: Decimal | None
     time_in_force: TimeInForce
-    
+
     # Status
     status: OrderStatus
-    
+
     # Fill info
     filled_qty: Decimal
     filled_avg_price: Decimal | None
     fills: list[Fill]              # Individual fill records
-    
+
     # Timestamps
     created_at: datetime
     submitted_at: datetime | None
     filled_at: datetime | None     # When fully filled
     cancelled_at: datetime | None
-    
+
     # Error handling
     reject_reason: str | None
     error_code: str | None
@@ -158,12 +158,12 @@ class OrderStatus(str, Enum):
     # Initial states
     PENDING = "pending"           # Created locally, not yet submitted
     SUBMITTING = "submitting"     # Being sent to exchange
-    
+
     # Exchange acknowledged states
     SUBMITTED = "submitted"       # Sent, awaiting exchange ack
     ACCEPTED = "accepted"         # Exchange accepted, in order book
     PARTIALLY_FILLED = "partial"  # Some quantity filled
-    
+
     # Terminal states
     FILLED = "filled"             # Fully filled
     CANCELLED = "cancelled"       # Cancelled (by user or system)
@@ -182,7 +182,7 @@ class AccountInfo:
     status: str                   # ACTIVE, INACTIVE, etc.
 
 
-@dataclass(frozen=True) 
+@dataclass(frozen=True)
 class Position:
     """Current position for a symbol."""
     symbol: str
@@ -227,7 +227,7 @@ class Quote:
     bid_size: Decimal
     ask_price: Decimal
     ask_size: Decimal
-    
+
 
 @dataclass(frozen=True)
 class Trade:
@@ -251,56 +251,56 @@ from typing import AsyncIterator
 class ExchangeAdapter(ABC):
     """
     Abstract interface for exchange communication.
-    
+
     Implementations:
     - AlpacaAdapter: Real Alpaca API
     - MockExchangeAdapter: For testing
     """
-    
+
     # =========================================================================
     # Order Management
     # =========================================================================
-    
+
     @abstractmethod
     async def submit_order(self, intent: OrderIntent) -> OrderSubmitResult:
         """
         Submit order to exchange.
-        
+
         Args:
             intent: Order intent from strategy
-            
+
         Returns:
             OrderSubmitResult with exchange_order_id or error
-            
+
         Raises:
             ExchangeConnectionError: If exchange unreachable
             RateLimitError: If rate limit exceeded
         """
-    
+
     @abstractmethod
     async def cancel_order(self, exchange_order_id: str) -> bool:
         """
         Cancel an order.
-        
+
         Args:
             exchange_order_id: Exchange's order ID
-            
+
         Returns:
             True if cancel request accepted, False if order not found
         """
-    
+
     @abstractmethod
     async def get_order(self, exchange_order_id: str) -> ExchangeOrder | None:
         """
         Get current order status from exchange.
-        
+
         Args:
             exchange_order_id: Exchange's order ID
-            
+
         Returns:
             ExchangeOrder if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_orders(
         self,
@@ -309,27 +309,27 @@ class ExchangeAdapter(ABC):
         limit: int = 100,
     ) -> list[ExchangeOrder]:
         """List orders from exchange."""
-    
+
     # =========================================================================
     # Account & Positions
     # =========================================================================
-    
+
     @abstractmethod
     async def get_account(self) -> AccountInfo:
         """Get account information."""
-    
+
     @abstractmethod
     async def get_positions(self) -> list[Position]:
         """Get all current positions."""
-    
+
     @abstractmethod
     async def get_position(self, symbol: str) -> Position | None:
         """Get position for a specific symbol."""
-    
+
     # =========================================================================
     # Market Data
     # =========================================================================
-    
+
     @abstractmethod
     async def get_bars(
         self,
@@ -341,41 +341,41 @@ class ExchangeAdapter(ABC):
     ) -> list[Bar]:
         """
         Get historical OHLCV bars.
-        
+
         Args:
             symbol: Trading symbol (e.g., "BTC/USD")
             timeframe: Bar timeframe (e.g., "1m", "5m", "1h", "1d")
             start: Start datetime (UTC)
             end: End datetime (UTC), defaults to now
             limit: Max bars to return
-            
+
         Returns:
             List of Bar objects, oldest first
         """
-    
+
     @abstractmethod
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get the most recent bar for a symbol."""
-    
+
     @abstractmethod
     async def get_latest_quote(self, symbol: str) -> Quote | None:
         """Get the most recent quote for a symbol."""
-    
+
     @abstractmethod
     async def get_latest_trade(self, symbol: str) -> Trade | None:
         """Get the most recent trade for a symbol."""
-    
+
     # =========================================================================
     # Streaming (Future)
     # =========================================================================
-    
+
     @abstractmethod
     async def stream_bars(
         self,
         symbols: list[str],
     ) -> AsyncIterator[Bar]:
         """Stream real-time bars (future implementation)."""
-    
+
     @abstractmethod
     async def stream_quotes(
         self,
@@ -416,14 +416,14 @@ class ExchangeOrder:
 class OrderManager:
     """
     Manages order lifecycle within Veda.
-    
+
     Responsibilities:
     - Track all orders by client_order_id (idempotency)
     - Coordinate with ExchangeAdapter
     - Emit order events
     - Handle order state transitions
     """
-    
+
     def __init__(
         self,
         adapter: ExchangeAdapter,
@@ -435,13 +435,13 @@ class OrderManager:
         self._config = config
         self._orders: dict[str, OrderState] = {}  # client_order_id → OrderState
         self._pending_cancels: set[str] = set()
-    
+
     async def place_order(self, intent: OrderIntent) -> OrderState:
         """
         Place an order based on strategy intent.
-        
+
         Idempotency: If client_order_id already exists, return existing order.
-        
+
         Flow:
         1. Check idempotency (return existing if duplicate)
         2. Validate intent
@@ -450,55 +450,55 @@ class OrderManager:
         5. Submit to exchange
         6. Update state based on result
         7. Emit orders.Submitted or orders.Rejected
-        
+
         Args:
             intent: Order intent from strategy
-            
+
         Returns:
             OrderState (current state of the order)
-            
+
         Raises:
             ValidationError: If intent is invalid
         """
-    
+
     async def cancel_order(self, client_order_id: str) -> OrderState:
         """
         Request order cancellation.
-        
+
         Args:
             client_order_id: The client order ID to cancel
-            
+
         Returns:
             Updated OrderState
-            
+
         Raises:
             OrderNotFoundError: If order doesn't exist
             OrderNotCancellableError: If order in terminal state
         """
-    
+
     async def sync_order(self, client_order_id: str) -> OrderState:
         """
         Sync order state with exchange.
-        
+
         Fetches latest status from exchange and updates local state.
-        
+
         Args:
             client_order_id: The client order ID
-            
+
         Returns:
             Updated OrderState
         """
-    
+
     async def get_order(self, client_order_id: str) -> OrderState | None:
         """Get order by client_order_id."""
-    
+
     async def list_orders(
         self,
         run_id: str | None = None,
         status: OrderStatus | None = None,
     ) -> list[OrderState]:
         """List orders with optional filters."""
-    
+
     def is_duplicate(self, client_order_id: str) -> bool:
         """Check if client_order_id already exists (idempotency check)."""
 ```
@@ -509,13 +509,13 @@ class OrderManager:
 class MarketDataProvider:
     """
     Provides market data with caching.
-    
+
     Features:
     - Automatic caching of recent bars
     - Rate limit management
     - Batch request optimization
     """
-    
+
     def __init__(
         self,
         adapter: ExchangeAdapter,
@@ -524,7 +524,7 @@ class MarketDataProvider:
         self._adapter = adapter
         self._cache: dict[str, tuple[datetime, Any]] = {}
         self._cache_ttl = cache_ttl_seconds
-    
+
     async def get_bars(
         self,
         symbol: str,
@@ -534,13 +534,13 @@ class MarketDataProvider:
         limit: int | None = None,
     ) -> list[Bar]:
         """Get historical bars with caching."""
-    
+
     async def get_latest_bar(self, symbol: str) -> Bar | None:
         """Get latest bar with caching."""
-    
+
     async def get_latest_quote(self, symbol: str) -> Quote | None:
         """Get latest quote (no caching for real-time data)."""
-    
+
     def clear_cache(self) -> None:
         """Clear all cached data."""
 ```
@@ -551,13 +551,13 @@ class MarketDataProvider:
 class VedaService:
     """
     Main Veda service - entry point for live trading.
-    
+
     Orchestrates:
     - OrderManager for order lifecycle
     - MarketDataProvider for market data
     - Event handling for live.* events
     """
-    
+
     def __init__(
         self,
         adapter: ExchangeAdapter,
@@ -568,38 +568,38 @@ class VedaService:
         self._order_manager = OrderManager(adapter, event_log, config.trading)
         self._market_data = MarketDataProvider(adapter)
         self._event_log = event_log
-    
+
     # =========================================================================
     # Event Handlers (called by GLaDOS routing)
     # =========================================================================
-    
+
     async def handle_place_order(self, event: Envelope) -> None:
         """
         Handle live.PlaceOrder event.
-        
+
         Extracts OrderIntent from payload and delegates to OrderManager.
         """
-    
+
     async def handle_cancel_order(self, event: Envelope) -> None:
         """Handle live.CancelOrder event."""
-    
+
     async def handle_fetch_window(self, event: Envelope) -> None:
         """
         Handle live.FetchWindow event.
-        
+
         Fetches market data and emits data.WindowReady event.
         """
-    
+
     # =========================================================================
     # Direct API (for GLaDOS services)
     # =========================================================================
-    
+
     async def get_account(self) -> AccountInfo:
         """Get account information."""
-    
+
     async def get_positions(self) -> list[Position]:
         """Get all positions."""
-    
+
     async def get_bars(
         self,
         symbol: str,
@@ -617,11 +617,11 @@ class VedaService:
 
 class OrderEvents:
     """Order lifecycle events."""
-    
+
     # Commands (requests)
     PLACE_REQUEST: Final[str] = "orders.PlaceRequest"
     CANCEL_REQUEST: Final[str] = "orders.CancelRequest"
-    
+
     # Status events
     CREATED: Final[str] = "orders.Created"          # Order created locally
     SUBMITTED: Final[str] = "orders.Submitted"      # Sent to exchange
@@ -631,7 +631,7 @@ class OrderEvents:
     PARTIALLY_FILLED: Final[str] = "orders.PartialFill"
     CANCELLED: Final[str] = "orders.Cancelled"
     EXPIRED: Final[str] = "orders.Expired"
-    
+
     # Error events
     SUBMIT_FAILED: Final[str] = "orders.SubmitFailed"  # Network/system error
 
@@ -832,7 +832,7 @@ tests/integration/veda/
 
 class TestOrderIntent:
     """Tests for OrderIntent dataclass."""
-    
+
     def test_creates_with_required_fields(self):
         """OrderIntent requires all order details."""
         intent = OrderIntent(
@@ -848,13 +848,13 @@ class TestOrderIntent:
         )
         assert intent.symbol == "BTC/USD"
         assert intent.qty == Decimal("1.5")
-    
+
     def test_is_immutable(self):
         """OrderIntent should be frozen."""
         intent = OrderIntent(...)
         with pytest.raises(FrozenInstanceError):
             intent.qty = Decimal("2.0")
-    
+
     def test_limit_order_requires_price(self):
         """Limit orders should have limit_price set."""
         intent = OrderIntent(
@@ -867,7 +867,7 @@ class TestOrderIntent:
 
 class TestOrderState:
     """Tests for OrderState dataclass."""
-    
+
     def test_initial_status_is_pending(self):
         """New OrderState should start as PENDING."""
         state = OrderState(
@@ -877,7 +877,7 @@ class TestOrderState:
             ...
         )
         assert state.status == OrderStatus.PENDING
-    
+
     def test_tracks_fill_information(self):
         """OrderState should track fills."""
         state = OrderState(
@@ -892,7 +892,7 @@ class TestOrderState:
 
 class TestBar:
     """Tests for Bar (OHLCV) dataclass."""
-    
+
     def test_has_ohlcv_fields(self):
         """Bar should have all OHLCV fields."""
         bar = Bar(
@@ -907,7 +907,7 @@ class TestBar:
             vwap=Decimal("42100"),
         )
         assert bar.high > bar.low
-    
+
     def test_is_immutable(self):
         """Bar should be frozen."""
         bar = Bar(...)
@@ -917,17 +917,17 @@ class TestBar:
 
 class TestOrderStatus:
     """Tests for OrderStatus enum."""
-    
+
     def test_terminal_states(self):
         """Identify terminal states."""
-        terminal = {OrderStatus.FILLED, OrderStatus.CANCELLED, 
+        terminal = {OrderStatus.FILLED, OrderStatus.CANCELLED,
                    OrderStatus.REJECTED, OrderStatus.EXPIRED}
         assert OrderStatus.FILLED in terminal
         assert OrderStatus.PENDING not in terminal
-    
+
     def test_can_cancel_states(self):
         """Identify states that can be cancelled."""
-        cancellable = {OrderStatus.PENDING, OrderStatus.SUBMITTED, 
+        cancellable = {OrderStatus.PENDING, OrderStatus.SUBMITTED,
                       OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED}
         assert OrderStatus.ACCEPTED in cancellable
         assert OrderStatus.FILLED not in cancellable
@@ -937,22 +937,22 @@ class TestOrderStatus:
 
 class TestVedaExceptions:
     """Tests for Veda exception classes."""
-    
+
     def test_order_not_found_error_stores_id(self):
         """OrderNotFoundError should store client_order_id."""
         exc = OrderNotFoundError("client-123")
         assert exc.client_order_id == "client-123"
-    
+
     def test_rate_limit_error_stores_retry(self):
         """RateLimitError should store retry_after."""
         exc = RateLimitError(retry_after_seconds=60)
         assert exc.retry_after == 60
-    
+
     def test_order_not_cancellable_stores_status(self):
         """OrderNotCancellableError should store current status."""
         exc = OrderNotCancellableError("client-123", OrderStatus.FILLED)
         assert exc.status == OrderStatus.FILLED
-    
+
     def test_insufficient_funds_stores_amounts(self):
         """InsufficientFundsError should store required and available."""
         exc = InsufficientFundsError(
@@ -970,7 +970,7 @@ class TestVedaExceptions:
 
 class TestMockExchangeAdapter:
     """Tests for MockExchangeAdapter."""
-    
+
     async def test_submit_order_returns_success(self, mock_adapter):
         """Submit order should return success result."""
         intent = OrderIntent(
@@ -984,7 +984,7 @@ class TestMockExchangeAdapter:
         result = await mock_adapter.submit_order(intent)
         assert result.success is True
         assert result.exchange_order_id is not None
-    
+
     async def test_submit_order_uses_client_order_id(self, mock_adapter):
         """Mock should track client_order_id for idempotency."""
         intent = OrderIntent(client_order_id="test-123", ...)
@@ -992,7 +992,7 @@ class TestMockExchangeAdapter:
         result2 = await mock_adapter.submit_order(intent)
         # Same client_order_id should return same exchange_order_id
         assert result1.exchange_order_id == result2.exchange_order_id
-    
+
     async def test_get_order_returns_submitted(self, mock_adapter):
         """Get order should return previously submitted order."""
         intent = OrderIntent(client_order_id="test-123", ...)
@@ -1000,7 +1000,7 @@ class TestMockExchangeAdapter:
         order = await mock_adapter.get_order(result.exchange_order_id)
         assert order is not None
         assert order.client_order_id == "test-123"
-    
+
     async def test_cancel_order_changes_status(self, mock_adapter):
         """Cancel should change order status to CANCELLED."""
         intent = OrderIntent(client_order_id="test-123", ...)
@@ -1009,13 +1009,13 @@ class TestMockExchangeAdapter:
         assert cancelled is True
         order = await mock_adapter.get_order(result.exchange_order_id)
         assert order.status == OrderStatus.CANCELLED
-    
+
     async def test_get_account_returns_mock_data(self, mock_adapter):
         """Get account should return mock account info."""
         account = await mock_adapter.get_account()
         assert account.buying_power > 0
         assert account.status == "ACTIVE"
-    
+
     async def test_get_bars_returns_mock_data(self, mock_adapter):
         """Get bars should return mock OHLCV data."""
         bars = await mock_adapter.get_bars(
@@ -1025,7 +1025,7 @@ class TestMockExchangeAdapter:
         )
         assert len(bars) > 0
         assert all(isinstance(b, Bar) for b in bars)
-    
+
     async def test_simulate_fill_triggers_fill(self, mock_adapter):
         """Mock can simulate order fills."""
         intent = OrderIntent(
@@ -1038,7 +1038,7 @@ class TestMockExchangeAdapter:
         order = await mock_adapter.get_order(result.exchange_order_id)
         assert order.status == OrderStatus.FILLED
         assert order.filled_qty == Decimal("1.0")
-    
+
     async def test_limit_order_stays_pending(self, mock_adapter):
         """Limit orders should not auto-fill."""
         intent = OrderIntent(
@@ -1060,27 +1060,27 @@ class TestMockExchangeAdapter:
 
 class TestOrderManagerPlace:
     """Tests for OrderManager.place_order()."""
-    
+
     async def test_creates_order_state(self, order_manager, mock_adapter):
         """place_order should create OrderState."""
         intent = OrderIntent(client_order_id="test-123", ...)
         state = await order_manager.place_order(intent)
         assert state is not None
         assert state.client_order_id == "test-123"
-    
+
     async def test_generates_internal_id(self, order_manager):
         """place_order should generate internal order ID."""
         intent = OrderIntent(client_order_id="test-123", ...)
         state = await order_manager.place_order(intent)
         assert state.id is not None
         assert len(state.id) == 36  # UUID format
-    
+
     async def test_submits_to_exchange(self, order_manager, mock_adapter):
         """place_order should submit to exchange adapter."""
         intent = OrderIntent(client_order_id="test-123", ...)
         state = await order_manager.place_order(intent)
         assert state.exchange_order_id is not None
-    
+
     async def test_idempotent_with_same_client_order_id(self, order_manager):
         """Duplicate client_order_id should return existing order."""
         intent = OrderIntent(client_order_id="test-123", ...)
@@ -1088,7 +1088,7 @@ class TestOrderManagerPlace:
         state2 = await order_manager.place_order(intent)
         assert state1.id == state2.id
         assert state1.exchange_order_id == state2.exchange_order_id
-    
+
     async def test_different_client_order_ids_create_different_orders(self, order_manager):
         """Different client_order_ids should create different orders."""
         intent1 = OrderIntent(client_order_id="test-123", ...)
@@ -1100,7 +1100,7 @@ class TestOrderManagerPlace:
 
 class TestOrderManagerIdempotency:
     """Tests for order idempotency guarantees."""
-    
+
     async def test_concurrent_same_order_returns_same(self, order_manager):
         """Concurrent submissions with same client_order_id return same order."""
         intent = OrderIntent(client_order_id="test-123", ...)
@@ -1113,13 +1113,13 @@ class TestOrderManagerIdempotency:
         # All should return the same order
         ids = {r.id for r in results}
         assert len(ids) == 1
-    
+
     async def test_is_duplicate_returns_true_for_existing(self, order_manager):
         """is_duplicate should return True for existing client_order_id."""
         intent = OrderIntent(client_order_id="test-123", ...)
         await order_manager.place_order(intent)
         assert order_manager.is_duplicate("test-123") is True
-    
+
     async def test_is_duplicate_returns_false_for_new(self, order_manager):
         """is_duplicate should return False for new client_order_id."""
         assert order_manager.is_duplicate("non-existent") is False
@@ -1127,7 +1127,7 @@ class TestOrderManagerIdempotency:
 
 class TestOrderManagerCancel:
     """Tests for OrderManager.cancel_order()."""
-    
+
     async def test_cancels_pending_order(self, order_manager):
         """cancel_order should work for pending orders."""
         intent = OrderIntent(
@@ -1138,12 +1138,12 @@ class TestOrderManagerCancel:
         state = await order_manager.place_order(intent)
         cancelled = await order_manager.cancel_order("test-123")
         assert cancelled.status == OrderStatus.CANCELLED
-    
+
     async def test_raises_for_unknown_order(self, order_manager):
         """cancel_order should raise for unknown client_order_id."""
         with pytest.raises(OrderNotFoundError):
             await order_manager.cancel_order("non-existent")
-    
+
     async def test_raises_for_filled_order(self, order_manager):
         """cancel_order should raise for already-filled orders."""
         intent = OrderIntent(
@@ -1158,7 +1158,7 @@ class TestOrderManagerCancel:
 
 class TestOrderManagerList:
     """Tests for OrderManager.list_orders()."""
-    
+
     async def test_returns_all_orders(self, order_manager):
         """list_orders should return all orders."""
         for i in range(3):
@@ -1166,7 +1166,7 @@ class TestOrderManagerList:
             await order_manager.place_order(intent)
         orders = await order_manager.list_orders()
         assert len(orders) == 3
-    
+
     async def test_filters_by_run_id(self, order_manager):
         """list_orders should filter by run_id."""
         intent1 = OrderIntent(run_id="run-1", client_order_id="test-1", ...)
@@ -1185,7 +1185,7 @@ class TestOrderManagerList:
 
 class TestMarketDataProviderBars:
     """Tests for MarketDataProvider.get_bars()."""
-    
+
     async def test_returns_bars_from_adapter(self, market_data, mock_adapter):
         """get_bars should return bars from adapter."""
         bars = await market_data.get_bars(
@@ -1195,7 +1195,7 @@ class TestMarketDataProviderBars:
         )
         assert len(bars) > 0
         assert all(isinstance(b, Bar) for b in bars)
-    
+
     async def test_caches_recent_requests(self, market_data, mock_adapter):
         """Repeated requests should use cache."""
         start = datetime.now(UTC) - timedelta(hours=1)
@@ -1203,7 +1203,7 @@ class TestMarketDataProviderBars:
         bars2 = await market_data.get_bars("BTC/USD", "1m", start)
         # Mock adapter call count should be 1 (cached)
         assert mock_adapter.get_bars_call_count == 1
-    
+
     async def test_cache_expires(self, market_data):
         """Cache should expire after TTL."""
         # Use short TTL for test
@@ -1218,14 +1218,14 @@ class TestMarketDataProviderBars:
 
 class TestMarketDataProviderQuotes:
     """Tests for MarketDataProvider quote methods."""
-    
+
     async def test_get_latest_quote(self, market_data):
         """get_latest_quote should return quote from adapter."""
         quote = await market_data.get_latest_quote("BTC/USD")
         assert quote is not None
         assert quote.symbol == "BTC/USD"
         assert quote.bid_price > 0
-    
+
     async def test_quotes_not_cached(self, market_data, mock_adapter):
         """Quotes should not be cached (real-time data)."""
         await market_data.get_latest_quote("BTC/USD")
@@ -1240,7 +1240,7 @@ class TestMarketDataProviderQuotes:
 
 class TestAlpacaAdapterSubmitOrder:
     """Tests for AlpacaAdapter.submit_order() with mocked HTTP."""
-    
+
     @pytest.fixture
     def mock_alpaca_api(self, respx_mock):
         """Mock Alpaca API responses."""
@@ -1257,7 +1257,7 @@ class TestAlpacaAdapterSubmitOrder:
             )
         )
         return respx_mock
-    
+
     async def test_submit_market_order(self, alpaca_adapter, mock_alpaca_api):
         """Submit market order to Alpaca."""
         intent = OrderIntent(
@@ -1271,7 +1271,7 @@ class TestAlpacaAdapterSubmitOrder:
         result = await alpaca_adapter.submit_order(intent)
         assert result.success is True
         assert result.exchange_order_id == "exch-123"
-    
+
     async def test_submit_limit_order_includes_price(self, alpaca_adapter, mock_alpaca_api):
         """Limit order should include limit_price."""
         intent = OrderIntent(
@@ -1284,7 +1284,7 @@ class TestAlpacaAdapterSubmitOrder:
         request = mock_alpaca_api.calls[0].request
         body = json.loads(request.content)
         assert body["limit_price"] == "50000.00"
-    
+
     async def test_handles_rejection(self, alpaca_adapter, respx_mock):
         """Handle order rejection from Alpaca."""
         respx_mock.post("https://paper-api.alpaca.markets/v2/orders").mock(
@@ -1294,7 +1294,7 @@ class TestAlpacaAdapterSubmitOrder:
         result = await alpaca_adapter.submit_order(intent)
         assert result.success is False
         assert result.error_message == "Insufficient funds"
-    
+
     async def test_handles_rate_limit(self, alpaca_adapter, respx_mock):
         """Handle rate limit from Alpaca."""
         respx_mock.post("https://paper-api.alpaca.markets/v2/orders").mock(
@@ -1308,7 +1308,7 @@ class TestAlpacaAdapterSubmitOrder:
 
 class TestAlpacaAdapterMarketData:
     """Tests for AlpacaAdapter market data methods."""
-    
+
     async def test_get_bars_parses_response(self, alpaca_adapter, respx_mock):
         """get_bars should parse Alpaca bar response."""
         respx_mock.get(
@@ -1338,7 +1338,7 @@ class TestAlpacaAdapterMarketData:
 
 class TestVedaServiceOrderHandling:
     """Tests for VedaService order event handling."""
-    
+
     async def test_handle_place_order_event(self, veda_service, mock_adapter):
         """handle_place_order should process live.PlaceOrder event."""
         event = Envelope(
@@ -1359,7 +1359,7 @@ class TestVedaServiceOrderHandling:
         order = await veda_service._order_manager.get_order("test-123")
         assert order is not None
         assert order.symbol == "BTC/USD"
-    
+
     async def test_emits_order_created_event(self, veda_service, mock_event_log):
         """handle_place_order should emit orders.Created event."""
         event = Envelope(type="live.PlaceOrder", payload={...})
@@ -1367,7 +1367,7 @@ class TestVedaServiceOrderHandling:
         # Verify event was logged
         events = mock_event_log.get_events_by_type("orders.Created")
         assert len(events) == 1
-    
+
     async def test_emits_order_filled_event(self, veda_service, mock_event_log):
         """Market order should emit orders.Filled event."""
         event = Envelope(
@@ -1381,7 +1381,7 @@ class TestVedaServiceOrderHandling:
 
 class TestVedaServiceMarketData:
     """Tests for VedaService market data handling."""
-    
+
     async def test_handle_fetch_window(self, veda_service, mock_adapter):
         """handle_fetch_window should fetch and emit data."""
         event = Envelope(
@@ -1399,7 +1399,7 @@ class TestVedaServiceMarketData:
         # Verify data.WindowReady event emitted
         events = mock_event_log.get_events_by_type("data.WindowReady")
         assert len(events) == 1
-    
+
     async def test_get_bars_returns_data(self, veda_service):
         """get_bars should return market data."""
         bars = await veda_service.get_bars(
@@ -1412,12 +1412,12 @@ class TestVedaServiceMarketData:
 
 class TestVedaServiceAccount:
     """Tests for VedaService account methods."""
-    
+
     async def test_get_account(self, veda_service):
         """get_account should return account info."""
         account = await veda_service.get_account()
         assert account.buying_power > 0
-    
+
     async def test_get_positions(self, veda_service):
         """get_positions should return positions list."""
         positions = await veda_service.get_positions()
@@ -1500,7 +1500,7 @@ def sample_order_intent():
 ### B.3 MVP-1: Models, Interfaces, Exceptions
 
 > **Implements**: Core data structures and contracts
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/
@@ -1520,7 +1520,7 @@ def sample_order_intent():
 ### B.4 MVP-2: MockExchangeAdapter
 
 > **Implements**: Mock adapter for testing
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/adapters/
@@ -1547,7 +1547,7 @@ def sample_order_intent():
 ### B.5 MVP-3: OrderManager Core
 
 > **Implements**: Order lifecycle management
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/
@@ -1571,7 +1571,7 @@ def sample_order_intent():
 ### B.6 MVP-4: MarketDataProvider
 
 > **Implements**: Market data with caching
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/
@@ -1595,7 +1595,7 @@ def sample_order_intent():
 ### B.7 MVP-5: AlpacaAdapter
 
 > **Implements**: Real Alpaca API integration
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/adapters/
@@ -1625,12 +1625,12 @@ def sample_order_intent():
 ### B.8 MVP-6: VedaService + GLaDOS Integration
 
 > **Implements**: Service orchestration and event handling
-> 
+>
 > **Deliverables**:
 > ```
 > src/veda/
 > └── veda_service.py  # VedaService class
-> 
+>
 > # Updates to GLaDOS
 > src/glados/services/
 > └── order_service.py  # Update to use Veda

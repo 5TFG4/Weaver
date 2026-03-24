@@ -456,12 +456,12 @@ Used for **live trading** where ticks must align to actual wall‑clock time.
 class RealtimeClock(BaseClock):
     """
     Emits clock.Tick aligned to wall-clock bar boundaries.
-    
+
     Example for 1-minute bars:
       - 09:30:00.000 → Tick
       - 09:31:00.000 → Tick
       - 09:32:00.000 → Tick
-    
+
     Handles drift by recalculating sleep duration each iteration.
     """
     async def _tick_loop(self):
@@ -486,7 +486,7 @@ Used for **backtesting** where simulation should run as fast as possible.
 class BacktestClock(BaseClock):
     """
     Emits clock.Tick as fast as possible for backtesting.
-    
+
     Does NOT sleep. Advances simulated time immediately.
     Waits for strategy acknowledgment before next tick (backpressure).
     """
@@ -560,7 +560,7 @@ src/glados/
 ## 13. Implementation Roadmap (Test‑Driven)
 
 > This project follows **Test‑Driven Development (TDD)** to ensure reliability and prevent scope creep.
-> 
+>
 > **Core Principle**: Write tests FIRST, then implement just enough code to pass.
 
 ### 13.1 Testing Strategy Overview
@@ -753,7 +753,7 @@ def mock_alpaca():
 # tests/unit/events/test_protocol.py
 def test_envelope_creation():
     """Envelope should have all required fields."""
-    
+
 def test_envelope_immutable():
     """Envelope should be frozen after creation."""
 
@@ -1062,16 +1062,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
+
       - name: Install dependencies
         run: pip install -r docker/backend/requirements.dev.txt
-      
+
       - name: Run unit tests
         run: pytest tests/unit -v --cov=src --cov-report=xml
-      
+
       - name: Run integration tests
         run: pytest tests/integration -v
-      
+
       - name: Check coverage
         run: coverage report --fail-under=80
 ```

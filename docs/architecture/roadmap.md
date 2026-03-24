@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: high-level phase roadmap and architecture entry-gate framing.  
-> **Authoritative for**: roadmap phases and gate checklist framing only.  
+> **Document Charter**
+> **Primary role**: high-level phase roadmap and architecture entry-gate framing.
+> **Authoritative for**: roadmap phases and gate checklist framing only.
 > **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`) or latest test counts/coverage (use `../TEST_COVERAGE.md`).
 
 ---
@@ -23,7 +23,7 @@
 
 **Detailed designs go in**: `docs/archive/milestone-details/mX-name.md`
 
-**Active issue tracking goes in**: `docs/DESIGN_AUDIT.md`  
+**Active issue tracking goes in**: `docs/DESIGN_AUDIT.md`
 **Historical issue trail remains in**: `docs/AUDIT_FINDINGS.md`
 
 ---

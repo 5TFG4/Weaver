@@ -1,9 +1,9 @@
 # M6: Live Trading (Paper/Live Flow)
 
-> **Status**: ✅ COMPLETE (2026-02-04)  
-> **Prerequisite**: M5 (Marvin Core) ✅  
-> **Actual Effort**: ~1.5 weeks  
-> **Tests Added**: 101 (M6-1: 40, M6-2: 23, M6-3: 13, M6-4: 15, M6-5: 10)  
+> **Status**: ✅ COMPLETE (2026-02-04)
+> **Prerequisite**: M5 (Marvin Core) ✅
+> **Actual Effort**: ~1.5 weeks
+> **Tests Added**: 101 (M6-1: 40, M6-2: 23, M6-3: 13, M6-4: 15, M6-5: 10)
 > **Total Tests**: 806
 
 ---
@@ -46,30 +46,30 @@ The `ExchangeAdapter` protocol defines how adapters communicate with exchanges:
 ```python
 class ExchangeAdapter(ABC):
     """Abstract interface for exchange communication."""
-    
+
     # Connection Management (added M6-4)
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
     @property
     def is_connected(self) -> bool: ...
-    
+
     # Order Management
     async def submit_order(self, intent: OrderIntent) -> OrderSubmitResult: ...
     async def cancel_order(self, exchange_order_id: str) -> bool: ...
     async def get_order(self, exchange_order_id: str) -> ExchangeOrder | None: ...
     async def list_orders(...) -> list[ExchangeOrder]: ...
-    
+
     # Account & Positions
     async def get_account(self) -> AccountInfo: ...
     async def get_positions(self) -> list[Position]: ...
     async def get_position(self, symbol: str) -> Position | None: ...
-    
+
     # Market Data
     async def get_bars(symbol, timeframe, start, end, limit) -> list[Bar]: ...
     async def get_latest_bar(self, symbol: str) -> Bar | None: ...
     async def get_latest_quote(self, symbol: str) -> Quote | None: ...
     async def get_latest_trade(self, symbol: str) -> Trade | None: ...
-    
+
     # Streaming (Future)
     async def stream_bars(self, symbols: list[str]) -> AsyncIterator[Bar]: ...
     async def stream_quotes(self, symbols: list[str]) -> AsyncIterator[Quote]: ...
@@ -144,18 +144,18 @@ class AlpacaAdapter:
         """Initialize API clients and verify connection."""
         if self._connected:
             return  # Idempotent
-        
+
         self._trading_client = TradingClient(...)
         self._stock_data_client = StockHistoricalDataClient(...)
         self._crypto_data_client = CryptoHistoricalDataClient(...)
-        
+
         # Verify connection via account check
         account = self._trading_client.get_account()
         if account.status != AccountStatus.ACTIVE:
             raise ExchangeConnectionError("Account not active")
-        
+
         self._connected = True
-    
+
     def _require_connection(self) -> None:
         """Guard: raise if not connected."""
         if not self._connected:
@@ -364,14 +364,14 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class AdapterMeta:
     """Metadata for an exchange adapter plugin."""
-    
+
     id: str                          # Unique identifier (e.g., "alpaca")
     name: str                        # Human-readable name
     version: str                     # Semantic version
     class_name: str                  # Class to instantiate
     module_path: str                 # Module path (auto-set by loader)
     supported_features: tuple[str, ...]  # e.g., ("stocks", "crypto", "paper")
-    
+
     @classmethod
     def from_dict(cls, data: dict, module_path: str) -> "AdapterMeta":
         """Create AdapterMeta from ADAPTER_META dict."""
@@ -408,52 +408,52 @@ class AdapterNotFoundError(Exception):
 class PluginAdapterLoader:
     """
     Plugin-based adapter loader with auto-discovery.
-    
+
     Scans adapters/ directory for files with ADAPTER_META constant.
     Uses AST parsing to extract metadata without importing modules.
-    
+
     Usage:
         loader = PluginAdapterLoader()
         available = loader.list_available()
         adapter = loader.load("alpaca", credentials)
     """
-    
+
     def __init__(self, adapter_dir: Path | None = None) -> None:
         """
         Initialize loader.
-        
+
         Args:
             adapter_dir: Directory to scan. Defaults to src/veda/adapters/
         """
         self._adapter_dir = adapter_dir or Path(__file__).parent / "adapters"
         self._metadata: dict[str, AdapterMeta] = {}
         self._scan_adapters()
-    
+
     def _scan_adapters(self) -> None:
         """Scan adapter directory for plugins with ADAPTER_META."""
         if not self._adapter_dir.exists():
             logger.warning(f"Adapter directory not found: {self._adapter_dir}")
             return
-        
+
         for file in self._adapter_dir.glob("*.py"):
             if file.name.startswith("_"):
                 continue
-            
+
             meta = self._extract_metadata(file)
             if meta:
                 self._metadata[meta.id] = meta
                 logger.debug(f"Discovered adapter: {meta.id} ({meta.name})")
-    
+
     def _extract_metadata(self, path: Path) -> AdapterMeta | None:
         """
         Extract ADAPTER_META from file without full module import.
-        
+
         Uses AST parsing for safety - broken imports don't crash the loader.
         """
         try:
             source = path.read_text()
             tree = ast.parse(source)
-            
+
             for node in ast.walk(tree):
                 if isinstance(node, ast.Assign):
                     for target in node.targets:
@@ -466,67 +466,67 @@ class PluginAdapterLoader:
             logger.warning(f"Syntax error in {path}: {e}")
         except Exception as e:
             logger.warning(f"Failed to extract metadata from {path}: {e}")
-        
+
         return None
-    
+
     def _eval_dict_node(self, node: ast.expr) -> dict | None:
         """Safely evaluate a dict AST node to a Python dict."""
         if not isinstance(node, ast.Dict):
             return None
-        
+
         result = {}
         for key, value in zip(node.keys, node.values):
             if key is None:  # **spread operator
                 continue
-            
+
             # Only handle string keys
             if isinstance(key, ast.Constant) and isinstance(key.value, str):
                 key_str = key.value
             else:
                 continue
-            
+
             # Handle various value types
             if isinstance(value, ast.Constant):
                 result[key_str] = value.value
             elif isinstance(value, ast.List):
                 result[key_str] = [
-                    el.value for el in value.elts 
+                    el.value for el in value.elts
                     if isinstance(el, ast.Constant)
                 ]
             elif isinstance(value, ast.Tuple):
                 result[key_str] = tuple(
-                    el.value for el in value.elts 
+                    el.value for el in value.elts
                     if isinstance(el, ast.Constant)
                 )
-        
+
         return result
-    
+
     def list_available(self) -> list[AdapterMeta]:
         """List all discovered adapters."""
         return list(self._metadata.values())
-    
+
     def get_metadata(self, adapter_id: str) -> AdapterMeta | None:
         """Get metadata for specific adapter."""
         return self._metadata.get(adapter_id)
-    
+
     def supports_feature(self, adapter_id: str, feature: str) -> bool:
         """Check if adapter supports a specific feature."""
         meta = self._metadata.get(adapter_id)
         if not meta:
             return False
         return feature in meta.supported_features
-    
+
     def load(self, adapter_id: str, credentials: Any = None) -> ExchangeAdapter:
         """
         Load and instantiate adapter by ID.
-        
+
         Args:
             adapter_id: The adapter's declared ID
             credentials: Credentials to pass to adapter constructor
-            
+
         Returns:
             Instantiated ExchangeAdapter
-            
+
         Raises:
             AdapterNotFoundError: If adapter_id not found
         """
@@ -535,13 +535,13 @@ class PluginAdapterLoader:
             raise AdapterNotFoundError(
                 f"Adapter not found: {adapter_id}. Available: {available}"
             )
-        
+
         meta = self._metadata[adapter_id]
-        
+
         # Dynamic import
         module = importlib.import_module(f"src.veda.adapters.{meta.module_path}")
         adapter_class = getattr(module, meta.class_name)
-        
+
         # Instantiate with credentials (if required)
         if credentials is not None:
             return adapter_class(credentials)
@@ -586,7 +586,7 @@ Update AlpacaAdapter to properly initialize Alpaca SDK clients:
 
 class AlpacaAdapter(ExchangeAdapter):
     """Alpaca Markets exchange adapter."""
-    
+
     def __init__(
         self,
         api_key: str,
@@ -595,51 +595,51 @@ class AlpacaAdapter(ExchangeAdapter):
     ) -> None:
         if not api_key or not api_secret:
             raise ValueError("API key and secret are required")
-        
+
         self._api_key = api_key
         self._api_secret = api_secret
         self._paper = paper
-        
+
         # Clients (initialized by connect())
         self._trading_client: TradingClient | None = None
         self._crypto_data_client: CryptoHistoricalDataClient | None = None
         self._stock_data_client: StockHistoricalDataClient | None = None
         self._connected = False
-    
+
     @property
     def is_connected(self) -> bool:
         """Whether adapter has active connection."""
         return self._connected
-    
+
     async def connect(self) -> None:
         """
         Initialize API clients and verify connection.
-        
+
         Creates:
         - TradingClient for order management
         - CryptoHistoricalDataClient for crypto bars
         - StockHistoricalDataClient for stock bars
-        
+
         Raises:
             ConnectionError: If account not active or unreachable
         """
         if self._connected:
             return
-        
+
         try:
             from alpaca.trading.client import TradingClient
             from alpaca.data.historical import (
                 CryptoHistoricalDataClient,
                 StockHistoricalDataClient,
             )
-            
+
             # Initialize trading client
             self._trading_client = TradingClient(
                 api_key=self._api_key,
                 secret_key=self._api_secret,
                 paper=self._paper,
             )
-            
+
             # Initialize data clients
             self._crypto_data_client = CryptoHistoricalDataClient(
                 api_key=self._api_key,
@@ -649,20 +649,20 @@ class AlpacaAdapter(ExchangeAdapter):
                 api_key=self._api_key,
                 secret_key=self._api_secret,
             )
-            
+
             # Verify connection by fetching account
             account = self._trading_client.get_account()
             if account.status != "ACTIVE":
                 raise ConnectionError(
                     f"Alpaca account not active: {account.status}"
                 )
-            
+
             self._connected = True
             logger.info(
                 f"AlpacaAdapter connected (paper={self._paper}, "
                 f"account={account.account_number})"
             )
-            
+
         except ImportError as e:
             raise RuntimeError(
                 "alpaca-py package not installed. "
@@ -671,7 +671,7 @@ class AlpacaAdapter(ExchangeAdapter):
         except Exception as e:
             self._connected = False
             raise ConnectionError(f"Failed to connect to Alpaca: {e}") from e
-    
+
     async def disconnect(self) -> None:
         """Clean up clients."""
         self._trading_client = None
@@ -679,7 +679,7 @@ class AlpacaAdapter(ExchangeAdapter):
         self._stock_data_client = None
         self._connected = False
         logger.info("AlpacaAdapter disconnected")
-    
+
     def _require_connection(self) -> None:
         """Raise if not connected."""
         if not self._connected:
@@ -716,7 +716,7 @@ async def create_order(
 ) -> OrderResponse:
     """
     Create a new order.
-    
+
     Submits order to exchange via VedaService:
     1. Validates order parameters
     2. Submits to exchange adapter
@@ -728,7 +728,7 @@ async def create_order(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Trading service not available (no credentials configured)",
         )
-    
+
     intent = OrderIntent(
         symbol=order.symbol,
         side=OrderSide(order.side),
@@ -737,9 +737,9 @@ async def create_order(
         limit_price=order.limit_price,
         client_order_id=order.client_order_id,
     )
-    
+
     state = await veda_service.place_order(intent)
-    
+
     return OrderResponse(
         id=state.order_id,
         client_order_id=state.client_order_id,
@@ -789,7 +789,7 @@ async def start(self, run_id: str) -> Run:
     run = self._runs.get(run_id)
     if not run:
         raise RunNotFoundError(run_id)
-    
+
     # Create clock based on run mode
     if run.mode == RunMode.LIVE:
         clock = RealtimeClock(
@@ -803,7 +803,7 @@ async def start(self, run_id: str) -> Run:
             end=run.end_time,
             run_id=run_id,
         )
-    
+
     self._clocks[run_id] = clock
     # ... rest of start logic
 ```
@@ -812,7 +812,7 @@ async def start(self, run_id: str) -> Run:
 
 ## 5. MVP Implementation Plan
 
-> **Methodology**: TDD (Test-Driven Development)  
+> **Methodology**: TDD (Test-Driven Development)
 > **Pattern**: RED → GREEN → REFACTOR
 
 ### MVP Overview
@@ -860,7 +860,7 @@ async def start(self, run_id: str) -> Run:
 
 class TestAdapterMeta:
     """Tests for AdapterMeta dataclass."""
-    
+
     def test_from_dict_with_all_fields(self):
         """Create AdapterMeta from complete dict."""
         data = {
@@ -871,28 +871,28 @@ class TestAdapterMeta:
             "supported_features": ["feature1", "feature2"],
         }
         meta = AdapterMeta.from_dict(data, "test_module")
-        
+
         assert meta.id == "test"
         assert meta.name == "Test Adapter"
         assert meta.version == "2.0.0"
         assert meta.class_name == "TestAdapter"
         assert meta.module_path == "test_module"
         assert meta.supported_features == ("feature1", "feature2")
-    
+
     def test_from_dict_with_minimal_fields(self):
         """Create AdapterMeta with only required fields."""
         data = {"id": "minimal", "class": "MinimalAdapter"}
         meta = AdapterMeta.from_dict(data, "minimal_module")
-        
+
         assert meta.id == "minimal"
         assert meta.name == "minimal"  # defaults to id
         assert meta.version == "1.0.0"  # default version
         assert meta.supported_features == ()  # empty tuple
-    
+
     def test_adapter_meta_is_frozen(self):
         """AdapterMeta is immutable."""
         meta = AdapterMeta.from_dict({"id": "x", "class": "X"}, "m")
-        
+
         with pytest.raises(FrozenInstanceError):
             meta.id = "changed"
 
@@ -901,13 +901,13 @@ class TestAdapterMeta:
 
 class TestPluginAdapterLoader:
     """Tests for PluginAdapterLoader."""
-    
+
     @pytest.fixture
     def temp_adapter_dir(self, tmp_path):
         """Create temp directory with test adapter files."""
         adapter_dir = tmp_path / "adapters"
         adapter_dir.mkdir()
-        
+
         # Valid adapter
         (adapter_dir / "valid_adapter.py").write_text('''
 ADAPTER_META = {
@@ -921,50 +921,50 @@ ADAPTER_META = {
 class ValidAdapter:
     def __init__(self, credentials=None): pass
 ''')
-        
+
         # Adapter without meta (should be skipped)
         (adapter_dir / "no_meta.py").write_text('''
 class NoMetaAdapter:
     pass
 ''')
-        
+
         return adapter_dir
-    
+
     def test_discovers_adapters_in_directory(self, temp_adapter_dir):
         """Scans directory and finds adapters with ADAPTER_META."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         available = loader.list_available()
-        
+
         assert len(available) == 1
         assert available[0].id == "valid-test"
-    
+
     def test_skips_files_without_adapter_meta(self, temp_adapter_dir):
         """Files without ADAPTER_META are not discovered."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         ids = [m.id for m in loader.list_available()]
-        
+
         assert "no_meta" not in ids
-    
+
     def test_skips_private_files(self, temp_adapter_dir):
         """Files starting with _ are skipped."""
         (temp_adapter_dir / "_private.py").write_text('''
 ADAPTER_META = {"id": "private", "class": "Private"}
 class Private: pass
 ''')
-        
+
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         ids = [m.id for m in loader.list_available()]
-        
+
         assert "private" not in ids
-    
+
     def test_load_adapter_by_id(self, temp_adapter_dir):
         """Loads adapter by its declared ID."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         adapter = loader.load("valid-test")
-        
+
         assert adapter is not None
         assert adapter.__class__.__name__ == "ValidAdapter"
-    
+
     def test_load_adapter_with_credentials(self, temp_adapter_dir):
         """Passes credentials to adapter constructor."""
         (temp_adapter_dir / "cred_adapter.py").write_text('''
@@ -974,27 +974,27 @@ class CredAdapter:
     def __init__(self, credentials):
         self.creds = credentials
 ''')
-        
+
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         loader._scan_adapters()  # Rescan
         adapter = loader.load("cred", credentials={"key": "secret"})
-        
+
         assert adapter.creds == {"key": "secret"}
-    
+
     def test_unknown_adapter_raises_not_found(self, temp_adapter_dir):
         """AdapterNotFoundError for unknown adapter_id."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
-        
+
         with pytest.raises(AdapterNotFoundError, match="nonexistent"):
             loader.load("nonexistent")
-    
+
     def test_error_includes_available_adapters(self, temp_adapter_dir):
         """Error message lists available adapters."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
-        
+
         with pytest.raises(AdapterNotFoundError, match="valid-test"):
             loader.load("nonexistent")
-    
+
     def test_extracts_metadata_without_importing(self, temp_adapter_dir):
         """Reads ADAPTER_META via AST, not import."""
         # Add file with import error
@@ -1003,53 +1003,53 @@ ADAPTER_META = {"id": "broken", "class": "Broken"}
 import nonexistent_module_xyz
 class Broken: pass
 ''')
-        
+
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         available = loader.list_available()
-        
+
         # Should discover metadata even though import would fail
         assert any(m.id == "broken" for m in available)
-    
+
     def test_get_metadata_by_id(self, temp_adapter_dir):
         """get_metadata() returns AdapterMeta for known ID."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         meta = loader.get_metadata("valid-test")
-        
+
         assert meta is not None
         assert meta.id == "valid-test"
-    
+
     def test_get_metadata_returns_none_for_unknown(self, temp_adapter_dir):
         """get_metadata() returns None for unknown ID."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
         meta = loader.get_metadata("unknown")
-        
+
         assert meta is None
-    
+
     def test_supports_feature_true(self, temp_adapter_dir):
         """supports_feature() returns True for supported feature."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
-        
+
         assert loader.supports_feature("valid-test", "testing") is True
-    
+
     def test_supports_feature_false(self, temp_adapter_dir):
         """supports_feature() returns False for unsupported feature."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
-        
+
         assert loader.supports_feature("valid-test", "live_trading") is False
-    
+
     def test_supports_feature_unknown_adapter(self, temp_adapter_dir):
         """supports_feature() returns False for unknown adapter."""
         loader = PluginAdapterLoader(adapter_dir=temp_adapter_dir)
-        
+
         assert loader.supports_feature("unknown", "testing") is False
-    
+
     def test_empty_directory_returns_empty_list(self, tmp_path):
         """Empty directory returns empty list."""
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
-        
+
         loader = PluginAdapterLoader(adapter_dir=empty_dir)
-        
+
         assert loader.list_available() == []
 ```
 
@@ -1083,7 +1083,7 @@ class Broken: pass
 
 class TestAlpacaAdapterConnection:
     """Tests for AlpacaAdapter connection management."""
-    
+
     @pytest.fixture
     def mock_alpaca_api(self, mocker):
         """Mock Alpaca SDK clients."""
@@ -1095,7 +1095,7 @@ class TestAlpacaAdapterConnection:
         mock_account.status = "ACTIVE"
         mock_account.account_number = "PA123456"
         mock_trading.return_value.get_account.return_value = mock_account
-        
+
         # Mock data clients
         mock_crypto = mocker.patch(
             "src.veda.adapters.alpaca_adapter.CryptoHistoricalDataClient"
@@ -1103,14 +1103,14 @@ class TestAlpacaAdapterConnection:
         mock_stock = mocker.patch(
             "src.veda.adapters.alpaca_adapter.StockHistoricalDataClient"
         )
-        
+
         return SimpleNamespace(
             trading=mock_trading,
             crypto=mock_crypto,
             stock=mock_stock,
             account=mock_account,
         )
-    
+
     @pytest.fixture
     def adapter(self):
         """Create unconnected adapter."""
@@ -1119,85 +1119,85 @@ class TestAlpacaAdapterConnection:
             api_secret="test-secret",
             paper=True,
         )
-    
+
     async def test_connect_creates_trading_client(self, adapter, mock_alpaca_api):
         """connect() creates TradingClient with correct params."""
         await adapter.connect()
-        
+
         mock_alpaca_api.trading.assert_called_once_with(
             api_key="test-key",
             secret_key="test-secret",
             paper=True,
         )
-    
+
     async def test_connect_creates_crypto_data_client(self, adapter, mock_alpaca_api):
         """connect() creates CryptoHistoricalDataClient."""
         await adapter.connect()
-        
+
         mock_alpaca_api.crypto.assert_called_once_with(
             api_key="test-key",
             secret_key="test-secret",
         )
-    
+
     async def test_connect_creates_stock_data_client(self, adapter, mock_alpaca_api):
         """connect() creates StockHistoricalDataClient."""
         await adapter.connect()
-        
+
         mock_alpaca_api.stock.assert_called_once_with(
             api_key="test-key",
             secret_key="test-secret",
         )
-    
+
     async def test_connect_verifies_account_status(self, adapter, mock_alpaca_api):
         """connect() verifies account is ACTIVE."""
         await adapter.connect()
-        
+
         mock_alpaca_api.trading.return_value.get_account.assert_called_once()
-    
+
     async def test_connect_sets_is_connected(self, adapter, mock_alpaca_api):
         """connect() sets is_connected to True."""
         assert adapter.is_connected is False
-        
+
         await adapter.connect()
-        
+
         assert adapter.is_connected is True
-    
+
     async def test_connect_inactive_account_raises(self, adapter, mock_alpaca_api):
         """connect() raises ConnectionError if account not ACTIVE."""
         mock_alpaca_api.account.status = "INACTIVE"
-        
+
         with pytest.raises(ConnectionError, match="not active"):
             await adapter.connect()
-        
+
         assert adapter.is_connected is False
-    
+
     async def test_connect_api_error_raises(self, adapter, mock_alpaca_api):
         """connect() raises ConnectionError on API failure."""
         mock_alpaca_api.trading.return_value.get_account.side_effect = Exception(
             "API Error"
         )
-        
+
         with pytest.raises(ConnectionError, match="Failed to connect"):
             await adapter.connect()
-    
+
     async def test_connect_idempotent(self, adapter, mock_alpaca_api):
         """Multiple connect() calls don't re-initialize."""
         await adapter.connect()
         await adapter.connect()
-        
+
         # Should only be called once
         assert mock_alpaca_api.trading.call_count == 1
-    
+
     async def test_disconnect_clears_clients(self, adapter, mock_alpaca_api):
         """disconnect() sets all clients to None."""
         await adapter.connect()
         await adapter.disconnect()
-        
+
         assert adapter._trading_client is None
         assert adapter._crypto_data_client is None
         assert adapter._stock_data_client is None
         assert adapter.is_connected is False
-    
+
     async def test_submit_order_requires_connection(self, adapter):
         """submit_order() raises RuntimeError if not connected."""
         intent = OrderIntent(
@@ -1206,22 +1206,22 @@ class TestAlpacaAdapterConnection:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         with pytest.raises(RuntimeError, match="not connected"):
             await adapter.submit_order(intent)
-    
+
     async def test_get_bars_requires_connection(self, adapter):
         """get_bars() raises RuntimeError if not connected."""
         with pytest.raises(RuntimeError, match="not connected"):
             await adapter.get_bars("BTC/USD", "1m", datetime.now(), datetime.now())
-    
+
     async def test_paper_mode_flag_passed(self, adapter, mock_alpaca_api):
         """paper=True passed to TradingClient."""
         await adapter.connect()
-        
+
         call_kwargs = mock_alpaca_api.trading.call_args.kwargs
         assert call_kwargs["paper"] is True
-    
+
     async def test_live_mode_flag_passed(self, mock_alpaca_api):
         """paper=False passed for live trading."""
         adapter = AlpacaAdapter(
@@ -1230,7 +1230,7 @@ class TestAlpacaAdapterConnection:
             paper=False,
         )
         await adapter.connect()
-        
+
         call_kwargs = mock_alpaca_api.trading.call_args.kwargs
         assert call_kwargs["paper"] is False
 ```
@@ -1264,7 +1264,7 @@ class TestAlpacaAdapterConnection:
 
 class TestOrderRoutesWithVeda:
     """Tests for order routes using VedaService."""
-    
+
     @pytest.fixture
     def mock_veda_service(self, mocker):
         """Mock VedaService."""
@@ -1277,20 +1277,20 @@ class TestOrderRoutesWithVeda:
             created_at=datetime.now(UTC),
         ))
         return mock
-    
+
     @pytest.fixture
     def app_with_veda(self, mock_veda_service):
         """Create app with mocked VedaService."""
         app = create_app()
         app.state.veda_service = mock_veda_service
         return app
-    
+
     @pytest.fixture
     async def client(self, app_with_veda):
         """Async test client."""
         async with AsyncClient(app=app_with_veda, base_url="http://test") as ac:
             yield ac
-    
+
     async def test_create_order_calls_veda_service(self, client, mock_veda_service):
         """POST /orders calls VedaService.place_order."""
         response = await client.post("/api/v1/orders", json={
@@ -1299,10 +1299,10 @@ class TestOrderRoutesWithVeda:
             "qty": "1.5",
             "order_type": "market",
         })
-        
+
         assert response.status_code == 201
         mock_veda_service.place_order.assert_called_once()
-    
+
     async def test_create_order_passes_intent_correctly(self, client, mock_veda_service):
         """Order intent fields mapped correctly to VedaService."""
         await client.post("/api/v1/orders", json={
@@ -1313,17 +1313,17 @@ class TestOrderRoutesWithVeda:
             "limit_price": "2500.00",
             "client_order_id": "my-order-1",
         })
-        
+
         call_args = mock_veda_service.place_order.call_args
         intent = call_args[0][0]
-        
+
         assert intent.symbol == "ETH/USD"
         assert intent.side == OrderSide.SELL
         assert intent.qty == Decimal("2.0")
         assert intent.order_type == OrderType.LIMIT
         assert intent.limit_price == Decimal("2500.00")
         assert intent.client_order_id == "my-order-1"
-    
+
     async def test_create_order_returns_response(self, client):
         """Response includes order_id and status."""
         response = await client.post("/api/v1/orders", json={
@@ -1332,25 +1332,25 @@ class TestOrderRoutesWithVeda:
             "qty": "1",
             "order_type": "market",
         })
-        
+
         data = response.json()
         assert "id" in data
         assert "status" in data
         assert data["symbol"] == "BTC/USD"
-    
+
     async def test_create_order_validation_error(self, client):
         """Invalid order returns 422."""
         response = await client.post("/api/v1/orders", json={
             "invalid": "data"
         })
-        
+
         assert response.status_code == 422
-    
+
     async def test_create_order_missing_veda_service(self):
         """503 when VedaService not configured."""
         app = create_app()
         app.state.veda_service = None
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.post("/api/v1/orders", json={
                 "symbol": "BTC/USD",
@@ -1358,42 +1358,42 @@ class TestOrderRoutesWithVeda:
                 "qty": "1",
                 "order_type": "market",
             })
-        
+
         assert response.status_code == 503
         assert "not available" in response.json()["detail"]
-    
+
     async def test_get_order_by_id(self, client, mock_veda_service):
         """GET /orders/{id} returns order details."""
         mock_veda_service.get_order = mocker.AsyncMock(return_value=OrderState(...))
-        
+
         response = await client.get("/api/v1/orders/ord-123")
-        
+
         assert response.status_code == 200
         mock_veda_service.get_order.assert_called_once_with("ord-123")
-    
+
     async def test_get_order_not_found(self, client, mock_veda_service):
         """GET /orders/{id} returns 404 for unknown order."""
         mock_veda_service.get_order = mocker.AsyncMock(return_value=None)
-        
+
         response = await client.get("/api/v1/orders/unknown")
-        
+
         assert response.status_code == 404
-    
+
     async def test_list_orders(self, client, mock_veda_service):
         """GET /orders returns order list."""
         mock_veda_service.list_orders = mocker.AsyncMock(return_value=[])
-        
+
         response = await client.get("/api/v1/orders")
-        
+
         assert response.status_code == 200
         assert "items" in response.json()
-    
+
     async def test_list_orders_with_run_id_filter(self, client, mock_veda_service):
         """GET /orders?run_id= filters by run."""
         mock_veda_service.list_orders = mocker.AsyncMock(return_value=[])
-        
+
         response = await client.get("/api/v1/orders?run_id=run-123")
-        
+
         mock_veda_service.list_orders.assert_called_once_with(run_id="run-123")
 ```
 
@@ -1426,13 +1426,13 @@ class TestOrderRoutesWithVeda:
 
 class TestLiveOrderFlow:
     """Integration tests for live order flow."""
-    
+
     @pytest.fixture
     def mock_alpaca(self, mocker):
         """Mock Alpaca API for integration tests."""
         # Setup mocks...
         pass
-    
+
     @pytest.fixture
     async def veda_service(self, mock_alpaca, event_log, db_session):
         """Create VedaService with mocked adapter."""
@@ -1444,7 +1444,7 @@ class TestLiveOrderFlow:
             config=get_config(),
         )
         return service
-    
+
     async def test_place_order_persists_to_db(self, veda_service, db_session):
         """Placed order is persisted to database."""
         intent = OrderIntent(
@@ -1453,14 +1453,14 @@ class TestLiveOrderFlow:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         state = await veda_service.place_order(intent)
-        
+
         # Verify in database
         order = await db_session.get(OrderModel, state.order_id)
         assert order is not None
         assert order.symbol == "BTC/USD"
-    
+
     async def test_place_order_emits_created_event(self, veda_service, event_log):
         """Placed order emits orders.Created event."""
         intent = OrderIntent(
@@ -1469,30 +1469,30 @@ class TestLiveOrderFlow:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         await veda_service.place_order(intent)
-        
+
         events = await event_log.query(types=["orders.Created"])
         assert len(events) == 1
         assert events[0].payload["symbol"] == "BTC/USD"
-    
+
     async def test_rejected_order_emits_rejected_event(self, veda_service, event_log):
         """Rejected order emits orders.Rejected event."""
         veda_service._adapter.set_reject_next_order(True, "Insufficient funds")
-        
+
         intent = OrderIntent(
             symbol="BTC/USD",
             side=OrderSide.BUY,
             qty=Decimal("1000000"),
             order_type=OrderType.MARKET,
         )
-        
+
         state = await veda_service.place_order(intent)
-        
+
         assert state.status == OrderStatus.REJECTED
         events = await event_log.query(types=["orders.Rejected"])
         assert len(events) == 1
-    
+
     async def test_order_includes_exchange_order_id(self, veda_service):
         """Order state includes exchange order ID."""
         intent = OrderIntent(
@@ -1501,11 +1501,11 @@ class TestLiveOrderFlow:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         state = await veda_service.place_order(intent)
-        
+
         assert state.exchange_order_id is not None
-    
+
     async def test_market_order_fills_immediately(self, veda_service):
         """Market order with MockAdapter fills immediately."""
         intent = OrderIntent(
@@ -1514,11 +1514,11 @@ class TestLiveOrderFlow:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         state = await veda_service.place_order(intent)
-        
+
         assert state.status == OrderStatus.FILLED
-    
+
     async def test_limit_order_stays_pending(self, veda_service):
         """Limit order stays in ACCEPTED state."""
         intent = OrderIntent(
@@ -1528,11 +1528,11 @@ class TestLiveOrderFlow:
             order_type=OrderType.LIMIT,
             limit_price=Decimal("40000"),
         )
-        
+
         state = await veda_service.place_order(intent)
-        
+
         assert state.status == OrderStatus.ACCEPTED
-    
+
     async def test_get_order_by_id(self, veda_service):
         """Can retrieve order by ID."""
         intent = OrderIntent(
@@ -1542,12 +1542,12 @@ class TestLiveOrderFlow:
             order_type=OrderType.MARKET,
         )
         state = await veda_service.place_order(intent)
-        
+
         retrieved = await veda_service.get_order(state.order_id)
-        
+
         assert retrieved is not None
         assert retrieved.order_id == state.order_id
-    
+
     async def test_list_orders(self, veda_service):
         """Can list all orders."""
         # Create multiple orders
@@ -1558,11 +1558,11 @@ class TestLiveOrderFlow:
                 qty=Decimal("1"),
                 order_type=OrderType.MARKET,
             ))
-        
+
         orders = await veda_service.list_orders()
-        
+
         assert len(orders) == 3
-    
+
     async def test_list_orders_filter_by_run_id(self, veda_service):
         """Can filter orders by run_id."""
         # Create orders with different run_ids
@@ -1580,12 +1580,12 @@ class TestLiveOrderFlow:
             order_type=OrderType.MARKET,
             run_id="run-2",
         ))
-        
+
         orders = await veda_service.list_orders(run_id="run-1")
-        
+
         assert len(orders) == 1
         assert orders[0].symbol == "BTC/USD"
-    
+
     async def test_idempotent_order_submission(self, veda_service):
         """Same client_order_id returns same order."""
         intent = OrderIntent(
@@ -1595,21 +1595,21 @@ class TestLiveOrderFlow:
             order_type=OrderType.MARKET,
             client_order_id="idempotent-123",
         )
-        
+
         state1 = await veda_service.place_order(intent)
         state2 = await veda_service.place_order(intent)
-        
+
         assert state1.order_id == state2.order_id
-    
+
     async def test_connect_initializes_adapter(self, mock_alpaca):
         """VedaService.connect() calls adapter.connect()."""
         adapter = AlpacaAdapter("key", "secret", paper=True)
         service = VedaService(adapter=adapter, ...)
-        
+
         await service.connect()
-        
+
         mock_alpaca.trading.assert_called()
-    
+
     async def test_event_includes_correlation_id(self, veda_service, event_log):
         """Events include correlation_id for tracing."""
         intent = OrderIntent(
@@ -1618,9 +1618,9 @@ class TestLiveOrderFlow:
             qty=Decimal("1"),
             order_type=OrderType.MARKET,
         )
-        
+
         await veda_service.place_order(intent)
-        
+
         events = await event_log.query(types=["orders.Created"])
         assert events[0].correlation_id is not None
 ```
@@ -1652,12 +1652,12 @@ class TestLiveOrderFlow:
 
 class TestRunManagerModes:
     """Tests for RunManager mode-specific behavior."""
-    
+
     @pytest.fixture
     def run_manager(self, event_log):
         """Create RunManager with event log."""
         return RunManager(event_log=event_log)
-    
+
     async def test_live_run_uses_realtime_clock(self, run_manager):
         """Live run creates RealtimeClock."""
         run = await run_manager.create(
@@ -1665,12 +1665,12 @@ class TestRunManagerModes:
             mode=RunMode.LIVE,
             config={"symbol": "BTC/USD"},
         )
-        
+
         await run_manager.start(run.id)
-        
+
         clock = run_manager._clocks.get(run.id)
         assert isinstance(clock, RealtimeClock)
-    
+
     async def test_backtest_run_uses_backtest_clock(self, run_manager):
         """Backtest run creates BacktestClock."""
         run = await run_manager.create(
@@ -1682,12 +1682,12 @@ class TestRunManagerModes:
                 "end_time": "2025-01-02T00:00:00Z",
             },
         )
-        
+
         await run_manager.start(run.id)
-        
+
         clock = run_manager._clocks.get(run.id)
         assert isinstance(clock, BacktestClock)
-    
+
     async def test_realtime_clock_uses_current_time(self, run_manager):
         """RealtimeClock starts from current time."""
         run = await run_manager.create(
@@ -1695,19 +1695,19 @@ class TestRunManagerModes:
             mode=RunMode.LIVE,
             config={"symbol": "BTC/USD"},
         )
-        
+
         before = datetime.now(UTC)
         await run_manager.start(run.id)
         after = datetime.now(UTC)
-        
+
         clock = run_manager._clocks[run.id]
         assert before <= clock.current_time <= after
-    
+
     async def test_backtest_clock_uses_config_times(self, run_manager):
         """BacktestClock uses configured start/end times."""
         start = datetime(2025, 1, 1, tzinfo=UTC)
         end = datetime(2025, 1, 2, tzinfo=UTC)
-        
+
         run = await run_manager.create(
             strategy_id="sma",
             mode=RunMode.BACKTEST,
@@ -1717,13 +1717,13 @@ class TestRunManagerModes:
                 "end_time": end.isoformat(),
             },
         )
-        
+
         await run_manager.start(run.id)
-        
+
         clock = run_manager._clocks[run.id]
         assert clock.start_time == start
         assert clock.end_time == end
-    
+
     async def test_stop_run_stops_clock(self, run_manager):
         """Stopping run stops the clock."""
         run = await run_manager.create(
@@ -1732,12 +1732,12 @@ class TestRunManagerModes:
             config={"symbol": "BTC/USD"},
         )
         await run_manager.start(run.id)
-        
+
         await run_manager.stop(run.id)
-        
+
         clock = run_manager._clocks.get(run.id)
         assert clock is None or not clock.is_running
-    
+
     async def test_run_mode_persisted(self, run_manager):
         """Run mode is persisted in run state."""
         run = await run_manager.create(
@@ -1745,11 +1745,11 @@ class TestRunManagerModes:
             mode=RunMode.LIVE,
             config={"symbol": "BTC/USD"},
         )
-        
+
         retrieved = await run_manager.get(run.id)
-        
+
         assert retrieved.mode == RunMode.LIVE
-    
+
     async def test_cannot_start_already_running(self, run_manager):
         """Cannot start an already running run."""
         run = await run_manager.create(
@@ -1758,10 +1758,10 @@ class TestRunManagerModes:
             config={"symbol": "BTC/USD"},
         )
         await run_manager.start(run.id)
-        
+
         with pytest.raises(RunAlreadyRunningError):
             await run_manager.start(run.id)
-    
+
     async def test_live_run_emits_started_event(self, run_manager, event_log):
         """Live run start emits run.Started event."""
         run = await run_manager.create(
@@ -1769,9 +1769,9 @@ class TestRunManagerModes:
             mode=RunMode.LIVE,
             config={"symbol": "BTC/USD"},
         )
-        
+
         await run_manager.start(run.id)
-        
+
         events = await event_log.query(types=["run.Started"])
         assert len(events) == 1
         assert events[0].payload["mode"] == "live"
@@ -1912,5 +1912,5 @@ ALPACA_LIVE_API_SECRET=xxx
 
 ---
 
-*Created: 2026-02-04*  
+*Created: 2026-02-04*
 *Last Updated: 2026-02-04*

@@ -154,6 +154,7 @@ class TestStrategyRunnerOnTick:
         call_args = event_log.append.call_args[0][0]
         assert call_args.type == "strategy.FetchWindow"
         assert call_args.run_id == "run-123"
+        assert call_args.payload["as_of"] == "2024-01-01T09:30:00+00:00"
 
     async def test_emits_place_request_event(self) -> None:
         """on_tick() emits strategy.PlaceRequest for place_order action."""

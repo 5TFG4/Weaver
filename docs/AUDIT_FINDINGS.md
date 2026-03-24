@@ -1,12 +1,12 @@
 # Architecture Audit Findings
 
-> **Document Charter**  
-> **Primary role**: historical audit ledger and root-cause traceability.  
-> **Authoritative for**: historical issues and remediation trail.  
+> **Document Charter**
+> **Primary role**: historical audit ledger and root-cause traceability.
+> **Authoritative for**: historical issues and remediation trail.
 > **Not authoritative for**: current milestone execution status (use `MILESTONE_PLAN.md`) or active quality gate (use `DESIGN_AUDIT.md`).
 
-> **Audit Date**: 2026-02-03 (Post-M5)  
-> **Status**: ✅ M6 Complete — 808 tests passing  
+> **Audit Date**: 2026-02-03 (Post-M5)
+> **Status**: ✅ M6 Complete — 808 tests passing
 > **Purpose**: Document design-vs-implementation inconsistencies for systematic resolution
 
 > **✅ Historical Baseline Note (2026-03-15)**: This document is a **post-M5 audit baseline** from 2026-02-03. The critical and medium issues listed below were systematically resolved during M6, M7, and M8 milestones. For current implementation status, see `DESIGN_AUDIT.md` (M8 quality gate) and `M8_FINAL_PYRAMID_REVIEW.md` (post-implementation review). Current test count: 1032+ tests, 89.78% coverage.
@@ -40,8 +40,8 @@ A comprehensive audit revealed **29 issues** across all modules. The root cause 
 
 ### 1.1 Routes Use Module Singletons Instead of app.state
 
-**Module**: GLaDOS  
-**Files**: `src/glados/routes/runs.py`, `orders.py`, `candles.py`  
+**Module**: GLaDOS
+**Files**: `src/glados/routes/runs.py`, `orders.py`, `candles.py`
 **Severity**: 🔴 Critical
 
 **Problem**: All route files create their own service instances via lazy-initialized module globals instead of using services wired in the app lifespan.
@@ -75,7 +75,7 @@ def get_run_manager() -> RunManager:
 
 ### 1.2 Orphan Files in GLaDOS (Legacy Architecture)
 
-**Module**: GLaDOS  
+**Module**: GLaDOS
 **Files**:
 
 - `src/glados/glados.py` (old class-based implementation)
@@ -106,7 +106,7 @@ def get_run_manager() -> RunManager:
 
 ### 1.3 VedaService Created But Never Used
 
-**Module**: Veda  
+**Module**: Veda
 **Files**: `src/veda/veda_service.py`, `src/glados/app.py`
 
 **Severity**: 🔴 Critical
@@ -138,7 +138,7 @@ from src.glados.services.order_service import MockOrderService
 
 ### 1.4 AlpacaAdapter Clients Never Initialized
 
-**Module**: Veda  
+**Module**: Veda
 **File**: `src/veda/adapters/alpaca_adapter.py`
 
 **Severity**: 🔴 Critical
@@ -177,7 +177,7 @@ self.trading_client = TradingClient(api_key=api_key, secret_key=api_secret, pape
 
 ### 1.5 Duplicate Veda Implementations
 
-**Module**: Veda  
+**Module**: Veda
 **Files**: `src/veda/veda.py` vs `src/veda/veda_service.py`
 
 **Severity**: 🔴 Critical
@@ -208,7 +208,7 @@ self.trading_client = TradingClient(api_key=api_key, secret_key=api_secret, pape
 
 ### 1.6 Missing Event Type Definition
 
-**Module**: Events  
+**Module**: Events
 **Files**: `src/events/types.py`, `src/veda/veda_service.py`
 
 **Severity**: 🔴 Critical
@@ -247,7 +247,7 @@ class OrderEvents:
 
 ### 1.7 LISTEN/NOTIFY Never Activated
 
-**Module**: Events  
+**Module**: Events
 **Files**: `src/events/log.py`, `src/glados/app.py`
 
 **Severity**: 🔴 Critical
@@ -287,7 +287,7 @@ event_log = PostgresEventLog(session_factory=..., pool=pool)
 
 ### 1.8 Clock Not Integrated with Run/Strategy System
 
-**Module**: Clock  
+**Module**: Clock
 **Files**: `src/glados/clock/`, `src/glados/services/run_manager.py`
 
 **Severity**: 🔴 Critical
@@ -327,7 +327,7 @@ async def start(self, run_id: str) -> Run:
 
 ### 1.9 Legacy Database System in walle.py
 
-**Module**: WallE  
+**Module**: WallE
 **File**: `src/walle/walle.py`
 
 **Severity**: 🔴 Critical
@@ -359,7 +359,7 @@ async def start(self, run_id: str) -> Run:
 
 ### 1.10 trade_records Table Not Migrated
 
-**Module**: WallE  
+**Module**: WallE
 **Files**: `src/walle/walle.py`, `src/walle/migrations/`
 
 **Severity**: 🔴 Critical
@@ -381,7 +381,7 @@ async def start(self, run_id: str) -> Run:
 
 ### 1.11 OrderRepository Session Leak
 
-**Module**: Veda  
+**Module**: Veda
 **File**: `src/veda/orders/repository.py`
 
 **Severity**: 🔴 Critical
@@ -419,7 +419,7 @@ async def save(self, order_state: OrderState) -> None:
 
 ### 2.1 EventConsumer Class Never Used
 
-**Module**: Events  
+**Module**: Events
 **File**: `src/events/offsets.py`
 
 **Problem**: The `EventConsumer` class provides automatic offset tracking but is never instantiated anywhere.
@@ -432,7 +432,7 @@ async def save(self, order_state: OrderState) -> None:
 
 ### 2.2 75%+ of Event Types Never Used
 
-**Module**: Events  
+**Module**: Events
 **File**: `src/events/types.py`
 
 **Problem**: Many event types are defined but never emitted in production code:
@@ -451,7 +451,7 @@ async def save(self, order_state: OrderState) -> None:
 
 ### 2.3 Event Registry Never Pre-populated
 
-**Module**: Events  
+**Module**: Events
 **File**: `src/events/registry.py`
 
 **Problem**: The global registry is never populated with event schemas. Validation has a fallback that allows unregistered events to pass.
@@ -470,7 +470,7 @@ if schema is None:
 
 ### 2.4 Unused Config Classes
 
-**Module**: Config  
+**Module**: Config
 **File**: `src/config.py`
 
 **Problem**: `ServerConfig`, `EventConfig`, `TradingConfig` are defined but never referenced.
@@ -483,7 +483,7 @@ if schema is None:
 
 ### 2.5 alpaca_api_handler.py Bypasses Config System
 
-**Module**: Veda  
+**Module**: Veda
 **File**: `src/veda/alpaca_api_handler.py`
 
 **Problem**: Uses environment variables directly instead of the config system.
@@ -501,7 +501,7 @@ api_secret = os.getenv('ALPACA_SECRET_KEY')
 
 ### 2.6 AlpacaCredentials May Expose Secrets
 
-**Module**: Config  
+**Module**: Config
 **File**: `src/config.py`
 
 **Problem**: `AlpacaCredentials` dataclass doesn't have `repr=False`, so default repr would expose secrets if logged.
@@ -520,7 +520,7 @@ class AlpacaCredentials:
 
 ### 2.7 Unused Exception Classes
 
-**Module**: GLaDOS  
+**Module**: GLaDOS
 **File**: `src/glados/exceptions.py`
 
 **Problem**: `RunNotStartableError` and `RunNotStoppableError` are defined but never raised.
@@ -533,7 +533,7 @@ class AlpacaCredentials:
 
 ### 2.8 Routes Don't Emit Events (SSE is Dead)
 
-**Module**: GLaDOS  
+**Module**: GLaDOS
 **Files**: `src/glados/routes/*.py`
 
 **Problem**: Even though SSEBroadcaster is connected to EventLog, no routes emit events. When a run is created or stopped, no events are published.
@@ -550,7 +550,7 @@ await event_log.append("runs.Created", {"run_id": run.id, "status": "pending"})
 
 ### 2.9 4h Timeframe Not Tested
 
-**Module**: Clock  
+**Module**: Clock
 **File**: `tests/unit/glados/clock/`
 
 **Problem**: 4-hour bar alignment has no specific tests. May not align correctly with market open times.
@@ -561,7 +561,7 @@ await event_log.append("runs.Created", {"run_id": run.id, "status": "pending"})
 
 ### 2.10 Documentation Says "Busy-Wait" But Implementation Uses Sleep
 
-**Module**: Clock  
+**Module**: Clock
 **File**: `src/glados/clock/realtime.py`
 
 **Problem**: Documentation mentions busy-wait for precision, but implementation only uses `asyncio.sleep()`.
@@ -574,7 +574,7 @@ await event_log.append("runs.Created", {"run_id": run.id, "status": "pending"})
 
 ### 2.11 Inconsistent Database Cleanup in Tests
 
-**Module**: Tests  
+**Module**: Tests
 **Files**: `tests/conftest.py`, `tests/integration/conftest.py`
 
 **Problem**: Main conftest only cleans `veda_orders` table, but integration conftest cleans all tables.
@@ -587,7 +587,7 @@ await event_log.append("runs.Created", {"run_id": run.id, "status": "pending"})
 
 ### 2.12 Tests That Only Check Method Existence
 
-**Module**: Tests  
+**Module**: Tests
 **Files**: Various test files
 
 **Problem**: Multiple tests only verify methods exist without testing behavior:
@@ -607,7 +607,7 @@ def test_has_submit_order_method(self, mock_adapter) -> None:
 
 ### 2.13 Async Tests Use Sleep for Synchronization
 
-**Module**: Tests  
+**Module**: Tests
 **Files**: `tests/unit/glados/test_sse_broadcaster.py`
 
 **Problem**: Tests use `asyncio.sleep(0.01)` for synchronization, which is a race condition.
@@ -626,7 +626,7 @@ await broadcaster.publish("test.event", {"data": "hello"})
 
 ### 2.14 Factories Create Dicts Instead of Model Instances
 
-**Module**: Tests  
+**Module**: Tests
 **Files**: `tests/factories/*.py`
 
 **Problem**: Factories return `dict` instead of actual model instances. Status values are strings, not enums.
@@ -804,7 +804,7 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ### M4: Greta Backtest Engine ✅ COMPLETED (2026-02-03)
 
-**Branch**: `greta_update` → PR #9 merged  
+**Branch**: `greta_update` → PR #9 merged
 **Changes**: 37 files, +6649/-81 lines
 
 | Task                                    | Status | Date       | Notes                                   |
@@ -916,8 +916,8 @@ src/veda/alpaca_api_handler.py          src/veda/adapters/alpaca_adapter.py
 
 ## M5: Marvin Core (Strategy System) ✅ COMPLETE
 
-**Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)  
-**Completed**: 2026-02-04  
+**Design Document**: [m5-marvin.md](archive/milestone-details/m5-marvin.md)
+**Completed**: 2026-02-04
 **Total Tests**: 74 new (705 total)
 
 ### M5 Design Notes & Future Considerations
@@ -1170,7 +1170,7 @@ GitHub Copilot code review addressed 7 comments:
 
 ## M6: Live Trading (Paper/Live Flow) ✅ COMPLETE
 
-**Completed**: 2026-02-04  
+**Completed**: 2026-02-04
 **Total Tests**: 101 new (808 total)
 
 ### M6-1: Plugin Adapter Loader ✅ COMPLETE (40 tests)

@@ -2,8 +2,8 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-> **Document Charter**  
-> **This document is authoritative for**: architecture boundary, global invariants, module responsibilities, instance model, and core design decisions.  
+> **Document Charter**
+> **This document is authoritative for**: architecture boundary, global invariants, module responsibilities, instance model, and core design decisions.
 > **This document is not authoritative for**: milestone status, active defect queue, or test-count snapshots.
 
 **Navigation**

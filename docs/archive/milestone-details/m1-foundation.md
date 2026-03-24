@@ -100,7 +100,7 @@ Day 1: BacktestClock
   ├── Fix/enhance backtest.py (GREEN)
   └── Refactor if needed
 
-Day 2: RealtimeClock  
+Day 2: RealtimeClock
   ├── Write test_realtime.py (RED)
   ├── Fix/enhance realtime.py (GREEN)
   └── Add drift compensation tests
@@ -262,4 +262,3 @@ All phases complete ✅
 7. **DB_URL Format**: `postgresql+asyncpg://user:pass@host:5432/db` (container internal port is always 5432)
 
 ---
-

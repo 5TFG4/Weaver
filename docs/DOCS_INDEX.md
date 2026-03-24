@@ -1,6 +1,6 @@
 # Weaver Documentation Index
 
-> Last updated: 2026-03-21  
+> Last updated: 2026-03-21
 > Goal: keep **all existing information**, while making each document responsible for exactly one thing.
 > **Current State**: M7 ✅ Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete (E2E Tests) · Tests: see [TEST_COVERAGE.md](TEST_COVERAGE.md) for current counts
 
