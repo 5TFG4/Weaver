@@ -1,4 +1,6 @@
 # Pre-commit hooks — keep in sync with backend-ci.yml / frontend-ci.yml.
+# NOTE: Hooks use language: system — run inside the dev container where
+#       ruff, mypy, node, and npm are pre-installed.
 # Install:  pre-commit install
 # Run all:  pre-commit run --all-files
 

@@ -432,7 +432,7 @@ class RunManager:
                 ctx.pending_tasks -= set(snapshot)
                 drain_errors.extend(r for r in results if isinstance(r, BaseException))
 
-            clock_error = clock._error
+            clock_error = clock.error
             if clock_error is not None or drain_errors:
                 run.status = RunStatus.ERROR
                 error_msg = str(clock_error) if clock_error else str(drain_errors[0])

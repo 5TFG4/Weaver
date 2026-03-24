@@ -59,6 +59,11 @@ class BacktestClock(BaseClock):
         # Fatal error from tick loop (M11-2)
         self._error: Exception | None = None
 
+    @property
+    def error(self) -> Exception | None:
+        """Fatal error captured during tick loop, if any."""
+        return self._error
+
     async def start(self, run_id: str) -> None:
         """Start the backtest simulation."""
         if self._running:

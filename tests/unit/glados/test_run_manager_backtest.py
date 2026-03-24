@@ -540,7 +540,7 @@ class TestBacktestErrorPropagation:
             results = await asyncio.gather(*ctx.pending_tasks, return_exceptions=True)
             drain_errors = [r for r in results if isinstance(r, BaseException)]
 
-        clock_error = clock._error
+        clock_error = clock.error
         if clock_error is not None or drain_errors:
             run_obj.status = RunStatus.ERROR
 

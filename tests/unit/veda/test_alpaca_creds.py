@@ -1,7 +1,7 @@
 """
 Tests for Alpaca credential placeholder detection (M11-5 B-10).
 
-Verifies that _has_real_alpaca_creds correctly filters out
+Verifies that has_real_alpaca_creds correctly filters out
 placeholder values from example.env so integration tests
 don't run with bogus credentials.
 """
@@ -15,7 +15,7 @@ from tests.alpaca_helpers import has_real_alpaca_creds
 
 
 class TestHasRealAlpacaCreds:
-    """Tests for _has_real_alpaca_creds helper."""
+    """Tests for has_real_alpaca_creds helper."""
 
     def test_returns_false_when_env_vars_missing(self) -> None:
         """No env vars set → False."""

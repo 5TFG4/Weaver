@@ -647,8 +647,8 @@ class TestBacktestClockEdgeCases:
 
         # Clock should have stopped on first tick — working_callback never ran
         assert len(successful_ticks) == 0
-        assert clock._error is not None
-        assert "Callback failed!" in str(clock._error)
+        assert clock.error is not None
+        assert "Callback failed!" in str(clock.error)
         assert not clock.is_running
 
     def test_tick_count_property(
@@ -679,7 +679,7 @@ class TestBacktestClockErrorSignal:
             start_time=sample_start_time,
             end_time=sample_start_time + timedelta(minutes=3),
         )
-        assert clock._error is None
+        assert clock.error is None
 
     @pytest.mark.asyncio
     async def test_sync_callback_error_stops_and_records(self, sample_start_time: datetime) -> None:
@@ -697,8 +697,8 @@ class TestBacktestClockErrorSignal:
         await clock.start("run-err")
         await clock.wait()
 
-        assert clock._error is not None
-        assert "strategy boom" in str(clock._error)
+        assert clock.error is not None
+        assert "strategy boom" in str(clock.error)
         assert not clock.is_running
 
     @pytest.mark.asyncio
@@ -719,8 +719,8 @@ class TestBacktestClockErrorSignal:
         await clock.start("run-err-async")
         await clock.wait()
 
-        assert clock._error is not None
-        assert "async strategy boom" in str(clock._error)
+        assert clock.error is not None
+        assert "async strategy boom" in str(clock.error)
 
     @pytest.mark.asyncio
     async def test_error_preserves_partial_progress(self, sample_start_time: datetime) -> None:
@@ -745,7 +745,7 @@ class TestBacktestClockErrorSignal:
 
         # Should have processed exactly 3 ticks (error on 3rd)
         assert call_count == 3
-        assert clock._error is not None
+        assert clock.error is not None
         assert clock.tick_count == 3
 
     @pytest.mark.asyncio
@@ -763,5 +763,5 @@ class TestBacktestClockErrorSignal:
         await clock.start("run-ok")
         await clock.wait()
 
-        assert clock._error is None
+        assert clock.error is None
         assert len(ticks) == 4  # 0, 1, 2, 3 minutes
