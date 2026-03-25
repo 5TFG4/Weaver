@@ -22,6 +22,7 @@ respx>=0.20.0                 # HTTPX mocking
 # --- Code Quality ---
 ruff>=0.0.280                 # Linter + formatter
 mypy>=1.4.0                   # Type checking
+pre-commit>=3.0.0             # Git hooks framework
 
 # --- E2E Testing (Browser Automation) ---
 playwright>=1.40.0            # Browser automation for E2E tests

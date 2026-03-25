@@ -7,6 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchRuns, fetchRun, createRun, startRun, stopRun } from "../api/runs";
 import type { Run, RunCreate, RunListResponse } from "../api/types";
+import { useNotificationStore } from "../stores/notificationStore";
 
 // Query keys for cache invalidation
 export const runKeys = {
@@ -52,12 +53,19 @@ export function useRun(runId: string) {
  */
 export function useCreateRun() {
   const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   return useMutation({
     mutationFn: (data: RunCreate) => createRun(data),
     onSuccess: () => {
       // Invalidate runs list to refetch
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+    },
+    onError: (error: Error) => {
+      addNotification({
+        type: "error",
+        message: error.message || "Failed to create run",
+      });
     },
   });
 }
@@ -67,6 +75,7 @@ export function useCreateRun() {
  */
 export function useStartRun() {
   const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   return useMutation({
     mutationFn: (runId: string) => startRun(runId),
@@ -74,6 +83,12 @@ export function useStartRun() {
       // Update cache with new run state
       queryClient.setQueryData(runKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+    },
+    onError: (error: Error) => {
+      addNotification({
+        type: "error",
+        message: error.message || "Failed to start run",
+      });
     },
   });
 }
@@ -83,6 +98,7 @@ export function useStartRun() {
  */
 export function useStopRun() {
   const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   return useMutation({
     mutationFn: (runId: string) => stopRun(runId),
@@ -90,6 +106,12 @@ export function useStopRun() {
       // Update cache with new run state
       queryClient.setQueryData(runKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+    },
+    onError: (error: Error) => {
+      addNotification({
+        type: "error",
+        message: error.message || "Failed to stop run",
+      });
     },
   });
 }

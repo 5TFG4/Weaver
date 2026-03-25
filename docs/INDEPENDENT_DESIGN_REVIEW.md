@@ -1,15 +1,15 @@
 # Independent Design Review — Full System Audit
 
-> **Document Charter**  
-> **Primary role**: detailed analysis narrative for Segment 6 independent audit.  
-> **Authoritative for**: module-by-module deep analysis, alignment matrices, cross-cutting verification evidence.  
+> **Document Charter**
+> **Primary role**: detailed analysis narrative for Segment 6 independent audit.
+> **Authoritative for**: module-by-module deep analysis, alignment matrices, cross-cutting verification evidence.
 > **Not authoritative for**: finding IDs, action queue, or design decisions — those are controlled in `DESIGN_REVIEW_PLAN.md` §6.7, §7, §9.5.
 
-> **Reviewer**: Independent fresh-start review  
-> **Date**: 2026-02-16 (referenced by M8 planning as of 2026-02-19)  
-> **Scope**: Full system — architecture docs, code, tests, cross-cutting concerns  
-> **Method**: Bottom-up code reading + top-down documentation validation, deliberately ignoring prior review conclusions until final cross-check  
-> **Constraint**: Documentation-only — no code changes  
+> **Reviewer**: Independent fresh-start review
+> **Date**: 2026-02-16 (referenced by M8 planning as of 2026-02-19)
+> **Scope**: Full system — architecture docs, code, tests, cross-cutting concerns
+> **Method**: Bottom-up code reading + top-down documentation validation, deliberately ignoring prior review conclusions until final cross-check
+> **Constraint**: Documentation-only — no code changes
 > **Status**: All findings (N-01–N-10) and decisions (D-1–D-5) incorporated into M8 plan
 
 > **✅ Post-M8 Note (2026-02-26)**: This document is a **pre-M8 baseline** from 2026-02-16. All P0 findings (N-01, N-02) and P1 findings (N-03, N-04, N-06, N-09, N-10) identified here have been **resolved in M8**. For current status, see `DESIGN_AUDIT.md` and `M8_FINAL_PYRAMID_REVIEW.md`. Findings N-05 and N-08 (P2) are deferred to post-M8.

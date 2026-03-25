@@ -1,35 +1,35 @@
 # M4: Greta Backtesting Engine
 
-> **Status**: ✅ COMPLETED (2026-02-03)  
-> **Prerequisite for**: M5 (Marvin Strategy Execution)  
+> **Status**: ✅ COMPLETED (2026-02-03)
+> **Prerequisite for**: M5 (Marvin Strategy Execution)
 > **Actual Effort**: ~8 hours (7 MVPs, 79 new tests)
-> 
+>
 > ## Implementation Summary
-> 
+>
 > All 7 MVPs completed with TDD methodology:
 > - MVP-1: WallE BarRepository (16 tests)
-> - MVP-2: Greta Models & FillSimulator (29 tests) 
+> - MVP-2: Greta Models & FillSimulator (29 tests)
 > - MVP-3: GretaService (20 tests)
 > - MVP-4: Marvin Skeleton (32 tests)
 > - MVP-5: DomainRouter (12 tests)
 > - MVP-6: Run Orchestration (10 tests)
 > - MVP-7: Integration Test (5 tests)
-> 
+>
 > ### Design Deviations & Notes
-> 
+>
 > 1. **data.WindowReady flow**: Not fully implemented. GretaService preloads bars at initialize(),
 >    but the strategy.FetchWindow → data.WindowReady event flow is not wired. Deferred to M5.
-> 
-> 2. **backtest.* events**: DomainRouter routes strategy.* → backtest.*, but Greta doesn't 
+>
+> 2. **backtest.* events**: DomainRouter routes strategy.* → backtest.*, but Greta doesn't
 >    subscribe to backtest.* events yet. Current flow uses direct method calls via RunManager.
 >    Full event-driven flow is a future enhancement.
-> 
-> 3. **Test fixtures**: `SimpleTestStrategy` and `MockStrategyLoader` live in 
+>
+> 3. **Test fixtures**: `SimpleTestStrategy` and `MockStrategyLoader` live in
 >    `tests/integration/test_backtest_flow.py`. Consider extracting to `tests/fixtures/` in M5.
 >
 > ### Code Review Improvements (Post-M4)
 >
-> 1. **Position sizing helpers**: Added `_is_adding_to_position()` and `_is_position_reversal()` 
+> 1. **Position sizing helpers**: Added `_is_adding_to_position()` and `_is_position_reversal()`
 >    with clear docstrings explaining the sign-based logic.
 >
 > 2. **Resource cleanup**: RunManager now uses try/finally to ensure RunContext cleanup even
@@ -69,7 +69,7 @@ Before diving into design, it's critical to understand how modules collaborate:
 
 The system must support multiple simultaneous runs:
 - Multiple backtests running in parallel (different strategies, time ranges)
-- Backtest + live trading simultaneously  
+- Backtest + live trading simultaneously
 - Multiple live strategies (future)
 
 ```
@@ -414,43 +414,43 @@ Single Tick Processing Order:
     market_value: Decimal
     unrealized_pnl: Decimal
     realized_pnl: Decimal
-    
+
     def update_mark(self, price: Decimal) -> None:
         """Update market value and unrealized P&L."""
         self.market_value = self.qty * price
         self.unrealized_pnl = self.market_value - (self.qty * self.avg_entry_price)
 
 
-@dataclass 
+@dataclass
 class BacktestStats:
     """Comprehensive backtest statistics."""
-    
+
     # Returns
     total_return: Decimal = Decimal("0")
     total_return_pct: Decimal = Decimal("0")
     annualized_return: Decimal = Decimal("0")
-    
+
     # Risk metrics
     sharpe_ratio: Decimal | None = None
     sortino_ratio: Decimal | None = None
     max_drawdown: Decimal = Decimal("0")
     max_drawdown_pct: Decimal = Decimal("0")
-    
+
     # Trade stats
     total_trades: int = 0
     winning_trades: int = 0
     losing_trades: int = 0
     win_rate: Decimal = Decimal("0")
-    
+
     # Profit metrics
     avg_win: Decimal = Decimal("0")
     avg_loss: Decimal = Decimal("0")
     profit_factor: Decimal | None = None
-    
+
     # Time in market
     total_bars: int = 0
     bars_in_position: int = 0
-    
+
     # Costs
     total_commission: Decimal = Decimal("0")
     total_slippage: Decimal = Decimal("0")
@@ -459,21 +459,21 @@ class BacktestStats:
 @dataclass
 class BacktestResult:
     """Complete backtest result."""
-    
+
     run_id: str
     start_time: datetime
     end_time: datetime
     timeframe: str
     symbols: list[str]
-    
+
     # Final state
     stats: BacktestStats
     final_equity: Decimal
     equity_curve: list[tuple[datetime, Decimal]]  # (timestamp, equity)
-    
+
     # Trade log
     fills: list[SimulatedFill] = field(default_factory=list)
-    
+
     # Timing
     simulation_duration_ms: int = 0
     total_bars_processed: int = 0
@@ -493,7 +493,7 @@ from src.veda.models import Bar, OrderIntent, OrderState
 
 class HistoricalDataProvider(ABC):
     """Interface for providing historical market data."""
-    
+
     @abstractmethod
     async def get_bars(
         self,
@@ -503,7 +503,7 @@ class HistoricalDataProvider(ABC):
         end: datetime,
     ) -> list[Bar]:
         """Get historical bars for a symbol."""
-    
+
     @abstractmethod
     async def preload(
         self,
@@ -517,7 +517,7 @@ class HistoricalDataProvider(ABC):
 
 class FillSimulator(ABC):
     """Interface for simulating order fills."""
-    
+
     @abstractmethod
     def simulate_fill(
         self,
@@ -527,14 +527,14 @@ class FillSimulator(ABC):
     ) -> SimulatedFill | None:
         """
         Simulate a fill given current market conditions.
-        
+
         Returns None if order cannot be filled (e.g., limit not reached).
         """
 
 
 class BacktestEngine(ABC):
     """Interface for running backtests."""
-    
+
     @abstractmethod
     async def run(
         self,
@@ -546,7 +546,7 @@ class BacktestEngine(ABC):
         config: dict | None = None,
     ) -> BacktestResult:
         """Execute a full backtest."""
-    
+
     @abstractmethod
     def on_tick(self, tick: "ClockTick") -> None:
         """Handle clock tick during backtest."""
@@ -560,35 +560,35 @@ class BacktestEngine(ABC):
 class GretaService:
     """
     Backtest execution environment for a SINGLE run.
-    
+
     IMPORTANT: This is a PER-RUN instance, NOT a singleton!
-    
+
     Each backtest run gets its own GretaService instance because:
     - Simulated positions must be isolated between runs
     - Equity curves are per-run
     - Pending orders are per-run
     - Multiple backtests can run in parallel
-    
+
     Lifecycle:
     1. RunManager creates GretaService for a new backtest run
     2. GretaService.initialize() preloads data
     3. Clock drives GretaService.advance_to() on each tick
     4. When run completes, GretaService.get_result() returns stats
     5. RunManager disposes the GretaService instance
-    
+
     Orchestrates:
     - BarRepository (shared) for historical bar data
     - FillSimulator for order simulation
     - Internal position tracking (per-run)
     - EventLog (shared) for event emission (events tagged with run_id)
-    
+
     Design Principles:
     1. Same event interface as VedaService
     2. Strategies don't know if live or backtest
     3. Clock drives simulation via advance_to()
     4. Complete isolation between concurrent runs
     """
-    
+
     def __init__(
         self,
         run_id: str,  # Required - identifies which run this instance serves
@@ -601,7 +601,7 @@ class GretaService:
         self._event_log = event_log
         self._fill_config = fill_config or FillSimulationConfig()
         self._fill_simulator = DefaultFillSimulator()
-        
+
         # Per-run simulation state (isolated)
         self._symbols: list[str] = []
         self._timeframe: str = ""
@@ -610,10 +610,10 @@ class GretaService:
         self._fills: list[SimulatedFill] = []
         self._equity_curve: list[tuple[datetime, Decimal]] = []
         self._current_bars: dict[str, Bar] = {}  # symbol -> current bar
-        
+
         # Stats
         self._stats = BacktestStats()
-    
+
     async def initialize(
         self,
         run_id: str,
@@ -629,14 +629,14 @@ class GretaService:
         self._fills = []
         self._equity_curve = []
         self._stats = BacktestStats()
-        
+
         # Preload historical data
         await self._data_provider.preload(symbols, timeframe, start, end)
-    
+
     async def on_tick(self, tick: ClockTick) -> None:
         """
         Handle a clock tick.
-        
+
         1. Update current bars for tick timestamp
         2. Process pending orders (simulate fills)
         3. Update positions with new prices
@@ -648,41 +648,41 @@ class GretaService:
             bar = await self._data_provider.get_bar_at(symbol, tick.ts)
             if bar:
                 self._current_bars[symbol] = bar
-        
+
         # 2. Process pending orders
         await self._process_pending_orders(tick)
-        
+
         # 3. Update positions
         self._update_positions_mark()
-        
+
         # 4. Emit data ready event
         await self._emit_data_ready(tick)
-        
+
         # 5. Record equity
         self._record_equity(tick.ts)
-    
+
     async def place_order(self, intent: OrderIntent) -> OrderState:
         """
         Submit an order for simulation.
-        
+
         Market orders fill at next bar open.
         Limit orders wait until price condition met.
         """
         # Create order state (PENDING)
         state = self._create_order_state(intent)
-        
+
         # For market orders: queue for fill at next tick
         # For limit orders: add to pending orders
         if intent.order_type == OrderType.MARKET:
             self._pending_orders[state.id] = intent
         else:
             self._pending_orders[state.id] = intent
-        
+
         # Emit orders.Created
         await self._emit_order_event("orders.Created", state)
-        
+
         return state
-    
+
     def get_result(self) -> BacktestResult:
         """Get backtest result after completion."""
         self._stats = self._calculate_stats()
@@ -703,14 +703,14 @@ class GretaService:
 class DefaultFillSimulator(FillSimulator):
     """
     Default fill simulator with slippage and fees.
-    
+
     Fill Models:
     - MARKET orders: Fill at bar open/close + slippage
     - LIMIT BUY: Fill if low <= limit_price
     - LIMIT SELL: Fill if high >= limit_price
     - STOP orders: Trigger when price crosses stop_price
     """
-    
+
     def simulate_fill(
         self,
         intent: OrderIntent,
@@ -718,7 +718,7 @@ class DefaultFillSimulator(FillSimulator):
         config: FillSimulationConfig,
     ) -> SimulatedFill | None:
         """Simulate a fill given current bar."""
-        
+
         # Determine base fill price
         if config.fill_at == "open":
             base_price = current_bar.open
@@ -728,25 +728,25 @@ class DefaultFillSimulator(FillSimulator):
             base_price = current_bar.vwap or current_bar.close
         else:  # "worst" - worst case for the trader
             base_price = self._worst_price(intent.side, current_bar)
-        
+
         # Check if order can fill
         if intent.order_type == OrderType.LIMIT:
             if not self._limit_can_fill(intent, current_bar):
                 return None
             base_price = intent.limit_price  # Fill at limit price
-        
+
         elif intent.order_type == OrderType.STOP:
             if not self._stop_triggered(intent, current_bar):
                 return None
             base_price = intent.stop_price  # Fill at stop price
-        
+
         # Apply slippage (always unfavorable to trader)
         slippage = self._calculate_slippage(base_price, intent.side, config)
         fill_price = base_price + slippage if intent.side == OrderSide.BUY else base_price - slippage
-        
+
         # Calculate commission
         commission = self._calculate_commission(intent.qty, fill_price, config)
-        
+
         return SimulatedFill(
             order_id=intent.client_order_id,
             client_order_id=intent.client_order_id,
@@ -759,7 +759,7 @@ class DefaultFillSimulator(FillSimulator):
             timestamp=current_bar.timestamp,
             bar_index=0,  # Set by caller
         )
-    
+
     def _calculate_slippage(
         self,
         price: Decimal,
@@ -771,7 +771,7 @@ class DefaultFillSimulator(FillSimulator):
             return price * (config.slippage_bps / Decimal("10000"))
         # Future: implement volume-based, volatility-based models
         return Decimal("0")
-    
+
     def _calculate_commission(
         self,
         qty: Decimal,
@@ -782,14 +782,14 @@ class DefaultFillSimulator(FillSimulator):
         notional = qty * price
         commission = notional * (config.commission_bps / Decimal("10000"))
         return max(commission, config.min_commission)
-    
+
     def _limit_can_fill(self, intent: OrderIntent, bar: Bar) -> bool:
         """Check if limit order can fill given bar's range."""
         if intent.side == OrderSide.BUY:
             return bar.low <= intent.limit_price
         else:  # SELL
             return bar.high >= intent.limit_price
-    
+
     def _stop_triggered(self, intent: OrderIntent, bar: Bar) -> bool:
         """Check if stop order is triggered."""
         if intent.side == OrderSide.BUY:
@@ -806,22 +806,22 @@ class DefaultFillSimulator(FillSimulator):
 class CachedHistoricalDataProvider(HistoricalDataProvider):
     """
     Historical data provider with caching.
-    
+
     MVP Implementation:
     - Uses Veda's ExchangeAdapter to fetch historical data
     - Caches all bars in memory during backtest
     - Provides O(1) lookup by timestamp
-    
+
     Future:
     - SQLite/Parquet file caching
     - Incremental data fetching
     """
-    
+
     def __init__(self, adapter: ExchangeAdapter) -> None:
         self._adapter = adapter
         # Cache: (symbol, timeframe) -> {timestamp: Bar}
         self._cache: dict[tuple[str, str], dict[datetime, Bar]] = {}
-    
+
     async def preload(
         self,
         symbols: list[str],
@@ -839,7 +839,7 @@ class CachedHistoricalDataProvider(HistoricalDataProvider):
             )
             key = (symbol, timeframe)
             self._cache[key] = {bar.timestamp: bar for bar in bars}
-    
+
     async def get_bar_at(
         self,
         symbol: str,
@@ -851,7 +851,7 @@ class CachedHistoricalDataProvider(HistoricalDataProvider):
         if key not in self._cache:
             return None
         return self._cache[key].get(timestamp)
-    
+
     async def get_bars(
         self,
         symbol: str,
@@ -863,7 +863,7 @@ class CachedHistoricalDataProvider(HistoricalDataProvider):
         key = (symbol, timeframe)
         if key not in self._cache:
             return []
-        
+
         return [
             bar for ts, bar in sorted(self._cache[key].items())
             if start <= ts <= end
@@ -877,7 +877,7 @@ class CachedHistoricalDataProvider(HistoricalDataProvider):
 
 class RunManager:
     """Updated to integrate with Clock and Greta."""
-    
+
     def __init__(
         self,
         event_log: EventLog | None = None,
@@ -889,16 +889,16 @@ class RunManager:
         self._veda_service = veda_service
         self._greta_service = greta_service
         self._clocks: dict[str, BaseClock] = {}  # run_id -> clock
-    
+
     async def start(self, run_id: str) -> Run:
         """Start a run with appropriate clock."""
         run = self._runs.get(run_id)
         if run is None:
             raise RunNotFoundError(run_id)
-        
+
         if run.status != RunStatus.PENDING:
             raise RunNotStartableError(run_id, run.status.value)
-        
+
         # Create and configure clock based on mode
         if run.mode == RunMode.BACKTEST:
             clock = BacktestClock(
@@ -919,17 +919,17 @@ class RunManager:
         else:
             clock = RealtimeClock(timeframe=run.timeframe)
             # Wire to Veda (future)
-        
+
         self._clocks[run_id] = clock
-        
+
         # Update status
         run.status = RunStatus.RUNNING
         run.started_at = datetime.now(UTC)
         await self._emit_event(RunEvents.STARTED, run)
-        
+
         # Start clock (non-blocking for realtime, blocking for backtest)
         asyncio.create_task(clock.start(run_id))
-        
+
         return run
 ```
 
@@ -1099,7 +1099,7 @@ Multi-Run Example:
 # src/walle/models.py
 class BarRecord(Base):
     __tablename__ = "bars"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     symbol: Mapped[str] = mapped_column(String(32), index=True)
     timeframe: Mapped[str] = mapped_column(String(8))
@@ -1109,7 +1109,7 @@ class BarRecord(Base):
     low: Mapped[Decimal]
     close: Mapped[Decimal]
     volume: Mapped[Decimal]
-    
+
     __table_args__ = (
         UniqueConstraint('symbol', 'timeframe', 'timestamp', name='uq_bar'),
         Index('ix_bars_lookup', 'symbol', 'timeframe', 'timestamp'),
@@ -1123,20 +1123,20 @@ class TestBarRepository:
     async def test_save_and_get_bars(self, session_factory):
         repo = BarRepository(session_factory)
         bars = [make_bar(ts=datetime(2024, 1, 1, 9, 30))]
-        
+
         await repo.save_bars(bars)
         result = await repo.get_bars("BTC/USD", "1m", start, end)
-        
+
         assert len(result) == 1
         assert result[0].close == bars[0].close
-    
+
     async def test_get_bars_returns_sorted(self, session_factory):
         repo = BarRepository(session_factory)
         # Save out of order
         await repo.save_bars([bar3, bar1, bar2])
-        
+
         result = await repo.get_bars(...)
-        
+
         assert result[0].timestamp < result[1].timestamp < result[2].timestamp
 ```
 
@@ -1163,13 +1163,13 @@ class TestDefaultFillSimulator:
         intent = make_order_intent(side=OrderSide.BUY, order_type=OrderType.MARKET)
         bar = make_bar(open=Decimal("42000"))
         config = FillSimulationConfig(slippage_bps=Decimal("5"))
-        
+
         fill = simulator.simulate_fill(intent, bar, config)
-        
+
         # Slippage is unfavorable: BUY pays more
         assert fill.fill_price > Decimal("42000")
         assert fill.slippage > Decimal("0")
-    
+
     def test_limit_buy_fills_when_low_touches_limit(self):
         intent = make_order_intent(
             side=OrderSide.BUY,
@@ -1177,18 +1177,18 @@ class TestDefaultFillSimulator:
             limit_price=Decimal("41000"),
         )
         bar = make_bar(low=Decimal("40900"))  # Low below limit
-        
+
         fill = simulator.simulate_fill(intent, bar, config)
-        
+
         assert fill is not None
         assert fill.fill_price == Decimal("41000")
-    
+
     def test_limit_buy_no_fill_when_price_too_high(self):
         intent = make_order_intent(limit_price=Decimal("40000"))
         bar = make_bar(low=Decimal("41000"))  # Low above limit
-        
+
         fill = simulator.simulate_fill(intent, bar, config)
-        
+
         assert fill is None  # Cannot fill
 ```
 
@@ -1216,12 +1216,12 @@ class TestDefaultFillSimulator:
 class GretaService:
     """
     Backtest execution environment.
-    
+
     Key difference from earlier design:
     - Gets data from BarRepository (WallE), NOT from ExchangeAdapter
     - If data not in WallE, GLaDOS's MarketDataService fetches and caches
     """
-    
+
     def __init__(
         self,
         bar_repository: BarRepository,  # From WallE
@@ -1233,26 +1233,26 @@ class GretaService:
         self._fill_simulator = DefaultFillSimulator()
         self._fill_config = fill_config or FillSimulationConfig()
         # ... rest of init
-    
+
     async def initialize(self, run_id: str, symbols: list[str], ...) -> None:
         """Initialize for backtest run."""
         self._run_id = run_id
         self._symbols = symbols
-        
+
         # Load ALL bars from WallE into memory for fast access
         for symbol in symbols:
             bars = await self._bar_repo.get_bars(symbol, timeframe, start, end)
             self._bar_cache[symbol] = {bar.timestamp: bar for bar in bars}
-    
+
     async def advance_to(self, timestamp: datetime) -> None:
         """Advance simulation to timestamp."""
         # Update current bars
         for symbol in self._symbols:
             self._current_bars[symbol] = self._bar_cache[symbol].get(timestamp)
-        
+
         # Process pending orders with new prices
         await self._process_pending_orders(timestamp)
-    
+
     async def handle_place_order(self, event: Envelope) -> None:
         """Handle backtest.PlaceOrder event."""
         intent = OrderIntent.from_payload(event.payload)
@@ -1269,18 +1269,18 @@ class TestGretaService:
         bar_repo = MockBarRepository()
         bar_repo.set_bars("BTC/USD", [bar1, bar2, bar3])
         service = GretaService(bar_repo, event_log)
-        
+
         await service.initialize("run-1", ["BTC/USD"], "1m", start, end)
-        
+
         bar_repo.get_bars.assert_called_with("BTC/USD", "1m", start, end)
-    
+
     async def test_advance_to_fills_market_orders(self):
         service = GretaService(bar_repo, event_log)
         await service.initialize(...)
         await service.handle_place_order(make_place_order_event())
-        
+
         await service.advance_to(datetime(2024, 1, 1, 9, 31))
-        
+
         events = await event_log.read(0, 10)
         assert any(e.type == "orders.Filled" for e in events)
 ```
@@ -1307,10 +1307,10 @@ class TestGretaService:
 class StrategyRunner:
     """
     Runs strategy code in response to clock ticks.
-    
+
     Mode-agnostic: doesn't know if backtest or live.
     """
-    
+
     def __init__(
         self,
         strategy: "BaseStrategy",
@@ -1319,23 +1319,23 @@ class StrategyRunner:
         self._strategy = strategy
         self._event_log = event_log
         self._run_id: str | None = None
-    
+
     async def initialize(self, run_id: str, symbols: list[str]) -> None:
         """Initialize for a run."""
         self._run_id = run_id
         await self._strategy.initialize(symbols)
-    
+
     async def on_tick(self, tick: ClockTick) -> None:
         """Handle clock tick."""
         # Strategy computes and may emit events
         actions = await self._strategy.on_tick(tick)
-        
+
         for action in actions:
             if action.type == "fetch_window":
                 await self._emit_fetch_window(action)
             elif action.type == "place_order":
                 await self._emit_place_request(action)
-    
+
     async def on_data_ready(self, event: Envelope) -> None:
         """Handle data.WindowReady event."""
         await self._strategy.on_data(event.payload)
@@ -1346,36 +1346,36 @@ class StrategyRunner:
 class TestStrategy(BaseStrategy):
     """
     Simple strategy for testing backtest flow.
-    
+
     Logic: Buy when price drops 1%, sell when up 1%.
     """
-    
+
     async def on_tick(self, tick: ClockTick) -> list[StrategyAction]:
         actions = []
-        
+
         # Request data window
         actions.append(StrategyAction(
             type="fetch_window",
             symbol="BTC/USD",
             lookback=10,
         ))
-        
+
         return actions
-    
+
     async def on_data(self, data: dict) -> list[StrategyAction]:
         # Simple logic: buy if current < avg, sell if current > avg
         bars = data["bars"]
         if len(bars) < 2:
             return []
-        
+
         current = bars[-1].close
         avg = sum(b.close for b in bars) / len(bars)
-        
+
         if current < avg * Decimal("0.99") and not self._has_position:
             return [StrategyAction(type="place_order", side="buy", qty=Decimal("1"))]
         elif current > avg * Decimal("1.01") and self._has_position:
             return [StrategyAction(type="place_order", side="sell", qty=Decimal("1"))]
-        
+
         return []
 ```
 
@@ -1386,9 +1386,9 @@ class TestStrategyRunner:
         strategy = TestStrategy()
         runner = StrategyRunner(strategy, event_log)
         await runner.initialize("run-1", ["BTC/USD"])
-        
+
         await runner.on_tick(make_tick())
-        
+
         events = await event_log.read(0, 10)
         assert any(e.type == "strategy.FetchWindow" for e in events)
 ```
@@ -1412,33 +1412,33 @@ class TestStrategyRunner:
 class DomainRouter:
     """
     Routes strategy events to appropriate domain.
-    
+
     strategy.FetchWindow → live.FetchWindow (if live)
     strategy.FetchWindow → backtest.FetchWindow (if backtest)
     """
-    
+
     def __init__(self, event_log: EventLog, run_manager: RunManager):
         self._event_log = event_log
         self._run_manager = run_manager
-    
+
     async def route(self, event: Envelope) -> None:
         """Route strategy event to correct domain."""
         if not event.type.startswith("strategy."):
             return
-        
+
         run = await self._run_manager.get(event.run_id)
         if run is None:
             return
-        
+
         # Determine target domain
         if run.mode == RunMode.BACKTEST:
             target_domain = "backtest"
         else:
             target_domain = "live"
-        
+
         # Rewrite event type
         new_type = event.type.replace("strategy.", f"{target_domain}.")
-        
+
         # Emit routed event
         routed = Envelope(
             type=new_type,
@@ -1457,10 +1457,10 @@ class TestDomainRouter:
     async def test_routes_strategy_to_backtest(self):
         run_manager.create(RunCreate(mode=RunMode.BACKTEST, ...))
         router = DomainRouter(event_log, run_manager)
-        
+
         event = make_event(type="strategy.FetchWindow", run_id=run.id)
         await router.route(event)
-        
+
         events = await event_log.read(0, 10)
         assert any(e.type == "backtest.FetchWindow" for e in events)
 ```
@@ -1485,37 +1485,37 @@ class TestDomainRouter:
 async def start(self, run_id: str) -> Run:
     """Start a run with full orchestration."""
     run = self._runs[run_id]
-    
+
     if run.mode == RunMode.BACKTEST:
         # 1. Create clock
         clock = BacktestClock(run.start_time, run.end_time, run.timeframe)
-        
+
         # 2. Initialize Greta
         await self._greta_service.initialize(
             run.id, run.symbols, run.timeframe, run.start_time, run.end_time
         )
-        
+
         # 3. Initialize Marvin with strategy
         strategy = self._strategy_loader.load(run.strategy_id)
         self._strategy_runners[run.id] = StrategyRunner(strategy, self._event_log)
         await self._strategy_runners[run.id].initialize(run.id, run.symbols)
-        
+
         # 4. Wire tick handler
         async def on_tick(tick: ClockTick):
             # a. Greta advances (fills orders, updates prices)
             await self._greta_service.advance_to(tick.ts)
-            
+
             # b. Marvin processes tick (emits strategy events)
             await self._strategy_runners[run.id].on_tick(tick)
-            
+
             # c. Route events (strategy.* → backtest.*)
             # This happens automatically via event log consumption
-        
+
         clock.on_tick(on_tick)
-        
+
         # 5. Start (runs to completion for backtest)
         await clock.start(run.id)
-        
+
         # 6. Backtest complete
         run.status = RunStatus.COMPLETED
         await self._emit_event(RunEvents.COMPLETED, run)
@@ -1531,9 +1531,9 @@ class TestRunManagerBacktest:
             start_time=datetime(2024, 1, 1, 9, 30),
             end_time=datetime(2024, 1, 1, 10, 30),  # 1 hour
         ))
-        
+
         await run_manager.start(run.id)
-        
+
         # Backtest should complete (it's fast)
         updated = await run_manager.get(run.id)
         assert updated.status == RunStatus.COMPLETED
@@ -1569,23 +1569,23 @@ class TestBacktestFlow:
             "end_time": "2024-01-01T10:30:00Z",
         })
         run_id = response.json()["id"]
-        
+
         # Start run
         await test_client.post(f"/runs/{run_id}/start")
-        
+
         # Wait for completion (backtest is fast)
         await asyncio.sleep(0.5)
-        
+
         # Verify completed
         response = await test_client.get(f"/runs/{run_id}")
         assert response.json()["status"] == "completed"
-    
+
     async def test_backtest_emits_correct_events(self, event_log, ...):
         # ... run backtest ...
-        
+
         events = await event_log.read(0, 1000)
         event_types = [e.type for e in events]
-        
+
         # Verify event sequence
         assert "run.Created" in event_types
         assert "run.Started" in event_types
@@ -1790,7 +1790,7 @@ class TestBacktestFlow:
 
 ```
                     At backtest initialization:
-                    
+
                     GretaService.initialize()
                             │
                             ▼
@@ -1799,10 +1799,10 @@ class TestBacktestFlow:
                             ├─── If data in DB ───► return bars
                             │
                             └─── If data incomplete ───► ??? (out of M4 scope)
-                            
+
                     M4 Assumption: Historical data already in database
                     (via seed script or prior caching)
-                    
+
                     Future (M5+): Implement auto-fetch for missing data
                     - GLaDOS MarketDataService
                     - Calls Veda ExchangeAdapter

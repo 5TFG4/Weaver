@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: runtime time semantics and clock component behavior.  
-> **Authoritative for**: realtime/backtest clock behavior and tick cadence constraints.  
+> **Document Charter**
+> **Primary role**: runtime time semantics and clock component behavior.
+> **Authoritative for**: realtime/backtest clock behavior and tick cadence constraints.
 > **Not authoritative for**: API endpoints and milestone sequencing.
 
 **Critical Design Note**: Python's `asyncio.sleep()` is not precise. The clock system must handle both realtime trading (strict wall‑clock alignment) and backtesting (fast‑forward simulation).
@@ -121,6 +121,7 @@ class BacktestClock(BaseClock):
 
 - **Speed**: Limited only by strategy execution time and I/O.
 - **Determinism**: Same inputs produce same tick sequence.
+- **Error Property (M11)**: `BacktestClock` exposes a public `error` property (`@property`) for reading any exception captured during tick processing. `RunManager` uses `clock.error` to detect and propagate strategy errors to run status.
 
 ## 4. Clock Selection (GLaDOS Responsibility)
 

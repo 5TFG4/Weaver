@@ -1,15 +1,15 @@
 # M8: Critical Fixes & Improvements — Detailed Implementation Plan
 
-> **Document Charter**  
-> **Primary role**: M8 milestone detailed implementation guide.  
-> **Authoritative for**: M8 task breakdown, file-level change specs, test requirements, and execution order.  
+> **Document Charter**
+> **Primary role**: M8 milestone detailed implementation guide.
+> **Authoritative for**: M8 task breakdown, file-level change specs, test requirements, and execution order.
 > **Not authoritative for**: milestone summary status (use `MILESTONE_PLAN.md`).
 
-> **Status**: ✅ COMPLETE (started 2026-02-19; M8 fully closed 2026-02-26)  
-> **Prerequisite**: M7 ✅ (894 tests: 808 backend + 86 frontend)  
-> **Result**: 129 new tests → cumulative 1023 (933 backend + 90 frontend)  
-> **Estimated Effort**: 1.5–2 weeks  
-> **Design Decisions**: All 5 (D-1–D-5) locked ✅  
+> **Status**: ✅ COMPLETE (started 2026-02-19; M8 fully closed 2026-02-26)
+> **Prerequisite**: M7 ✅ (894 tests: 808 backend + 86 frontend)
+> **Result**: 129 new tests → cumulative 1023 (933 backend + 90 frontend)
+> **Estimated Effort**: 1.5–2 weeks
+> **Design Decisions**: All 5 (D-1–D-5) locked ✅
 > **Key Inputs**: `DESIGN_AUDIT.md`, `INDEPENDENT_DESIGN_REVIEW.md`, `DESIGN_REVIEW_PLAN.md`
 
 ---
@@ -147,8 +147,8 @@ M8-D: Documentation (after P0+P1, parallel with Q)
 
 ## 4. M8-P0: Critical Contract Fixes
 
-> **Estimated Tests**: ~15  
-> **Priority**: Must complete before any other M8 work  
+> **Estimated Tests**: ~15
+> **Priority**: Must complete before any other M8 work
 > **Principle**: TDD — write failing test first, then fix code
 
 ### 4.1 C-01: SSE Event Casing Fix
@@ -406,13 +406,13 @@ M8-D: Documentation (after P0+P1, parallel with Q)
 
 ## 5. M8-P1: Runtime Wiring (Packages A/B/C)
 
-> **Estimated Tests**: ~20  
-> **Depends on**: M8-P0 complete  
+> **Estimated Tests**: ~20
+> **Depends on**: M8-P0 complete
 > **Design Decisions Applied**: D-1, D-4
 
 ### 5.1 Package A: Run Lifecycle (A2 — Lifecycle-First)
 
-> **Issues resolved**: C-02 (route exists from P0), RunManager DI, per-run cleanup  
+> **Issues resolved**: C-02 (route exists from P0), RunManager DI, per-run cleanup
 > **Chosen approach**: A2 — treat start route + DI readiness + cleanup as one cohesive change
 
 #### A.1 Inject RunManager Runtime Dependencies
@@ -509,7 +509,7 @@ M8-D: Documentation (after P0+P1, parallel with Q)
 
 ### 5.2 Package B: Event Pipeline Wiring (B1 — Direct App-Lifespan)
 
-> **Issues resolved**: N-01, N-07, DomainRouter wiring  
+> **Issues resolved**: N-01, N-07, DomainRouter wiring
 > **Chosen approach**: B1 — direct app-lifespan wiring (3 consumers, reassess at 10+)
 
 #### B.1 PostgresEventLog Direct Subscriber Dispatch (D-1)
@@ -628,7 +628,7 @@ M8-D: Documentation (after P0+P1, parallel with Q)
 
 ### 5.3 Package C: Data Source Unification (C1 — Hard Unify)
 
-> **Issues resolved**: C-04 (route change done in P0), full integration  
+> **Issues resolved**: C-04 (route change done in P0), full integration
 > **Chosen approach**: C1 — hard unify to durable source in DB mode
 
 #### C.1 Full Read/Write Parity via VedaService
@@ -668,7 +668,7 @@ Builds on P0 C-04 route change. Ensures VedaService `list_orders()` and `get_ord
 
 ## 6. M8-Q: Code Quality & P1 Fixes
 
-> **Estimated Tests**: ~10–15  
+> **Estimated Tests**: ~10–15
 > **Can run parallel with M8-P1** (independent fixes)
 
 ### 6.0 Progress Snapshot (2026-02-26, code-verified)
@@ -902,7 +902,7 @@ rm src/veda/base_api_handler.py
 
 ## 7. M8-D: Documentation
 
-> **No new tests** — documentation-only phase  
+> **No new tests** — documentation-only phase
 > **Depends on**: M8-P0 + M8-P1 (code must be final before documenting)
 
 ### 7.1 Architecture Docs to Create
@@ -1019,16 +1019,16 @@ M8-D:      docs: architecture docs (greta, marvin, walle) + updates
 
 ---
 
-_Last Updated: 2026-02-26_  
-_Status: M8 Complete (P0/P1/Q/D/R0-R3 all delivered; exit gate passed)_  
+_Last Updated: 2026-02-26_
+_Status: M8 Complete (P0/P1/Q/D/R0-R3 all delivered; exit gate passed)_
 _Prerequisites: M7 ✅ (894 tests), D-1–D-5 decisions locked and implemented in M8_
 
 ---
 
 ## 9. M8-R: Audit Closeout Plan (TDD + MVP, planning only)
 
-> **Date**: 2026-02-26  
-> **Purpose**: execution-level remediation plan for final M8 audit findings (planning first, then implementation).  
+> **Date**: 2026-02-26
+> **Purpose**: execution-level remediation plan for final M8 audit findings (planning first, then implementation).
 > **Source**: [../../M8_FINAL_PYRAMID_REVIEW.md](../../M8_FINAL_PYRAMID_REVIEW.md)
 
 ### 9.1 Scope

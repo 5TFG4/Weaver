@@ -7,7 +7,7 @@ Unit tests for the backtest execution service.
 import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest_asyncio
@@ -771,3 +771,124 @@ class TestGretaServiceStatsComputation:
         stats = result.stats
         assert stats.profit_factor is not None
         assert stats.profit_factor > Decimal("0")
+
+
+# =============================================================================
+# M11-1: task_set wiring tests
+# =============================================================================
+
+
+class TestGretaServiceTaskSetWiring:
+    """Tests for task_set parameter plumbing in GretaService (M11-1)."""
+
+    @pytest_asyncio.fixture
+    async def service(self) -> GretaService:
+        """Create service with mocked dependencies."""
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        mock_event_log = AsyncMock()
+        return GretaService(
+            run_id="run-ts",
+            bar_repository=mock_bar_repo,
+            event_log=mock_event_log,
+        )
+
+    async def test_task_set_none_by_default(self, service: GretaService) -> None:
+        """_task_set is None before initialize."""
+        assert service._task_set is None
+
+    async def test_initialize_stores_task_set(self, service: GretaService) -> None:
+        """initialize(task_set=...) stores the set."""
+        ts: set[asyncio.Task[Any]] = set()
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+            task_set=ts,
+        )
+        assert service._task_set is ts
+
+    async def test_initialize_without_task_set_stays_none(self, service: GretaService) -> None:
+        """initialize() without task_set keeps _task_set as None."""
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+        )
+        assert service._task_set is None
+
+    async def test_on_fetch_window_adds_task_to_set(self) -> None:
+        """_on_fetch_window spawns a task registered in _task_set."""
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        service = GretaService(
+            run_id="run-ts",
+            bar_repository=mock_bar_repo,
+            event_log=mock_event_log,
+        )
+        ts: set[asyncio.Task[Any]] = set()
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+            task_set=ts,
+        )
+
+        envelope = MagicMock()
+        envelope.payload = {"symbol": "BTC/USD", "lookback": 5}
+        envelope.corr_id = None
+        envelope.id = "evt-1"
+        envelope.run_id = "run-ts"
+
+        service._on_fetch_window(envelope)
+        # Task should be in the set immediately
+        assert len(ts) == 1
+
+        # Wait for task completion
+        task = next(iter(ts))
+        await task
+        # Done callback should remove it
+        assert len(ts) == 0
+
+    async def test_on_place_order_adds_task_to_set(self) -> None:
+        """_on_place_order spawns a task registered in _task_set."""
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        service = GretaService(
+            run_id="run-ts",
+            bar_repository=mock_bar_repo,
+            event_log=mock_event_log,
+        )
+        ts: set[asyncio.Task[Any]] = set()
+        await service.initialize(
+            symbols=["BTC/USD"],
+            timeframe="1m",
+            start=datetime(2024, 1, 1, tzinfo=UTC),
+            end=datetime(2024, 1, 2, tzinfo=UTC),
+            task_set=ts,
+        )
+
+        envelope = MagicMock()
+        envelope.payload = {
+            "symbol": "BTC/USD",
+            "side": "buy",
+            "qty": "1.0",
+            "order_type": "market",
+        }
+        envelope.run_id = "run-ts"
+
+        service._on_place_order(envelope)
+        assert len(ts) == 1
+
+        task = next(iter(ts))
+        await task
+        assert len(ts) == 0

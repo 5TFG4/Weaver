@@ -25,13 +25,14 @@ import pytest
 
 from src.veda.adapters.alpaca_adapter import AlpacaAdapter
 from src.veda.models import OrderIntent, OrderSide, OrderStatus, OrderType, TimeInForce
+from tests.alpaca_helpers import has_real_alpaca_creds
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
     pytest.mark.skipif(
-        not os.environ.get("ALPACA_PAPER_API_KEY") or not os.environ.get("ALPACA_PAPER_API_SECRET"),
-        reason="ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET environment variables must both be set",
+        not has_real_alpaca_creds(),
+        reason="Real ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET required",
     ),
 ]
 

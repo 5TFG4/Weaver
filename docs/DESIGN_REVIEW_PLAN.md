@@ -1,8 +1,8 @@
 # Design Review Plan (Weaver)
 
-> **Document Charter**  
-> **Primary role**: review methodology, process governance, and **consolidated findings control center**.  
-> **Authoritative for**: review rubric, segment flow, review output protocol, **all finding IDs (C-01–C-04, N-01–N-10), action queue, and design decisions (D-1–D-5)**.  
+> **Document Charter**
+> **Primary role**: review methodology, process governance, and **consolidated findings control center**.
+> **Authoritative for**: review rubric, segment flow, review output protocol, **all finding IDs (C-01–C-04, N-01–N-10), action queue, and design decisions (D-1–D-5)**.
 > **Not authoritative for**: active defect backlog details (use `DESIGN_AUDIT.md`); detailed analysis narrative (use `INDEPENDENT_DESIGN_REVIEW.md`).
 
 > **Purpose**: Provide a repeatable, context-resilient review process for validating Weaver’s architecture and implementation against the documented design.

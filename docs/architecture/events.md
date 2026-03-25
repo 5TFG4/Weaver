@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: event envelope, event taxonomy, and delivery semantics.  
-> **Authoritative for**: event identity chain, namespacing, offsets, and subscription model.  
+> **Document Charter**
+> **Primary role**: event envelope, event taxonomy, and delivery semantics.
+> **Authoritative for**: event identity chain, namespacing, offsets, and subscription model.
 > **Not authoritative for**: HTTP route planning and milestone tracking.
 
 ## 1. Envelope (Stable Contract)

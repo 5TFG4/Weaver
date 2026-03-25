@@ -8,6 +8,7 @@ No actual sleeping - advances as fast as strategy can process.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from datetime import datetime, timedelta
 
@@ -55,6 +56,14 @@ class BacktestClock(BaseClock):
         self._ack_event.set()  # Start ready
         self._use_backpressure = False
 
+        # Fatal error from tick loop (M11-2)
+        self._error: Exception | None = None
+
+    @property
+    def error(self) -> Exception | None:
+        """Fatal error captured during tick loop, if any."""
+        return self._error
+
     async def start(self, run_id: str) -> None:
         """Start the backtest simulation."""
         if self._running:
@@ -98,6 +107,19 @@ class BacktestClock(BaseClock):
         """Acknowledge processing of the current tick (releases backpressure)."""
         self._ack_event.set()
 
+    async def _emit_tick(self, tick: ClockTick) -> None:
+        """Emit tick to callbacks, letting exceptions propagate (fail-fast).
+
+        Unlike BaseClock._emit_tick which swallows callback errors,
+        BacktestClock re-raises the first exception so _tick_loop can
+        capture it in self._error and stop the run.
+        """
+        self._tick_count += 1
+        for callback in self._callbacks:
+            result = callback(tick)
+            if inspect.isawaitable(result):
+                await asyncio.wait_for(result, timeout=self._callback_timeout)
+
     async def _tick_loop(self) -> None:
         """Main loop that emits ticks as fast as possible."""
         tf = parse_timeframe(self.timeframe)
@@ -133,9 +155,11 @@ class BacktestClock(BaseClock):
 
                 except asyncio.CancelledError:
                     raise
-                except Exception:
-                    logger.exception("Error in backtest clock tick loop, skipping tick")
-                    self._simulated_time += delta
+                except Exception as exc:
+                    logger.exception("Fatal error in backtest tick — stopping run")
+                    self._error = exc
+                    self._running = False
+                    break
         finally:
             # Mark as not running when loop exits (natural completion or cancellation)
             self._running = False

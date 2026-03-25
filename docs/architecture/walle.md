@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: database schema, repository boundaries, and migration strategy.  
-> **Authoritative for**: persistence model and storage responsibilities.  
+> **Document Charter**
+> **Primary role**: database schema, repository boundaries, and migration strategy.
+> **Authoritative for**: persistence model and storage responsibilities.
 > **Not authoritative for**: API contracts (see `api.md`).
 
 ## 1. Responsibility & Boundary

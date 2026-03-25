@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: high-level phase roadmap and architecture entry-gate framing.  
-> **Authoritative for**: roadmap phases and gate checklist framing only.  
+> **Document Charter**
+> **Primary role**: high-level phase roadmap and architecture entry-gate framing.
+> **Authoritative for**: roadmap phases and gate checklist framing only.
 > **Not authoritative for**: current detailed task execution (use `../MILESTONE_PLAN.md`) or latest test counts/coverage (use `../TEST_COVERAGE.md`).
 
 ---
@@ -23,7 +23,7 @@
 
 **Detailed designs go in**: `docs/archive/milestone-details/mX-name.md`
 
-**Active issue tracking goes in**: `docs/DESIGN_AUDIT.md`  
+**Active issue tracking goes in**: `docs/DESIGN_AUDIT.md`
 **Historical issue trail remains in**: `docs/AUDIT_FINDINGS.md`
 
 ---
@@ -47,37 +47,39 @@
 
 **Total (historical snapshot)**: 904 backend + 88 frontend = 992 tests
 
-> **Latest measured totals (2026-03-22)**: 1089 tests (946 backend + 104 frontend + 33 E2E + 6 Alpaca integration), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
+> **Latest measured totals (2026-03-24)**: 1137 tests (946 backend unit + 50 integration + 108 frontend + 33 E2E), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: Post-M10 complete — backlog only (B-2, B-3, B-8–B-10, E-3, F-2, R-1–R-3)
+**Active Milestone**: None — all planned milestones (M0–M11) complete
 
-**Last State Update**: 2026-03-22
+**Last State Update**: 2026-03-24
 
-## 2. Milestones (Revised 2026-02-19)
+## 2. Milestones (Revised 2026-03-23)
 
-| Milestone | Definition of Done                                                                                                                | Status              |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| M0–M3     | Foundation, API, Trading                                                                                                          | ✅ DONE             |
-| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)                                                             | ✅ DONE             |
-| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                                                                        | ✅ DONE             |
-| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)                                                      | ✅ DONE (74 tests)  |
-| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests) |
-| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)  |
-| **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE         |
-| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE         |
-| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)|
+| Milestone | Definition of Done                                                                                                                | Status                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| M0–M3     | Foundation, API, Trading                                                                                                          | ✅ DONE                |
+| M3.5      | [Integration fixes](../archive/milestone-details/m3.5-integration.md)                                                             | ✅ DONE                |
+| M4        | [Greta backtest](../archive/milestone-details/m4-greta.md)                                                                        | ✅ DONE                |
+| **M5**    | [Marvin Core](../archive/milestone-details/m5-marvin.md) (Strategy + Plugin)                                                      | ✅ DONE (74 tests)     |
+| **M6**    | [Live Trading](../archive/milestone-details/m6-live-trading.md) (Paper/Live Flow)                                                 | ✅ DONE (101 tests)    |
+| **M7**    | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md) (React UI)                                                      | ✅ DONE (86 tests)     |
+| **M8**    | [Critical Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) (P0 fixes + Runtime wiring + Quality)      | ✅ COMPLETE            |
+| **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE            |
+| **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)   |
+| **M11**   | [Runtime Robustness & UX Polish](../archive/milestone-details/m11-runtime-robustness.md) (Async race + Concurrency + Dev env)     | ✅ COMPLETE (48 tests) |
 
 ## 3. Phase Timeline
 
-| Phase  | Focus                         | Est. Tests | Status               |
-| ------ | ----------------------------- | ---------- | -------------------- |
-| 1–4    | Foundation → Greta            | 631        | ✅ DONE              |
-| **5**  | Marvin Core + Plugin Strategy | ~74        | ✅ 74/74 (705 total) |
-| **6**  | Live Trading + Plugin Adapter | ~65        | ✅ 101 (808 total)   |
-| **7**  | Haro Frontend + SSE           | ~86        | ✅ 86 (894 total)    |
-| **8**  | Critical Fixes + Improvements | ~96        | ✅ COMPLETE          |
-| **9**  | CI Deployment Pipeline        | -          | ✅ COMPLETE          |
-| **10** | E2E Tests + Release Prep      | 33         | ✅ COMPLETE          |
+| Phase  | Focus                          | Est. Tests | Status               |
+| ------ | ------------------------------ | ---------- | -------------------- |
+| 1–4    | Foundation → Greta             | 631        | ✅ DONE              |
+| **5**  | Marvin Core + Plugin Strategy  | ~74        | ✅ 74/74 (705 total) |
+| **6**  | Live Trading + Plugin Adapter  | ~65        | ✅ 101 (808 total)   |
+| **7**  | Haro Frontend + SSE            | ~86        | ✅ 86 (894 total)    |
+| **8**  | Critical Fixes + Improvements  | ~96        | ✅ COMPLETE          |
+| **9**  | CI Deployment Pipeline         | -          | ✅ COMPLETE          |
+| **10** | E2E Tests + Release Prep       | 33         | ✅ COMPLETE          |
+| **11** | Runtime Robustness + UX Polish | 48         | ✅ COMPLETE          |
 
 ## 4. Architecture Invariants
 

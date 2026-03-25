@@ -2,8 +2,8 @@
 
 > An automated trading system (live + backtesting) with a React UI.
 
-> **Document Charter**  
-> **This document is authoritative for**: architecture boundary, global invariants, module responsibilities, instance model, and core design decisions.  
+> **Document Charter**
+> **This document is authoritative for**: architecture boundary, global invariants, module responsibilities, instance model, and core design decisions.
 > **This document is not authoritative for**: milestone status, active defect queue, or test-count snapshots.
 
 **Navigation**
@@ -14,7 +14,7 @@
 - Test coverage snapshot (authoritative): [TEST_COVERAGE.md](TEST_COVERAGE.md)
 - Historical audit trail: [AUDIT_FINDINGS.md](AUDIT_FINDINGS.md)
 
-**Last Updated**: 2026-02-26
+**Last Updated**: 2026-03-24
 
 ---
 
@@ -38,18 +38,20 @@
 
 ### Historical Milestone Detail Docs
 
-| Milestone              | Design Doc                                                           | Status                         |
-| ---------------------- | -------------------------------------------------------------------- | ------------------------------ |
-| M1 Foundation          | [m1-foundation.md](archive/milestone-details/m1-foundation.md)       | ✅ Done                        |
-| M2 GLaDOS API          | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md)       | ✅ Done                        |
-| M3 Veda Trading        | [m3-veda.md](archive/milestone-details/m3-veda.md)                   | ✅ Done                        |
-| M3.5 Integration       | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md) | ✅ Done                        |
-| M4 Greta               | [m4-greta.md](archive/milestone-details/m4-greta.md)                 | ✅ Done                        |
-| **M5 Marvin**          | [m5-marvin.md](archive/milestone-details/m5-marvin.md)               | ✅ Done (74 tests)             |
-| **M6 Live Trading**    | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md)   | ✅ Done (101 tests)            |
-| **M7 Haro Frontend**   | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md) | ✅ Done (86 tests)             |
-| **M8 Fixes & Improve** | —                                                                    | ✅ Done (final audit complete) |
-| **M9 E2E & Release**   | —                                                                    | ⏳ Planned                     |
+| Milestone              | Design Doc                                                                       | Status                         |
+| ---------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| M1 Foundation          | [m1-foundation.md](archive/milestone-details/m1-foundation.md)                   | ✅ Done                        |
+| M2 GLaDOS API          | [m2-glados-api.md](archive/milestone-details/m2-glados-api.md)                   | ✅ Done                        |
+| M3 Veda Trading        | [m3-veda.md](archive/milestone-details/m3-veda.md)                               | ✅ Done                        |
+| M3.5 Integration       | [m3.5-integration.md](archive/milestone-details/m3.5-integration.md)             | ✅ Done                        |
+| M4 Greta               | [m4-greta.md](archive/milestone-details/m4-greta.md)                             | ✅ Done                        |
+| **M5 Marvin**          | [m5-marvin.md](archive/milestone-details/m5-marvin.md)                           | ✅ Done (74 tests)             |
+| **M6 Live Trading**    | [m6-live-trading.md](archive/milestone-details/m6-live-trading.md)               | ✅ Done (101 tests)            |
+| **M7 Haro Frontend**   | [m7-haro-frontend.md](archive/milestone-details/m7-haro-frontend.md)             | ✅ Done (86 tests)             |
+| **M8 Fixes & Improve** | —                                                                                | ✅ Done (final audit complete) |
+| **M9 CI Deployment**   | [m9-ci-pipeline.md](archive/milestone-details/m9-ci-pipeline.md)                 | ✅ Done                        |
+| **M10 E2E & Release**  | [m10-e2e-release.md](archive/milestone-details/m10-e2e-release.md)               | ✅ Done (33 E2E tests)         |
+| **M11 Runtime Robust** | [m11-runtime-robustness.md](archive/milestone-details/m11-runtime-robustness.md) | ✅ Done (48 tests)             |
 
 ---
 

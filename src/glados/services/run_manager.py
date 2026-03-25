@@ -13,7 +13,9 @@ Multi-Run Architecture (M4+):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import asyncio
+import logging
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -31,6 +33,8 @@ from src.marvin.strategy_loader import StrategyLoader
 from src.marvin.strategy_runner import StrategyRunner
 from src.walle.repositories.bar_repository import BarRepository
 from src.walle.repositories.run_repository import RunRepository
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -66,6 +70,7 @@ class RunContext:
     greta: GretaService | None
     runner: StrategyRunner
     clock: BaseClock  # BacktestClock or RealtimeClock
+    pending_tasks: set[asyncio.Task[Any]] = field(default_factory=set)
 
 
 class RunManager:
@@ -101,6 +106,13 @@ class RunManager:
         self._strategy_loader = strategy_loader
         self._run_repository = run_repository
         self._run_contexts: dict[str, RunContext] = {}
+        self._run_locks: dict[str, asyncio.Lock] = {}
+
+    def _get_run_lock(self, run_id: str) -> asyncio.Lock:
+        """Get or create a per-run asyncio.Lock."""
+        if run_id not in self._run_locks:
+            self._run_locks[run_id] = asyncio.Lock()
+        return self._run_locks[run_id]
 
     async def _emit_event(self, event_type: str, run: Run) -> None:
         """Emit an event if event_log is configured."""
@@ -144,22 +156,35 @@ class RunManager:
     async def _cleanup_run_context(self, run_id: str) -> None:
         """Cleanup per-run runtime resources if context exists.
 
-        Cleanup contract (best-effort, idempotent by run_id):
-        1. Stop clock
-        2. Cleanup StrategyRunner subscriptions
-        3. Cleanup GretaService subscriptions/state (backtest runs)
-        4. Remove context from manager
+        Cleanup contract (ordered for correctness):
+        1. Stop clock (no more ticks generated)
+        2. Drain pending tasks (spawned work completes before unsubscribe)
+        3. Cleanup StrategyRunner subscriptions
+        4. Cleanup GretaService subscriptions/state
+        5. Remove context from manager
         """
         ctx = self._run_contexts.get(run_id)
         if ctx is None:
             return
 
+        # 1. Stop clock — no more ticks
         await ctx.clock.stop()
+
+        # 2. Drain pending tasks — tasks may spawn children (e.g.
+        #    fetch_window → on_data_ready → handle_place_order).
+        #    Snapshot + explicit removal avoids set-mutation races.
+        while ctx.pending_tasks:
+            snapshot = list(ctx.pending_tasks)
+            await asyncio.gather(*snapshot, return_exceptions=True)
+            ctx.pending_tasks -= set(snapshot)
+
+        # 3-4. Unsubscribe (safe now — all tasks complete)
         await ctx.runner.cleanup()
         if ctx.greta is not None:
             await ctx.greta.cleanup()
 
         del self._run_contexts[run_id]
+        self._run_locks.pop(run_id, None)
 
     async def create(self, request: RunCreate) -> Run:
         """
@@ -241,33 +266,34 @@ class RunManager:
             RunNotFoundError: If run doesn't exist
             RunNotStartableError: If run is not in PENDING status
         """
-        run = self._runs.get(run_id)
-        if run is None:
-            raise RunNotFoundError(run_id)
+        async with self._get_run_lock(run_id):
+            run = self._runs.get(run_id)
+            if run is None:
+                raise RunNotFoundError(run_id)
 
-        # Only start if pending
-        if run.status != RunStatus.PENDING:
-            raise RunNotStartableError(run_id, run.status.value)
+            # Only start if pending
+            if run.status != RunStatus.PENDING:
+                raise RunNotStartableError(run_id, run.status.value)
 
-        run.status = RunStatus.RUNNING
-        run.started_at = datetime.now(UTC)
-        await self._emit_event(RunEvents.STARTED, run)
-        await self._persist_run(run)
-
-        try:
-            if run.mode == RunMode.BACKTEST:
-                await self._start_backtest(run)
-            else:
-                # LIVE/PAPER use RealtimeClock
-                await self._start_live(run)
-        except Exception:
-            await self._persist_run(run)
-            raise
-
-        if run.status != RunStatus.RUNNING:
+            run.status = RunStatus.RUNNING
+            run.started_at = datetime.now(UTC)
+            await self._emit_event(RunEvents.STARTED, run)
             await self._persist_run(run)
 
-        return run
+            try:
+                if run.mode == RunMode.BACKTEST:
+                    await self._start_backtest(run)
+                else:
+                    # LIVE/PAPER use RealtimeClock
+                    await self._start_live(run)
+            except Exception:
+                await self._persist_run(run)
+                raise
+
+            if run.status != RunStatus.RUNNING:
+                await self._persist_run(run)
+
+            return run
 
     async def _start_live(self, run: Run) -> None:
         """
@@ -303,7 +329,11 @@ class RunManager:
             self._run_contexts[run.id] = ctx
 
             # 3. Initialize runner
-            await runner.initialize(run_id=run.id, symbols=run.symbols)
+            await runner.initialize(
+                run_id=run.id,
+                symbols=run.symbols,
+                task_set=ctx.pending_tasks,
+            )
 
             # 4. Wire tick handler
             async def on_tick(tick: ClockTick) -> None:
@@ -370,8 +400,13 @@ class RunManager:
                 timeframe=run.timeframe,
                 start=run.start_time,
                 end=run.end_time,
+                task_set=ctx.pending_tasks,
             )
-            await runner.initialize(run_id=run.id, symbols=run.symbols)
+            await runner.initialize(
+                run_id=run.id,
+                symbols=run.symbols,
+                task_set=ctx.pending_tasks,
+            )
 
             # 4. Wire tick handler
             async def on_tick(tick: ClockTick) -> None:
@@ -384,7 +419,26 @@ class RunManager:
 
             # 5. Run to completion (backtest is synchronous)
             await clock.start(run.id)
-            run.status = RunStatus.COMPLETED
+            await clock.wait()
+
+            # 6. Drain spawned tasks and collect errors.
+            #    Tasks may spawn children (fetch_window → on_data_ready
+            #    → handle_place_order).  Done-callbacks remove finished
+            #    tasks from the set; loop exits when nothing remains.
+            drain_errors: list[BaseException] = []
+            while ctx.pending_tasks:
+                snapshot = list(ctx.pending_tasks)
+                results = await asyncio.gather(*snapshot, return_exceptions=True)
+                ctx.pending_tasks -= set(snapshot)
+                drain_errors.extend(r for r in results if isinstance(r, BaseException))
+
+            clock_error = clock.error
+            if clock_error is not None or drain_errors:
+                run.status = RunStatus.ERROR
+                error_msg = str(clock_error) if clock_error else str(drain_errors[0])
+                logger.error("Backtest %s failed: %s", run.id, error_msg)
+            else:
+                run.status = RunStatus.COMPLETED
         except Exception:
             run.status = RunStatus.ERROR
             raise
@@ -393,8 +447,11 @@ class RunManager:
             run.stopped_at = datetime.now(UTC)
             await self._cleanup_run_context(run.id)
 
-        # 6. Emit completion event
-        await self._emit_event(RunEvents.COMPLETED, run)
+        # Emit terminal event
+        if run.status == RunStatus.ERROR:
+            await self._emit_event(RunEvents.ERROR, run)
+        else:
+            await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:
         """
@@ -414,21 +471,22 @@ class RunManager:
         Raises:
             RunNotFoundError: If run doesn't exist
         """
-        run = self._runs.get(run_id)
-        if run is None:
-            raise RunNotFoundError(run_id)
+        async with self._get_run_lock(run_id):
+            run = self._runs.get(run_id)
+            if run is None:
+                raise RunNotFoundError(run_id)
 
-        # Cleanup per-run context
-        await self._cleanup_run_context(run_id)
+            # Cleanup per-run context
+            await self._cleanup_run_context(run_id)
 
-        # Idempotent: if already stopped, just return
-        if run.status != RunStatus.STOPPED:
-            run.status = RunStatus.STOPPED
-            run.stopped_at = datetime.now(UTC)
-            await self._emit_event(RunEvents.STOPPED, run)
-            await self._persist_run(run)
+            # Idempotent: if already stopped, just return
+            if run.status != RunStatus.STOPPED:
+                run.status = RunStatus.STOPPED
+                run.stopped_at = datetime.now(UTC)
+                await self._emit_event(RunEvents.STOPPED, run)
+                await self._persist_run(run)
 
-        return run
+            return run
 
     async def recover(self) -> int:
         """

@@ -5,13 +5,18 @@ Runs strategy code in response to clock ticks.
 Mode-agnostic: doesn't know if backtest or live.
 """
 
+import asyncio
 import logging
+from decimal import Decimal
 from typing import Any
+
+from dateutil.parser import isoparse
 
 from src.events.log import EventLog
 from src.events.protocol import Envelope
 from src.glados.task_utils import spawn_tracked_task
 from src.marvin.base_strategy import ActionType, BaseStrategy, StrategyAction
+from src.walle.repositories.bar_repository import Bar
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +51,7 @@ class StrategyRunner:
         self._run_id: str | None = None
         self._symbols: list[str] = []
         self._subscription_id: str | None = None
+        self._task_set: set[asyncio.Task[Any]] | None = None
 
     @property
     def run_id(self) -> str | None:
@@ -57,16 +63,20 @@ class StrategyRunner:
         """Trading symbols for this run."""
         return self._symbols
 
-    async def initialize(self, run_id: str, symbols: list[str]) -> None:
+    async def initialize(
+        self, run_id: str, symbols: list[str], task_set: set[asyncio.Task[Any]] | None = None
+    ) -> None:
         """
         Initialize for a run.
 
         Args:
             run_id: Unique run identifier
             symbols: List of symbols to trade
+            task_set: Optional task set for tracking spawned tasks
         """
         self._run_id = run_id
         self._symbols = symbols
+        self._task_set = task_set
         await self._strategy.initialize(symbols)
 
         # Subscribe to data.WindowReady events for this run
@@ -97,6 +107,7 @@ class StrategyRunner:
             self.on_data_ready(envelope),
             logger=logger,
             context=f"marvin.window_ready run_id={self._run_id}",
+            task_set=self._task_set,
         )
 
     async def on_tick(self, tick: Any) -> None:
@@ -111,49 +122,73 @@ class StrategyRunner:
         actions = await self._strategy.on_tick(tick)
 
         for action in actions:
-            await self._emit_action(action)
+            await self._emit_action(action, tick=tick)
 
     async def on_data_ready(self, envelope: Envelope) -> None:
         """
         Handle data.WindowReady event.
 
         Passes data to strategy and emits any resulting events.
+        Deserializes bar dicts from the event payload into Bar objects
+        so strategies can use attribute access (bar.close, etc.).
 
         Args:
             envelope: Event envelope with data payload
         """
-        actions = await self._strategy.on_data(envelope.payload)
+        data = dict(envelope.payload)
+        symbol = data.get("symbol", "")
+        if "bars" in data:
+            data["bars"] = [
+                Bar(
+                    symbol=symbol,
+                    timeframe="",
+                    timestamp=isoparse(b["timestamp"]),
+                    open=Decimal(b["open"]),
+                    high=Decimal(b["high"]),
+                    low=Decimal(b["low"]),
+                    close=Decimal(b["close"]),
+                    volume=Decimal(b["volume"]),
+                )
+                for b in data["bars"]
+            ]
+
+        actions = await self._strategy.on_data(data)
 
         for action in actions:
             await self._emit_action(action)
 
-    async def _emit_action(self, action: StrategyAction) -> None:
+    async def _emit_action(self, action: StrategyAction, tick: Any = None) -> None:
         """
         Emit event for a strategy action.
 
         Args:
             action: The strategy action to emit
+            tick: Optional clock tick for timestamp context
         """
         if action.type == ActionType.FETCH_WINDOW:
-            await self._emit_fetch_window(action)
+            await self._emit_fetch_window(action, tick=tick)
         elif action.type == ActionType.PLACE_ORDER:
             if action.symbol is None or action.side is None or action.qty is None:
                 raise ValueError("PLACE_ORDER action requires symbol, side, and qty")
             await self._emit_place_request(action)
 
-    async def _emit_fetch_window(self, action: StrategyAction) -> None:
+    async def _emit_fetch_window(self, action: StrategyAction, tick: Any = None) -> None:
         """
         Emit strategy.FetchWindow event.
 
         Args:
             action: Fetch window action
+            tick: Optional clock tick for as_of timestamp
         """
+        payload: dict[str, Any] = {
+            "symbol": action.symbol,
+            "lookback": action.lookback,
+        }
+        if tick is not None and hasattr(tick, "ts"):
+            payload["as_of"] = tick.ts.isoformat()
         envelope = Envelope(
             type="strategy.FetchWindow",
-            payload={
-                "symbol": action.symbol,
-                "lookback": action.lookback,
-            },
+            payload=payload,
             run_id=self._run_id,
             producer="marvin.runner",
         )

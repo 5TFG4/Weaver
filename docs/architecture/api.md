@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: API/SSE contract and frontend API integration model.  
-> **Authoritative for**: endpoint contract and event transport semantics at API boundary.  
+> **Document Charter**
+> **Primary role**: API/SSE contract and frontend API integration model.
+> **Authoritative for**: endpoint contract and event transport semantics at API boundary.
 > **Not authoritative for**: milestone status and audit backlog.
 
 ## 1. REST API

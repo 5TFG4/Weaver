@@ -619,11 +619,11 @@ class TestBacktestClockEdgeCases:
         assert len(ticks) == 0
 
     @pytest.mark.asyncio
-    async def test_callback_exception_does_not_stop_clock(
+    async def test_callback_exception_stops_clock_with_error(
         self,
         sample_start_time: datetime,
     ) -> None:
-        """Clock should continue even if a callback raises an exception."""
+        """Clock should stop and record error when a callback raises (M11-2 fail-fast)."""
         clock = BacktestClock(
             start_time=sample_start_time,
             end_time=sample_start_time + timedelta(minutes=3),
@@ -638,14 +638,18 @@ class TestBacktestClockEdgeCases:
         def working_callback(tick: ClockTick) -> None:
             successful_ticks.append(tick)
 
+        # failing_callback is registered first — it fires before working_callback
         clock.on_tick(failing_callback)
         clock.on_tick(working_callback)
 
         await clock.start("test-run")
         await clock.wait()
 
-        # Working callback should still receive all ticks
-        assert len(successful_ticks) == 4
+        # Clock should have stopped on first tick — working_callback never ran
+        assert len(successful_ticks) == 0
+        assert clock.error is not None
+        assert "Callback failed!" in str(clock.error)
+        assert not clock.is_running
 
     def test_tick_count_property(
         self,
@@ -660,3 +664,104 @@ class TestBacktestClockEdgeCases:
         )
 
         assert clock.tick_count == 0
+
+
+class TestBacktestClockErrorSignal:
+    """Tests for M11-2 error signal from BacktestClock."""
+
+    @pytest.fixture
+    def sample_start_time(self) -> datetime:
+        return datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
+
+    def test_error_none_by_default(self, sample_start_time: datetime) -> None:
+        """_error is None on fresh clock."""
+        clock = BacktestClock(
+            start_time=sample_start_time,
+            end_time=sample_start_time + timedelta(minutes=3),
+        )
+        assert clock.error is None
+
+    @pytest.mark.asyncio
+    async def test_sync_callback_error_stops_and_records(self, sample_start_time: datetime) -> None:
+        """Sync callback exception → _error set, loop stops."""
+        clock = BacktestClock(
+            start_time=sample_start_time,
+            end_time=sample_start_time + timedelta(minutes=5),
+            timeframe="1m",
+        )
+
+        def bad_callback(tick: ClockTick) -> None:
+            raise RuntimeError("strategy boom")
+
+        clock.on_tick(bad_callback)
+        await clock.start("run-err")
+        await clock.wait()
+
+        assert clock.error is not None
+        assert "strategy boom" in str(clock.error)
+        assert not clock.is_running
+
+    @pytest.mark.asyncio
+    async def test_async_callback_error_stops_and_records(
+        self, sample_start_time: datetime
+    ) -> None:
+        """Async callback exception → _error set, loop stops."""
+        clock = BacktestClock(
+            start_time=sample_start_time,
+            end_time=sample_start_time + timedelta(minutes=5),
+            timeframe="1m",
+        )
+
+        async def bad_async(tick: ClockTick) -> None:
+            raise ValueError("async strategy boom")
+
+        clock.on_tick(bad_async)
+        await clock.start("run-err-async")
+        await clock.wait()
+
+        assert clock.error is not None
+        assert "async strategy boom" in str(clock.error)
+
+    @pytest.mark.asyncio
+    async def test_error_preserves_partial_progress(self, sample_start_time: datetime) -> None:
+        """Clock records ticks emitted before the error tick."""
+        clock = BacktestClock(
+            start_time=sample_start_time,
+            end_time=sample_start_time + timedelta(minutes=10),
+            timeframe="1m",
+        )
+
+        call_count = 0
+
+        def fail_on_third(tick: ClockTick) -> None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 3:
+                raise RuntimeError("fail at tick 3")
+
+        clock.on_tick(fail_on_third)
+        await clock.start("run-partial")
+        await clock.wait()
+
+        # Should have processed exactly 3 ticks (error on 3rd)
+        assert call_count == 3
+        assert clock.error is not None
+        assert clock.tick_count == 3
+
+    @pytest.mark.asyncio
+    async def test_normal_completion_leaves_error_none(self, sample_start_time: datetime) -> None:
+        """Successful backtest leaves _error as None."""
+        clock = BacktestClock(
+            start_time=sample_start_time,
+            end_time=sample_start_time + timedelta(minutes=3),
+            timeframe="1m",
+        )
+
+        ticks: list[ClockTick] = []
+        clock.on_tick(ticks.append)
+
+        await clock.start("run-ok")
+        await clock.wait()
+
+        assert clock.error is None
+        assert len(ticks) == 4  # 0, 1, 2, 3 minutes

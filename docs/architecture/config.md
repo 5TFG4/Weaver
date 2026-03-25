@@ -2,9 +2,9 @@
 
 > Part of [Architecture Documentation](../ARCHITECTURE.md)
 >
-> **Document Charter**  
-> **Primary role**: configuration model and credential/security policy.  
-> **Authoritative for**: config class boundaries, env-variable policy, secret handling rules.  
+> **Document Charter**
+> **Primary role**: configuration model and credential/security policy.
+> **Authoritative for**: config class boundaries, env-variable policy, secret handling rules.
 > **Not authoritative for**: exchange adapter internals (see `veda.md`).
 
 **Implementation**: `src/config.py` using `pydantic-settings`
