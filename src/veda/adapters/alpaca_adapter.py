@@ -264,7 +264,7 @@ class AlpacaAdapter(ExchangeAdapter):
 
             return OrderSubmitResult(
                 success=True,
-                exchange_order_id=response.id,
+                exchange_order_id=str(response.id),
                 status=self._map_alpaca_status(response.status),
             )
 
@@ -564,7 +564,7 @@ class AlpacaAdapter(ExchangeAdapter):
             filled_price = Decimal(str(response.filled_avg_price))
 
         return ExchangeOrder(
-            exchange_order_id=response.id,
+            exchange_order_id=str(response.id),
             client_order_id=response.client_order_id,
             symbol=response.symbol,
             side=OrderSide.BUY if response.side == "buy" else OrderSide.SELL,

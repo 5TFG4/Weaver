@@ -114,16 +114,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     session_factory=database.session_factory,
                     config=settings,
                 )
+                await veda_service.connect()
                 app.state.veda_service = veda_service
-                logger.info(f"VedaService initialized (mode={mode})")
-            except Exception as exc:
-                logger.exception(
-                    "Failed to initialize VedaService (mode=%s, has_paper_credentials=%s, has_live_credentials=%s)",
+                logger.info(f"VedaService initialized and connected (mode={mode})")
+            except Exception:
+                logger.warning(
+                    "VedaService connect failed (mode=%s) — live/paper trading unavailable",
                     mode,
-                    settings.alpaca.has_paper_credentials,
-                    settings.alpaca.has_live_credentials,
+                    exc_info=True,
                 )
-                raise RuntimeError(f"Failed to initialize VedaService for mode={mode}") from exc
+                app.state.veda_service = None
     else:
         logger.warning("DB_URL not set - running without database (in-memory mode)")
         app.state.database = None
@@ -301,6 +301,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ):
         await app.state.event_log.unsubscribe_by_id(app.state.live_fetch_window_subscription_id)
         logger.info("MarketDataService unsubscribed from EventLog")
+
+    # Disconnect VedaService (exchange adapter)
+    veda_svc = getattr(app.state, "veda_service", None)
+    if veda_svc is not None and hasattr(veda_svc, "is_connected") and veda_svc.is_connected:
+        await veda_svc.disconnect()
+        logger.info("VedaService disconnected")
 
     # Close database connection
     if hasattr(app.state, "database") and app.state.database:
