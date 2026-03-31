@@ -146,7 +146,7 @@ class SMAStrategy(BaseStrategy):
         """
         closes = []
         for bar in bars:
-            close = bar.get("close")
+            close = getattr(bar, "close", None) if not isinstance(bar, dict) else bar.get("close")
             if close is not None:
                 if isinstance(close, Decimal):
                     closes.append(close)

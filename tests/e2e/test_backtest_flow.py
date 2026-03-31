@@ -71,21 +71,6 @@ def seed_bars():
         conn.close()
 
 
-@pytest.fixture()
-def _clean_runs():
-    """Clean runs table after test."""
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fills")
-            cur.execute("DELETE FROM veda_orders")
-            cur.execute("DELETE FROM runs")
-        conn.commit()
-    finally:
-        conn.close()
-
-
 @pytest.mark.e2e
 @pytest.mark.usefixtures("_clean_runs")
 class TestBacktestFlow:

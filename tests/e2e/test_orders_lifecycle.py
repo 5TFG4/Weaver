@@ -53,22 +53,6 @@ def seed_bars():
         conn.close()
 
 
-@pytest.fixture()
-def _clean_runs():
-    """Clean runs and events after test."""
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fills")
-            cur.execute("DELETE FROM veda_orders")
-            cur.execute("DELETE FROM outbox WHERE payload->>'producer' = 'greta.service'")
-            cur.execute("DELETE FROM runs")
-        conn.commit()
-    finally:
-        conn.close()
-
-
 def _get_order_events(run_id: str) -> list[dict]:
     """Query outbox for order events from a specific run."""
     conn = psycopg2.connect(DB_URL)

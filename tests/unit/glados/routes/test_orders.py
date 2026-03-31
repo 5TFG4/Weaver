@@ -239,3 +239,77 @@ class TestOrdersStatusFiltering:
 
         mock_veda.list_orders.assert_called_once_with(run_id=None, status=OrderStatus.FILLED)
         client.app.state.veda_service = None  # type: ignore[union-attr]
+
+
+class TestSubmittingStatusRoundTrip:
+    """Regression: SUBMITTING status must serialize through API without ValueError."""
+
+    def test_submitting_status_serializes_in_response(self, client: TestClient) -> None:
+        """OrderResponse with SUBMITTING status doesn't raise ValueError."""
+        mock_veda = AsyncMock()
+        mock_veda.get_order.return_value = _make_order_state(
+            "submitting-order", status=OrderStatus.SUBMITTING
+        )
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        response = client.get("/api/v1/orders/submitting-order")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "submitting"
+
+        client.app.state.veda_service = None  # type: ignore[union-attr]
+
+    def test_submitting_status_in_list_response(self, client: TestClient) -> None:
+        """List endpoint handles SUBMITTING status correctly."""
+        mock_veda = AsyncMock()
+        mock_veda.list_orders.return_value = [
+            _make_order_state("s1", status=OrderStatus.SUBMITTING),
+            _make_order_state("s2", status=OrderStatus.FILLED),
+        ]
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        response = client.get("/api/v1/orders")
+
+        assert response.status_code == 200
+        statuses = [o["status"] for o in response.json()["items"]]
+        assert "submitting" in statuses
+
+        client.app.state.veda_service = None  # type: ignore[union-attr]
+
+
+class TestSyncOrderEndpoint:
+    """Regression: POST /orders/{id}/sync refreshes status from exchange."""
+
+    def test_sync_returns_updated_order(self, client: TestClient) -> None:
+        """Sync endpoint returns refreshed order state."""
+        mock_veda = AsyncMock()
+        mock_veda.sync_order.return_value = _make_order_state("sync-me", status=OrderStatus.FILLED)
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        response = client.post("/api/v1/orders/sync-me/sync")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "filled"
+        mock_veda.sync_order.assert_called_once_with("sync-me")
+
+        client.app.state.veda_service = None  # type: ignore[union-attr]
+
+    def test_sync_not_found_returns_404(self, client: TestClient) -> None:
+        """Sync returns 404 when order doesn't exist."""
+        mock_veda = AsyncMock()
+        mock_veda.sync_order.return_value = None
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        response = client.post("/api/v1/orders/missing/sync")
+
+        assert response.status_code == 404
+
+        client.app.state.veda_service = None  # type: ignore[union-attr]
+
+    def test_sync_requires_veda_service(self, client: TestClient) -> None:
+        """Sync returns 503 when VedaService is not configured."""
+        client.app.state.veda_service = None  # type: ignore[union-attr]
+
+        response = client.post("/api/v1/orders/any-order/sync")
+
+        assert response.status_code == 503

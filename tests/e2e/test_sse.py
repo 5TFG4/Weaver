@@ -7,27 +7,10 @@ delivered via SSE without page reload.
 
 from __future__ import annotations
 
-import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
 
-from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
-
-
-@pytest.fixture()
-def _clean_runs():
-    """Clean runs table after test."""
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fills")
-            cur.execute("DELETE FROM veda_orders")
-            cur.execute("DELETE FROM runs")
-        conn.commit()
-    finally:
-        conn.close()
 
 
 @pytest.mark.e2e
@@ -89,12 +72,15 @@ class TestSSE:
     ) -> None:
         """SSE delivers run.Stopped → real-time UI update."""
         run = api_client.create_run(strategy_id="sample", mode="paper", symbols=["BTC/USD"])
-        api_client.start_run(run["id"])
 
-        # Navigate to runs page
+        # Navigate so SSE is connected and the run row is loaded from API
         page.goto(f"{e2e_base_url}/runs")
         expect(page.get_by_text("Connected")).to_be_visible(timeout=10000)
         run_row = page.get_by_test_id(f"run-row-{run['id']}")
+        expect(run_row).to_be_visible(timeout=5000)
+
+        # Start via API — SSE delivers running status
+        api_client.start_run(run["id"])
         expect(run_row.get_by_text("running")).to_be_visible(timeout=10000)
 
         # Stop via API — SSE delivers stopped status

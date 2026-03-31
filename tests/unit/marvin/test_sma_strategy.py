@@ -295,3 +295,75 @@ class TestSMAStrategy:
         await strategy.on_data({"symbol": "BTC/USD", "bars": bars2})
 
         assert strategy._has_position is False
+
+
+class TestSMABarDataclassSupport:
+    """Regression: SMA strategy must handle Bar dataclass objects, not just dicts."""
+
+    @pytest.fixture
+    def strategy(self):
+        from src.marvin.strategies.sma_strategy import SMAConfig, SMAStrategy
+
+        return SMAStrategy(SMAConfig(fast_period=5, slow_period=10, qty=Decimal("1.0")))
+
+    def _make_bar_objects(self, closes: list[Decimal | int | float], symbol: str = "BTC/USD"):
+        """Create Bar dataclass instances (as strategy_runner.on_data_ready produces)."""
+        from src.walle.repositories.bar_repository import Bar
+
+        return [
+            Bar(
+                symbol=symbol,
+                timeframe="",
+                timestamp=datetime(2024, 1, 1, 9, i, tzinfo=UTC),
+                open=Decimal(str(c)),
+                high=Decimal(str(c)) + 1,
+                low=Decimal(str(c)) - 1,
+                close=Decimal(str(c)),
+                volume=Decimal("1000"),
+            )
+            for i, c in enumerate(closes)
+        ]
+
+    async def test_on_data_with_bar_dataclass_no_error(self, strategy) -> None:
+        """on_data does not raise AttributeError when bars are Bar dataclasses."""
+        await strategy.initialize(["BTC/USD"])
+
+        bars = self._make_bar_objects([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        actions = await strategy.on_data({"symbol": "BTC/USD", "bars": bars})
+
+        # First call: no crossover, just no error
+        assert isinstance(actions, list)
+
+    async def test_crossover_with_bar_dataclass(self, strategy) -> None:
+        """SMA crossover detection works with Bar dataclass objects."""
+        await strategy.initialize(["BTC/USD"])
+
+        # Establish fast > slow
+        bars1 = self._make_bar_objects([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        await strategy.on_data({"symbol": "BTC/USD", "bars": bars1})
+
+        # Establish fast < slow
+        bars2 = self._make_bar_objects([10, 11, 12, 13, 14, 5, 6, 7, 8, 9])
+        await strategy.on_data({"symbol": "BTC/USD", "bars": bars2})
+
+        # Bullish crossover
+        bars3 = self._make_bar_objects([5, 6, 7, 8, 9, 20, 21, 22, 23, 24])
+        actions = await strategy.on_data({"symbol": "BTC/USD", "bars": bars3})
+
+        assert len(actions) == 1
+        assert actions[0].type == "place_order"
+        assert actions[0].side == "buy"
+
+    def test_extract_closes_from_bar_objects(self, strategy) -> None:
+        """_extract_closes works with Bar dataclass objects."""
+        bars = self._make_bar_objects([Decimal("100"), Decimal("200"), Decimal("300")])
+        closes = strategy._extract_closes(bars)
+
+        assert closes == [Decimal("100"), Decimal("200"), Decimal("300")]
+
+    def test_extract_closes_from_dicts(self, strategy) -> None:
+        """_extract_closes still works with dict bars (backtest path)."""
+        bars = make_bars([100, 200, 300])
+        closes = strategy._extract_closes(bars)
+
+        assert closes == [Decimal("100"), Decimal("200"), Decimal("300")]

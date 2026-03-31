@@ -116,6 +116,7 @@ class OrderStatus(StrEnum):
     """Order status."""
 
     PENDING = "pending"
+    SUBMITTING = "submitting"
     SUBMITTED = "submitted"
     ACCEPTED = "accepted"
     PARTIALLY_FILLED = "partial"

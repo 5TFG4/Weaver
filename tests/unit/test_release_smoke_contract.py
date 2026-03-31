@@ -26,15 +26,17 @@ def test_prod_compose_backend_uses_canonical_asgi_target() -> None:
     assert "main:app" not in content
 
 
-def test_compose_smoke_workflow_checks_api_and_frontend() -> None:
-    """Compose smoke workflow should validate API and frontend over HTTP."""
+def test_compose_smoke_workflow_calls_shared_script() -> None:
+    """Compose smoke workflow should delegate to the shared CI script."""
     workflow_path = _repo_root() / ".github" / "workflows" / "compose-smoke.yml"
     content = workflow_path.read_text(encoding="utf-8")
 
-    assert "Wait for API health" in content
-    assert "/api/v1/healthz" in content
-    assert "Wait for frontend" in content
-    assert "http://127.0.0.1:${FRONTEND_PORT_PROD}/" in content
+    assert "scripts/ci/compose-smoke.sh" in content
+
+    # The script itself must contain health checks
+    script_path = _repo_root() / "scripts" / "ci" / "compose-smoke.sh"
+    script = script_path.read_text(encoding="utf-8")
+    assert "/api/v1/healthz" in script
 
 
 def test_weaver_entrypoint_exists() -> None:

@@ -16,6 +16,8 @@ services:
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
       - ALPACA_PAPER_API_SECRET=${ALPACA_PAPER_API_SECRET}
       - ALPACA_PAPER_BASE_URL=${ALPACA_PAPER_BASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db_dev:
         condition: service_healthy

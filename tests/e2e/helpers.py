@@ -11,7 +11,7 @@ from typing import Any
 
 import requests
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "http://backend_e2e:8000/api/v1")
+API_BASE_URL = os.environ.get("E2E_API_BASE_URL", "http://backend_e2e:8000/api/v1")
 
 
 class E2EApiClient:

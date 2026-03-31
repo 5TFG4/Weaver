@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Full CI pipeline — calls the same scripts used by GitHub Actions.
 # Designed to run INSIDE the dev container (backend_dev).
-# All tools (Python, Node, ruff, mypy, Docker CLI) are pre-installed.
-# DB_URL is set via docker-compose.dev.yml environment.
 #
-# NO FLAGS. NO SHORTCUTS. Runs the FULL CI pipeline every time:
-#   backend-ci  → ruff, mypy, alembic, pytest (unit+integration)
-#   frontend-ci → eslint, tsc, vitest --coverage, vite build
-#   e2e         → docker compose E2E suite (all 33 tests)
-#   smoke       → docker compose production smoke test
+# NO FLAGS. NO SHORTCUTS. Runs the FULL CI pipeline every time.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPTS="$ROOT_DIR/scripts/ci"
 cd "$ROOT_DIR"
 
 if [[ $# -gt 0 ]]; then
@@ -43,36 +39,26 @@ echo "=========================================="
 echo ""
 
 # ── 1. Backend CI (matches .github/workflows/backend-ci.yml) ──
-run_step "Backend: ruff check"    ruff check src/ tests/
-run_step "Backend: ruff format"   ruff format --check src/ tests/
-run_step "Backend: mypy"          mypy src/
-
-if [[ -n "${DB_URL:-}" ]]; then
-    run_step "Backend: alembic upgrade head" \
-        alembic upgrade head
-else
-    echo "  ⚠  DB_URL not set — alembic skipped (integration tests may fail)"
-fi
-
-run_step "Backend: pytest (unit+integration)" \
-    pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing -q
+run_step "Backend: ruff check"    bash "$SCRIPTS/backend-lint.sh" ruff-check
+run_step "Backend: ruff format"   bash "$SCRIPTS/backend-lint.sh" ruff-format
+run_step "Backend: mypy"          bash "$SCRIPTS/backend-lint.sh" mypy
+run_step "Backend: alembic"       bash "$SCRIPTS/db-migrate.sh"
+run_step "Backend: pytest"        bash "$SCRIPTS/backend-test.sh"
 
 # ── 2. Frontend CI (matches .github/workflows/frontend-ci.yml) ──
 echo ""
-run_step "Frontend: eslint"       bash -c 'cd haro && npm run lint --silent'
-run_step "Frontend: tsc"          bash -c 'cd haro && npx tsc -b --noEmit'
-run_step "Frontend: vitest"       bash -c 'cd haro && npm run test:coverage --silent'
-run_step "Frontend: build"        bash -c 'cd haro && npm run build --silent'
+run_step "Frontend: eslint"       bash "$SCRIPTS/frontend-lint.sh" eslint
+run_step "Frontend: tsc"          bash "$SCRIPTS/frontend-lint.sh" tsc
+run_step "Frontend: vitest"       bash "$SCRIPTS/frontend-test.sh" vitest
+run_step "Frontend: build"        bash "$SCRIPTS/frontend-test.sh" build
 
 # ── 3. E2E (matches .github/workflows/e2e.yml) ──
 echo ""
-run_step "E2E: full suite" \
-    bash scripts/ci/e2e-local.sh
+run_step "E2E: full suite"        bash "$SCRIPTS/e2e.sh"
 
 # ── 4. Compose smoke (matches .github/workflows/compose-smoke.yml) ──
 echo ""
-run_step "Smoke: compose up" \
-    bash scripts/ci/compose-smoke-local.sh
+run_step "Smoke: compose up"      bash "$SCRIPTS/compose-smoke.sh"
 
 echo ""
 echo "=========================================="
