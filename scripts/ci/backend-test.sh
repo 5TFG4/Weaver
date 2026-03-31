@@ -4,4 +4,4 @@ set -euo pipefail
 # Mirrors backend-ci.yml test step.
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-pytest -m "not container" --ignore=tests/e2e --cov=src --cov-report=term-missing -q
+pytest --ignore=tests/e2e --ignore=tests/ci --cov=src --cov-report=term-missing -q
