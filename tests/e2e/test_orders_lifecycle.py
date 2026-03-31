@@ -23,35 +23,6 @@ from playwright.sync_api import Page, expect
 from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
 
-# Reuse the same seed bar data from test_backtest_flow.py
-from tests.e2e.test_backtest_flow import SEED_BARS
-
-
-@pytest.fixture()
-def seed_bars():
-    """Seed bar data for backtest execution."""
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-            for bar in SEED_BARS:
-                cur.execute(
-                    "INSERT INTO bars (symbol, timeframe, timestamp, open, high, low, close, volume) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                    bar,
-                )
-        conn.commit()
-    finally:
-        conn.close()
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-        conn.commit()
-    finally:
-        conn.close()
-
 
 def _get_order_events(run_id: str) -> list[dict]:
     """Query outbox for order events from a specific run."""

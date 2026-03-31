@@ -50,6 +50,7 @@ def _start_stack() -> None:
         check=True,
         capture_output=True,
         text=True,
+        timeout=300,
     )
 
 
@@ -79,6 +80,8 @@ def _clean_db(*, restart_backend: bool = False) -> None:
         restart_backend: If True, restart backend_e2e so its in-memory
             RunManager reloads from the (now empty) database.
     """
+    if "e2e" not in DB_URL:
+        raise RuntimeError(f"Refusing to clean non-e2e database: {DB_URL}")
     conn = psycopg2.connect(DB_URL)
     try:
         with conn.cursor() as cur:
@@ -134,3 +137,35 @@ def _clean_runs():
     _clean_db()
     yield
     _clean_db()
+
+
+@pytest.fixture()
+def seed_bars():
+    """Seed bar data for backtest execution.
+
+    Inserts SEED_BARS (defined in test_backtest_flow.py) into the bars table,
+    yields, then cleans up. Shared by test_backtest_flow and test_orders_lifecycle.
+    """
+    from tests.e2e.test_backtest_flow import SEED_BARS
+
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
+            for bar in SEED_BARS:
+                cur.execute(
+                    "INSERT INTO bars (symbol, timeframe, timestamp, open, high, low, close, volume) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    bar,
+                )
+        conn.commit()
+    finally:
+        conn.close()
+    yield
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
+        conn.commit()
+    finally:
+        conn.close()

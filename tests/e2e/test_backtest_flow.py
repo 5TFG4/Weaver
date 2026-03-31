@@ -9,11 +9,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
 
-from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
 
 # 20 bars of BTC/USD 1m data: bars 1-10 are lookback, bars 11-20 are trade window.
@@ -42,33 +40,6 @@ SEED_BARS.append(
 for i in range(7):
     ts = datetime(2024, 1, 15, 9, 43 + i, tzinfo=UTC)
     SEED_BARS.append(("BTC/USD", "1m", ts, 101.0, 101.5, 100.5, 101.0, 1000.0))
-
-
-@pytest.fixture()
-def seed_bars():
-    """Seed bar data for backtest execution."""
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-            for bar in SEED_BARS:
-                cur.execute(
-                    "INSERT INTO bars (symbol, timeframe, timestamp, open, high, low, close, volume) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                    bar,
-                )
-        conn.commit()
-    finally:
-        conn.close()
-    yield
-    # Cleanup
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-        conn.commit()
-    finally:
-        conn.close()
 
 
 @pytest.mark.e2e
