@@ -9,6 +9,7 @@ Uses host.docker.internal to reach the stack (no docker network connect needed).
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import time
 
@@ -32,6 +33,7 @@ DB_URL = os.environ.get(
 )
 
 _COMPOSE_CMD = ["docker", "compose", "-f", "docker/docker-compose.e2e.yml"]
+_HAS_DOCKER = shutil.which("docker") is not None
 
 
 def _stack_healthy() -> bool:
@@ -60,6 +62,12 @@ def e2e_stack_ready() -> None:
     """Ensure E2E stack is running. Start it automatically if needed."""
     if _stack_healthy():
         return
+
+    if not _HAS_DOCKER:
+        pytest.fail(
+            "E2E stack is not healthy and docker is not available to start it. "
+            "When running inside a container, the stack must be started externally."
+        )
 
     # Stack not running — start it
     _start_stack()
@@ -95,6 +103,10 @@ def _clean_db(*, restart_backend: bool = False) -> None:
         conn.close()
 
     if restart_backend:
+        if not _HAS_DOCKER:
+            # Inside test_runner container: can't docker restart.
+            # Stack was started fresh by e2e.sh, so no stale in-memory state.
+            return
         subprocess.run([*_COMPOSE_CMD, "restart", "backend_e2e"], capture_output=True)
         deadline = time.time() + 30
         while time.time() < deadline:
