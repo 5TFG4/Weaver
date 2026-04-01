@@ -53,6 +53,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 # Timeout for individual tests (seconds)
 timeout = 30
+timeout_func_only = true
 
 # Playwright settings (E2E tests only; base URL uses Docker internal DNS)
 base_url = "http://frontend_e2e:80"

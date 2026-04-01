@@ -18,7 +18,7 @@ import requests
 
 from tests.e2e.helpers import E2EApiClient
 
-# Override the global 30s timeout for all e2e tests (Playwright needs more time)
+# Override the global 30s timeout — Playwright + API waits need more time.
 pytestmark = pytest.mark.timeout(120)
 
 # Defaults use host.docker.internal (dev container → host → mapped e2e ports).
@@ -35,10 +35,11 @@ _COMPOSE_CMD = ["docker", "compose", "-f", "docker/docker-compose.e2e.yml"]
 
 
 def _stack_healthy() -> bool:
-    """Quick probe: is the E2E backend responding?"""
+    """Probe both backend API and frontend to confirm the full stack is up."""
     try:
-        r = requests.get(f"{API_BASE_URL}/healthz", timeout=2)
-        return r.status_code == 200
+        api = requests.get(f"{API_BASE_URL}/healthz", timeout=2)
+        front = requests.get(f"{BASE_URL}/", timeout=2)
+        return api.status_code == 200 and front.status_code == 200
     except Exception:
         return False
 
