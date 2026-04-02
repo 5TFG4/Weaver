@@ -37,6 +37,7 @@
 | [DESIGN_AUDIT.md](DESIGN_AUDIT.md)                                                                       | Active quality gate and open findings          | Keep only current actionable findings              |
 | [CI_TEST_AUDIT.md](CI_TEST_AUDIT.md)                                                                     | CI pipeline + test quality audit and gaps      | Re-run after each milestone                        |
 | [TEST_COVERAGE.md](TEST_COVERAGE.md)                                                                     | Current test coverage snapshot and gaps        | Avoid duplicating roadmap logic                    |
+| [PROD_TEST_REVIEW.md](PROD_TEST_REVIEW.md)                                                               | Production readiness audit and gap analysis    | Full system state snapshot, discussion topics      |
 
 ## 4) Governance & History
 
