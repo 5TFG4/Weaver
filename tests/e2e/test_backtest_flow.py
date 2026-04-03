@@ -60,11 +60,10 @@ class TestBacktestFlow:
         page.locator("form.rjsf").wait_for(timeout=5000)
 
         # RJSF array field: click Add to insert the first symbols entry
-        # (Button is 0x0 because RJSF uses Bootstrap grid classes without Bootstrap CSS)
-        page.locator("#root_symbols__add").dispatch_event("click")
+        page.get_by_test_id("rjsf-add-item").click()
         page.locator("#root_symbols_0").fill("BTC/USD")
 
-        # Timeframe enum rendered as <select> by RJSF (option values are indices)
+        # Timeframe enum rendered as <select> by RJSF
         page.locator("#root_timeframe").select_option(label="1m")
 
         page.get_by_role("button", name="Create").click()
@@ -198,5 +197,5 @@ class TestFormValidation:
         expect(rjsf_form).to_be_visible(timeout=5000)
 
         # The sample strategy config_schema has symbols (array) and timeframe (enum)
-        expect(page.locator("#root_symbols")).to_be_visible()
+        expect(page.get_by_test_id("rjsf-add-item")).to_be_visible()
         expect(page.locator("#root_timeframe")).to_be_visible()

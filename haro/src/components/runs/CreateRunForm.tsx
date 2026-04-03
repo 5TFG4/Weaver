@@ -10,6 +10,14 @@ import Form from "@rjsf/core";
 import validator from "@rjsf/validator-ajv8";
 import { useStrategies } from "../../hooks/useStrategies";
 import type { RunCreate, RunMode } from "../../api/types";
+import {
+  FieldTemplate,
+  ObjectFieldTemplate,
+  ArrayFieldTemplate,
+  ArrayFieldItemTemplate,
+  BaseInputTemplate,
+  SelectWidget,
+} from "./rjsfTemplates";
 
 export interface CreateRunFormProps {
   onSubmit: (data: RunCreate) => void;
@@ -143,6 +151,14 @@ export function CreateRunForm({
             formData={configData}
             onChange={(e) => setConfigData(e.formData)}
             uiSchema={{ "ui:submitButtonOptions": { norender: true } }}
+            templates={{
+              FieldTemplate,
+              ObjectFieldTemplate,
+              ArrayFieldTemplate,
+              ArrayFieldItemTemplate,
+              BaseInputTemplate,
+            }}
+            widgets={{ SelectWidget }}
           >
             <></>
           </Form>
