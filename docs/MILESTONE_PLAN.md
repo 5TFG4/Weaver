@@ -5,11 +5,11 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · **M11 ✅ Complete**
-> **Tests (latest verified)**: 946 backend unit + 50 integration + 108 frontend + 33 E2E = 1137 passed (2026-03-24)
-> **Active Milestone**: None — all planned milestones complete
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · M11 ✅ Complete · **M12 ✅ Complete**
+> **Tests (latest verified)**: 987 backend unit + 50 integration + 109 frontend + 33 E2E = 1179 passed (2026-04-03)
+> **Active Milestone**: **M12-B** (Frontend Hardening) — DECISIONS LOCKED, ready for detailed planning
 > **Remaining Backlog**: E-3, R-1, R-2
-> **Completed**: All planned milestones (M5–M11), CI audit Waves 1–4, PR #15 merged, PR #16 (M11)
+> **Completed**: All planned milestones (M5–M12), CI audit Waves 1–4, PR #15 merged, PR #16 (M11)
 
 ---
 
@@ -29,6 +29,12 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection    | -     | ✅ COMPLETE                           |
 | **M10**   | E2E & Release Prep | End-to-end tests + Final polish                           | 23    | ✅ DONE (1055 total)                  |
 | **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | 48    | ✅ DONE (1137 total)                  |
+| **M12**   | Spec Alignment     | Run config refactor + Strategy API + RJSF dynamic forms   | 42    | ✅ DONE (1179 total)                  |
+| **M12-B** | Frontend Hardening | SSE safety + Symbols UX + a11y + Pagination + Dead code   | ~20   | 🔒 DECISIONS LOCKED                   |
+
+**M12 Complete** (42 tests added): Run config refactor (S1), strategy interface (S2+S3), config_schema metadata (S4+S6), production safety (S8), backtest config source (S9), frontend full-stack alignment (S11-S15). RJSF dynamic forms with custom Tailwind templates. See [m12-spec-alignment.md](archive/milestone-details/m12-spec-alignment.md).
+
+**M12-B Draft** (Frontend Hardening): SSE JSON.parse safety, symbols enum dropdown, dead code cleanup, modal a11y, table overflow fix, pagination UI, responsive sidebar. See [m12b-frontend-hardening.md](archive/milestone-details/m12b-frontend-hardening.md).
 
 **M6 Complete** (101 tests added):
 
@@ -762,18 +768,43 @@ The following tasks have been incorporated into milestones or deferred:
 | Local CI rewrite (B-9)                   | CI Audit §7.7      | M11-0       |
 | Alpaca test skip placeholder fix (B-10)  | CI Audit §7.7      | M11-5       |
 
-### Deferred (M12+)
+### Incorporated into M12
+
+| Task                                    | Source           | Assigned To |
+| --------------------------------------- | ---------------- | ----------- |
+| Run config refactor (S1)                | PROD_TEST_REVIEW | M12 Phase 1 |
+| Strategy interface refactor (S2+S3)     | PROD_TEST_REVIEW | M12 Phase 2 |
+| Strategy metadata & API (S4+S6)         | PROD_TEST_REVIEW | M12 Phase 3 |
+| Production safety (S8)                  | PROD_TEST_REVIEW | M12 Phase 4 |
+| Backtest config source (S9)             | PROD_TEST_REVIEW | M12 Phase 5 |
+| Frontend full-stack alignment (S11-S15) | PROD_TEST_REVIEW | M12 Phase 6 |
+
+### Incorporated into M12-B
+
+| Task                           | Source         | Assigned To   |
+| ------------------------------ | -------------- | ------------- |
+| SSE JSON.parse safety (H1)     | Frontend Audit | M12-B Phase 1 |
+| Symbols enum dropdown (H2)     | Frontend Audit | M12-B Phase 2 |
+| Dead code cleanup (H3)         | Frontend Audit | M12-B Phase 3 |
+| Modal accessibility (H4)       | Frontend Audit | M12-B Phase 4 |
+| Table overflow + keyboard (H5) | Frontend Audit | M12-B Phase 5 |
+| Pagination UI (H6)             | Frontend Audit | M12-B Phase 6 |
+| Responsive sidebar (H7)        | Frontend Audit | M12-B Phase 7 |
+
+### Deferred (M13+)
 
 | Task                             | Reason                                     |
 | -------------------------------- | ------------------------------------------ |
-| Pagination/filtering E2E (E-3)   | Low-priority test coverage addition        |
+| Pagination/filtering E2E (E-3)   | M12-B adds pagination UI; E2E tests in M13 |
 | Connection resilience (R-1)      | Requires retry/circuit-breaker design      |
 | Multi-symbol backtests (R-2)     | Requires Greta/WallE architectural changes |
+| Multi-exchange support (S5+S10)  | VedaService dict + Bar exchange field      |
+| Backtest on-demand fetch (S7)    | Depends on multi-exchange (S5)             |
+| Dynamic symbols API (/symbols)   | Depends on exchange adapter integration    |
 | Multiple simultaneous strategies | High complexity, future enhancement        |
 | Strategy optimization            | Requires more infrastructure               |
 | Real money trading               | Requires more security measures            |
 | WebSocket streaming              | Polling sufficient for MVP                 |
-| Multi-exchange support           | Complete Alpaca first                      |
 
 ---
 
@@ -787,6 +818,8 @@ Week 7-8   │██████████████████████
 Week 9     │████████████│           M9: CI Deployment         ✅
 Week 10    │████████████│           M10: E2E & Release        ✅
 Week 11-12 │██████████████████│     M11: Runtime Robustness  ✅
+Week 13-14 │██████████████████████│ M12: Spec Alignment        ✅
+Week 15    │████████████│           M12-B: Frontend Hardening  🔵
 ```
 
 ### Key Dependencies
@@ -814,6 +847,12 @@ M10: E2E & Release
     │
     ▼
 M11: Runtime Robustness
+    │
+    ▼
+M12: Spec Alignment
+    │
+    ▼
+M12-B: Frontend Hardening
 ```
 
 ---
