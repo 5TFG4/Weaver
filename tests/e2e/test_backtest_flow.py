@@ -52,10 +52,19 @@ class TestBacktestFlow:
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
 
-        page.locator("#strategy-id").fill("sample")
+        # Strategy is now a <select> dropdown populated from /api/v1/strategies
+        page.locator("#strategy-id").select_option("sample")
         page.locator("#run-mode").select_option("backtest")
-        page.locator("#symbols").fill("BTC/USD")
-        page.locator("#timeframe").select_option("1m")
+
+        # Wait for RJSF config form to render after strategy selection
+        page.locator("form.rjsf").wait_for(timeout=5000)
+
+        # RJSF array field: click Add to insert the first symbols entry
+        page.locator(".btn-add").first.click()
+        page.locator("#root_symbols_0").fill("BTC/USD")
+
+        # Timeframe enum rendered as <select> by RJSF
+        page.locator("#root_timeframe").select_option("1m")
 
         page.get_by_role("button", name="Create").click()
         # After creation, run should appear with pending status
@@ -161,34 +170,32 @@ class TestFormValidation:
         form = page.get_by_test_id("create-run-form")
         expect(form).to_be_visible(timeout=5000)
 
-        # Fill symbols but leave strategy empty
-        page.locator("#symbols").fill("BTC/USD")
+        # Leave strategy unselected (default "Select strategy..."), click Create
         page.get_by_role("button", name="Create").click()
 
         # Browser blocks submission — form stays visible, button does NOT become "Creating..."
         expect(form).to_be_visible()
         expect(page.get_by_role("button", name="Create")).to_be_visible()
 
-        # Strategy input should be in invalid state
+        # Strategy select should be in invalid state (required but value="")
         is_invalid = page.locator("#strategy-id").evaluate("el => !el.validity.valid")
         assert is_invalid, "Expected strategy-id to be invalid when empty"
 
-    def test_create_form_rejects_empty_symbols(self, page: Page, e2e_base_url: str) -> None:
-        """Submitting with an empty symbols field is blocked by browser validation."""
+    def test_create_form_renders_config_fields(self, page: Page, e2e_base_url: str) -> None:
+        """Selecting a strategy renders RJSF config fields from its config_schema."""
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
 
         form = page.get_by_test_id("create-run-form")
         expect(form).to_be_visible(timeout=5000)
 
-        # Fill strategy but leave symbols empty
-        page.locator("#strategy-id").fill("sample")
-        page.get_by_role("button", name="Create").click()
+        # Select a strategy — RJSF config form should appear
+        page.locator("#strategy-id").select_option("sample")
 
-        # Browser blocks submission — form stays visible
-        expect(form).to_be_visible()
-        expect(page.get_by_role("button", name="Create")).to_be_visible()
+        # Wait for RJSF to render
+        rjsf_form = page.locator("form.rjsf")
+        expect(rjsf_form).to_be_visible(timeout=5000)
 
-        # Symbols input should be in invalid state
-        is_invalid = page.locator("#symbols").evaluate("el => !el.validity.valid")
-        assert is_invalid, "Expected symbols to be invalid when empty"
+        # The sample strategy config_schema has symbols (array) and timeframe (enum)
+        expect(page.locator(".field-array")).to_be_visible()
+        expect(page.locator("#root_timeframe")).to_be_visible()
