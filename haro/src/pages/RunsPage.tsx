@@ -183,6 +183,9 @@ export function RunsPage() {
                   Symbols
                 </th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
+                  Timeframe
+                </th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
                   Mode
                 </th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
@@ -212,7 +215,10 @@ export function RunsPage() {
                       {run.strategy_id}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-200">
-                      {run.symbols.join(", ")}
+                      {((run.config?.symbols as string[]) ?? []).join(", ")}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-200">
+                      {(run.config?.timeframe as string) ?? "-"}
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge variant={run.mode as RunMode} />

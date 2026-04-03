@@ -16,6 +16,7 @@ class ActionType(StrEnum):
 
     FETCH_WINDOW = "fetch_window"
     PLACE_ORDER = "place_order"
+    STOP_RUN = "stop_run"
 
 
 class StrategyOrderSide(StrEnum):
@@ -60,6 +61,7 @@ class StrategyAction:
     order_type: StrategyOrderType = StrategyOrderType.MARKET
     limit_price: Decimal | None = None
     stop_price: Decimal | None = None
+    exchange: str | None = None
 
 
 class BaseStrategy(ABC):
@@ -80,22 +82,24 @@ class BaseStrategy(ABC):
         """Initialize strategy state."""
         self._has_position = False
         self._symbols: list[str] = []
+        self._config: dict[str, Any] = {}
 
     @property
     def has_position(self) -> bool:
         """Whether strategy currently has a position."""
         return self._has_position
 
-    async def initialize(self, symbols: list[str]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         """
-        Initialize strategy with symbols.
+        Initialize strategy with config dict.
 
         Override for custom initialization logic.
 
         Args:
-            symbols: List of symbols the strategy will trade
+            config: Configuration dict (strategy-owned, opaque to platform)
         """
-        self._symbols = symbols
+        self._config = config
+        self._symbols = config.get("symbols", [])
 
     @abstractmethod
     async def on_tick(self, tick: Any) -> list[StrategyAction]:

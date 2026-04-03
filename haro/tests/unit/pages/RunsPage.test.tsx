@@ -67,7 +67,7 @@ describe("RunsPage", () => {
     expect(screen.getByText("running")).toBeInTheDocument();
   });
 
-  it("displays symbols for each run", async () => {
+  it("displays symbols and timeframe for each run", async () => {
     render(<RunsPage />);
 
     await waitFor(() => {
@@ -76,6 +76,8 @@ describe("RunsPage", () => {
 
     expect(screen.getByText("BTC/USD")).toBeInTheDocument();
     expect(screen.getByText("ETH/USD")).toBeInTheDocument();
+    expect(screen.getByText("1h")).toBeInTheDocument();
+    expect(screen.getByText("15m")).toBeInTheDocument();
   });
 
   // =========================================================================
@@ -210,7 +212,6 @@ describe("RunsPage", () => {
     // Form fields should appear
     expect(screen.getByLabelText(/strategy/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/mode/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/symbols/i)).toBeInTheDocument();
   });
 
   it("creates a run via form submission", async () => {
@@ -225,9 +226,11 @@ describe("RunsPage", () => {
     // Open form
     await user.click(screen.getByRole("button", { name: /new run/i }));
 
-    // Fill form
-    await user.type(screen.getByLabelText(/strategy/i), "sma-crossover");
-    await user.type(screen.getByLabelText(/symbols/i), "BTC/USD");
+    // Fill form — Strategy is a dropdown now
+    await user.selectOptions(
+      screen.getByLabelText(/strategy/i),
+      "sma-crossover",
+    );
 
     // Submit
     await user.click(screen.getByRole("button", { name: /create/i }));

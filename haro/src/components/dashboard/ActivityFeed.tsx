@@ -94,7 +94,7 @@ export function ActivityFeed({ runs, isLoading }: ActivityFeedProps) {
               <div>
                 <span className="text-sm text-white">{run.strategy_id}</span>
                 <span className="text-xs text-slate-500 ml-2">
-                  {run.symbols.join(", ")}
+                  {run.strategy_id} ({run.mode})
                 </span>
               </div>
             </div>

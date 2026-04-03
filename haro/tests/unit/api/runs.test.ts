@@ -24,13 +24,12 @@ describe("Runs API", () => {
     const newRun = await createRun({
       strategy_id: "test-strategy",
       mode: "paper",
-      symbols: ["BTC/USD"],
-      timeframe: "1h",
+      config: { symbols: ["BTC/USD"], timeframe: "1h" },
     });
 
     expect(newRun.strategy_id).toBe("test-strategy");
     expect(newRun.mode).toBe("paper");
-    expect(newRun.symbols).toEqual(["BTC/USD"]);
+    expect(newRun.config).toEqual({ symbols: ["BTC/USD"], timeframe: "1h" });
     expect(newRun.status).toBe("pending");
   });
 

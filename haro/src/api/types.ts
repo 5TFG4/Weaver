@@ -41,9 +41,7 @@ export interface Run {
   strategy_id: string;
   mode: RunMode;
   status: RunStatus;
-  symbols: string[];
-  timeframe: string;
-  config?: Record<string, unknown>;
+  config: Record<string, unknown>;
   created_at: string;
   started_at?: string;
   stopped_at?: string;
@@ -52,11 +50,7 @@ export interface Run {
 export interface RunCreate {
   strategy_id: string;
   mode: RunMode;
-  symbols: string[];
-  timeframe?: string;
-  start_time?: string; // ISO 8601 for backtest
-  end_time?: string; // ISO 8601 for backtest
-  config?: Record<string, unknown>;
+  config: Record<string, unknown>;
 }
 
 export interface RunListResponse {
@@ -127,4 +121,17 @@ export interface HealthResponse {
 export interface ApiError {
   detail: string;
   status_code?: number;
+}
+
+// =============================================================================
+// Strategy Types
+// =============================================================================
+
+export interface StrategyMeta {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  config_schema: Record<string, unknown> | null;
 }

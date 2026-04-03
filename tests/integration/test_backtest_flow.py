@@ -83,10 +83,12 @@ class TestBacktestFlow:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),  # 5 bars
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -109,10 +111,12 @@ class TestBacktestFlow:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
         await run_manager.start(run.id)
@@ -139,10 +143,12 @@ class TestBacktestFlow:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -164,10 +170,12 @@ class TestBacktestFlow:
                 RunCreate(
                     strategy_id=f"test-strategy-{i}",
                     mode=RunMode.BACKTEST,
-                    symbols=["BTC/USD"],
-                    timeframe="1m",
-                    start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                    end_time=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                    config={
+                        "symbols": ["BTC/USD"],
+                        "timeframe": "1m",
+                        "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                        "backtest_end": datetime(2024, 1, 1, 9, 32, tzinfo=UTC).isoformat(),
+                    },
                 )
             )
             result = await run_manager.start(run.id)
@@ -187,10 +195,12 @@ class TestBacktestFlow:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
         result = await run_manager.start(run.id)

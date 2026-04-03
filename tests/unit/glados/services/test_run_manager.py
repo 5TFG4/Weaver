@@ -23,7 +23,7 @@ class TestRunManagerCreate:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
 
         run = await run_manager.create(request)
@@ -39,7 +39,7 @@ class TestRunManagerCreate:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
 
         run = await run_manager.create(request)
@@ -54,16 +54,15 @@ class TestRunManagerCreate:
         request = RunCreate(
             strategy_id="my_strategy",
             mode=RunMode.BACKTEST,
-            symbols=["BTC/USD", "ETH/USD"],
-            timeframe="5m",
+            config={"symbols": ["BTC/USD", "ETH/USD"], "timeframe": "5m"},
         )
 
         run = await run_manager.create(request)
 
         assert run.strategy_id == "my_strategy"
         assert run.mode == RunMode.BACKTEST
-        assert run.symbols == ["BTC/USD", "ETH/USD"]
-        assert run.timeframe == "5m"
+        assert run.config["symbols"] == ["BTC/USD", "ETH/USD"]
+        assert run.config.get("timeframe", "1m") == "5m"
 
     async def test_sets_created_at_timestamp(self) -> None:
         """Run should have created_at timestamp."""
@@ -73,7 +72,7 @@ class TestRunManagerCreate:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
 
         run = await run_manager.create(request)
@@ -92,7 +91,7 @@ class TestRunManagerGet:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         created = await run_manager.create(request)
 
@@ -137,7 +136,7 @@ class TestRunManagerList:
                 RunCreate(
                     strategy_id=f"test_{i}",
                     mode=RunMode.PAPER,
-                    symbols=["BTC/USD"],
+                    config={"symbols": ["BTC/USD"]},
                 )
             )
 
@@ -145,6 +144,38 @@ class TestRunManagerList:
 
         assert len(runs) == 3
         assert total == 3
+
+    async def test_create_validates_config_against_schema(self) -> None:
+        """When strategy has config_schema, validate config on create."""
+        from unittest.mock import MagicMock
+
+        from src.glados.services.run_manager import RunManager
+        from src.marvin.strategy_meta import StrategyMeta
+
+        loader = MagicMock()
+        loader.get_meta.return_value = StrategyMeta(
+            id="test",
+            class_name="Test",
+            config_schema={
+                "type": "object",
+                "properties": {"symbols": {"type": "array", "items": {"type": "string"}}},
+                "required": ["symbols"],
+            },
+        )
+        manager = RunManager(strategy_loader=loader)
+
+        request = RunCreate(strategy_id="test", mode=RunMode.PAPER, config={"timeframe": "1m"})
+        with pytest.raises(ValueError, match="symbols"):
+            await manager.create(request)
+
+    async def test_create_skips_validation_when_no_schema(self) -> None:
+        """Strategies without config_schema skip validation."""
+        from src.glados.services.run_manager import RunManager
+
+        manager = RunManager()
+        request = RunCreate(strategy_id="test", mode=RunMode.PAPER, config={"anything": True})
+        run = await manager.create(request)
+        assert run.config == {"anything": True}
 
 
 class TestRunManagerStop:
@@ -158,7 +189,7 @@ class TestRunManagerStop:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
         # Use public API to start the run
@@ -176,7 +207,7 @@ class TestRunManagerStop:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -207,7 +238,7 @@ class TestRunManagerStop:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -231,7 +262,7 @@ class TestRunManagerEventEmission:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
 
         run = await run_manager.create(request)
@@ -255,7 +286,7 @@ class TestRunManagerEventEmission:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
 
@@ -283,7 +314,7 @@ class TestRunManagerEventEmission:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -305,7 +336,7 @@ class TestRunManagerEventEmission:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
 
         # Should not raise
@@ -327,7 +358,7 @@ class TestRunManagerEventEmission:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"]},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -354,6 +385,7 @@ class TestStartLiveErrorHandling:
         mock_strategy = MagicMock()
         mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("connection failed"))
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
         run_manager = RunManager(
             event_log=AsyncMock(),
@@ -362,7 +394,7 @@ class TestStartLiveErrorHandling:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"]},
         )
         run = await run_manager.create(request)
 
@@ -383,6 +415,7 @@ class TestStartLiveErrorHandling:
         mock_strategy = MagicMock()
         mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("oops"))
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
         run_manager = RunManager(
             event_log=AsyncMock(),
@@ -391,7 +424,7 @@ class TestStartLiveErrorHandling:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"]},
         )
         run = await run_manager.create(request)
 
@@ -412,6 +445,7 @@ class TestStartLiveErrorHandling:
         mock_strategy = MagicMock()
         mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("boom"))
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
         run_manager = RunManager(
             event_log=AsyncMock(),
@@ -420,7 +454,7 @@ class TestStartLiveErrorHandling:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"]},
         )
         run = await run_manager.create(request)
 

@@ -75,9 +75,7 @@ class TestDomainRouterRoute:
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
                 status=RunStatus.RUNNING,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                config=None,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
                 created_at=datetime(2024, 1, 1, tzinfo=UTC),
             )
         )
@@ -140,9 +138,7 @@ class TestDomainRouterRoute:
                 strategy_id="test-strategy",
                 mode=RunMode.PAPER,
                 status=RunStatus.RUNNING,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                config=None,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
                 created_at=datetime(2024, 1, 1, tzinfo=UTC),
             )
         )
@@ -161,9 +157,7 @@ class TestDomainRouterRoute:
                 strategy_id="test-strategy",
                 mode=RunMode.LIVE,
                 status=RunStatus.RUNNING,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                config=None,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
                 created_at=datetime(2024, 1, 1, tzinfo=UTC),
             )
         )
@@ -225,9 +219,7 @@ class TestDomainRouterEventTypes:
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
                 status=RunStatus.RUNNING,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                config=None,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
                 created_at=datetime(2024, 1, 1, tzinfo=UTC),
             )
         )

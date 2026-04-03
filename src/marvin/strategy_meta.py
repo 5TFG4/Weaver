@@ -26,6 +26,7 @@ class StrategyMeta:
     dependencies: list[str] = field(default_factory=list)
     # Internal: path to the module file
     module_path: Path | None = None
+    config_schema: dict | None = None
 
     def __post_init__(self) -> None:
         """Set name to id if not provided."""
@@ -53,4 +54,5 @@ class StrategyMeta:
             author=data.get("author", ""),
             dependencies=data.get("dependencies", []),
             module_path=module_path,
+            config_schema=data.get("config_schema"),
         )

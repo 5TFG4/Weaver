@@ -70,8 +70,6 @@ class TestAppLifespanWiring:
 
     def test_lifespan_wires_domain_router(self, test_settings: WeaverConfig) -> None:
         """DomainRouter should be created and stored in app.state during startup."""
-        import os
-
         from fastapi.testclient import TestClient
 
         from src.glados.app import create_app
@@ -79,33 +77,21 @@ class TestAppLifespanWiring:
 
         app = create_app(settings=test_settings)
 
-        old_db_url = os.environ.pop("DB_URL", None)
-        try:
-            with TestClient(app):
-                assert hasattr(app.state, "domain_router")
-                assert isinstance(app.state.domain_router, DomainRouter)
-        finally:
-            if old_db_url is not None:
-                os.environ["DB_URL"] = old_db_url
+        with TestClient(app):
+            assert hasattr(app.state, "domain_router")
+            assert isinstance(app.state.domain_router, DomainRouter)
 
     def test_lifespan_injects_strategy_loader_into_run_manager(
         self,
         test_settings: WeaverConfig,
     ) -> None:
         """RunManager should have strategy_loader configured after startup."""
-        import os
-
         from fastapi.testclient import TestClient
 
         from src.glados.app import create_app
 
         app = create_app(settings=test_settings)
 
-        old_db_url = os.environ.pop("DB_URL", None)
-        try:
-            with TestClient(app):
-                run_manager = app.state.run_manager
-                assert run_manager._strategy_loader is not None
-        finally:
-            if old_db_url is not None:
-                os.environ["DB_URL"] = old_db_url
+        with TestClient(app):
+            run_manager = app.state.run_manager
+            assert run_manager._strategy_loader is not None

@@ -8,7 +8,7 @@ Validates that RunManager correctly selects clock type based on run mode:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 
@@ -26,14 +26,15 @@ class TestClockSelection:
         from tests.factories.runs import create_run_manager_with_deps
 
         rm = create_run_manager_with_deps()
-        now = datetime.now(UTC)
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.BACKTEST,
-            symbols=["BTC/USD"],
-            timeframe="1m",
-            start_time=now - timedelta(hours=1),
-            end_time=now,
+            config={
+                "symbols": ["BTC/USD"],
+                "timeframe": "1m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T09:35:00+00:00",
+            },
         )
 
         run = await rm.create(request)
@@ -53,8 +54,7 @@ class TestClockSelection:
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.LIVE,
-            symbols=["BTC/USD"],
-            timeframe="1m",
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -76,8 +76,7 @@ class TestClockSelection:
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
-            timeframe="1m",
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -129,8 +128,7 @@ class TestRunModeEvents:
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
-            timeframe="1m",
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -157,8 +155,7 @@ class TestStopRun:
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.LIVE,
-            symbols=["BTC/USD"],
-            timeframe="1m",
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -185,8 +182,7 @@ class TestStopRun:
         request = RunCreate(
             strategy_id="sma_crossover",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
-            timeframe="1m",
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -209,7 +205,7 @@ class TestRunModePersistence:
         request = RunCreate(
             strategy_id="test",
             mode=RunMode.LIVE,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         run = await rm.create(request)
@@ -222,7 +218,7 @@ class TestRunModePersistence:
         request = RunCreate(
             strategy_id="test",
             mode=RunMode.PAPER,
-            symbols=["BTC/USD"],
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
         )
 
         created = await rm.create(request)

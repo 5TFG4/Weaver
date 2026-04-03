@@ -64,20 +64,21 @@ class StrategyRunner:
         return self._symbols
 
     async def initialize(
-        self, run_id: str, symbols: list[str], task_set: set[asyncio.Task[Any]] | None = None
+        self, run_id: str, config: dict[str, Any], task_set: set[asyncio.Task[Any]] | None = None
     ) -> None:
         """
         Initialize for a run.
 
         Args:
             run_id: Unique run identifier
-            symbols: List of symbols to trade
+            config: Strategy config dict (passed through to strategy)
             task_set: Optional task set for tracking spawned tasks
         """
         self._run_id = run_id
-        self._symbols = symbols
+        self._config = config
+        self._symbols = config.get("symbols", [])
         self._task_set = task_set
-        await self._strategy.initialize(symbols)
+        await self._strategy.initialize(config)
 
         # Subscribe to data.WindowReady events for this run
         self._subscription_id = await self._event_log.subscribe_filtered(
@@ -171,6 +172,8 @@ class StrategyRunner:
             if action.symbol is None or action.side is None or action.qty is None:
                 raise ValueError("PLACE_ORDER action requires symbol, side, and qty")
             await self._emit_place_request(action)
+        elif action.type == ActionType.STOP_RUN:
+            await self._emit_stop_run()
 
     async def _emit_fetch_window(self, action: StrategyAction, tick: Any = None) -> None:
         """
@@ -215,6 +218,16 @@ class StrategyRunner:
                 "limit_price": str(action.limit_price) if action.limit_price else None,
                 "stop_price": str(action.stop_price) if action.stop_price else None,
             },
+            run_id=self._run_id,
+            producer="marvin.runner",
+        )
+        await self._event_log.append(envelope)
+
+    async def _emit_stop_run(self) -> None:
+        """Emit run.StopRequested event when strategy requests a stop."""
+        envelope = Envelope(
+            type="run.StopRequested",
+            payload={"reason": "strategy_requested"},
             run_id=self._run_id,
             producer="marvin.runner",
         )

@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 import pytest_asyncio
 
 from src.glados.exceptions import RunNotStartableError
@@ -77,6 +78,7 @@ class TestRunManagerBacktestStart:
         mock_strategy.initialize = AsyncMock()
         mock_strategy.on_tick = AsyncMock(return_value=[])
         mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+        mock_strategy_loader.get_meta = MagicMock(return_value=None)
 
         return RunManager(
             event_log=mock_event_log,
@@ -90,10 +92,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -110,10 +114,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -131,10 +137,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -146,7 +154,14 @@ class TestRunManagerBacktestStart:
 
         # Verify strategy.initialize was called with correct params
         mock_strategy = strategy_loader.load.return_value
-        mock_strategy.initialize.assert_called_once_with(["BTC/USD"])
+        mock_strategy.initialize.assert_called_once_with(
+            {
+                "symbols": ["BTC/USD"],
+                "timeframe": "1m",
+                "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+            }
+        )
 
     async def test_start_backtest_loads_strategy(self, manager_with_deps: RunManager) -> None:
         """start() loads strategy from loader."""
@@ -154,10 +169,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -173,10 +190,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -193,10 +212,12 @@ class TestRunManagerBacktestStart:
             RunCreate(
                 strategy_id="test-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -224,6 +245,7 @@ class TestRunManagerStopWithContext:
         mock_strategy.initialize = AsyncMock()
         mock_strategy.on_tick = AsyncMock(return_value=[])
         mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+        mock_strategy_loader.get_meta = MagicMock(return_value=None)
 
         manager = RunManager(
             event_log=mock_event_log,
@@ -236,9 +258,12 @@ class TestRunManagerStopWithContext:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                start_time=datetime(2024, 1, 1, tzinfo=UTC),
-                end_time=datetime(2024, 1, 2, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 2, tzinfo=UTC).isoformat(),
+                },
             )
         )
         run.status = RunStatus.RUNNING
@@ -452,6 +477,7 @@ class TestBacktestErrorPropagation:
         mock_strategy.initialize = AsyncMock()
         mock_strategy.on_tick = AsyncMock(return_value=[])
         mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+        mock_strategy_loader.get_meta = MagicMock(return_value=None)
 
         return RunManager(
             event_log=mock_event_log,
@@ -469,10 +495,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="bad-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 32, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -490,6 +518,7 @@ class TestBacktestErrorPropagation:
         mock_strategy.initialize = AsyncMock()
         mock_strategy.on_tick = AsyncMock(return_value=[])
         mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+        mock_strategy_loader.get_meta = MagicMock(return_value=None)
 
         manager = RunManager(
             event_log=mock_event_log,
@@ -501,10 +530,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -560,10 +591,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="bad-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 32, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -584,10 +617,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="bad-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 32, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -618,10 +653,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="bad-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 35, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -634,10 +671,12 @@ class TestBacktestErrorPropagation:
             RunCreate(
                 strategy_id="good-strategy",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 32, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 32, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -667,6 +706,7 @@ def _make_manager_with_deps() -> RunManager:
     mock_strategy.initialize = AsyncMock()
     mock_strategy.on_tick = AsyncMock(return_value=[])
     mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+    mock_strategy_loader.get_meta = MagicMock(return_value=None)
     return RunManager(
         event_log=mock_event_log,
         bar_repository=mock_bar_repo,
@@ -698,10 +738,12 @@ class TestConcurrentRunSafety:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -727,20 +769,24 @@ class TestConcurrentRunSafety:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
         run_b = await manager.create(
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["ETH/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["ETH/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -773,10 +819,12 @@ class TestConcurrentRunSafety:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 31, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 31, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -803,10 +851,12 @@ class TestConcurrentRunSafety:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
         await manager.start(run.id)
@@ -824,10 +874,12 @@ class TestConcurrentRunSafety:
             RunCreate(
                 strategy_id="test",
                 mode=RunMode.BACKTEST,
-                symbols=["BTC/USD"],
-                timeframe="1m",
-                start_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
-                end_time=datetime(2024, 1, 1, 9, 30, tzinfo=UTC),
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                },
             )
         )
 
@@ -841,3 +893,40 @@ class TestConcurrentRunSafety:
         manager = RunManager()
         assert hasattr(manager, "_run_locks")
         assert manager._run_locks == {}
+
+
+class TestBacktestConfigSource:
+    """S9: Backtest reads config keys backtest_start/backtest_end from run.config."""
+
+    async def test_backtest_reads_config_keys(self) -> None:
+        """_start_backtest uses backtest_start/backtest_end/timeframe from config."""
+        from tests.factories.runs import create_run_manager_with_deps
+
+        manager = create_run_manager_with_deps()
+        request = RunCreate(
+            strategy_id="sample",
+            mode=RunMode.BACKTEST,
+            config={
+                "symbols": ["BTC/USD"],
+                "timeframe": "5m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T10:30:00+00:00",
+            },
+        )
+        run = await manager.create(request)
+        result = await manager.start(run.id)
+        assert result.status == RunStatus.COMPLETED
+
+    async def test_backtest_rejects_missing_backtest_start(self) -> None:
+        """_start_backtest raises when config lacks backtest_start."""
+        from tests.factories.runs import create_run_manager_with_deps
+
+        manager = create_run_manager_with_deps()
+        request = RunCreate(
+            strategy_id="sample",
+            mode=RunMode.BACKTEST,
+            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
+        )
+        run = await manager.create(request)
+        with pytest.raises(RuntimeError, match="backtest_start"):
+            await manager.start(run.id)

@@ -25,6 +25,40 @@ STRATEGY_META = {
     "author": "weaver",
     "dependencies": [],
     "class": "SMAStrategy",
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "symbols": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Trading symbols",
+            },
+            "timeframe": {
+                "type": "string",
+                "default": "1m",
+                "enum": ["1m", "5m", "15m", "1h", "4h", "1d"],
+            },
+            "fast_period": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+                "description": "Fast SMA period",
+            },
+            "slow_period": {
+                "type": "integer",
+                "default": 20,
+                "minimum": 1,
+                "description": "Slow SMA period",
+            },
+            "qty": {
+                "type": "number",
+                "default": 1.0,
+                "minimum": 0,
+                "description": "Quantity per trade",
+            },
+        },
+        "required": ["symbols"],
+    },
 }
 
 
@@ -72,8 +106,22 @@ class SMAStrategy(BaseStrategy):
             config: Strategy configuration (uses defaults if None)
         """
         super().__init__()
-        self._config = config or SMAConfig()
+        self._sma_config = config or SMAConfig()
         self._prev_fast_above_slow: bool | None = None
+
+    async def initialize(self, config: dict[str, Any]) -> None:
+        """
+        Initialize from config dict, reading SMA-specific params.
+
+        Args:
+            config: Config dict with optional fast_period, slow_period, qty
+        """
+        await super().initialize(config)
+        self._sma_config = SMAConfig(
+            fast_period=config.get("fast_period", 5),
+            slow_period=config.get("slow_period", 20),
+            qty=Decimal(str(config.get("qty", "1.0"))),
+        )
 
     async def on_tick(self, _tick: Any) -> list[StrategyAction]:
         """
@@ -89,7 +137,7 @@ class SMAStrategy(BaseStrategy):
             List with single FetchWindow action
         """
         symbol = self._symbols[0] if self._symbols else "BTC/USD"
-        lookback = self._config.slow_period + 1
+        lookback = self._sma_config.slow_period + 1
 
         return [
             StrategyAction(
@@ -113,15 +161,15 @@ class SMAStrategy(BaseStrategy):
         symbol = data.get("symbol", self._symbols[0] if self._symbols else "BTC/USD")
 
         # Need at least slow_period bars to calculate both SMAs
-        if len(bars) < self._config.slow_period:
+        if len(bars) < self._sma_config.slow_period:
             return []
 
         # Extract close prices as Decimals
         closes = self._extract_closes(bars)
 
         # Calculate SMAs
-        fast_sma = self._calculate_sma(closes, self._config.fast_period)
-        slow_sma = self._calculate_sma(closes, self._config.slow_period)
+        fast_sma = self._calculate_sma(closes, self._sma_config.fast_period)
+        slow_sma = self._calculate_sma(closes, self._sma_config.slow_period)
 
         # Determine current relationship
         fast_above_slow = fast_sma > slow_sma
@@ -198,7 +246,7 @@ class SMAStrategy(BaseStrategy):
                     type=ActionType.PLACE_ORDER,
                     symbol=symbol,
                     side=StrategyOrderSide.BUY,
-                    qty=self._config.qty,
+                    qty=self._sma_config.qty,
                 )
             ]
 
@@ -210,7 +258,7 @@ class SMAStrategy(BaseStrategy):
                     type=ActionType.PLACE_ORDER,
                     symbol=symbol,
                     side=StrategyOrderSide.SELL,
-                    qty=self._config.qty,
+                    qty=self._sma_config.qty,
                 )
             ]
 

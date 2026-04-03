@@ -16,6 +16,7 @@ psycopg2-binary>=2.9.9        # Sync PostgreSQL (for Alembic)
 # --- Data Validation ---
 pydantic>=2.5.0
 pydantic-settings>=2.1.0      # Settings management
+jsonschema>=4.0.0              # JSON Schema config validation
 
 # --- Trading ---
 alpaca-py>=0.21.0

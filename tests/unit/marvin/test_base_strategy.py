@@ -71,6 +71,22 @@ class TestStrategyAction:
         assert action.side == StrategyOrderSide.SELL
         assert action.order_type == StrategyOrderType.LIMIT
 
+    def test_strategy_action_has_exchange_field(self) -> None:
+        """StrategyAction supports exchange parameter."""
+        action = StrategyAction(
+            type=ActionType.PLACE_ORDER,
+            symbol="BTC/USD",
+            side=StrategyOrderSide.BUY,
+            qty=Decimal("1"),
+            exchange="alpaca",
+        )
+        assert action.exchange == "alpaca"
+
+    def test_strategy_action_exchange_defaults_none(self) -> None:
+        """StrategyAction.exchange defaults to None."""
+        action = StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=10)
+        assert action.exchange is None
+
 
 class TestBaseStrategy:
     """Tests for BaseStrategy abstract class."""
@@ -127,7 +143,7 @@ class TestBaseStrategy:
         # Should not raise
         import asyncio
 
-        asyncio.run(strategy.initialize(["BTC/USD"]))
+        asyncio.run(strategy.initialize({"symbols": ["BTC/USD"]}))
 
     def test_has_position_defaults_false(self) -> None:
         """has_position property defaults to False."""
@@ -155,3 +171,37 @@ class TestBaseStrategy:
         strategy = ConcreteStrategy()
         strategy._has_position = True
         assert strategy.has_position is True
+
+
+class TestBaseStrategyInitializeConfig:
+    """Phase 2: Tests for BaseStrategy.initialize() accepting a config dict."""
+
+    async def test_initialize_stores_config(self) -> None:
+        from typing import Any
+
+        class Concrete(BaseStrategy):
+            async def on_tick(self, tick: Any) -> list[StrategyAction]:
+                return []
+
+            async def on_data(self, data: dict) -> list[StrategyAction]:
+                return []
+
+        strategy = Concrete()
+        await strategy.initialize({"symbols": ["AAPL"], "extra": 42})
+        assert strategy._symbols == ["AAPL"]
+        assert strategy._config == {"symbols": ["AAPL"], "extra": 42}
+
+    async def test_initialize_default_symbols(self) -> None:
+        from typing import Any
+
+        class Concrete(BaseStrategy):
+            async def on_tick(self, tick: Any) -> list[StrategyAction]:
+                return []
+
+            async def on_data(self, data: dict) -> list[StrategyAction]:
+                return []
+
+        strategy = Concrete()
+        await strategy.initialize({})
+        assert strategy._symbols == []
+        assert strategy._config == {}

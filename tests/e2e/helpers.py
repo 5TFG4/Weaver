@@ -27,18 +27,18 @@ class E2EApiClient:
         return r.json()
 
     def create_run(self, **kwargs: Any) -> dict[str, Any]:
-        payload = {
+        config: dict[str, Any] = dict(kwargs.get("config") or {})
+        config.setdefault("symbols", kwargs.get("symbols", ["BTC/USD"]))
+        config.setdefault("timeframe", kwargs.get("timeframe", "1m"))
+        if "start_time" in kwargs:
+            config.setdefault("backtest_start", kwargs["start_time"])
+        if "end_time" in kwargs:
+            config.setdefault("backtest_end", kwargs["end_time"])
+        payload: dict[str, Any] = {
             "strategy_id": kwargs.get("strategy_id", "sample"),
             "mode": kwargs.get("mode", "backtest"),
-            "symbols": kwargs.get("symbols", ["BTC/USD"]),
-            "timeframe": kwargs.get("timeframe", "1m"),
+            "config": config,
         }
-        if "start_time" in kwargs:
-            payload["start_time"] = kwargs["start_time"]
-        if "end_time" in kwargs:
-            payload["end_time"] = kwargs["end_time"]
-        if "config" in kwargs:
-            payload["config"] = kwargs["config"]
         r = self.session.post(f"{self.base_url}/runs", json=payload, timeout=10)
         r.raise_for_status()
         return r.json()

@@ -45,13 +45,8 @@ class Run:
     strategy_id: str
     mode: RunMode
     status: RunStatus
-    symbols: list[str]
-    timeframe: str
-    config: dict[str, Any] | None
+    config: dict[str, Any]
     created_at: datetime
-    # Backtest time range (optional for live/paper)
-    start_time: datetime | None = None
-    end_time: datetime | None = None
     # Lifecycle timestamps
     started_at: datetime | None = None
     stopped_at: datetime | None = None
@@ -144,8 +139,6 @@ class RunManager:
             strategy_id=run.strategy_id,
             mode=run.mode.value,
             status=run.status.value,
-            symbols=run.symbols,
-            timeframe=run.timeframe,
             config=run.config,
             created_at=run.created_at,
             started_at=run.started_at,
@@ -190,23 +183,34 @@ class RunManager:
         """
         Create a new run in PENDING status.
 
+        Validates config against strategy's config_schema if available.
+
         Args:
             request: Run creation parameters
 
         Returns:
             Created Run with generated ID
+
+        Raises:
+            ValueError: If config fails JSON Schema validation
         """
+        if self._strategy_loader is not None:
+            meta = self._strategy_loader.get_meta(request.strategy_id)
+            if meta and meta.config_schema:
+                import jsonschema
+
+                try:
+                    jsonschema.validate(instance=request.config, schema=meta.config_schema)
+                except jsonschema.ValidationError as e:
+                    raise ValueError(str(e.message)) from e
+
         run = Run(
             id=str(uuid4()),
             strategy_id=request.strategy_id,
             mode=request.mode,
             status=RunStatus.PENDING,
-            symbols=request.symbols,
-            timeframe=request.timeframe,
             config=request.config,
             created_at=datetime.now(UTC),
-            start_time=request.start_time,
-            end_time=request.end_time,
         )
         self._runs[run.id] = run
         await self._emit_event(RunEvents.CREATED, run)
@@ -322,7 +326,7 @@ class RunManager:
                 strategy=strategy,
                 event_log=self._event_log,
             )
-            clock = RealtimeClock(timeframe=run.timeframe)
+            clock = RealtimeClock(timeframe=run.config.get("timeframe", "1m"))
 
             # Store context
             ctx = RunContext(greta=None, runner=runner, clock=clock)
@@ -331,7 +335,7 @@ class RunManager:
             # 3. Initialize runner
             await runner.initialize(
                 run_id=run.id,
-                symbols=run.symbols,
+                config=run.config,
                 task_set=ctx.pending_tasks,
             )
 
@@ -366,8 +370,13 @@ class RunManager:
             raise RuntimeError("EventLog and BarRepository required for backtest")
         if self._strategy_loader is None:
             raise RuntimeError("StrategyLoader required for backtest")
-        if run.start_time is None or run.end_time is None:
-            raise RuntimeError("start_time and end_time required for backtest")
+
+        backtest_start = run.config.get("backtest_start")
+        backtest_end = run.config.get("backtest_end")
+        if backtest_start is None or backtest_end is None:
+            raise RuntimeError("config must contain backtest_start and backtest_end for backtest")
+        start_time = datetime.fromisoformat(backtest_start)
+        end_time = datetime.fromisoformat(backtest_end)
 
         # 1. Load strategy
         strategy = self._strategy_loader.load(run.strategy_id)
@@ -383,9 +392,9 @@ class RunManager:
             event_log=self._event_log,
         )
         clock = BacktestClock(
-            start_time=run.start_time,
-            end_time=run.end_time,
-            timeframe=run.timeframe,
+            start_time=start_time,
+            end_time=end_time,
+            timeframe=run.config.get("timeframe", "1m"),
         )
 
         # Store context
@@ -396,15 +405,15 @@ class RunManager:
         try:
             # 3. Initialize components
             await greta.initialize(
-                symbols=run.symbols,
-                timeframe=run.timeframe,
-                start=run.start_time,
-                end=run.end_time,
+                symbols=run.config.get("symbols", []),
+                timeframe=run.config.get("timeframe", "1m"),
+                start=start_time,
+                end=end_time,
                 task_set=ctx.pending_tasks,
             )
             await runner.initialize(
                 run_id=run.id,
-                symbols=run.symbols,
+                config=run.config,
                 task_set=ctx.pending_tasks,
             )
 
@@ -513,18 +522,12 @@ class RunManager:
                 if record.id in self._runs:
                     continue
 
-                symbols: list[str] = []
-                if isinstance(record.symbols, list):
-                    symbols = [s for s in record.symbols if isinstance(s, str)]
-
                 run = Run(
                     id=record.id,
                     strategy_id=record.strategy_id,
                     mode=RunMode(record.mode),
                     status=RunStatus(record.status),
-                    symbols=symbols,
-                    timeframe=record.timeframe or "1h",
-                    config=record.config,
+                    config=record.config or {},
                     created_at=record.created_at,
                     started_at=record.started_at,
                     stopped_at=record.stopped_at,

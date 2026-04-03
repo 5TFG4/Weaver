@@ -118,7 +118,7 @@ class TestSimpleTestStrategy:
         from tests.fixtures.strategies import SimpleTestStrategy
 
         strategy = SimpleTestStrategy()
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize({"symbols": ["BTC/USD"]})
 
         actions = await strategy.on_tick(make_tick())
         assert len(actions) == 1

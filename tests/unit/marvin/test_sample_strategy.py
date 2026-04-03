@@ -68,7 +68,7 @@ class TestSampleStrategyOnTick:
     async def strategy(self) -> SampleStrategy:
         """Create initialized strategy."""
         s = SampleStrategy()
-        await s.initialize(["BTC/USD"])
+        await s.initialize({"symbols": ["BTC/USD"]})
         return s
 
     async def test_requests_data_window(self, strategy: SampleStrategy) -> None:
@@ -97,7 +97,7 @@ class TestSampleStrategyOnData:
     async def strategy(self) -> SampleStrategy:
         """Create initialized strategy."""
         s = SampleStrategy()
-        await s.initialize(["BTC/USD"])
+        await s.initialize({"symbols": ["BTC/USD"]})
         return s
 
     async def test_no_action_with_insufficient_bars(self, strategy: SampleStrategy) -> None:

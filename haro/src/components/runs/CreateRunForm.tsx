@@ -2,10 +2,13 @@
  * CreateRunForm Component
  *
  * Modal form for creating a new trading run.
- * Collects strategy_id, mode, symbols, and optional config.
+ * Uses RJSF to render dynamic config forms based on strategy JSON Schema.
  */
 
 import { useState } from "react";
+import Form from "@rjsf/core";
+import validator from "@rjsf/validator-ajv8";
+import { useStrategies } from "../../hooks/useStrategies";
 import type { RunCreate, RunMode } from "../../api/types";
 
 export interface CreateRunFormProps {
@@ -19,24 +22,21 @@ export function CreateRunForm({
   onCancel,
   isSubmitting = false,
 }: CreateRunFormProps) {
+  const { data: strategies } = useStrategies();
   const [strategyId, setStrategyId] = useState("");
   const [mode, setMode] = useState<RunMode>("backtest");
-  const [symbols, setSymbols] = useState("");
-  const [timeframe, setTimeframe] = useState("1h");
+  const [configData, setConfigData] = useState<Record<string, unknown>>({});
+
+  const selectedStrategy = strategies?.find((s) => s.id === strategyId);
+  const configSchema = selectedStrategy?.config_schema;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const symbolList = symbols
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     onSubmit({
       strategy_id: strategyId,
       mode,
-      symbols: symbolList,
-      timeframe,
+      config: configData,
     });
   }
 
@@ -54,15 +54,24 @@ export function CreateRunForm({
           >
             Strategy
           </label>
-          <input
+          <select
             id="strategy-id"
-            type="text"
+            aria-label="Strategy"
             value={strategyId}
-            onChange={(e) => setStrategyId(e.target.value)}
-            placeholder="e.g. sma-crossover"
+            onChange={(e) => {
+              setStrategyId(e.target.value);
+              setConfigData({});
+            }}
             required
             className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
+            <option value="">Select strategy...</option>
+            {strategies?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -84,45 +93,60 @@ export function CreateRunForm({
           </select>
         </div>
 
-        <div>
-          <label
-            htmlFor="symbols"
-            className="block text-sm font-medium text-slate-300 mb-1"
-          >
-            Symbols
-          </label>
-          <input
-            id="symbols"
-            type="text"
-            value={symbols}
-            onChange={(e) => setSymbols(e.target.value)}
-            placeholder="e.g. BTC/USD, ETH/USD"
-            required
-            className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        {mode === "backtest" && (
+          <>
+            <div>
+              <label
+                htmlFor="backtest-start"
+                className="block text-sm font-medium text-slate-300 mb-1"
+              >
+                Start Time
+              </label>
+              <input
+                id="backtest-start"
+                type="datetime-local"
+                onChange={(e) =>
+                  setConfigData((prev) => ({
+                    ...prev,
+                    backtest_start: e.target.value,
+                  }))
+                }
+                className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="backtest-end"
+                className="block text-sm font-medium text-slate-300 mb-1"
+              >
+                End Time
+              </label>
+              <input
+                id="backtest-end"
+                type="datetime-local"
+                onChange={(e) =>
+                  setConfigData((prev) => ({
+                    ...prev,
+                    backtest_end: e.target.value,
+                  }))
+                }
+                className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </>
+        )}
 
-        <div>
-          <label
-            htmlFor="timeframe"
-            className="block text-sm font-medium text-slate-300 mb-1"
+        {configSchema && (
+          <Form
+            schema={configSchema as Record<string, unknown>}
+            validator={validator}
+            formData={configData}
+            onChange={(e) => setConfigData(e.formData)}
+            uiSchema={{ "ui:submitButtonOptions": { norender: true } }}
           >
-            Timeframe
-          </label>
-          <select
-            id="timeframe"
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="1m">1 Minute</option>
-            <option value="5m">5 Minutes</option>
-            <option value="15m">15 Minutes</option>
-            <option value="1h">1 Hour</option>
-            <option value="4h">4 Hours</option>
-            <option value="1d">1 Day</option>
-          </select>
-        </div>
+            <></>
+          </Form>
+        )}
 
         <div className="flex justify-end gap-3 pt-2">
           <button
