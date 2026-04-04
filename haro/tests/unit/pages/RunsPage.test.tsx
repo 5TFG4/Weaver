@@ -150,6 +150,105 @@ describe("RunsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows start button for pending runs", async () => {
+    server.use(
+      http.get("/api/v1/runs", () => {
+        const response: RunListResponse = {
+          items: [
+            {
+              id: "run-pending",
+              strategy_id: "sma-crossover",
+              mode: "backtest",
+              status: "pending",
+              config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              created_at: "2026-02-01T10:00:00Z",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const row = screen.getByTestId("run-row-run-pending");
+    expect(
+      within(row).getByRole("button", { name: /start/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("calls start API when start button clicked", async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get("/api/v1/runs", () => {
+        const response: RunListResponse = {
+          items: [
+            {
+              id: "run-pending",
+              strategy_id: "sma-crossover",
+              mode: "backtest",
+              status: "pending",
+              config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              created_at: "2026-02-01T10:00:00Z",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+      http.post("/api/v1/runs/:id/start", ({ params }) => {
+        return HttpResponse.json({
+          id: params.id as string,
+          strategy_id: "sma-crossover",
+          mode: "backtest",
+          status: "running",
+          config: { symbols: ["BTC/USD"], timeframe: "1h" },
+          created_at: "2026-02-01T10:00:00Z",
+          started_at: new Date().toISOString(),
+        });
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const row = screen.getByTestId("run-row-run-pending");
+    const startBtn = within(row).getByRole("button", { name: /start/i });
+    await user.click(startBtn);
+
+    // After start, the run status should optimistically update to running
+    await waitFor(() => {
+      expect(within(row).getByText("running")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show start button for running runs", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    // run-2 is running, should NOT have start button
+    const row = screen.getByTestId("run-row-run-2");
+    expect(
+      within(row).queryByRole("button", { name: /start/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not show stop button for completed runs", async () => {
     render(<RunsPage />);
 

@@ -156,8 +156,9 @@ class RunManager:
         4. Cleanup GretaService subscriptions/state
         5. Remove context from manager
         """
-        ctx = self._run_contexts.get(run_id)
+        ctx = self._run_contexts.pop(run_id, None)
         if ctx is None:
+            self._run_locks.pop(run_id, None)
             return
 
         # 1. Stop clock — no more ticks
@@ -176,7 +177,6 @@ class RunManager:
         if ctx.greta is not None:
             await ctx.greta.cleanup()
 
-        del self._run_contexts[run_id]
         self._run_locks.pop(run_id, None)
 
     async def create(self, request: RunCreate) -> Run:
@@ -284,20 +284,21 @@ class RunManager:
             await self._emit_event(RunEvents.STARTED, run)
             await self._persist_run(run)
 
-            try:
-                if run.mode == RunMode.BACKTEST:
-                    await self._start_backtest(run)
-                else:
-                    # LIVE/PAPER use RealtimeClock
-                    await self._start_live(run)
-            except Exception:
-                await self._persist_run(run)
-                raise
+        # Execute OUTSIDE the lock so stop() can acquire it during execution
+        try:
+            if run.mode == RunMode.BACKTEST:
+                await self._start_backtest(run)
+            else:
+                # LIVE/PAPER use RealtimeClock
+                await self._start_live(run)
+        except Exception:
+            await self._persist_run(run)
+            raise
 
-            if run.status != RunStatus.RUNNING:
-                await self._persist_run(run)
+        if run.status != RunStatus.RUNNING:
+            await self._persist_run(run)
 
-            return run
+        return run
 
     async def _start_live(self, run: Run) -> None:
         """
@@ -449,17 +450,20 @@ class RunManager:
             else:
                 run.status = RunStatus.COMPLETED
         except Exception:
-            run.status = RunStatus.ERROR
+            # Don't override STOPPED status if stop() was called concurrently
+            if run.status != RunStatus.STOPPED:
+                run.status = RunStatus.ERROR
             raise
         finally:
             # Cleanup RunContext even if init or backtest fails
-            run.stopped_at = datetime.now(UTC)
+            if run.stopped_at is None:
+                run.stopped_at = datetime.now(UTC)
             await self._cleanup_run_context(run.id)
 
-        # Emit terminal event
+        # Emit terminal event (skip if stop() already emitted)
         if run.status == RunStatus.ERROR:
             await self._emit_event(RunEvents.ERROR, run)
-        else:
+        elif run.status == RunStatus.COMPLETED:
             await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:

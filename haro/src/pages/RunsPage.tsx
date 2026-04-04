@@ -8,7 +8,13 @@
 
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useRuns, useCreateRun, useStopRun, useRun } from "../hooks/useRuns";
+import {
+  useRuns,
+  useCreateRun,
+  useStartRun,
+  useStopRun,
+  useRun,
+} from "../hooks/useRuns";
 import { StatusBadge } from "../components/common/StatusBadge";
 import { Pagination } from "../components/common/Pagination";
 import { CreateRunForm } from "../components/runs/CreateRunForm";
@@ -16,6 +22,11 @@ import type { Run, RunCreate, RunMode } from "../api/types";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString();
+}
+
+/** Determine if a run can be started */
+function canStart(status: string): boolean {
+  return status === "pending";
 }
 
 /** Determine if a run can be stopped */
@@ -37,9 +48,11 @@ export function RunsPage() {
   );
   const runQuery = useRun(runId ?? "");
   const createRunMutation = useCreateRun();
+  const startRunMutation = useStartRun();
   const stopRunMutation = useStopRun();
 
-  // Track locally-stopped run IDs for optimistic UI update
+  // Track locally-started/stopped run IDs for optimistic UI update
+  const [startedIds, setStartedIds] = useState<Set<string>>(new Set());
   const [stoppedIds, setStoppedIds] = useState<Set<string>>(new Set());
 
   const isLoading = isDeepLink ? runQuery.isLoading : runsQuery.isLoading;
@@ -49,6 +62,14 @@ export function RunsPage() {
     createRunMutation.mutate(data, {
       onSuccess: () => {
         setShowForm(false);
+      },
+    });
+  }
+
+  function handleStart(runId: string) {
+    startRunMutation.mutate(runId, {
+      onSuccess: () => {
+        setStartedIds((prev) => new Set(prev).add(runId));
       },
     });
   }
@@ -119,9 +140,11 @@ export function RunsPage() {
       : []
     : (runsQuery.data?.items ?? []);
 
-  /** Get effective status considering optimistic stop updates */
+  /** Get effective status considering optimistic start/stop updates */
   function effectiveStatus(run: Run): string {
-    return stoppedIds.has(run.id) ? "stopped" : run.status;
+    if (stoppedIds.has(run.id)) return "stopped";
+    if (startedIds.has(run.id)) return "running";
+    return run.status;
   }
 
   return (
@@ -233,7 +256,16 @@ export function RunsPage() {
                     <td className="px-6 py-4 text-sm text-slate-400">
                       {formatDate(run.created_at)}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 space-x-2">
+                      {canStart(status) && (
+                        <button
+                          onClick={() => handleStart(run.id)}
+                          disabled={startRunMutation.isPending}
+                          className="text-sm text-green-400 hover:text-green-300 disabled:text-green-400/50 font-medium transition-colors"
+                        >
+                          Start
+                        </button>
+                      )}
                       {canStop(status) && (
                         <button
                           onClick={() => handleStop(run.id)}

@@ -12,7 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useSSE,
   SSE_ENDPOINT,
-  RECONNECT_DELAY,
+  DISCONNECT_GRACE_MS,
 } from "../../../src/hooks/useSSE";
 import { useNotificationStore } from "../../../src/stores/notificationStore";
 import type { ReactNode } from "react";
@@ -146,26 +146,77 @@ describe("useSSE", () => {
     expect(result.current.isConnected).toBe(true);
   });
 
-  it("reconnects after connection lost", () => {
+  it("does not close EventSource on error (native reconnect)", () => {
     const wrapper = createWrapper();
     renderHook(() => useSSE(), { wrapper });
 
     expect(MockEventSource.instances).toHaveLength(1);
 
-    // Simulate error → close
+    // Simulate error — should NOT close the connection
     act(() => {
       MockEventSource.latest().simulateError();
     });
 
-    expect(MockEventSource.latest().readyState).toBe(MockEventSource.CLOSED);
+    // readyState should NOT be CLOSED (browser handles reconnect natively)
+    expect(MockEventSource.latest().readyState).not.toBe(
+      MockEventSource.CLOSED,
+    );
+    // No new instance created — we trust the browser
+    expect(MockEventSource.instances).toHaveLength(1);
+  });
 
-    // Advance past reconnect delay
+  it("delays disconnect indicator by grace period", () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useSSE(), { wrapper });
+
     act(() => {
-      vi.advanceTimersByTime(RECONNECT_DELAY);
+      MockEventSource.latest().simulateOpen();
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // Error fires but grace period protects
+    act(() => {
+      MockEventSource.latest().simulateError();
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // Still connected before grace period expires
+    act(() => {
+      vi.advanceTimersByTime(DISCONNECT_GRACE_MS - 1);
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // After grace period expires → disconnected
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it("cancels disconnect indicator when reconnected within grace period", () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
     });
 
-    // A new EventSource should have been created
-    expect(MockEventSource.instances).toHaveLength(2);
+    // Error → start grace timer
+    act(() => {
+      MockEventSource.latest().simulateError();
+    });
+
+    // Reconnect before grace period
+    act(() => {
+      vi.advanceTimersByTime(2000);
+      MockEventSource.latest().simulateOpen();
+    });
+
+    // Advance past original grace period — should still be connected
+    act(() => {
+      vi.advanceTimersByTime(DISCONNECT_GRACE_MS);
+    });
+    expect(result.current.isConnected).toBe(true);
   });
 
   it("calls onEvent callback for run.Started event", () => {
