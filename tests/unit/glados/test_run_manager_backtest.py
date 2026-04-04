@@ -5,6 +5,7 @@ Unit tests for backtest flow orchestration in RunManager.
 """
 
 import asyncio
+import contextlib
 from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
@@ -798,8 +799,8 @@ class TestConcurrentRunSafety:
         assert results[0].status == RunStatus.COMPLETED
         assert results[1].status == RunStatus.COMPLETED
 
-    async def test_stop_during_start_waits_for_lock(self) -> None:
-        """stop() blocks until start() releases the lock, then runs cleanly."""
+    async def test_stop_during_start_interrupts_backtest(self) -> None:
+        """stop() can interrupt a running backtest without waiting for completion."""
         manager = _make_manager_with_deps()
 
         # Make strategy slow so start holds the lock for a while
@@ -831,7 +832,8 @@ class TestConcurrentRunSafety:
         stop_order: list[str] = []
 
         async def do_start() -> None:
-            await manager.start(run.id)
+            with contextlib.suppress(asyncio.CancelledError):
+                await manager.start(run.id)
             stop_order.append("start_done")
 
         async def do_stop() -> None:
@@ -841,8 +843,8 @@ class TestConcurrentRunSafety:
 
         await asyncio.gather(do_start(), do_stop())
 
-        # start completes before stop can acquire the lock
-        assert stop_order[0] == "start_done"
+        # stop() can now interrupt the backtest — it runs concurrently
+        assert run.status == RunStatus.STOPPED
 
     async def test_double_stop_is_idempotent(self) -> None:
         """Two stop() calls for same run → no error, second is no-op."""
