@@ -7,11 +7,15 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
-ENV_FILE="$ROOT_DIR/docker/.env"
+REAL_ENV_FILE="$ROOT_DIR/docker/.env"
 EXAMPLE_ENV="$ROOT_DIR/docker/example.env"
 TIMEOUT_SECONDS=120
 : "${COMPOSE_PROJECT_NAME:=weaver_smoke}"
-COMPOSE=(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE")
+
+# Use a temporary env file so we never overwrite the real .env
+SMOKE_ENV="$(mktemp)"
+cp "$EXAMPLE_ENV" "$SMOKE_ENV"
+COMPOSE=(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" --env-file "$SMOKE_ENV")
 
 _in_container() { [[ -f /.dockerenv ]]; }
 
@@ -22,17 +26,22 @@ teardown() {
         docker network disconnect "$CONNECTED_NETWORK" "$(hostname)" 2>/dev/null || true
     fi
     "${COMPOSE[@]}" down -v 2>/dev/null || true
+    rm -f "$SMOKE_ENV"
 }
 trap teardown EXIT
 
 # --- Prepare env ---
-cp "$EXAMPLE_ENV" "$ENV_FILE"
 for key in ALPACA_LIVE_API_KEY ALPACA_LIVE_API_SECRET ALPACA_PAPER_API_KEY ALPACA_PAPER_API_SECRET; do
-    sed -i "s|^${key}=.*|${key}=|" "$ENV_FILE"
+    sed -i "s|^${key}=.*|${key}=|" "$SMOKE_ENV"
 done
 
+# Use unique ports so smoke tests don't collide with running dev/prod stacks
+sed -i "s|^HOST_PORT_PROD=.*|HOST_PORT_PROD=48919|"       "$SMOKE_ENV"
+sed -i "s|^FRONTEND_PORT_PROD=.*|FRONTEND_PORT_PROD=43579|" "$SMOKE_ENV"
+sed -i "s|^POSTGRES_PORT_PROD=.*|POSTGRES_PORT_PROD=45432|" "$SMOKE_ENV"
+
 # --- Build & start ---
-"${COMPOSE[@]}" config
+"${COMPOSE[@]}" config > /dev/null
 "${COMPOSE[@]}" build backend frontend
 "${COMPOSE[@]}" up -d db
 "${COMPOSE[@]}" run --rm backend alembic upgrade head
