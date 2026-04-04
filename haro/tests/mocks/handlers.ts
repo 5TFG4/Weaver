@@ -141,10 +141,15 @@ export const handlers = [
   }),
 
   // GET /api/v1/runs - List runs
-  http.get("/api/v1/runs", () => {
+  http.get("/api/v1/runs", ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status");
+    const filtered = status
+      ? mockRuns.filter((r) => r.status === status)
+      : mockRuns;
     const response: RunListResponse = {
-      items: mockRuns,
-      total: mockRuns.length,
+      items: filtered,
+      total: filtered.length,
       page: 1,
       page_size: 20,
     };

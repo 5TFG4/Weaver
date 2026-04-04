@@ -33,7 +33,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
     <Dialog
       open={true}
       onClose={onClose}
-      className="relative z-50"
+      className="fixed inset-0 z-50"
       data-testid="order-detail-modal"
     >
       <DialogBackdrop className="fixed inset-0 bg-black/60" />

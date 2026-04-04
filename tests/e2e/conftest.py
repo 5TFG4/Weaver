@@ -59,17 +59,21 @@ def _start_stack() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def e2e_stack_ready() -> None:
-    """Ensure E2E stack is running. Start it automatically if needed."""
-    if _stack_healthy():
-        return
+    """Ensure E2E stack is running with the latest code.
 
+    Always rebuilds images (Docker layer cache makes this fast when
+    nothing changed) so that local tests match CI behaviour.
+    """
     if not _HAS_DOCKER:
+        # Inside test_runner container — stack was started externally.
+        if _stack_healthy():
+            return
         pytest.fail(
             "E2E stack is not healthy and docker is not available to start it. "
             "When running inside a container, the stack must be started externally."
         )
 
-    # Stack not running — start it
+    # Always rebuild to avoid testing against stale images.
     _start_stack()
 
     # Wait for health (up to 120s for build + boot)

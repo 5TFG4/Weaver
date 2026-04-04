@@ -61,7 +61,7 @@ class TestBacktestFlow:
 
         # RJSF array field: click Add to insert the first symbols entry
         page.get_by_test_id("rjsf-add-item").click()
-        page.locator("#root_symbols_0").fill("BTC/USD")
+        page.locator("#root_symbols_0").select_option("BTC/USD")
 
         # Timeframe enum rendered as <select> by RJSF
         page.locator("#root_timeframe").select_option(label="1m")
