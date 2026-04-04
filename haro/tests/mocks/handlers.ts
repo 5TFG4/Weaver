@@ -84,7 +84,13 @@ export const mockStrategies: StrategyMeta[] = [
     config_schema: {
       type: "object",
       properties: {
-        symbols: { type: "array", items: { type: "string" } },
+        symbols: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+          },
+        },
         timeframe: { type: "string", default: "1m" },
       },
       required: ["symbols"],
@@ -99,7 +105,13 @@ export const mockStrategies: StrategyMeta[] = [
     config_schema: {
       type: "object",
       properties: {
-        symbols: { type: "array", items: { type: "string" } },
+        symbols: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+          },
+        },
         timeframe: { type: "string", default: "1m" },
         fast_period: { type: "integer", default: 5 },
         slow_period: { type: "integer", default: 20 },

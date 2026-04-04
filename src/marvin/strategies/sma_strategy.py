@@ -30,7 +30,10 @@ STRATEGY_META = {
         "properties": {
             "symbols": {
                 "type": "array",
-                "items": {"type": "string"},
+                "items": {
+                    "type": "string",
+                    "enum": ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+                },
                 "description": "Trading symbols",
             },
             "timeframe": {

@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, within } from "../../utils";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
+import { mockRuns } from "../../mocks/handlers";
 import { RunsPage } from "../../../src/pages/RunsPage";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -277,5 +278,53 @@ describe("RunsPage", () => {
 
     expect(screen.getByTestId("run-row-run-2")).toBeInTheDocument();
     expect(screen.queryByTestId("run-row-run-1")).not.toBeInTheDocument();
+  });
+
+  // =========================================================================
+  // H5: Table overflow
+  // =========================================================================
+
+  it("runs table container has overflow-x-auto", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const table = screen.getByRole("table");
+    const container = table.closest("div");
+    expect(container).toHaveClass("overflow-x-auto");
+  });
+
+  // =========================================================================
+  // H6: Pagination
+  // =========================================================================
+
+  it("shows pagination controls when total exceeds page size", async () => {
+    server.use(
+      http.get("/api/v1/runs", ({ request }) => {
+        const url = new URL(request.url);
+        const page = parseInt(url.searchParams.get("page") || "1");
+        const response: RunListResponse = {
+          items: mockRuns,
+          total: 100,
+          page,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /previous/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Page 1 of 5/)).toBeInTheDocument();
   });
 });

@@ -14,7 +14,7 @@ import { StatCard } from "../components/common/StatCard";
 import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 
 export function Dashboard() {
-  const runsQuery = useRuns({ page: 1, page_size: 50 });
+  const runsQuery = useRuns({ page: 1, page_size: 5 });
   const ordersQuery = useOrders({ page: 1, page_size: 1 });
   const healthQuery = useHealth();
 

@@ -22,6 +22,19 @@ export const SSE_ENDPOINT = "/api/v1/events/stream";
 export const RECONNECT_DELAY = 3000;
 
 // =============================================================================
+// Utilities
+// =============================================================================
+
+function safeParse(raw: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.warn("[SSE] Failed to parse event data:", raw);
+    return null;
+  }
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -61,7 +74,8 @@ export function useSSE() {
       // =========================================================================
 
       eventSource.addEventListener("run.Started", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["runs"] });
         addNotification({
           type: "success",
@@ -70,7 +84,8 @@ export function useSSE() {
       });
 
       eventSource.addEventListener("run.Stopped", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["runs"] });
         addNotification({
           type: "info",
@@ -79,7 +94,8 @@ export function useSSE() {
       });
 
       eventSource.addEventListener("run.Completed", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["runs"] });
         addNotification({
           type: "success",
@@ -88,7 +104,8 @@ export function useSSE() {
       });
 
       eventSource.addEventListener("run.Error", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["runs"] });
         addNotification({
           type: "error",
@@ -101,7 +118,8 @@ export function useSSE() {
       // =========================================================================
 
       eventSource.addEventListener("orders.Created", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["orders"] });
         addNotification({
           type: "info",
@@ -118,7 +136,8 @@ export function useSSE() {
       });
 
       eventSource.addEventListener("orders.Rejected", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         const rejectReason =
           data.reject_reason ??
           data.reason ??
@@ -132,7 +151,8 @@ export function useSSE() {
       });
 
       eventSource.addEventListener("orders.Cancelled", (e: MessageEvent) => {
-        const data = JSON.parse(e.data);
+        const data = safeParse(e.data);
+        if (!data) return;
         queryClient.invalidateQueries({ queryKey: ["orders"] });
         addNotification({
           type: "info",

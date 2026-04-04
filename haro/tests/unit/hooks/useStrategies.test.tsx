@@ -33,3 +33,15 @@ describe("useStrategies", () => {
     expect(result.current.data![1].id).toBe("sma-crossover");
   });
 });
+
+// =============================================================================
+// H3: Barrel export verification
+// =============================================================================
+
+describe("useStrategies barrel export", () => {
+  it("is re-exported from hooks barrel file", async () => {
+    const barrel = await import("../../../src/hooks/index");
+    expect(barrel.useStrategies).toBeDefined();
+    expect(typeof barrel.useStrategies).toBe("function");
+  });
+});

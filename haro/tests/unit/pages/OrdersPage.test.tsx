@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor } from "../../utils";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
+import { mockOrders } from "../../mocks/handlers";
 import { OrdersPage } from "../../../src/pages/OrdersPage";
 import userEvent from "@testing-library/user-event";
 import type { OrderListResponse } from "../../../src/api/types";
@@ -128,5 +129,34 @@ describe("OrdersPage", () => {
         screen.queryByTestId("order-detail-modal"),
       ).not.toBeInTheDocument();
     });
+  });
+
+  // =========================================================================
+  // H6: Pagination
+  // =========================================================================
+
+  it("shows pagination controls when total exceeds page size", async () => {
+    server.use(
+      http.get("/api/v1/orders", ({ request }) => {
+        const url = new URL(request.url);
+        const page = parseInt(url.searchParams.get("page") || "1");
+        const response: OrderListResponse = {
+          items: mockOrders,
+          total: 60,
+          page,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+    );
+
+    render(<OrdersPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("orders-loading")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
+    expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
   });
 });

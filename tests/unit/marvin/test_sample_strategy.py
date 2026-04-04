@@ -185,3 +185,23 @@ class TestSampleStrategyOnData:
         actions = await strategy.on_data(data)
 
         assert len(actions) == 0
+
+
+class TestSampleStrategyConfigSchema:
+    """H2: Validate config_schema has enum on symbols.items for dropdown rendering."""
+
+    def test_symbols_items_has_enum(self) -> None:
+        from src.marvin.strategies.sample_strategy import STRATEGY_META
+
+        schema = STRATEGY_META["config_schema"]
+        items = schema["properties"]["symbols"]["items"]
+        assert "enum" in items, "symbols.items must have enum for RJSF dropdown"
+        assert isinstance(items["enum"], list)
+        assert len(items["enum"]) >= 3
+
+    def test_symbols_enum_contains_expected_tickers(self) -> None:
+        from src.marvin.strategies.sample_strategy import STRATEGY_META
+
+        enum = STRATEGY_META["config_schema"]["properties"]["symbols"]["items"]["enum"]
+        for ticker in ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"]:
+            assert ticker in enum, f"{ticker} missing from symbols enum"

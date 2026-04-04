@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useRuns, useCreateRun, useStopRun, useRun } from "../hooks/useRuns";
 import { StatusBadge } from "../components/common/StatusBadge";
+import { Pagination } from "../components/common/Pagination";
 import { CreateRunForm } from "../components/runs/CreateRunForm";
 import type { Run, RunCreate, RunMode } from "../api/types";
 
@@ -27,8 +28,11 @@ export function RunsPage() {
   const isDeepLink = Boolean(runId);
 
   const [showForm, setShowForm] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
   const runsQuery = useRuns(
-    { page: 1, page_size: 50 },
+    { page, page_size: PAGE_SIZE },
     { enabled: !isDeepLink },
   );
   const runQuery = useRun(runId ?? "");
@@ -169,7 +173,7 @@ export function RunsPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-700/50">
               <tr>
@@ -245,6 +249,15 @@ export function RunsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!isDeepLink && (runsQuery.data?.total ?? 0) > PAGE_SIZE && (
+        <Pagination
+          page={page}
+          totalPages={Math.ceil((runsQuery.data?.total ?? 0) / PAGE_SIZE)}
+          onPageChange={setPage}
+        />
       )}
 
       {/* Quick Links */}

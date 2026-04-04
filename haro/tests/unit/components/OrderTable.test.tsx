@@ -56,6 +56,48 @@ describe("OrderTable", () => {
     render(<OrderTable orders={mockOrders} onOrderClick={vi.fn()} />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });
+
+  // =========================================================================
+  // H5: Table accessibility & overflow
+  // =========================================================================
+
+  it("table container has overflow-x-auto for horizontal scrolling", () => {
+    render(<OrderTable orders={mockOrders} onOrderClick={vi.fn()} />);
+    const table = screen.getByRole("table");
+    const container = table.closest("div");
+    expect(container).toHaveClass("overflow-x-auto");
+  });
+
+  it("order rows are keyboard accessible with tabIndex and role", () => {
+    render(<OrderTable orders={mockOrders} onOrderClick={vi.fn()} />);
+    const row = screen.getByTestId("order-row-order-1");
+    expect(row).toHaveAttribute("tabindex", "0");
+    expect(row).toHaveAttribute("role", "button");
+  });
+
+  it("pressing Enter on a row triggers onOrderClick", async () => {
+    const handleClick = vi.fn();
+    const user = userEvent.setup();
+    render(<OrderTable orders={mockOrders} onOrderClick={handleClick} />);
+
+    const row = screen.getByTestId("order-row-order-1");
+    row.focus();
+    await user.keyboard("{Enter}");
+
+    expect(handleClick).toHaveBeenCalledWith(mockOrders[0]);
+  });
+
+  it("pressing Space on a row triggers onOrderClick", async () => {
+    const handleClick = vi.fn();
+    const user = userEvent.setup();
+    render(<OrderTable orders={mockOrders} onOrderClick={handleClick} />);
+
+    const row = screen.getByTestId("order-row-order-1");
+    row.focus();
+    await user.keyboard(" ");
+
+    expect(handleClick).toHaveBeenCalledWith(mockOrders[0]);
+  });
 });
 
 // Helper to render with userEvent

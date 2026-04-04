@@ -78,6 +78,13 @@ class MockEventSource {
     listeners.forEach((l) => l(event));
   }
 
+  /** Send raw string data (for testing malformed JSON handling) */
+  simulateRawEvent(type: string, rawData: string) {
+    const event = new MessageEvent(type, { data: rawData });
+    const listeners = this.listeners.get(type) || [];
+    listeners.forEach((l) => l(event));
+  }
+
   static reset() {
     MockEventSource.instances = [];
   }
@@ -313,6 +320,82 @@ describe("useSSE", () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0].type).toBe("info");
     expect(notifications[0].message).toContain("cancelled");
+  });
+
+  // =========================================================================
+  // H1: SSE Safety — safeParse protection against malformed JSON
+  // =========================================================================
+
+  it("does not crash when SSE event has malformed JSON data", () => {
+    const wrapper = createWrapper();
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+    });
+
+    // Malformed JSON must NOT throw
+    expect(() => {
+      act(() => {
+        MockEventSource.latest().simulateRawEvent(
+          "run.Started",
+          "NOT VALID JSON{{{",
+        );
+      });
+    }).not.toThrow();
+
+    // Should log a warning
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[SSE]"),
+      expect.anything(),
+    );
+
+    // Should NOT produce a notification (event is silently skipped)
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(0);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("does not crash when orders.Rejected has malformed JSON", () => {
+    const wrapper = createWrapper();
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    renderHook(() => useSSE(), { wrapper });
+    act(() => MockEventSource.latest().simulateOpen());
+
+    expect(() => {
+      act(() => {
+        MockEventSource.latest().simulateRawEvent(
+          "orders.Rejected",
+          "<html>502 Bad Gateway</html>",
+        );
+      });
+    }).not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(0);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("still processes valid JSON normally after safeParse", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => MockEventSource.latest().simulateOpen());
+    act(() => {
+      MockEventSource.latest().simulateEvent("run.Completed", {
+        run_id: "run-safe-1",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].message).toContain("run-safe-1");
   });
 
   // =========================================================================
