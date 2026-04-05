@@ -38,9 +38,7 @@ export function CreateRunForm({
   const selectedStrategy = strategies?.find((s) => s.id === strategyId);
   const configSchema = selectedStrategy?.config_schema;
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  function handleSubmit() {
     onSubmit({
       strategy_id: strategyId,
       mode,
@@ -54,7 +52,7 @@ export function CreateRunForm({
       className="bg-slate-800 rounded-lg border border-slate-700 p-6"
     >
       <h2 className="text-lg font-semibold text-white mb-4">Create New Run</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         <div>
           <label
             htmlFor="strategy-id"
@@ -146,7 +144,6 @@ export function CreateRunForm({
 
         {configSchema && (
           <Form
-            tagName="div"
             schema={configSchema as Record<string, unknown>}
             validator={validator}
             formData={configData}
@@ -174,14 +171,15 @@ export function CreateRunForm({
             Cancel
           </button>
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={isSubmitting}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             {isSubmitting ? "Creating..." : "Create"}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
