@@ -5,10 +5,11 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · M11 ✅ Complete · **M12 ✅ Complete**
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · M11 ✅ Complete · **M12 ✅ Complete** · **M12-B ✅ Complete**
 > **Tests (latest verified)**: 987 backend unit + 50 integration + 109 frontend + 33 E2E = 1179 passed (2026-04-03)
-> **Active Milestone**: **M12-B** (Frontend Hardening) — DECISIONS LOCKED, ready for detailed planning
+> **Active Milestone**: **M13** (Backtest Results) — next up
 > **Remaining Backlog**: E-3, R-1, R-2
+> **Planned**: M13 (Backtest Results) → M14 (Live Monitoring) → M15 (Navigation & Fixes) → M16 (Strategy Iteration) → M17 (Risk & Production)
 > **Completed**: All planned milestones (M5–M12), CI audit Waves 1–4, PR #15 merged, PR #16 (M11)
 
 ---
@@ -20,21 +21,26 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 
 **Post-M10 CI Audit** (2026-03-21 – 2026-03-22): ✅ All 4 waves complete. Waves 1–3 added 10 E2E tests, 6 Alpaca integration tests, and frontend coverage reporting. Wave 4 fixed 2 production bugs (submit_order/list_orders SDK contract mismatch), CI path resolution, and mock hardening. Post-Wave 4 hardening: GitHub Actions upgraded to Node.js 24, npm dependency vulnerabilities patched (flatted, undici), workflow permissions locked to least-privilege, coverage artifacts removed from git. PR #15 merged to main with all 5 CI workflows green. See `CI_TEST_AUDIT.md` for full details.
 
-| Milestone | Name               | Core Objective                                            | Tests | Status                                |
-| --------- | ------------------ | --------------------------------------------------------- | ----- | ------------------------------------- |
-| **M5**    | Marvin Core        | Strategy system + Plugin architecture                     | 74    | ✅ DONE                               |
-| **M6**    | Live Trading       | Paper/Live trading flow                                   | 101   | ✅ DONE (808 total)                   |
-| **M7**    | Haro Frontend      | React UI + SSE                                            | 86    | ✅ DONE (894 total)                   |
-| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality                 | 129   | ✅ DONE (historical cumulative: 1023) |
-| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection    | -     | ✅ COMPLETE                           |
-| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                           | 23    | ✅ DONE (1055 total)                  |
-| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env | 48    | ✅ DONE (1137 total)                  |
-| **M12**   | Spec Alignment     | Run config refactor + Strategy API + RJSF dynamic forms   | 42    | ✅ DONE (1179 total)                  |
-| **M12-B** | Frontend Hardening | SSE safety + Symbols UX + a11y + Pagination + Dead code   | ~20   | 🔒 DECISIONS LOCKED                   |
+| Milestone | Name               | Core Objective                                             | Tests | Status                                |
+| --------- | ------------------ | ---------------------------------------------------------- | ----- | ------------------------------------- |
+| **M5**    | Marvin Core        | Strategy system + Plugin architecture                      | 74    | ✅ DONE                               |
+| **M6**    | Live Trading       | Paper/Live trading flow                                    | 101   | ✅ DONE (808 total)                   |
+| **M7**    | Haro Frontend      | React UI + SSE                                             | 86    | ✅ DONE (894 total)                   |
+| **M8**    | Fixes & Improve    | Critical fixes + Runtime wiring + Quality                  | 129   | ✅ DONE (historical cumulative: 1023) |
+| **M9**    | CI Deployment      | PR quality gates + container smoke + branch protection     | -     | ✅ COMPLETE                           |
+| **M10**   | E2E & Release Prep | End-to-end tests + Final polish                            | 23    | ✅ DONE (1055 total)                  |
+| **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env  | 48    | ✅ DONE (1137 total)                  |
+| **M12**   | Spec Alignment     | Run config refactor + Strategy API + RJSF dynamic forms    | 42    | ✅ DONE (1179 total)                  |
+| **M12-B** | Frontend Hardening | SSE safety + Symbols UX + a11y + Pagination + Dead code    | ~20   | ✅ COMPLETE                           |
+| **M13**   | Backtest Results   | Persist results + Results API + Detail page + Equity chart | —     | 📋 PLANNED                            |
+| **M14**   | Live Monitoring    | Positions/fills/account API + Monitoring UI + Real candles | —     | 📋 PLANNED                            |
+| **M15**   | Navigation & Fixes | Linked navigation + Sort/filter + All frontend bug fixes   | —     | 📋 PLANNED                            |
+| **M16**   | Strategy Iteration | Versioning + Clone + Comparison + One-click backtest       | —     | 📋 PLANNED                            |
+| **M17**   | Risk & Production  | Risk enforcement + Data ingest + Export + Observability    | —     | 📋 PLANNED                            |
 
 **M12 Complete** (42 tests added): Run config refactor (S1), strategy interface (S2+S3), config_schema metadata (S4+S6), production safety (S8), backtest config source (S9), frontend full-stack alignment (S11-S15). RJSF dynamic forms with custom Tailwind templates. See [m12-spec-alignment.md](archive/milestone-details/m12-spec-alignment.md).
 
-**M12-B Draft** (Frontend Hardening): SSE JSON.parse safety, symbols enum dropdown, dead code cleanup, modal a11y, table overflow fix, pagination UI, responsive sidebar. See [m12b-frontend-hardening.md](archive/milestone-details/m12b-frontend-hardening.md).
+**M12-B Complete** (Frontend Hardening): SSE JSON.parse safety (H1), symbols enum dropdown (H2), dead code cleanup (H3), modal a11y with @headlessui/react (H4), table overflow-x-auto (H5 partial — OrderTable done, RunsPage rows deferred to M15), pagination component (H6), responsive sidebar (H7) deferred. Design docs at [m12b-frontend-hardening.md](archive/milestone-details/m12b-frontend-hardening.md) and [m12b-execution.md](archive/milestone-details/m12b-execution.md).
 
 **M6 Complete** (101 tests added):
 
@@ -779,32 +785,161 @@ The following tasks have been incorporated into milestones or deferred:
 | Backtest config source (S9)             | PROD_TEST_REVIEW | M12 Phase 5 |
 | Frontend full-stack alignment (S11-S15) | PROD_TEST_REVIEW | M12 Phase 6 |
 
-### Incorporated into M12-B
+### Incorporated into M12-B — ✅ COMPLETE
 
-| Task                           | Source         | Assigned To   |
-| ------------------------------ | -------------- | ------------- |
-| SSE JSON.parse safety (H1)     | Frontend Audit | M12-B Phase 1 |
-| Symbols enum dropdown (H2)     | Frontend Audit | M12-B Phase 2 |
-| Dead code cleanup (H3)         | Frontend Audit | M12-B Phase 3 |
-| Modal accessibility (H4)       | Frontend Audit | M12-B Phase 4 |
-| Table overflow + keyboard (H5) | Frontend Audit | M12-B Phase 5 |
-| Pagination UI (H6)             | Frontend Audit | M12-B Phase 6 |
-| Responsive sidebar (H7)        | Frontend Audit | M12-B Phase 7 |
+| Task                           | Source         | Assigned To   | Status                                             |
+| ------------------------------ | -------------- | ------------- | -------------------------------------------------- |
+| SSE JSON.parse safety (H1)     | Frontend Audit | M12-B Phase 1 | ✅ Done                                            |
+| Symbols enum dropdown (H2)     | Frontend Audit | M12-B Phase 2 | ✅ Done                                            |
+| Dead code cleanup (H3)         | Frontend Audit | M12-B Phase 3 | ✅ Done                                            |
+| Modal accessibility (H4)       | Frontend Audit | M12-B Phase 4 | ✅ Done                                            |
+| Table overflow + keyboard (H5) | Frontend Audit | M12-B Phase 5 | ⚠️ Partial (RunsPage row keyboard deferred to M15) |
+| Pagination UI (H6)             | Frontend Audit | M12-B Phase 6 | ✅ Done                                            |
+| Responsive sidebar (H7)        | Frontend Audit | M12-B Phase 7 | Deferred (desktop-primary)                         |
 
 ### Deferred (M13+)
 
-| Task                             | Reason                                     |
-| -------------------------------- | ------------------------------------------ |
-| Pagination/filtering E2E (E-3)   | M12-B adds pagination UI; E2E tests in M13 |
-| Connection resilience (R-1)      | Requires retry/circuit-breaker design      |
-| Multi-symbol backtests (R-2)     | Requires Greta/WallE architectural changes |
-| Multi-exchange support (S5+S10)  | VedaService dict + Bar exchange field      |
-| Backtest on-demand fetch (S7)    | Depends on multi-exchange (S5)             |
-| Dynamic symbols API (/symbols)   | Depends on exchange adapter integration    |
-| Multiple simultaneous strategies | High complexity, future enhancement        |
-| Strategy optimization            | Requires more infrastructure               |
-| Real money trading               | Requires more security measures            |
-| WebSocket streaming              | Polling sufficient for MVP                 |
+The following were originally in the M13+ backlog. Items marked ✦ have been
+absorbed into the new M13–M17 plan below; remaining items stay in backlog.
+
+| Task                             | Reason                                     | Status       |
+| -------------------------------- | ------------------------------------------ | ------------ |
+| Pagination/filtering E2E (E-3)   | M12-B adds pagination UI; E2E tests in M13 | Backlog      |
+| Connection resilience (R-1)      | Requires retry/circuit-breaker design      | Backlog      |
+| Multi-symbol backtests (R-2)     | Requires Greta/WallE architectural changes | Backlog      |
+| Multi-exchange support (S5+S10)  | VedaService dict + Bar exchange field      | Backlog      |
+| Backtest on-demand fetch (S7)    | Depends on multi-exchange (S5)             | Backlog      |
+| Dynamic symbols API (/symbols)   | Depends on exchange adapter integration    | Backlog      |
+| Multiple simultaneous strategies | High complexity, future enhancement        | Backlog      |
+| Strategy optimization            | Requires more infrastructure               | Backlog      |
+| Real money trading               | Requires more security measures            | → M17 prereq |
+| WebSocket streaming              | Polling sufficient for MVP                 | Backlog      |
+
+---
+
+## 8b. M13–M17: System Audit Milestones
+
+Source: `docs/UI_AUDIT.md` — full-stack audit identifying 52+ issues across
+9 domains. These milestones address every finding in priority order.
+
+### M13 — Backtest Results End-to-End
+
+**Goal**: Make the core quant workflow work: run backtest → see results.
+
+| Task  | Layer    | Description                                                                                | Audit ref |
+| ----- | -------- | ------------------------------------------------------------------------------------------ | --------- |
+| 13-1  | Backend  | `_start_backtest()` calls `greta.get_result()`; persist result + simulated positions to DB | A-1, A-6  |
+| 13-2  | Backend  | New `backtest_results` table (or JSONB column on `runs`)                                   | —         |
+| 13-3  | Backend  | `GET /runs/{id}/results` endpoint                                                          | —         |
+| 13-4  | Backend  | Add `error` field to `RunResponse` schema                                                  | B-1       |
+| 13-5  | Backend  | Validate backtest dates at creation time (not deferred to start)                           | B-4       |
+| 13-6  | Frontend | Fix backtest form: `required` + controlled `value` binding                                 | C1, C2    |
+| 13-7  | Frontend | Create `/runs/:runId` detail page with Results tab                                         | —         |
+| 13-8  | Frontend | Add charting library; render equity curve                                                  | —         |
+| 13-9  | Frontend | Add trade log table on detail page                                                         | —         |
+| 13-10 | Frontend | Add success toast on run creation                                                          | M9        |
+
+**Exit gate**: User creates backtest → dates validated → run executes → detail
+page shows return, Sharpe, max drawdown, equity curve, and fill list.
+
+---
+
+### M14 — Live/Paper Monitoring
+
+**Goal**: Give paper/live runs a dedicated monitoring view with real data.
+
+| Task  | Layer    | Description                                                | Audit ref |
+| ----- | -------- | ---------------------------------------------------------- | --------- |
+| 14-1  | Backend  | `GET /runs/{id}/positions` endpoint (from PositionTracker) | A-2       |
+| 14-2  | Backend  | `GET /runs/{id}/fills` endpoint (from FillRepository)      | A-4       |
+| 14-3  | Backend  | `GET /account` endpoint (from ExchangeAdapter)             | A-3       |
+| 14-4  | Backend  | `GET /events` historical query endpoint (from EventLog)    | A-5       |
+| 14-5  | Backend  | Candles endpoint wired to real data source                 | B-7       |
+| 14-6  | Backend  | `FillRecord` add `commission` and `symbol` fields          | B-8       |
+| 14-7  | Backend  | `OrderResponse` add `cancelled_at` field                   | B-11      |
+| 14-8  | Frontend | Detail page Monitoring tab: positions table, P&L card      | —         |
+| 14-9  | Frontend | Real-time fill stream on detail page                       | —         |
+| 14-10 | Frontend | Dashboard: check all 4 queries for error state             | C4        |
+| 14-11 | Frontend | SSE: add `run.Created` event listener                      | M8        |
+
+**Exit gate**: Start paper trading → detail page shows live positions, P&L,
+recent fills. Dashboard errors surface correctly.
+
+---
+
+### M15 — Navigation & Frontend Fixes
+
+**Goal**: Connect the three disconnected pages; fix all remaining UI bugs.
+
+| Task  | Layer    | Description                                                                    | Audit ref    |
+| ----- | -------- | ------------------------------------------------------------------------------ | ------------ |
+| 15-1  | Backend  | `GET /runs` add `strategy_id` query parameter                                  | B-2          |
+| 15-2  | Backend  | List endpoints add `sort_by` / `order` parameters                              | B-3          |
+| 15-3  | Backend  | Push pagination to DB (stop in-memory slicing)                                 | B-6          |
+| 15-4  | Frontend | Run IDs → clickable `<Link>` to `/runs/:runId`                                 | M7           |
+| 15-5  | Frontend | Add "View Orders" link per run row                                             | M6           |
+| 15-6  | Frontend | `OrderDetailModal` run_id → link                                               | M4           |
+| 15-7  | Frontend | `OrderTable` add `run_id` column                                               | M5           |
+| 15-8  | Frontend | `OrdersPage` filter: add setter + clear button                                 | M1, m2       |
+| 15-9  | Frontend | ActivityFeed items → clickable                                                 | —            |
+| 15-10 | Frontend | Detail page breadcrumbs                                                        | —            |
+| 15-11 | Frontend | Fix optimistic status overrides (clear on refetch)                             | C3           |
+| 15-12 | Frontend | Stop button: add `disabled={isPending}`                                        | M2           |
+| 15-13 | Frontend | ActivityFeed: fix duplicate `strategy_id` display                              | M3           |
+| 15-14 | Frontend | Strategies dropdown: loading/error state                                       | M10          |
+| 15-15 | Frontend | Barrel file: add `strategies` export                                           | M11          |
+| 15-16 | Frontend | Minor fixes batch: m1, m3, m4, m5, m6, m7, m8, m9, m10                         | m1–m10       |
+| 15-17 | Frontend | RunsPage table rows: add `tabIndex`, `role="button"`, `onKeyDown` keyboard nav | H5 remainder |
+
+**Exit gate**: All pages cross-linked. No dead-end navigation. All
+Critical/Major/Minor frontend bugs from audit resolved. Tables
+keyboard-navigable. Pagination functional.
+
+---
+
+### M16 — Strategy Iteration & Research Workflow
+
+**Goal**: Elevate from running one-off experiments to systematic research.
+
+| Task  | Layer    | Description                                                  | Audit ref |
+| ----- | -------- | ------------------------------------------------------------ | --------- |
+| 16-1  | Backend  | Record strategy version on run creation                      | C-3       |
+| 16-2  | Backend  | `POST /runs/{id}/clone` (or frontend pre-fill from existing) | B-9       |
+| 16-3  | Backend  | Cross-run performance comparison endpoint                    | C-6       |
+| 16-4  | Backend  | `GET /strategies` → typed response model + pagination        | B-5       |
+| 16-5  | Frontend | Runs table: add performance columns (return, Sharpe, etc.)   | —         |
+| 16-6  | Frontend | TanStack Table column sorting                                | —         |
+| 16-7  | Frontend | "Clone Run" button (pre-fill CreateRunForm)                  | —         |
+| 16-8  | Frontend | Strategy-level grouping/filter view                          | —         |
+| 16-9  | Frontend | Backtest comparison view (side-by-side charts + stats)       | —         |
+| 16-10 | Frontend | Backtests: merge create + start into single action           | D-3       |
+
+**Exit gate**: Select strategy → view all backtests sorted by Sharpe → clone →
+tweak param → one-click run → side-by-side comparison with previous.
+
+---
+
+### M17 — Risk Management & Production Hardening
+
+**Goal**: Make the system safe for real money and long-term operation.
+
+| Task  | Layer   | Description                                              | Audit ref |
+| ----- | ------- | -------------------------------------------------------- | --------- |
+| 17-1  | Backend | Enforce `max_concurrent_orders`                          | C-2       |
+| 17-2  | Backend | Enforce `rate_limit_per_minute`                          | C-2       |
+| 17-3  | Backend | Position size limits + max drawdown circuit breaker      | C-2       |
+| 17-4  | Backend | Daily loss limit enforcement                             | C-2       |
+| 17-5  | Backend | Run deletion / soft-delete / archival                    | C-1       |
+| 17-6  | Backend | Bar data ingestion API                                   | C-4       |
+| 17-7  | Backend | Results/fills/equity export (CSV/JSON)                   | C-5       |
+| 17-8  | Backend | Benchmark comparison (alpha, beta, IR vs SPY)            | C-7       |
+| 17-9  | Backend | Health endpoint: check real dependencies                 | B-10      |
+| 17-10 | Backend | `/metrics` observability endpoint                        | C-9       |
+| 17-11 | Backend | Strategy diagnostics API + `DecisionMade` event emission | C-10      |
+| 17-12 | Backend | Run scheduling / recurring runs                          | C-8       |
+
+**Exit gate**: Risk limits enforced end-to-end. Can ingest data, export results,
+monitor system health. Safe for paper → live graduation.
 
 ---
 
@@ -819,7 +954,13 @@ Week 9     │████████████│           M9: CI Deploymen
 Week 10    │████████████│           M10: E2E & Release        ✅
 Week 11-12 │██████████████████│     M11: Runtime Robustness  ✅
 Week 13-14 │██████████████████████│ M12: Spec Alignment        ✅
-Week 15    │████████████│           M12-B: Frontend Hardening  🔵
+Week 15    │████████████│           M12-B: Frontend Hardening  ✅
+           │                       ─── System Audit Phase ───
+Week 15-16 │██████████████████████│ M13: Backtest Results      📋
+Week 18-19 │██████████████████│     M14: Live Monitoring       📋
+Week 20-21 │██████████████████████│ M15: Navigation & Fixes    📋
+Week 22-23 │██████████████████│     M16: Strategy Iteration    📋
+Week 24-26 │██████████████████████│ M17: Risk & Production     📋
 ```
 
 ### Key Dependencies
@@ -852,7 +993,29 @@ M11: Runtime Robustness
 M12: Spec Alignment
     │
     ▼
+M12: Spec Alignment
+    │
+    ▼
 M12-B: Frontend Hardening
+    │
+    ▼
+    ─── System Audit Phase ───
+    │
+    ▼
+M13: Backtest Results ────┐
+    │                     │
+    ├─────────────────────┤
+    │                     │
+    ▼                     ▼
+M14: Live Monitoring   M15: Navigation & Fixes
+    │                     │
+    ├─────────────────────┤
+    │                     │
+    ▼                     ▼
+M16: Strategy Iteration   │
+    │                     │
+    ▼                     │
+M17: Risk & Production ◄──┘
 ```
 
 ---

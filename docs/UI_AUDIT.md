@@ -88,13 +88,13 @@ async def _start_backtest(self, run):
 
 ### Related issues in this domain
 
-| ID  | Severity     | Issue                                                           | Layer   |
-| --- | ------------ | --------------------------------------------------------------- | ------- |
-| A-1 | **Critical** | Backtest results computed but not exposed via API               | Backend |
-| A-6 | Medium       | Backtest simulated positions discarded on cleanup               | Backend |
-| C-5 | Medium       | No export endpoint (CSV/JSON) for results, fills, equity curves | Backend |
-| C-6 | Medium       | No cross-run performance comparison endpoint                    | Backend |
-| C-7 | Medium       | No benchmark tracking (vs SPY, no alpha/beta/IR)                | Backend |
+| ID  | Severity     | Issue                                                                         | Layer   |
+| --- | ------------ | ----------------------------------------------------------------------------- | ------- |
+| A-1 | **Critical** | Backtest results computed but not exposed via API                             | Backend |
+| A-6 | Medium       | Backtest simulated positions discarded on cleanup (persist alongside results) | Backend |
+| C-5 | Medium       | No export endpoint (CSV/JSON) for results, fills, equity curves               | Backend |
+| C-6 | Medium       | No cross-run performance comparison endpoint                                  | Backend |
+| C-7 | Medium       | No benchmark tracking (vs SPY, no alpha/beta/IR)                              | Backend |
 
 ### Impact: "Run a backtest and see results" is broken
 

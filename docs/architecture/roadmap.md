@@ -49,9 +49,10 @@
 
 > **Latest measured totals (2026-03-24)**: 1137 tests (946 backend unit + 50 integration + 108 frontend + 33 E2E), 89.73% backend coverage, 94.8% frontend coverage. See `docs/TEST_COVERAGE.md` for current breakdown.
 
-**Active Milestone**: None — all planned milestones (M0–M11) complete
+**Active Milestone**: **M13** (Backtest Results) — next up
+**Planned**: M13–M17 (System Audit phase, see `MILESTONE_PLAN.md` §8b)
 
-**Last State Update**: 2026-03-24
+**Last State Update**: 2026-04-04
 
 ## 2. Milestones (Revised 2026-03-23)
 
@@ -67,6 +68,13 @@
 | **M9**    | [CI Deployment Pipeline](../archive/milestone-details/m9-ci-pipeline.md) (PR quality gates + container smoke + branch protection) | ✅ COMPLETE            |
 | **M10**   | [E2E Tests & Release Prep](../archive/milestone-details/m10-e2e-release.md) (Playwright + Final polish)                           | ✅ COMPLETE (33 E2E)   |
 | **M11**   | [Runtime Robustness & UX Polish](../archive/milestone-details/m11-runtime-robustness.md) (Async race + Concurrency + Dev env)     | ✅ COMPLETE (48 tests) |
+| **M12**   | [Spec Alignment](../archive/milestone-details/m12-spec-alignment.md) (Run config refactor + Strategy API + RJSF)                  | ✅ COMPLETE (42 tests) |
+| **M12-B** | [Frontend Hardening](../archive/milestone-details/m12b-frontend-hardening.md) (SSE safety + Symbols UX + a11y + Pagination)       | ✅ COMPLETE            |
+| **M13**   | Backtest Results (Persist results + Results API + Detail page + Equity chart)                                                     | 📋 PLANNED             |
+| **M14**   | Live Monitoring (Positions/fills/account API + Monitoring UI + Real candles)                                                      | 📋 PLANNED             |
+| **M15**   | Navigation & Fixes (Linked navigation + Sort/filter + All frontend bug fixes)                                                     | 📋 PLANNED             |
+| **M16**   | Strategy Iteration (Versioning + Clone + Comparison + One-click backtest)                                                         | 📋 PLANNED             |
+| **M17**   | Risk & Production (Risk enforcement + Data ingest + Export + Observability)                                                       | 📋 PLANNED             |
 
 ## 3. Phase Timeline
 
@@ -80,6 +88,13 @@
 | **9**  | CI Deployment Pipeline         | -          | ✅ COMPLETE          |
 | **10** | E2E Tests + Release Prep       | 33         | ✅ COMPLETE          |
 | **11** | Runtime Robustness + UX Polish | 48         | ✅ COMPLETE          |
+| **12** | Spec Alignment                 | 42         | ✅ COMPLETE          |
+| 12-B   | Frontend Hardening             | ~20        | ✅ COMPLETE          |
+| **13** | Backtest Results               | —          | 📋 PLANNED           |
+| **14** | Live Monitoring                | —          | 📋 PLANNED           |
+| **15** | Navigation & Fixes             | —          | 📋 PLANNED           |
+| **16** | Strategy Iteration             | —          | 📋 PLANNED           |
+| **17** | Risk & Production              | —          | 📋 PLANNED           |
 
 ## 4. Architecture Invariants
 
@@ -219,7 +234,12 @@
 | M7        | [Haro Frontend](../archive/milestone-details/m7-haro-frontend.md)             |
 | M8        | [Fixes & Improvements](../archive/milestone-details/m8-fixes-improvements.md) |
 | M9        | [CI Pipeline](../archive/milestone-details/m9-ci-pipeline.md)                 |
+| M10       | [E2E & Release](../archive/milestone-details/m10-e2e-release.md)              |
+| M11       | [Runtime Robustness](../archive/milestone-details/m11-runtime-robustness.md)  |
+| M12       | [Spec Alignment](../archive/milestone-details/m12-spec-alignment.md)          |
+| M12-B     | [Frontend Hardening](../archive/milestone-details/m12b-frontend-hardening.md) |
+| M13–M17   | System Audit phase — see [MILESTONE_PLAN.md](../MILESTONE_PLAN.md) §8b        |
 
 ---
 
-_Last updated: 2026-02-26 (roadmap snapshot sync; latest live metrics delegated to TEST_COVERAGE.md)_
+_Last updated: 2026-04-04 (added M12/M12-B/M13–M17; latest live metrics delegated to TEST_COVERAGE.md)_
