@@ -55,4 +55,13 @@ def client(app: FastAPI) -> Generator[TestClient]:
         # Ensure VedaService is None by default in unit tests.
         # Tests that need VedaService inject it explicitly via app.state.
         app.state.veda_service = None
+
+        # M13: Seed result_repository for results endpoint tests
+        from unittest.mock import AsyncMock
+
+        mock_result_repo = AsyncMock()
+        mock_result_repo.save = AsyncMock()
+        mock_result_repo.get_by_run_id = AsyncMock(return_value=None)
+        app.state.result_repository = mock_result_repo
+
         yield client

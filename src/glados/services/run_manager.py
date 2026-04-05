@@ -32,6 +32,7 @@ from src.greta.greta_service import GretaService
 from src.marvin.strategy_loader import StrategyLoader
 from src.marvin.strategy_runner import StrategyRunner
 from src.walle.repositories.bar_repository import BarRepository
+from src.walle.repositories.result_repository import ResultRepository
 from src.walle.repositories.run_repository import RunRepository
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ class RunManager:
         bar_repository: BarRepository | None = None,
         strategy_loader: StrategyLoader | None = None,
         run_repository: RunRepository | None = None,
+        result_repository: ResultRepository | None = None,
     ) -> None:
         """
         Initialize RunManager.
@@ -96,12 +98,14 @@ class RunManager:
             bar_repository: Bar repository for GretaService (backtest)
             strategy_loader: Loader for strategy instances
             run_repository: Optional RunRepository for persistence/recovery (D-2)
+            result_repository: Optional ResultRepository for backtest results (M13)
         """
         self._runs: dict[str, Run] = {}
         self._event_log = event_log
         self._bar_repository = bar_repository
         self._strategy_loader = strategy_loader
         self._run_repository = run_repository
+        self._result_repository = result_repository
         self._run_contexts: dict[str, RunContext] = {}
         self._run_locks: dict[str, asyncio.Lock] = {}
 

@@ -145,24 +145,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     strategy_loader = PluginStrategyLoader()
     bar_repository = None
     run_repository = None
+    result_repository = None
 
     if database is not None:
         from src.walle.repositories.bar_repository import BarRepository
+        from src.walle.repositories.result_repository import ResultRepository
         from src.walle.repositories.run_repository import RunRepository
 
         bar_repository = BarRepository(database.session_factory)
         run_repository = RunRepository(database.session_factory)
+        result_repository = ResultRepository(database.session_factory)
 
     run_manager = RunManager(
         event_log=event_log,
         bar_repository=bar_repository,
         strategy_loader=strategy_loader,
         run_repository=run_repository,
+        result_repository=result_repository,
     )
     app.state.run_manager = run_manager
     app.state.strategy_loader = strategy_loader
     app.state.bar_repository = bar_repository
     app.state.run_repository = run_repository
+    app.state.result_repository = result_repository
 
     recovered_count = await run_manager.recover()
     if recovered_count > 0:
