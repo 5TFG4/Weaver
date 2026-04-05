@@ -49,6 +49,7 @@ class StrategyRunner:
         self._strategy = strategy
         self._event_log = event_log
         self._run_id: str | None = None
+        self._config: dict[str, Any] = {}
         self._symbols: list[str] = []
         self._subscription_id: str | None = None
         self._task_set: set[asyncio.Task[Any]] | None = None

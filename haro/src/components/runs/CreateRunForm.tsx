@@ -146,6 +146,7 @@ export function CreateRunForm({
 
         {configSchema && (
           <Form
+            tagName="div"
             schema={configSchema as Record<string, unknown>}
             validator={validator}
             formData={configData}

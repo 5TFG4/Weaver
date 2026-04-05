@@ -62,8 +62,8 @@ async def _event_generator(
     """Generate SSE events from broadcaster, optionally filtered by run_id.
 
     On first connection sends ``retry:`` to set the browser's reconnection
-    interval, then interleaves heartbeat comments every HEARTBEAT_INTERVAL
-    seconds to keep the connection alive through reverse-proxies.
+    interval.  Heartbeat pings are handled automatically by
+    ``EventSourceResponse(ping=HEARTBEAT_INTERVAL)``.
     """
     # Tell the browser how long to wait before reconnecting (spec §9.2.6)
     yield {"retry": RETRY_MS}

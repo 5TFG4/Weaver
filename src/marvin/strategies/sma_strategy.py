@@ -185,19 +185,19 @@ class SMAStrategy(BaseStrategy):
 
         return action
 
-    def _extract_closes(self, bars: list[dict]) -> list[Decimal]:
+    def _extract_closes(self, bars: list[dict | object]) -> list[Decimal]:
         """
-        Extract close prices from bar dicts.
+        Extract close prices from bars.
 
         Args:
-            bars: List of bar dictionaries with 'close' key
+            bars: List of bar dicts or bar objects with 'close' attribute
 
         Returns:
             List of Decimal close prices
         """
         closes = []
         for bar in bars:
-            close = getattr(bar, "close", None) if not isinstance(bar, dict) else bar.get("close")
+            close = bar.get("close") if isinstance(bar, dict) else getattr(bar, "close", None)
             if close is not None:
                 if isinstance(close, Decimal):
                     closes.append(close)
