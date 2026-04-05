@@ -826,18 +826,18 @@ Source: `docs/UI_AUDIT.md` — full-stack audit identifying 52+ issues across
 
 **Goal**: Make the core quant workflow work: run backtest → see results.
 
-| Task  | Layer    | Description                                                                                | Audit ref |
-| ----- | -------- | ------------------------------------------------------------------------------------------ | --------- |
-| 13-1  | Backend  | `_start_backtest()` calls `greta.get_result()`; persist result + simulated positions to DB | A-1, A-6  |
-| 13-2  | Backend  | New `backtest_results` table (or JSONB column on `runs`)                                   | —         |
-| 13-3  | Backend  | `GET /runs/{id}/results` endpoint                                                          | —         |
-| 13-4  | Backend  | Add `error` field to `RunResponse` schema                                                  | B-1       |
-| 13-5  | Backend  | Validate backtest dates at creation time (not deferred to start)                           | B-4       |
-| 13-6  | Frontend | Fix backtest form: `required` + controlled `value` binding                                 | C1, C2    |
-| 13-7  | Frontend | Create `/runs/:runId` detail page with Results tab                                         | —         |
-| 13-8  | Frontend | Add charting library; render equity curve                                                  | —         |
-| 13-9  | Frontend | Add trade log table on detail page                                                         | —         |
-| 13-10 | Frontend | Add success toast on run creation                                                          | M9        |
+| Task  | Layer    | Description                                                                                      | Audit ref |
+| ----- | -------- | ------------------------------------------------------------------------------------------------ | --------- |
+| 13-1  | Backend  | `_start_backtest()` calls `greta.get_result()`; persist result to DB (positions deferred to M14) | A-1, A-6  |
+| 13-2  | Backend  | New `backtest_results` table (or JSONB column on `runs`)                                         | —         |
+| 13-3  | Backend  | `GET /runs/{id}/results` endpoint                                                                | —         |
+| 13-4  | Backend  | Add `error` field to `RunResponse` schema                                                        | B-1       |
+| 13-5  | Backend  | Validate backtest dates at creation time (not deferred to start)                                 | B-4       |
+| 13-6  | Frontend | Fix backtest form: `required` + controlled `value` binding                                       | C1, C2    |
+| 13-7  | Frontend | Create `/runs/:runId` detail page with Results tab                                               | —         |
+| 13-8  | Frontend | Add charting library; render equity curve                                                        | —         |
+| 13-9  | Frontend | Add trade log table on detail page                                                               | —         |
+| 13-10 | Frontend | Add success toast on run creation                                                                | M9        |
 
 **Exit gate**: User creates backtest → dates validated → run executes → detail
 page shows return, Sharpe, max drawdown, equity curve, and fill list.
