@@ -50,6 +50,8 @@ class Run:
     # Lifecycle timestamps
     started_at: datetime | None = None
     stopped_at: datetime | None = None
+    # Error details (M13-4)
+    error: str | None = None
 
 
 @dataclass
@@ -143,6 +145,7 @@ class RunManager:
             created_at=run.created_at,
             started_at=run.started_at,
             stopped_at=run.stopped_at,
+            error=run.error,
         )
         await self._run_repository.save(record)
 
@@ -446,13 +449,15 @@ class RunManager:
             if clock_error is not None or drain_errors:
                 run.status = RunStatus.ERROR
                 error_msg = str(clock_error) if clock_error else str(drain_errors[0])
+                run.error = error_msg
                 logger.error("Backtest %s failed: %s", run.id, error_msg)
             else:
                 run.status = RunStatus.COMPLETED
-        except Exception:
+        except Exception as exc:
             # Don't override STOPPED status if stop() was called concurrently
             if run.status != RunStatus.STOPPED:
                 run.status = RunStatus.ERROR
+                run.error = str(exc)
             raise
         finally:
             # Cleanup RunContext even if init or backtest fails

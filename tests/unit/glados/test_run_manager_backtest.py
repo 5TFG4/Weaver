@@ -932,3 +932,94 @@ class TestBacktestConfigSource:
         run = await manager.create(request)
         with pytest.raises(RuntimeError, match="backtest_start"):
             await manager.start(run.id)
+
+
+class TestRunErrorField:
+    """M13-4: Run dataclass error field and persistence."""
+
+    def test_run_dataclass_has_error_field_default_none(self) -> None:
+        """Run.error defaults to None."""
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="test-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.PENDING,
+            config={},
+            created_at=datetime.now(UTC),
+        )
+        assert run.error is None
+
+    def test_run_dataclass_accepts_error_string(self) -> None:
+        """Run.error can be set to a string."""
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="test-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.ERROR,
+            config={},
+            created_at=datetime.now(UTC),
+            error="Something went wrong",
+        )
+        assert run.error == "Something went wrong"
+
+    async def test_persist_run_includes_error_field(self) -> None:
+        """_persist_run passes error to RunRecord."""
+        from tests.factories.runs import create_run_manager_with_deps
+
+        mock_run_repo = AsyncMock()
+        mock_run_repo.save = AsyncMock()
+
+        manager = create_run_manager_with_deps()
+        manager._run_repository = mock_run_repo
+
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="err-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.ERROR,
+            config={},
+            created_at=datetime.now(UTC),
+            error="Backtest date parse failed",
+        )
+        manager._runs[run.id] = run
+        await manager._persist_run(run)
+
+        mock_run_repo.save.assert_called_once()
+        record = mock_run_repo.save.call_args[0][0]
+        assert record.error == "Backtest date parse failed"
+
+    async def test_backtest_error_sets_error_field_on_run(self) -> None:
+        """When backtest fails, run.error should contain the error message."""
+        from tests.factories.runs import create_run_manager_with_deps
+
+        manager = create_run_manager_with_deps()
+
+        # Make strategy.on_tick raise to simulate failure
+        mock_strategy = manager._strategy_loader.load.return_value
+        mock_strategy.on_tick.side_effect = RuntimeError("Strategy crash")
+
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        # _start_backtest raises; catch it
+        with contextlib.suppress(RuntimeError):
+            await manager.start(run.id)
+
+        assert run.status == RunStatus.ERROR
+        assert run.error is not None
+        assert "Strategy crash" in run.error

@@ -318,3 +318,39 @@ class TestRunsStatusFiltering:
         assert data["total"] == 1
         assert len(data["items"]) == 1
         assert data["items"][0]["status"] == "running"
+
+
+class TestRunResponseErrorField:
+    """M13-4: RunResponse includes error field."""
+
+    def test_run_response_includes_error_key(self, client: TestClient) -> None:
+        """GET /runs/{id} response JSON must contain 'error' key."""
+        run = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "config": {"symbols": ["BTC/USD"]},
+            },
+        ).json()
+
+        response = client.get(f"/api/v1/runs/{run['id']}")
+        data = response.json()
+        assert "error" in data
+        assert data["error"] is None
+
+    def test_list_runs_items_include_error_key(self, client: TestClient) -> None:
+        """GET /runs list items must include 'error' key."""
+        client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "config": {"symbols": ["BTC/USD"]},
+            },
+        )
+
+        response = client.get("/api/v1/runs")
+        items = response.json()["items"]
+        assert len(items) > 0
+        assert "error" in items[0]

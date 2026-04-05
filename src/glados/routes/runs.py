@@ -24,6 +24,7 @@ def _run_to_response(run: Run) -> RunResponse:
         mode=run.mode,
         status=run.status,
         config=run.config,
+        error=run.error,
         created_at=run.created_at,
         started_at=run.started_at,
         stopped_at=run.stopped_at,

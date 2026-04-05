@@ -72,6 +72,7 @@ class RunResponse(BaseModel):
     mode: RunMode
     status: RunStatus
     config: dict[str, Any]
+    error: str | None = None
     # Timestamps
     created_at: datetime
     started_at: datetime | None = None
