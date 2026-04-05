@@ -23,6 +23,7 @@ from src.glados.routes.health import router as health_router
 from src.glados.routes.orders import router as orders_router
 from src.glados.routes.runs import router as runs_router
 from src.glados.routes.sse import router as sse_router
+from src.glados.routes.strategies import router as strategies_router
 
 logger = logging.getLogger(__name__)
 
@@ -125,27 +126,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 )
                 app.state.veda_service = None
     else:
-        logger.warning("DB_URL not set - running without database (in-memory mode)")
-        app.state.database = None
-        app.state.veda_service = None
-
-        # B.3: Create InMemoryEventLog for no-DB mode (degraded but functional)
-        from src.events.log import InMemoryEventLog
-
-        event_log = InMemoryEventLog()  # type: ignore[assignment]
-        app.state.event_log = event_log
-        logger.info("InMemoryEventLog initialized (no-DB mode)")
-
-        # Subscribe SSEBroadcaster to InMemoryEventLog
-        broadcaster = app.state.broadcaster
-
-        async def on_event(envelope: Envelope) -> None:
-            """Forward events from EventLog to SSE clients."""
-            await broadcaster.publish(envelope.type, envelope.payload)
-
-        unsubscribe = await event_log.subscribe(on_event)  # type: ignore[union-attr]
-        app.state.event_log_unsubscribe = unsubscribe
-        logger.info("SSEBroadcaster subscribed to InMemoryEventLog")
+        raise RuntimeError(
+            "DB_URL environment variable is required. "
+            "Use docker-compose.dev.yml to start a local PostgreSQL."
+        )
 
     if event_log is None:
         raise RuntimeError("EventLog must be initialized before runtime wiring")
@@ -223,7 +207,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if timeframe is None and envelope.run_id is not None:
             run = await run_manager.get(envelope.run_id)
             if run is not None:
-                timeframe = run.timeframe
+                timeframe = run.config.get("timeframe", "1m")
         if timeframe is None:
             timeframe = "1m"
 
@@ -398,6 +382,7 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     app.include_router(sse_router)
     app.include_router(orders_router)
     app.include_router(candles_router)
+    app.include_router(strategies_router)
 
     return app
 

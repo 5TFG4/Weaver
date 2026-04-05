@@ -30,7 +30,7 @@ addopts = [
     "-v",                          # Verbose output
     "--strict-markers",            # Error on unknown markers
     "--strict-config",             # Error on config issues
-    "-m", "not container",        # Skip container-only smoke tests by default
+    "-m", "not container and not e2e and not ci",  # Skip container + e2e + ci tests by default
     "-ra",                         # Show summary of all except passed
     "--tb=short",                  # Shorter traceback format
 ]
@@ -41,6 +41,7 @@ markers = [
     "integration: Integration tests (may use database/containers)",
     "container: Container-level smoke tests (run in CI with Docker)",
     "e2e: End-to-end tests (full system)",
+    "ci: CI pipeline steps (lint, typecheck, build, pre-commit)",
     "slow: Slow tests (excluded by default)",
 ]
 
@@ -52,6 +53,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 # Timeout for individual tests (seconds)
 timeout = 30
+timeout_func_only = true
 
 # Playwright settings (E2E tests only; base URL uses Docker internal DNS)
 base_url = "http://frontend_e2e:80"

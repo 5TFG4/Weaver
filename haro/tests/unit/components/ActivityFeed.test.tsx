@@ -15,8 +15,7 @@ const mockRuns: Run[] = [
     strategy_id: "sma-crossover",
     mode: "paper",
     status: "running",
-    symbols: ["BTC/USD"],
-    timeframe: "1h",
+    config: { symbols: ["BTC/USD"], timeframe: "1h" },
     created_at: new Date().toISOString(),
   },
   {
@@ -24,19 +23,18 @@ const mockRuns: Run[] = [
     strategy_id: "sma-crossover",
     mode: "backtest",
     status: "completed",
-    symbols: ["ETH/USD"],
-    timeframe: "15m",
+    config: { symbols: ["ETH/USD"], timeframe: "15m" },
     created_at: "2026-02-01T10:00:00Z",
   },
 ];
 
 describe("ActivityFeed", () => {
-  it("displays run entries with strategy and symbols", () => {
+  it("displays run entries with strategy and mode", () => {
     render(<ActivityFeed runs={mockRuns} />);
 
     expect(screen.getAllByText("sma-crossover")).toHaveLength(2);
-    expect(screen.getByText("BTC/USD")).toBeInTheDocument();
-    expect(screen.getByText("ETH/USD")).toBeInTheDocument();
+    expect(screen.getByText("sma-crossover (paper)")).toBeInTheDocument();
+    expect(screen.getByText("sma-crossover (backtest)")).toBeInTheDocument();
   });
 
   it("displays status badges for each run", () => {

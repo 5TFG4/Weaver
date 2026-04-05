@@ -70,22 +70,58 @@ class TestSMAConfig:
             SMAConfig(fast_period=20, slow_period=10)
 
 
+class TestSMAStrategyInitialize:
+    """Tests for SMAStrategy.initialize() reading config params."""
+
+    async def test_initialize_reads_config_params(self) -> None:
+        from src.marvin.strategies.sma_strategy import SMAStrategy
+
+        strategy = SMAStrategy()
+        await strategy.initialize(
+            {
+                "symbols": ["BTC/USD"],
+                "fast_period": 8,
+                "slow_period": 30,
+                "qty": 2.5,
+            }
+        )
+        assert strategy._sma_config.fast_period == 8
+        assert strategy._sma_config.slow_period == 30
+        assert strategy._sma_config.qty == Decimal("2.5")
+
+    async def test_initialize_uses_defaults_when_no_params(self) -> None:
+        from src.marvin.strategies.sma_strategy import SMAStrategy
+
+        strategy = SMAStrategy()
+        await strategy.initialize({"symbols": ["BTC/USD"]})
+        assert strategy._sma_config.fast_period == 5
+        assert strategy._sma_config.slow_period == 20
+        assert strategy._sma_config.qty == Decimal("1.0")
+
+
 class TestSMAStrategy:
     """Tests for SMA crossover strategy."""
 
     @pytest.fixture
     def strategy(self):
-        """Create default SMA strategy."""
-        from src.marvin.strategies.sma_strategy import SMAConfig, SMAStrategy
+        """Create default SMA strategy (not yet initialized)."""
+        from src.marvin.strategies.sma_strategy import SMAStrategy
 
-        return SMAStrategy(SMAConfig(fast_period=5, slow_period=10, qty=Decimal("1.0")))
+        return SMAStrategy()
+
+    @pytest.fixture
+    def sma_config(self) -> dict:
+        """Standard SMA config used across tests."""
+        return {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
 
     # -------------------------------------------------------------------------
     # Test 1: on_tick returns fetch_window action
     # -------------------------------------------------------------------------
     async def test_on_tick_returns_fetch_window_action(self, strategy) -> None:
         """on_tick returns fetch_window action with correct lookback."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         actions = await strategy.on_tick(make_tick())
 
         assert len(actions) == 1
@@ -115,7 +151,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_bullish_crossover_generates_buy(self, strategy) -> None:
         """Fast crossing above slow generates buy signal."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
 
         # First call: establish baseline where fast < slow
         # Prices: 10,11,12,13,14,15,16,17,18,19 (10 bars)
@@ -145,7 +183,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_bearish_crossover_generates_sell(self, strategy) -> None:
         """Fast crossing below slow generates sell signal when has position."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         strategy._has_position = True  # Already have position
 
         # First: establish fast > slow
@@ -165,7 +205,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_no_signal_without_crossover(self, strategy) -> None:
         """No signal when SMAs don't cross."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
 
         # Fast consistently > slow (no cross)
         bars = make_bars([10, 10, 10, 10, 10, 20, 20, 20, 20, 20])
@@ -179,7 +221,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_insufficient_data_no_signal(self, strategy) -> None:
         """No signal when bars < slow_period."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
 
         bars = make_bars([10, 20, 30])  # Only 3 bars
         actions = await strategy.on_data({"symbol": "BTC/USD", "bars": bars})
@@ -191,11 +235,12 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_custom_parameters_respected(self) -> None:
         """Strategy respects custom period/qty config."""
-        from src.marvin.strategies.sma_strategy import SMAConfig, SMAStrategy
+        from src.marvin.strategies.sma_strategy import SMAStrategy
 
-        config = SMAConfig(fast_period=3, slow_period=7, qty=Decimal("2.5"))
-        strategy = SMAStrategy(config)
-        await strategy.initialize(["ETH/USD"])
+        strategy = SMAStrategy()
+        await strategy.initialize(
+            {"symbols": ["ETH/USD"], "fast_period": 3, "slow_period": 7, "qty": 2.5}
+        )
 
         actions = await strategy.on_tick(make_tick())
         assert actions[0].lookback == 8  # slow_period + 1
@@ -206,7 +251,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_only_buys_when_no_position(self, strategy) -> None:
         """Buy signal ignored if already has position."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         strategy._has_position = True  # Already in
 
         # Establish fast < slow
@@ -225,7 +272,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_only_sells_when_has_position(self, strategy) -> None:
         """Sell signal ignored if no position."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         strategy._has_position = False  # No position
 
         # Establish fast > slow
@@ -244,7 +293,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_first_data_no_signal(self, strategy) -> None:
         """First on_data never generates signal (need previous for crossover)."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
 
         # Even with valid data, first call can't detect crossover
         bars = make_bars([10, 11, 12, 13, 14, 20, 21, 22, 23, 24])
@@ -257,7 +308,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_empty_bars_no_error(self, strategy) -> None:
         """Empty bars list doesn't raise error."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         actions = await strategy.on_data({"symbol": "BTC/USD", "bars": []})
 
         assert actions == []
@@ -267,7 +320,9 @@ class TestSMAStrategy:
     # -------------------------------------------------------------------------
     async def test_position_updated_after_buy(self, strategy) -> None:
         """_has_position is True after generating buy signal."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
 
         # Establish fast < slow
         bars1 = make_bars([10, 11, 12, 13, 14, 5, 6, 7, 8, 9])
@@ -283,7 +338,9 @@ class TestSMAStrategy:
 
     async def test_position_updated_after_sell(self, strategy) -> None:
         """_has_position is False after generating sell signal."""
-        await strategy.initialize(["BTC/USD"])
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
         strategy._has_position = True
 
         # Establish fast > slow
@@ -295,3 +352,99 @@ class TestSMAStrategy:
         await strategy.on_data({"symbol": "BTC/USD", "bars": bars2})
 
         assert strategy._has_position is False
+
+
+class TestSMABarDataclassSupport:
+    """Regression: SMA strategy must handle Bar dataclass objects, not just dicts."""
+
+    @pytest.fixture
+    def strategy(self):
+        from src.marvin.strategies.sma_strategy import SMAStrategy
+
+        return SMAStrategy()
+
+    def _make_bar_objects(self, closes: list[Decimal | int | float], symbol: str = "BTC/USD"):
+        """Create Bar dataclass instances (as strategy_runner.on_data_ready produces)."""
+        from src.walle.repositories.bar_repository import Bar
+
+        return [
+            Bar(
+                symbol=symbol,
+                timeframe="",
+                timestamp=datetime(2024, 1, 1, 9, i, tzinfo=UTC),
+                open=Decimal(str(c)),
+                high=Decimal(str(c)) + 1,
+                low=Decimal(str(c)) - 1,
+                close=Decimal(str(c)),
+                volume=Decimal("1000"),
+            )
+            for i, c in enumerate(closes)
+        ]
+
+    async def test_on_data_with_bar_dataclass_no_error(self, strategy) -> None:
+        """on_data does not raise AttributeError when bars are Bar dataclasses."""
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
+
+        bars = self._make_bar_objects([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        actions = await strategy.on_data({"symbol": "BTC/USD", "bars": bars})
+
+        # First call: no crossover, just no error
+        assert isinstance(actions, list)
+
+    async def test_crossover_with_bar_dataclass(self, strategy) -> None:
+        """SMA crossover detection works with Bar dataclass objects."""
+        await strategy.initialize(
+            {"symbols": ["BTC/USD"], "fast_period": 5, "slow_period": 10, "qty": 1.0}
+        )
+
+        # Establish fast > slow
+        bars1 = self._make_bar_objects([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        await strategy.on_data({"symbol": "BTC/USD", "bars": bars1})
+
+        # Establish fast < slow
+        bars2 = self._make_bar_objects([10, 11, 12, 13, 14, 5, 6, 7, 8, 9])
+        await strategy.on_data({"symbol": "BTC/USD", "bars": bars2})
+
+        # Bullish crossover
+        bars3 = self._make_bar_objects([5, 6, 7, 8, 9, 20, 21, 22, 23, 24])
+        actions = await strategy.on_data({"symbol": "BTC/USD", "bars": bars3})
+
+        assert len(actions) == 1
+        assert actions[0].type == "place_order"
+        assert actions[0].side == "buy"
+
+    def test_extract_closes_from_bar_objects(self, strategy) -> None:
+        """_extract_closes works with Bar dataclass objects."""
+        bars = self._make_bar_objects([Decimal("100"), Decimal("200"), Decimal("300")])
+        closes = strategy._extract_closes(bars)
+
+        assert closes == [Decimal("100"), Decimal("200"), Decimal("300")]
+
+    def test_extract_closes_from_dicts(self, strategy) -> None:
+        """_extract_closes still works with dict bars (backtest path)."""
+        bars = make_bars([100, 200, 300])
+        closes = strategy._extract_closes(bars)
+
+        assert closes == [Decimal("100"), Decimal("200"), Decimal("300")]
+
+
+class TestSMAStrategyConfigSchema:
+    """H2: Validate config_schema has enum on symbols.items for dropdown rendering."""
+
+    def test_symbols_items_has_enum(self) -> None:
+        from src.marvin.strategies.sma_strategy import STRATEGY_META
+
+        schema = STRATEGY_META["config_schema"]
+        items = schema["properties"]["symbols"]["items"]
+        assert "enum" in items, "symbols.items must have enum for RJSF dropdown"
+        assert isinstance(items["enum"], list)
+        assert len(items["enum"]) >= 3
+
+    def test_symbols_enum_contains_expected_tickers(self) -> None:
+        from src.marvin.strategies.sma_strategy import STRATEGY_META
+
+        enum = STRATEGY_META["config_schema"]["properties"]["symbols"]["items"]["enum"]
+        for ticker in ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"]:
+            assert ticker in enum, f"{ticker} missing from symbols enum"

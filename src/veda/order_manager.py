@@ -168,6 +168,10 @@ class OrderManager:
         """
         return self._orders.get(client_order_id)
 
+    def update_order(self, client_order_id: str, state: OrderState) -> None:
+        """Update local order state."""
+        self._orders[client_order_id] = state
+
     def list_orders(self) -> list[OrderState]:
         """
         List all locally tracked orders.

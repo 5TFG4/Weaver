@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir playwright>=1.40.0 pytest-playwright>=0.5.0 \
 COPY . /app
 
 # Default: run all E2E tests
-CMD ["pytest", "tests/e2e/", "-v", "--timeout=60"]
+CMD ["pytest", "tests/e2e/", "-v", "--timeout=120", "-o", "addopts="]

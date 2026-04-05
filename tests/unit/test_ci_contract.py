@@ -23,11 +23,15 @@ class TestCIContract:
     def test_pytest_markers_registered(self, pyproject: dict) -> None:
         markers = pyproject["tool"]["pytest"]["ini_options"]["markers"]
         marker_names = {m.split(":")[0].strip() for m in markers}
-        assert {"unit", "integration", "container", "e2e", "slow"} <= marker_names
+        assert {"unit", "integration", "container", "e2e", "ci", "slow"} <= marker_names
 
     def test_pytest_default_excludes_container(self, pyproject: dict) -> None:
         addopts = pyproject["tool"]["pytest"]["ini_options"]["addopts"]
-        assert "not container" in addopts
+        # Must exclude container, e2e, and ci markers from default runs
+        addopts_str = " ".join(addopts) if isinstance(addopts, list) else addopts
+        assert "not container" in addopts_str
+        assert "not e2e" in addopts_str
+        assert "not ci" in addopts_str
 
     def test_coverage_fail_under(self, pyproject: dict) -> None:
         assert pyproject["tool"]["coverage"]["report"]["fail_under"] == 80

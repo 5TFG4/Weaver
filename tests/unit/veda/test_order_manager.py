@@ -507,3 +507,67 @@ class TestOrderManagerRejection:
         local_state = manager.get_order(sample_intent.client_order_id)
         assert local_state is not None
         assert local_state.status == OrderStatus.REJECTED
+
+
+class TestOrderManagerUpdateOrder:
+    """Regression: update_order replaces local state."""
+
+    async def test_update_order_changes_local_state(
+        self,
+        mock_adapter: MockExchangeAdapter,
+        sample_intent: OrderIntent,
+    ) -> None:
+        """update_order replaces the locally tracked OrderState."""
+        from dataclasses import replace
+
+        from src.veda.order_manager import OrderManager
+
+        manager = OrderManager(adapter=mock_adapter)
+        original = await manager.submit_order(sample_intent)
+
+        # Change filled_avg_price (always safe to differ)
+        new_price = Decimal("99999.00")
+        assert original.filled_avg_price != new_price
+
+        updated = replace(original, filled_avg_price=new_price)
+        manager.update_order(sample_intent.client_order_id, updated)
+
+        fetched = manager.get_order(sample_intent.client_order_id)
+        assert fetched is not None
+        assert fetched.filled_avg_price == new_price
+
+    async def test_update_order_new_key(
+        self,
+        mock_adapter: MockExchangeAdapter,
+    ) -> None:
+        """update_order can insert state for a key that wasn't submitted."""
+        from src.veda.order_manager import OrderManager
+
+        manager = OrderManager(adapter=mock_adapter)
+        state = OrderState(
+            id="internal-x",
+            client_order_id="injected-order",
+            exchange_order_id="exch-x",
+            run_id="run-1",
+            symbol="BTC/USD",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("1"),
+            limit_price=None,
+            stop_price=None,
+            time_in_force=TimeInForce.GTC,
+            status=OrderStatus.FILLED,
+            filled_qty=Decimal("1"),
+            filled_avg_price=Decimal("50000"),
+            created_at=datetime.now(UTC),
+            submitted_at=datetime.now(UTC),
+            filled_at=datetime.now(UTC),
+            cancelled_at=None,
+            reject_reason=None,
+            error_code=None,
+        )
+        manager.update_order("injected-order", state)
+
+        fetched = manager.get_order("injected-order")
+        assert fetched is not None
+        assert fetched.status == OrderStatus.FILLED

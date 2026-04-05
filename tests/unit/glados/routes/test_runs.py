@@ -35,7 +35,7 @@ class TestListRunsEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
 
@@ -56,7 +56,7 @@ class TestCreateRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
 
@@ -69,7 +69,7 @@ class TestCreateRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         data = response.json()
@@ -84,7 +84,7 @@ class TestCreateRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         data = response.json()
@@ -104,20 +104,21 @@ class TestCreateRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "invalid_mode",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
 
         assert response.status_code == 422
 
-    def test_validates_symbols_not_empty(self, client: TestClient) -> None:
-        """POST /runs with empty symbols returns 422."""
+    def test_rejects_extra_fields(self, client: TestClient) -> None:
+        """POST /runs with extra top-level fields returns 422 (extra=forbid)."""
         response = client.post(
             "/api/v1/runs",
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": [],
+                "config": {"symbols": ["BTC/USD"]},
+                "symbols": ["BTC/USD"],
             },
         )
 
@@ -135,7 +136,7 @@ class TestGetRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         run_id = create_resp.json()["id"]
@@ -163,7 +164,7 @@ class TestStopRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         run_id = create_resp.json()["id"]
@@ -193,7 +194,7 @@ class TestStartRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         run_id = create_resp.json()["id"]
@@ -218,7 +219,7 @@ class TestStartRunEndpoint:
             json={
                 "strategy_id": "test",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         )
         run_id = create_resp.json()["id"]
@@ -243,7 +244,7 @@ class TestRunsPagination:
                 json={
                     "strategy_id": f"strategy-{i}",
                     "mode": "paper",
-                    "symbols": ["BTC/USD"],
+                    "config": {"symbols": ["BTC/USD"]},
                 },
             )
 
@@ -294,7 +295,7 @@ class TestRunsStatusFiltering:
             json={
                 "strategy_id": "s1",
                 "mode": "paper",
-                "symbols": ["BTC/USD"],
+                "config": {"symbols": ["BTC/USD"]},
             },
         ).json()
         client.post(f"/api/v1/runs/{run_a['id']}/start")
@@ -305,7 +306,7 @@ class TestRunsStatusFiltering:
             json={
                 "strategy_id": "s2",
                 "mode": "paper",
-                "symbols": ["ETH/USD"],
+                "config": {"symbols": ["ETH/USD"]},
             },
         ).json()
         client.post(f"/api/v1/runs/{run_b['id']}/stop")

@@ -97,23 +97,24 @@ class TestStrategyRunnerInitialize:
 
     async def test_sets_run_id(self, runner: StrategyRunner) -> None:
         """initialize() sets run_id."""
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
 
         assert runner.run_id == "run-123"
 
     async def test_stores_symbols(self, runner: StrategyRunner) -> None:
-        """initialize() stores symbols."""
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD", "ETH/USD"])
+        """initialize() stores symbols from config."""
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD", "ETH/USD"]})
 
         assert runner.symbols == ["BTC/USD", "ETH/USD"]
 
     async def test_calls_strategy_initialize(self, runner: StrategyRunner) -> None:
-        """initialize() calls strategy.initialize()."""
+        """initialize() passes config dict to strategy.initialize()."""
         runner._strategy.initialize = AsyncMock()  # type: ignore
+        config = {"symbols": ["BTC/USD"], "timeframe": "1m"}
 
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config=config)
 
-        runner._strategy.initialize.assert_called_once_with(["BTC/USD"])
+        runner._strategy.initialize.assert_called_once_with(config)
 
 
 class TestStrategyRunnerOnTick:
@@ -131,7 +132,7 @@ class TestStrategyRunnerOnTick:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
         return runner
 
     async def test_passes_tick_to_strategy(self, initialized_runner: StrategyRunner) -> None:
@@ -172,7 +173,7 @@ class TestStrategyRunnerOnTick:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
 
         tick = make_tick()
         await runner.on_tick(tick)
@@ -198,7 +199,7 @@ class TestStrategyRunnerOnTick:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
 
         tick = make_tick()
         await runner.on_tick(tick)
@@ -221,10 +222,40 @@ class TestStrategyRunnerOnTick:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
 
         with pytest.raises(ValueError, match="requires symbol, side, and qty"):
             await runner.on_tick(make_tick())
+
+    async def test_stop_run_action_emits_event(self) -> None:
+        """STOP_RUN action emits run.StopRequested event."""
+        strategy = DummyStrategy(tick_actions=[StrategyAction(type=ActionType.STOP_RUN)])
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
+
+        await runner.on_tick(make_tick())
+
+        mock_event_log.append.assert_called_once()
+        envelope = mock_event_log.append.call_args[0][0]
+        assert envelope.type == "run.StopRequested"
+        assert envelope.run_id == "run-123"
+
+    async def test_stop_run_action_payload(self) -> None:
+        """STOP_RUN event payload has reason field."""
+        strategy = DummyStrategy(tick_actions=[StrategyAction(type=ActionType.STOP_RUN)])
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
+
+        await runner.on_tick(make_tick())
+
+        envelope = mock_event_log.append.call_args[0][0]
+        assert envelope.payload == {"reason": "strategy_requested"}
 
 
 class TestStrategyRunnerOnDataReady:
@@ -238,7 +269,7 @@ class TestStrategyRunnerOnDataReady:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
         return runner
 
     async def test_passes_data_to_strategy(self, initialized_runner: StrategyRunner) -> None:
@@ -266,7 +297,7 @@ class TestStrategyRunnerOnDataReady:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-123", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-123", config={"symbols": ["BTC/USD"]})
 
         envelope = MagicMock()
         envelope.payload = {"bars": []}
@@ -295,13 +326,13 @@ class TestStrategyRunnerTaskSetWiring:
         """initialize(task_set=...) stores the set."""
         runner = StrategyRunner(strategy=DummyStrategy(), event_log=AsyncMock())
         ts: set[asyncio.Task[Any]] = set()
-        await runner.initialize(run_id="run-1", symbols=["BTC/USD"], task_set=ts)
+        await runner.initialize(run_id="run-1", config={"symbols": ["BTC/USD"]}, task_set=ts)
         assert runner._task_set is ts
 
     async def test_initialize_without_task_set_stays_none(self) -> None:
         """initialize() without task_set keeps _task_set as None."""
         runner = StrategyRunner(strategy=DummyStrategy(), event_log=AsyncMock())
-        await runner.initialize(run_id="run-1", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-1", config={"symbols": ["BTC/USD"]})
         assert runner._task_set is None
 
     async def test_on_window_ready_adds_task_to_set(self) -> None:
@@ -312,7 +343,7 @@ class TestStrategyRunnerTaskSetWiring:
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
         ts: set[asyncio.Task[Any]] = set()
-        await runner.initialize(run_id="run-1", symbols=["BTC/USD"], task_set=ts)
+        await runner.initialize(run_id="run-1", config={"symbols": ["BTC/USD"]}, task_set=ts)
 
         envelope = MagicMock()
         envelope.payload = {"bars": []}
@@ -331,7 +362,7 @@ class TestStrategyRunnerTaskSetWiring:
         mock_event_log.append = AsyncMock()
 
         runner = StrategyRunner(strategy=strategy, event_log=mock_event_log)
-        await runner.initialize(run_id="run-1", symbols=["BTC/USD"])
+        await runner.initialize(run_id="run-1", config={"symbols": ["BTC/USD"]})
 
         envelope = MagicMock()
         envelope.payload = {"bars": []}

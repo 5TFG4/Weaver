@@ -11,29 +11,11 @@ Tests focus on lifecycle state transitions only.
 
 from __future__ import annotations
 
-import contextlib
-
-import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
+from requests import HTTPError
 
-from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
-
-
-@pytest.fixture()
-def _clean_runs():
-    """Clean runs table after test."""
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fills")
-            cur.execute("DELETE FROM veda_orders")
-            cur.execute("DELETE FROM runs")
-        conn.commit()
-    finally:
-        conn.close()
 
 
 @pytest.mark.e2e
@@ -108,7 +90,7 @@ class TestPaperFlow:
             mode="paper",
             symbols=["BTC/USD"],
         )
-        with contextlib.suppress(Exception):
+        with pytest.raises(HTTPError):
             api_client.start_run(run["id"])
 
         page.goto(f"{e2e_base_url}/runs")

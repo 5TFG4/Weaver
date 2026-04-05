@@ -679,3 +679,111 @@ class TestHandlePlaceOrderDefaults:
         call_args = mock_adapter.submit_order.call_args
         submitted_intent = call_args.args[0]
         assert submitted_intent.time_in_force == TimeInForce.DAY
+
+
+class TestSyncOrder:
+    """Regression: sync_order fetches status from exchange and updates local + DB."""
+
+    async def test_sync_order_updates_status(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        sample_intent: OrderIntent,
+    ) -> None:
+        """sync_order refreshes order status from exchange."""
+        from src.veda.interfaces import ExchangeOrder
+        from src.veda.veda_service import VedaService
+
+        # Setup: submit an order first
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=True,
+            exchange_order_id="exch-1",
+            status=OrderStatus.SUBMITTING,
+        )
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+        )
+        await service.place_order(sample_intent)
+
+        # Mock exchange returning FILLED
+        mock_adapter.get_order.return_value = ExchangeOrder(
+            exchange_order_id="exch-1",
+            client_order_id=sample_intent.client_order_id,
+            symbol="BTC/USD",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("1.5"),
+            filled_qty=Decimal("1.5"),
+            filled_avg_price=Decimal("70000.00"),
+            status=OrderStatus.FILLED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+        # Sync
+        result = await service.sync_order(sample_intent.client_order_id)
+
+        assert result is not None
+        assert result.status == OrderStatus.FILLED
+        assert result.filled_qty == Decimal("1.5")
+        assert result.filled_avg_price == Decimal("70000.00")
+
+        # Verify persisted
+        assert mock_repository.save.call_count == 2  # once on place, once on sync
+
+    async def test_sync_order_not_found_returns_none(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+    ) -> None:
+        """sync_order returns None when order doesn't exist."""
+        from src.veda.veda_service import VedaService
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+        )
+
+        result = await service.sync_order("nonexistent")
+
+        assert result is None
+
+    async def test_sync_order_no_exchange_id_returns_unchanged(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        sample_intent: OrderIntent,
+    ) -> None:
+        """sync_order returns state unchanged when exchange_order_id is None."""
+        from src.veda.veda_service import VedaService
+
+        # Submit with rejected (no exchange_order_id)
+        mock_adapter.submit_order.return_value = OrderSubmitResult(
+            success=False,
+            exchange_order_id=None,
+            status=OrderStatus.REJECTED,
+            error_code="TEST",
+            error_message="test rejection",
+        )
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+        )
+        await service.place_order(sample_intent)
+
+        result = await service.sync_order(sample_intent.client_order_id)
+
+        assert result is not None
+        assert result.status == OrderStatus.REJECTED
+        # get_order should NOT have been called on adapter
+        mock_adapter.get_order.assert_not_called()

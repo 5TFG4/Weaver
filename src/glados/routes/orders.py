@@ -218,3 +218,18 @@ async def get_order(
             detail=f"Order not found: {order_id}",
         )
     return _order_to_response(order)
+
+
+@router.post("/{order_id}/sync", response_model=OrderResponse)
+async def sync_order(
+    order_id: str,
+    veda_service: VedaService = Depends(_require_veda_service),
+) -> OrderResponse:
+    """Sync order status from exchange."""
+    state = await veda_service.sync_order(order_id)
+    if state is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order not found: {order_id}",
+        )
+    return _state_to_response(state)

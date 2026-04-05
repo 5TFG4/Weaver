@@ -9,11 +9,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import psycopg2
 import pytest
 from playwright.sync_api import Page, expect
 
-from tests.e2e.conftest import DB_URL
 from tests.e2e.helpers import E2EApiClient
 
 # 20 bars of BTC/USD 1m data: bars 1-10 are lookback, bars 11-20 are trade window.
@@ -44,48 +42,6 @@ for i in range(7):
     SEED_BARS.append(("BTC/USD", "1m", ts, 101.0, 101.5, 100.5, 101.0, 1000.0))
 
 
-@pytest.fixture()
-def seed_bars():
-    """Seed bar data for backtest execution."""
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-            for bar in SEED_BARS:
-                cur.execute(
-                    "INSERT INTO bars (symbol, timeframe, timestamp, open, high, low, close, volume) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                    bar,
-                )
-        conn.commit()
-    finally:
-        conn.close()
-    yield
-    # Cleanup
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM bars WHERE symbol = 'BTC/USD' AND timeframe = '1m'")
-        conn.commit()
-    finally:
-        conn.close()
-
-
-@pytest.fixture()
-def _clean_runs():
-    """Clean runs table after test."""
-    yield
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fills")
-            cur.execute("DELETE FROM veda_orders")
-            cur.execute("DELETE FROM runs")
-        conn.commit()
-    finally:
-        conn.close()
-
-
 @pytest.mark.e2e
 @pytest.mark.usefixtures("_clean_runs")
 class TestBacktestFlow:
@@ -96,10 +52,19 @@ class TestBacktestFlow:
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
 
-        page.locator("#strategy-id").fill("sample")
+        # Strategy is now a <select> dropdown populated from /api/v1/strategies
+        page.locator("#strategy-id").select_option("sample")
         page.locator("#run-mode").select_option("backtest")
-        page.locator("#symbols").fill("BTC/USD")
-        page.locator("#timeframe").select_option("1m")
+
+        # Wait for RJSF config form to render after strategy selection
+        page.locator("form.rjsf").wait_for(timeout=5000)
+
+        # RJSF array field: click Add to insert the first symbols entry
+        page.get_by_test_id("rjsf-add-item").click()
+        page.locator("#root_symbols_0").select_option("BTC/USD")
+
+        # Timeframe enum rendered as <select> by RJSF
+        page.locator("#root_timeframe").select_option(label="1m")
 
         page.get_by_role("button", name="Create").click()
         # After creation, run should appear with pending status
@@ -205,34 +170,32 @@ class TestFormValidation:
         form = page.get_by_test_id("create-run-form")
         expect(form).to_be_visible(timeout=5000)
 
-        # Fill symbols but leave strategy empty
-        page.locator("#symbols").fill("BTC/USD")
+        # Leave strategy unselected (default "Select strategy..."), click Create
         page.get_by_role("button", name="Create").click()
 
         # Browser blocks submission — form stays visible, button does NOT become "Creating..."
         expect(form).to_be_visible()
         expect(page.get_by_role("button", name="Create")).to_be_visible()
 
-        # Strategy input should be in invalid state
+        # Strategy select should be in invalid state (required but value="")
         is_invalid = page.locator("#strategy-id").evaluate("el => !el.validity.valid")
         assert is_invalid, "Expected strategy-id to be invalid when empty"
 
-    def test_create_form_rejects_empty_symbols(self, page: Page, e2e_base_url: str) -> None:
-        """Submitting with an empty symbols field is blocked by browser validation."""
+    def test_create_form_renders_config_fields(self, page: Page, e2e_base_url: str) -> None:
+        """Selecting a strategy renders RJSF config fields from its config_schema."""
         page.goto(f"{e2e_base_url}/runs")
         page.get_by_role("button", name="New Run").click()
 
         form = page.get_by_test_id("create-run-form")
         expect(form).to_be_visible(timeout=5000)
 
-        # Fill strategy but leave symbols empty
-        page.locator("#strategy-id").fill("sample")
-        page.get_by_role("button", name="Create").click()
+        # Select a strategy — RJSF config form should appear
+        page.locator("#strategy-id").select_option("sample")
 
-        # Browser blocks submission — form stays visible
-        expect(form).to_be_visible()
-        expect(page.get_by_role("button", name="Create")).to_be_visible()
+        # Wait for RJSF to render
+        rjsf_form = page.locator("form.rjsf")
+        expect(rjsf_form).to_be_visible(timeout=5000)
 
-        # Symbols input should be in invalid state
-        is_invalid = page.locator("#symbols").evaluate("el => !el.validity.valid")
-        assert is_invalid, "Expected symbols to be invalid when empty"
+        # The sample strategy config_schema has symbols (array) and timeframe (enum)
+        expect(page.get_by_test_id("rjsf-add-item")).to_be_visible()
+        expect(page.locator("#root_timeframe")).to_be_visible()

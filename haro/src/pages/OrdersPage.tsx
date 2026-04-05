@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { useOrders } from "../hooks/useOrders";
 import { OrderTable } from "../components/orders/OrderTable";
 import { OrderDetailModal } from "../components/orders/OrderDetailModal";
+import { Pagination } from "../components/common/Pagination";
 import type { Order, OrderStatus } from "../api/types";
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -31,10 +32,12 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [runIdFilter] = useState<string>(urlRunId ?? "");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const ordersQuery = useOrders({
-    page: 1,
-    page_size: 50,
+    page,
+    page_size: PAGE_SIZE,
     run_id: runIdFilter || undefined,
     status: statusFilter || undefined,
   });
@@ -103,7 +106,10 @@ export function OrdersPage() {
           <select
             data-testid="status-filter"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm"
           >
             <option value="">All Status</option>
@@ -117,6 +123,14 @@ export function OrdersPage() {
       </div>
 
       <OrderTable orders={orders} onOrderClick={setSelectedOrder} />
+
+      {(ordersQuery.data?.total ?? 0) > PAGE_SIZE && (
+        <Pagination
+          page={page}
+          totalPages={Math.ceil((ordersQuery.data?.total ?? 0) / PAGE_SIZE)}
+          onPageChange={setPage}
+        />
+      )}
 
       {selectedOrder && (
         <OrderDetailModal

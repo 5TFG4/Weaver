@@ -43,7 +43,24 @@ services:
       default:
         aliases:
           - backend
-    command: ["sh", "-c", "alembic upgrade head && uvicorn weaver:app --host 0.0.0.0 --port 8000"]
+    command:
+      [
+        "sh",
+        "-c",
+        "alembic upgrade head && uvicorn weaver:app --host 0.0.0.0 --port 8000",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/healthz')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
 
   frontend_e2e:
     build:
@@ -52,18 +69,27 @@ services:
     ports:
       - "33579:80"
     depends_on:
-      - backend_e2e
+      backend_e2e:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   test_runner:
     build:
       context: ..
       dockerfile: docker/e2e/Dockerfile
     environment:
-      BASE_URL: "http://frontend_e2e:80"
-      API_BASE_URL: "http://backend_e2e:8000/api/v1"
-      DB_URL: "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
+      E2E_BASE_URL: "http://frontend_e2e:80"
+      E2E_API_BASE_URL: "http://backend_e2e:8000/api/v1"
+      E2E_DB_URL: "postgresql://weaver:weaver_e2e_password@db_e2e:5432/weaver_e2e_db"
     depends_on:
-      - frontend_e2e
-      - backend_e2e
+      frontend_e2e:
+        condition: service_healthy
+      backend_e2e:
+        condition: service_healthy
     profiles:
       - test

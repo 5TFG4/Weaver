@@ -44,10 +44,6 @@ class RunFactory:
     _mode: str = "backtest"  # "live" | "backtest"
     _status: str = "pending"  # pending | running | stopped | completed | failed
     _config: dict[str, Any] | None = None
-    _timeframe: str = "1m"
-    _symbols: list[str] | None = None
-    _backtest_start: datetime | None = None
-    _backtest_end: datetime | None = None
     _started_at: datetime | None = None
     _stopped_at: datetime | None = None
     _created_at: datetime | None = None
@@ -74,18 +70,24 @@ class RunFactory:
         return self
 
     def with_config(self, config: dict[str, Any]) -> RunFactory:
-        """Set strategy configuration."""
-        self._config = config
+        """Set strategy configuration (merged with defaults)."""
+        if self._config is None:
+            self._config = {}
+        self._config.update(config)
         return self
 
     def with_timeframe(self, timeframe: str) -> RunFactory:
-        """Set timeframe."""
-        self._timeframe = timeframe
+        """Set timeframe (stored inside config)."""
+        if self._config is None:
+            self._config = {}
+        self._config["timeframe"] = timeframe
         return self
 
     def with_symbols(self, symbols: list[str]) -> RunFactory:
-        """Set trading symbols."""
-        self._symbols = symbols
+        """Set trading symbols (stored inside config)."""
+        if self._config is None:
+            self._config = {}
+        self._config["symbols"] = symbols
         return self
 
     def with_backtest_range(
@@ -93,9 +95,11 @@ class RunFactory:
         start: datetime,
         end: datetime,
     ) -> RunFactory:
-        """Set backtest date range."""
-        self._backtest_start = start
-        self._backtest_end = end
+        """Set backtest date range (stored inside config)."""
+        if self._config is None:
+            self._config = {}
+        self._config["backtest_start"] = start.isoformat()
+        self._config["backtest_end"] = end.isoformat()
         return self
 
     def as_running(self) -> RunFactory:
@@ -119,16 +123,15 @@ class RunFactory:
     def build(self) -> dict[str, Any]:
         """Build the run as a dictionary."""
         now = datetime.now(UTC)
+        config = dict(self._config or {})
+        config.setdefault("symbols", ["AAPL"])
+        config.setdefault("timeframe", "1m")
         return {
             "id": self._id or str(uuid4()),
             "strategy_name": self._strategy_name,
             "mode": self._mode,
             "status": self._status,
-            "config": self._config or {},
-            "timeframe": self._timeframe,
-            "symbols": self._symbols or ["AAPL"],
-            "backtest_start": self._backtest_start,
-            "backtest_end": self._backtest_end,
+            "config": config,
             "started_at": self._started_at,
             "stopped_at": self._stopped_at,
             "created_at": self._created_at or now,
@@ -155,7 +158,7 @@ class RunFactory:
             mode: Run mode (default: "backtest")
             timeframe: Bar timeframe (default: "1m")
             symbols: Trading symbols (default: ["AAPL"])
-            config: Strategy configuration
+            config: Strategy configuration (symbols/timeframe merged in)
             backtest_start: Backtest start date
             backtest_end: Backtest end date
 
@@ -309,6 +312,7 @@ def create_run_manager_with_deps(
         mock_strategy.initialize = AsyncMock()
         mock_strategy.on_tick = AsyncMock(return_value=[])
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
     return RunManager(
         event_log=event_log,

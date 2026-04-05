@@ -198,6 +198,45 @@ class VedaService:
             return None
         return await self._hydrate_fills(state)
 
+    async def sync_order(self, client_order_id: str) -> OrderState | None:
+        """
+        Sync order status from exchange.
+
+        Fetches current status from the exchange adapter, updates
+        local state and persists changes.
+
+        Args:
+            client_order_id: The client order ID
+
+        Returns:
+            Updated OrderState if found, None otherwise
+        """
+        state = await self.get_order(client_order_id)
+        if state is None or state.exchange_order_id is None:
+            return state
+
+        exchange_order = await self._adapter.get_order(state.exchange_order_id)
+        if exchange_order is None:
+            return state
+
+        updated = replace(
+            state,
+            status=exchange_order.status,
+            filled_qty=exchange_order.filled_qty,
+            filled_avg_price=exchange_order.filled_avg_price,
+            filled_at=exchange_order.updated_at
+            if exchange_order.status == OrderStatus.FILLED
+            else state.filled_at,
+        )
+
+        # Update in-memory state
+        self._order_manager.update_order(client_order_id, updated)
+
+        # Persist
+        await self._repository.save(updated)
+
+        return updated
+
     async def list_orders(
         self,
         run_id: str | None = None,

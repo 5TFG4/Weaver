@@ -4,7 +4,17 @@
   // ==========================================================================
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestArgs": ["tests", "-v", "--tb=short"],
+  "python.testing.pytestArgs": [
+    "tests/unit",
+    "tests/integration",
+    "tests/ci",
+    "tests/e2e",
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "-o",
+    "addopts="
+  ],
 
   // ==========================================================================
   // Python Environment
@@ -34,5 +44,10 @@
   // Vitest (Frontend Testing)
   // ==========================================================================
   "vitest.workspaceConfig": "${workspaceFolder}/haro/vitest.config.ts",
-  "vitest.enable": true
+  "vitest.enable": true,
+
+  // ==========================================================================
+  // Environment
+  // ==========================================================================
+  "python.envFile": "${workspaceFolder}/.env"
 }

@@ -24,6 +24,25 @@ STRATEGY_META = {
     "author": "weaver",
     "dependencies": [],
     "class": "SampleStrategy",
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "symbols": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+                },
+                "description": "Trading symbols",
+            },
+            "timeframe": {
+                "type": "string",
+                "default": "1m",
+                "enum": ["1m", "5m", "15m", "1h", "4h", "1d"],
+            },
+        },
+        "required": ["symbols"],
+    },
 }
 
 

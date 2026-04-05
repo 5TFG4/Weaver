@@ -34,8 +34,6 @@ class TestRunRecordModel:
             "strategy_id",
             "mode",
             "status",
-            "symbols",
-            "timeframe",
             "config",
             "error",
             "created_at",

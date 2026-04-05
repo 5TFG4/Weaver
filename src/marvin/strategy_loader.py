@@ -32,6 +32,10 @@ class StrategyLoader(ABC):
         """Load a strategy by ID."""
         pass
 
+    def get_meta(self, strategy_id: str) -> StrategyMeta | None:  # noqa: ARG002
+        """Get strategy metadata by ID. Returns None if not found."""
+        return None
+
 
 class SimpleStrategyLoader(StrategyLoader):
     """Simple strategy loader from registry (for backwards compatibility)."""
@@ -132,6 +136,10 @@ class PluginStrategyLoader(StrategyLoader):
     def list_available(self) -> list[StrategyMeta]:
         """List all discovered strategies."""
         return list(self._registry.values())
+
+    def get_meta(self, strategy_id: str) -> StrategyMeta | None:
+        """Get strategy metadata by ID."""
+        return self._registry.get(strategy_id)
 
     def load(self, strategy_id: str) -> BaseStrategy:
         """

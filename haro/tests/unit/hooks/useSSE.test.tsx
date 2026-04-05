@@ -12,7 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useSSE,
   SSE_ENDPOINT,
-  RECONNECT_DELAY,
+  DISCONNECT_GRACE_MS,
 } from "../../../src/hooks/useSSE";
 import { useNotificationStore } from "../../../src/stores/notificationStore";
 import type { ReactNode } from "react";
@@ -78,6 +78,13 @@ class MockEventSource {
     listeners.forEach((l) => l(event));
   }
 
+  /** Send raw string data (for testing malformed JSON handling) */
+  simulateRawEvent(type: string, rawData: string) {
+    const event = new MessageEvent(type, { data: rawData });
+    const listeners = this.listeners.get(type) || [];
+    listeners.forEach((l) => l(event));
+  }
+
   static reset() {
     MockEventSource.instances = [];
   }
@@ -139,26 +146,77 @@ describe("useSSE", () => {
     expect(result.current.isConnected).toBe(true);
   });
 
-  it("reconnects after connection lost", () => {
+  it("does not close EventSource on error (native reconnect)", () => {
     const wrapper = createWrapper();
     renderHook(() => useSSE(), { wrapper });
 
     expect(MockEventSource.instances).toHaveLength(1);
 
-    // Simulate error → close
+    // Simulate error — should NOT close the connection
     act(() => {
       MockEventSource.latest().simulateError();
     });
 
-    expect(MockEventSource.latest().readyState).toBe(MockEventSource.CLOSED);
+    // readyState should NOT be CLOSED (browser handles reconnect natively)
+    expect(MockEventSource.latest().readyState).not.toBe(
+      MockEventSource.CLOSED,
+    );
+    // No new instance created — we trust the browser
+    expect(MockEventSource.instances).toHaveLength(1);
+  });
 
-    // Advance past reconnect delay
+  it("delays disconnect indicator by grace period", () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useSSE(), { wrapper });
+
     act(() => {
-      vi.advanceTimersByTime(RECONNECT_DELAY);
+      MockEventSource.latest().simulateOpen();
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // Error fires but grace period protects
+    act(() => {
+      MockEventSource.latest().simulateError();
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // Still connected before grace period expires
+    act(() => {
+      vi.advanceTimersByTime(DISCONNECT_GRACE_MS - 1);
+    });
+    expect(result.current.isConnected).toBe(true);
+
+    // After grace period expires → disconnected
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it("cancels disconnect indicator when reconnected within grace period", () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
     });
 
-    // A new EventSource should have been created
-    expect(MockEventSource.instances).toHaveLength(2);
+    // Error → start grace timer
+    act(() => {
+      MockEventSource.latest().simulateError();
+    });
+
+    // Reconnect before grace period
+    act(() => {
+      vi.advanceTimersByTime(2000);
+      MockEventSource.latest().simulateOpen();
+    });
+
+    // Advance past original grace period — should still be connected
+    act(() => {
+      vi.advanceTimersByTime(DISCONNECT_GRACE_MS);
+    });
+    expect(result.current.isConnected).toBe(true);
   });
 
   it("calls onEvent callback for run.Started event", () => {
@@ -313,6 +371,82 @@ describe("useSSE", () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0].type).toBe("info");
     expect(notifications[0].message).toContain("cancelled");
+  });
+
+  // =========================================================================
+  // H1: SSE Safety — safeParse protection against malformed JSON
+  // =========================================================================
+
+  it("does not crash when SSE event has malformed JSON data", () => {
+    const wrapper = createWrapper();
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+    });
+
+    // Malformed JSON must NOT throw
+    expect(() => {
+      act(() => {
+        MockEventSource.latest().simulateRawEvent(
+          "run.Started",
+          "NOT VALID JSON{{{",
+        );
+      });
+    }).not.toThrow();
+
+    // Should log a warning
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[SSE]"),
+      expect.anything(),
+    );
+
+    // Should NOT produce a notification (event is silently skipped)
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(0);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("does not crash when orders.Rejected has malformed JSON", () => {
+    const wrapper = createWrapper();
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    renderHook(() => useSSE(), { wrapper });
+    act(() => MockEventSource.latest().simulateOpen());
+
+    expect(() => {
+      act(() => {
+        MockEventSource.latest().simulateRawEvent(
+          "orders.Rejected",
+          "<html>502 Bad Gateway</html>",
+        );
+      });
+    }).not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(0);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("still processes valid JSON normally after safeParse", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => MockEventSource.latest().simulateOpen());
+    act(() => {
+      MockEventSource.latest().simulateEvent("run.Completed", {
+        run_id: "run-safe-1",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].message).toContain("run-safe-1");
   });
 
   // =========================================================================

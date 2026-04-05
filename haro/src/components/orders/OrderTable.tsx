@@ -48,7 +48,7 @@ export function OrderTable({ orders, onOrderClick }: OrderTableProps) {
   }
 
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+    <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
       <table className="w-full">
         <thead className="bg-slate-700/50">
           <tr>
@@ -84,6 +84,14 @@ export function OrderTable({ orders, onOrderClick }: OrderTableProps) {
               key={order.id}
               data-testid={`order-row-${order.id}`}
               onClick={() => onOrderClick(order)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOrderClick(order);
+                }
+              }}
+              tabIndex={0}
+              role="button"
               className="hover:bg-slate-700/30 transition-colors cursor-pointer"
             >
               <td className="px-6 py-4 text-sm text-slate-200 font-mono">

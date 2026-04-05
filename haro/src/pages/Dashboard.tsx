@@ -14,12 +14,16 @@ import { StatCard } from "../components/common/StatCard";
 import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 
 export function Dashboard() {
-  const runsQuery = useRuns({ page: 1, page_size: 50 });
+  const runsQuery = useRuns({ page: 1, page_size: 5 });
+  const activeRunsQuery = useRuns({ page: 1, page_size: 1, status: "running" });
   const ordersQuery = useOrders({ page: 1, page_size: 1 });
   const healthQuery = useHealth();
 
   const isLoading =
-    runsQuery.isLoading || ordersQuery.isLoading || healthQuery.isLoading;
+    runsQuery.isLoading ||
+    activeRunsQuery.isLoading ||
+    ordersQuery.isLoading ||
+    healthQuery.isLoading;
   const isError = runsQuery.isError;
 
   if (isError) {
@@ -62,8 +66,8 @@ export function Dashboard() {
     );
   }
 
+  const activeRunCount = activeRunsQuery.data?.total ?? 0;
   const runs = runsQuery.data?.items ?? [];
-  const activeRunCount = runs.filter((r) => r.status === "running").length;
   const totalRuns = runsQuery.data?.total ?? 0;
   const totalOrders = ordersQuery.data?.total ?? 0;
   const healthStatus = healthQuery.data?.status === "ok" ? "Online" : "Offline";

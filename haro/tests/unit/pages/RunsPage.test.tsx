@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, within } from "../../utils";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
+import { mockRuns } from "../../mocks/handlers";
 import { RunsPage } from "../../../src/pages/RunsPage";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -67,7 +68,7 @@ describe("RunsPage", () => {
     expect(screen.getByText("running")).toBeInTheDocument();
   });
 
-  it("displays symbols for each run", async () => {
+  it("displays symbols and timeframe for each run", async () => {
     render(<RunsPage />);
 
     await waitFor(() => {
@@ -76,6 +77,8 @@ describe("RunsPage", () => {
 
     expect(screen.getByText("BTC/USD")).toBeInTheDocument();
     expect(screen.getByText("ETH/USD")).toBeInTheDocument();
+    expect(screen.getByText("1h")).toBeInTheDocument();
+    expect(screen.getByText("15m")).toBeInTheDocument();
   });
 
   // =========================================================================
@@ -147,6 +150,105 @@ describe("RunsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows start button for pending runs", async () => {
+    server.use(
+      http.get("/api/v1/runs", () => {
+        const response: RunListResponse = {
+          items: [
+            {
+              id: "run-pending",
+              strategy_id: "sma-crossover",
+              mode: "backtest",
+              status: "pending",
+              config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              created_at: "2026-02-01T10:00:00Z",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const row = screen.getByTestId("run-row-run-pending");
+    expect(
+      within(row).getByRole("button", { name: /start/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("calls start API when start button clicked", async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get("/api/v1/runs", () => {
+        const response: RunListResponse = {
+          items: [
+            {
+              id: "run-pending",
+              strategy_id: "sma-crossover",
+              mode: "backtest",
+              status: "pending",
+              config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              created_at: "2026-02-01T10:00:00Z",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+      http.post("/api/v1/runs/:id/start", ({ params }) => {
+        return HttpResponse.json({
+          id: params.id as string,
+          strategy_id: "sma-crossover",
+          mode: "backtest",
+          status: "running",
+          config: { symbols: ["BTC/USD"], timeframe: "1h" },
+          created_at: "2026-02-01T10:00:00Z",
+          started_at: new Date().toISOString(),
+        });
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const row = screen.getByTestId("run-row-run-pending");
+    const startBtn = within(row).getByRole("button", { name: /start/i });
+    await user.click(startBtn);
+
+    // After start, the run status should optimistically update to running
+    await waitFor(() => {
+      expect(within(row).getByText("running")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show start button for running runs", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    // run-2 is running, should NOT have start button
+    const row = screen.getByTestId("run-row-run-2");
+    expect(
+      within(row).queryByRole("button", { name: /start/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not show stop button for completed runs", async () => {
     render(<RunsPage />);
 
@@ -210,7 +312,6 @@ describe("RunsPage", () => {
     // Form fields should appear
     expect(screen.getByLabelText(/strategy/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/mode/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/symbols/i)).toBeInTheDocument();
   });
 
   it("creates a run via form submission", async () => {
@@ -225,9 +326,11 @@ describe("RunsPage", () => {
     // Open form
     await user.click(screen.getByRole("button", { name: /new run/i }));
 
-    // Fill form
-    await user.type(screen.getByLabelText(/strategy/i), "sma-crossover");
-    await user.type(screen.getByLabelText(/symbols/i), "BTC/USD");
+    // Fill form — Strategy is a dropdown now
+    await user.selectOptions(
+      screen.getByLabelText(/strategy/i),
+      "sma-crossover",
+    );
 
     // Submit
     await user.click(screen.getByRole("button", { name: /create/i }));
@@ -274,5 +377,53 @@ describe("RunsPage", () => {
 
     expect(screen.getByTestId("run-row-run-2")).toBeInTheDocument();
     expect(screen.queryByTestId("run-row-run-1")).not.toBeInTheDocument();
+  });
+
+  // =========================================================================
+  // H5: Table overflow
+  // =========================================================================
+
+  it("runs table container has overflow-x-auto", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const table = screen.getByRole("table");
+    const container = table.closest("div");
+    expect(container).toHaveClass("overflow-x-auto");
+  });
+
+  // =========================================================================
+  // H6: Pagination
+  // =========================================================================
+
+  it("shows pagination controls when total exceeds page size", async () => {
+    server.use(
+      http.get("/api/v1/runs", ({ request }) => {
+        const url = new URL(request.url);
+        const page = parseInt(url.searchParams.get("page") || "1");
+        const response: RunListResponse = {
+          items: mockRuns,
+          total: 100,
+          page,
+          page_size: 20,
+        };
+        return HttpResponse.json(response);
+      }),
+    );
+
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /previous/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Page 1 of 5/)).toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # =============================================================================
 # Enums
@@ -55,15 +55,13 @@ class HealthResponse(BaseModel):
 class RunCreate(BaseModel):
     """Request body for creating a run."""
 
+    model_config = ConfigDict(extra="forbid")
+
     strategy_id: str = Field(..., min_length=1)
     mode: RunMode
-    symbols: list[str] = Field(..., min_length=1)
-    timeframe: str = Field(default="1m")
-    # Backtest-specific (required when mode=backtest)
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-    # Optional strategy config
-    config: dict[str, Any] | None = None
+    config: dict[str, Any] = Field(
+        ..., description="Strategy configuration containing symbols, timeframe, etc."
+    )
 
 
 class RunResponse(BaseModel):
@@ -73,9 +71,7 @@ class RunResponse(BaseModel):
     strategy_id: str
     mode: RunMode
     status: RunStatus
-    symbols: list[str]
-    timeframe: str
-    config: dict[str, Any] | None = None
+    config: dict[str, Any]
     # Timestamps
     created_at: datetime
     started_at: datetime | None = None
@@ -116,6 +112,7 @@ class OrderStatus(StrEnum):
     """Order status."""
 
     PENDING = "pending"
+    SUBMITTING = "submitting"
     SUBMITTED = "submitted"
     ACCEPTED = "accepted"
     PARTIALLY_FILLED = "partial"

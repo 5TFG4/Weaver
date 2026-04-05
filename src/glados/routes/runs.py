@@ -23,8 +23,6 @@ def _run_to_response(run: Run) -> RunResponse:
         strategy_id=run.strategy_id,
         mode=run.mode,
         status=run.status,
-        symbols=run.symbols,
-        timeframe=run.timeframe,
         config=run.config,
         created_at=run.created_at,
         started_at=run.started_at,

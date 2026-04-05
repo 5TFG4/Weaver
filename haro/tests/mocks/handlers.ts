@@ -11,6 +11,7 @@ import type {
   RunListResponse,
   OrderListResponse,
   HealthResponse,
+  StrategyMeta,
 } from "../../src/api/types";
 
 // =============================================================================
@@ -23,8 +24,7 @@ export const mockRuns: Run[] = [
     strategy_id: "sma-crossover",
     mode: "backtest",
     status: "completed",
-    symbols: ["BTC/USD"],
-    timeframe: "1h",
+    config: { symbols: ["BTC/USD"], timeframe: "1h" },
     created_at: "2026-02-01T10:00:00Z",
     started_at: "2026-02-01T10:00:01Z",
     stopped_at: "2026-02-01T10:05:00Z",
@@ -34,8 +34,7 @@ export const mockRuns: Run[] = [
     strategy_id: "sma-crossover",
     mode: "paper",
     status: "running",
-    symbols: ["ETH/USD"],
-    timeframe: "15m",
+    config: { symbols: ["ETH/USD"], timeframe: "15m" },
     created_at: "2026-02-04T08:00:00Z",
     started_at: "2026-02-04T08:00:01Z",
   },
@@ -75,6 +74,53 @@ export const mockOrders: Order[] = [
   },
 ];
 
+export const mockStrategies: StrategyMeta[] = [
+  {
+    id: "sample",
+    name: "Sample Mean-Reversion Strategy",
+    version: "1.0.0",
+    description: "Simple mean-reversion strategy for testing",
+    author: "weaver",
+    config_schema: {
+      type: "object",
+      properties: {
+        symbols: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+          },
+        },
+        timeframe: { type: "string", default: "1m" },
+      },
+      required: ["symbols"],
+    },
+  },
+  {
+    id: "sma-crossover",
+    name: "SMA Crossover Strategy",
+    version: "1.0.0",
+    description: "Simple Moving Average crossover strategy",
+    author: "weaver",
+    config_schema: {
+      type: "object",
+      properties: {
+        symbols: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["BTC/USD", "ETH/USD", "SPY", "AAPL", "MSFT"],
+          },
+        },
+        timeframe: { type: "string", default: "1m" },
+        fast_period: { type: "integer", default: 5 },
+        slow_period: { type: "integer", default: 20 },
+      },
+      required: ["symbols"],
+    },
+  },
+];
+
 // =============================================================================
 // Handlers
 // =============================================================================
@@ -89,11 +135,21 @@ export const handlers = [
     return HttpResponse.json(response);
   }),
 
+  // GET /api/v1/strategies - List strategies
+  http.get("/api/v1/strategies", () => {
+    return HttpResponse.json(mockStrategies);
+  }),
+
   // GET /api/v1/runs - List runs
-  http.get("/api/v1/runs", () => {
+  http.get("/api/v1/runs", ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status");
+    const filtered = status
+      ? mockRuns.filter((r) => r.status === status)
+      : mockRuns;
     const response: RunListResponse = {
-      items: mockRuns,
-      total: mockRuns.length,
+      items: filtered,
+      total: filtered.length,
       page: 1,
       page_size: 20,
     };
@@ -117,8 +173,7 @@ export const handlers = [
       strategy_id: body.strategy_id as string,
       mode: body.mode as Run["mode"],
       status: "pending",
-      symbols: body.symbols as string[],
-      timeframe: (body.timeframe as string) || "1m",
+      config: (body.config as Record<string, unknown>) ?? {},
       created_at: new Date().toISOString(),
     };
     return HttpResponse.json(newRun, { status: 201 });

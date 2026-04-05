@@ -36,9 +36,7 @@ class TestRunManagerDependencyValidation:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
 
@@ -53,14 +51,12 @@ class TestRunManagerDependencyValidation:
         run_manager = RunManager(
             event_log=event_log,
             bar_repository=None,  # Missing!
-            strategy_loader=MagicMock(),
+            strategy_loader=MagicMock(**{"get_meta.return_value": None}),
         )
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
 
@@ -79,7 +75,7 @@ class TestRunManagerDependencyValidation:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
 
@@ -95,9 +91,12 @@ class TestRunManagerDependencyValidation:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
+            config={
+                "symbols": ["AAPL"],
+                "timeframe": "1m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T09:35:00+00:00",
+            },
         )
         run = await run_manager.create(request)
 
@@ -114,7 +113,7 @@ class TestRunManagerDependencyValidation:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
 
@@ -142,7 +141,7 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="test_strategy",
             mode=RunMode.PAPER,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -164,9 +163,12 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
+            config={
+                "symbols": ["AAPL"],
+                "timeframe": "1m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T09:35:00+00:00",
+            },
         )
         run = await run_manager.create(request)
 
@@ -187,6 +189,7 @@ class TestPerRunCleanup:
             side_effect=RuntimeError("GretaService: no bars found for AAPL")
         )
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
         bar_repository = MagicMock()
         bar_repository.get_bars = AsyncMock(return_value=[])
@@ -200,9 +203,12 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="buggy_strategy",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-01-01T01:00:00Z",
+            config={
+                "symbols": ["AAPL"],
+                "timeframe": "1m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T09:35:00+00:00",
+            },
         )
         run = await run_manager.create(request)
 
@@ -222,6 +228,7 @@ class TestPerRunCleanup:
         mock_strategy = MagicMock()
         mock_strategy.initialize = AsyncMock(side_effect=RuntimeError("connection failed"))
         strategy_loader.load = MagicMock(return_value=mock_strategy)
+        strategy_loader.get_meta = MagicMock(return_value=None)
 
         run_manager = RunManager(
             event_log=InMemoryEventLog(),
@@ -230,7 +237,7 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="test",
             mode=RunMode.LIVE,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
 
@@ -251,7 +258,7 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="test",
             mode=RunMode.PAPER,
-            symbols=["AAPL"],
+            config={"symbols": ["AAPL"], "timeframe": "1m"},
         )
         run = await run_manager.create(request)
         await run_manager.start(run.id)
@@ -274,9 +281,12 @@ class TestPerRunCleanup:
         request = RunCreate(
             strategy_id="sma_cross",
             mode=RunMode.BACKTEST,
-            symbols=["AAPL"],
-            start_time="2024-01-01T00:00:00Z",
-            end_time="2024-06-30T00:00:00Z",
+            config={
+                "symbols": ["AAPL"],
+                "timeframe": "1m",
+                "backtest_start": "2024-01-01T09:30:00+00:00",
+                "backtest_end": "2024-01-01T09:35:00+00:00",
+            },
         )
         run = await run_manager.create(request)
 

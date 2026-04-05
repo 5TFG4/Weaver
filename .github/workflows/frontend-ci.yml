@@ -32,13 +32,13 @@ jobs:
         run: npm ci
 
       - name: ESLint check
-        run: npm run lint
+        run: bash ../scripts/ci/frontend-lint.sh eslint
 
       - name: TypeScript check
-        run: npx tsc -b --noEmit
+        run: bash ../scripts/ci/frontend-lint.sh tsc
 
       - name: Vitest tests with coverage
-        run: npm run test:coverage
+        run: bash ../scripts/ci/frontend-test.sh vitest
 
       - name: Vite build
-        run: npm run build
+        run: bash ../scripts/ci/frontend-test.sh build

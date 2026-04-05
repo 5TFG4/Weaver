@@ -27,8 +27,12 @@ def _make_run_create(**overrides: Any) -> RunCreate:
     defaults: dict[str, Any] = {
         "strategy_id": "sma",
         "mode": RunMode.BACKTEST,
-        "symbols": ["AAPL"],
-        "timeframe": "1h",
+        "config": {
+            "symbols": ["AAPL"],
+            "timeframe": "1h",
+            "backtest_start": "2024-01-01T09:30:00+00:00",
+            "backtest_end": "2024-01-01T10:30:00+00:00",
+        },
     }
     defaults.update(overrides)
     return RunCreate(**defaults)
@@ -168,11 +172,7 @@ class TestRunManagerPersistence:
         self, manager, mock_run_repo
     ) -> None:
         """start() persists COMPLETED transition after backtest finishes."""
-        request = _make_run_create(
-            mode=RunMode.BACKTEST,
-            start_time=datetime.now(UTC),
-            end_time=datetime.now(UTC),
-        )
+        request = _make_run_create(mode=RunMode.BACKTEST)
         run = await manager.create(request)
 
         # Isolate start() persistence calls
@@ -190,11 +190,7 @@ class TestRunManagerPersistence:
     @pytest.mark.asyncio
     async def test_backtest_completion_persists_stopped_at(self, manager, mock_run_repo) -> None:
         """COMPLETED transition persistence includes stopped_at timestamp."""
-        request = _make_run_create(
-            mode=RunMode.BACKTEST,
-            start_time=datetime.now(UTC),
-            end_time=datetime.now(UTC),
-        )
+        request = _make_run_create(mode=RunMode.BACKTEST)
         run = await manager.create(request)
 
         mock_run_repo.save.reset_mock()

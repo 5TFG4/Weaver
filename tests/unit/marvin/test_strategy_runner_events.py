@@ -57,7 +57,7 @@ class TestStrategyRunnerEventSubscription:
         self, runner: StrategyRunner, event_log: InMemoryEventLog
     ) -> None:
         """After initialize, runner is subscribed to data.WindowReady."""
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
 
         # Check subscription exists
         assert len(event_log._filtered_subscriptions) == 1
@@ -74,7 +74,7 @@ class TestStrategyRunnerEventSubscription:
         event_log: InMemoryEventLog,
     ) -> None:
         """data.WindowReady event triggers strategy.on_data()."""
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
 
         # Emit WindowReady event with realistic bar payload (matches Greta output)
         bar = {
@@ -111,7 +111,7 @@ class TestStrategyRunnerEventSubscription:
         event_log: InMemoryEventLog,
     ) -> None:
         """Only receives data.WindowReady for own run_id."""
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
 
         # Event for different run
         await event_log.append(
@@ -145,7 +145,7 @@ class TestStrategyRunnerEventSubscription:
             )
         ]
 
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
 
         # Emit WindowReady with realistic bar payload
         bar = {
@@ -185,7 +185,7 @@ class TestStrategyRunnerEventSubscription:
         event_log: InMemoryEventLog,
     ) -> None:
         """cleanup() removes the WindowReady subscription."""
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
         assert len(event_log._filtered_subscriptions) == 1
 
         await runner.cleanup()
@@ -218,7 +218,7 @@ class TestStrategyRunnerEventSubscription:
         event_log: InMemoryEventLog,
     ) -> None:
         """Multiple WindowReady events are all delivered to strategy."""
-        await runner.initialize("run-001", ["BTC/USD", "ETH/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD", "ETH/USD"]})
 
         # Emit multiple events
         for symbol in ["BTC/USD", "ETH/USD"]:
@@ -253,7 +253,7 @@ class TestStrategyRunnerEventSubscription:
             StrategyAction(type=ActionType.FETCH_WINDOW, symbol="BTC/USD", lookback=20)
         ]
 
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
         await runner.on_tick(make_tick("run-001"))
 
         events = await event_log.read_from(-1)
@@ -270,7 +270,7 @@ class TestStrategyRunnerEventSubscription:
         self, runner: StrategyRunner, event_log: InMemoryEventLog
     ) -> None:
         """Subscription ID is stored in runner for cleanup."""
-        await runner.initialize("run-001", ["BTC/USD"])
+        await runner.initialize("run-001", {"symbols": ["BTC/USD"]})
 
         assert runner._subscription_id is not None
         assert runner._subscription_id in event_log._filtered_subscriptions

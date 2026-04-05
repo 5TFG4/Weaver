@@ -12,7 +12,7 @@ const API_BASE = "/api/v1";
 /**
  * Custom error class for API errors
  */
-export class ApiClientError extends Error {
+class ApiClientError extends Error {
   statusCode: number;
   details?: unknown;
 
@@ -105,12 +105,3 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   return response.json() as Promise<T>;
 }
-
-/**
- * API client object for convenient imports
- */
-export const apiClient = {
-  get,
-  post,
-  delete: del,
-};

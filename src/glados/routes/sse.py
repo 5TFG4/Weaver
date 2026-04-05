@@ -16,6 +16,11 @@ from sse_starlette.sse import EventSourceResponse
 from src.glados.dependencies import get_broadcaster
 from src.glados.sse_broadcaster import ServerSentEvent, SSEBroadcaster
 
+# Recommended reconnection delay sent to browser (ms)
+RETRY_MS = 3000
+# Heartbeat interval to keep connection alive through proxies (seconds)
+HEARTBEAT_INTERVAL = 15
+
 router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
 
@@ -54,7 +59,15 @@ def _should_include_event(event: ServerSentEvent, run_id: str | None) -> bool:
 async def _event_generator(
     broadcaster: SSEBroadcaster, run_id: str | None = None
 ) -> AsyncIterator[dict[str, Any]]:
-    """Generate SSE events from broadcaster, optionally filtered by run_id."""
+    """Generate SSE events from broadcaster, optionally filtered by run_id.
+
+    On first connection sends ``retry:`` to set the browser's reconnection
+    interval.  Heartbeat pings are handled automatically by
+    ``EventSourceResponse(ping=HEARTBEAT_INTERVAL)``.
+    """
+    # Tell the browser how long to wait before reconnecting (spec §9.2.6)
+    yield {"retry": RETRY_MS}
+
     async for event in broadcaster.subscribe():
         if _should_include_event(event, run_id):
             yield {
@@ -82,4 +95,7 @@ async def event_stream(
         EventSourceResponse with event stream
     """
     broadcaster = get_broadcaster(request)
-    return EventSourceResponse(_event_generator(broadcaster, run_id=run_id))
+    return EventSourceResponse(
+        _event_generator(broadcaster, run_id=run_id),
+        ping=HEARTBEAT_INTERVAL,
+    )

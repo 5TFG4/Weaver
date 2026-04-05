@@ -45,13 +45,8 @@ class Run:
     strategy_id: str
     mode: RunMode
     status: RunStatus
-    symbols: list[str]
-    timeframe: str
-    config: dict[str, Any] | None
+    config: dict[str, Any]
     created_at: datetime
-    # Backtest time range (optional for live/paper)
-    start_time: datetime | None = None
-    end_time: datetime | None = None
     # Lifecycle timestamps
     started_at: datetime | None = None
     stopped_at: datetime | None = None
@@ -144,8 +139,6 @@ class RunManager:
             strategy_id=run.strategy_id,
             mode=run.mode.value,
             status=run.status.value,
-            symbols=run.symbols,
-            timeframe=run.timeframe,
             config=run.config,
             created_at=run.created_at,
             started_at=run.started_at,
@@ -163,8 +156,9 @@ class RunManager:
         4. Cleanup GretaService subscriptions/state
         5. Remove context from manager
         """
-        ctx = self._run_contexts.get(run_id)
+        ctx = self._run_contexts.pop(run_id, None)
         if ctx is None:
+            self._run_locks.pop(run_id, None)
             return
 
         # 1. Stop clock — no more ticks
@@ -183,30 +177,40 @@ class RunManager:
         if ctx.greta is not None:
             await ctx.greta.cleanup()
 
-        del self._run_contexts[run_id]
         self._run_locks.pop(run_id, None)
 
     async def create(self, request: RunCreate) -> Run:
         """
         Create a new run in PENDING status.
 
+        Validates config against strategy's config_schema if available.
+
         Args:
             request: Run creation parameters
 
         Returns:
             Created Run with generated ID
+
+        Raises:
+            ValueError: If config fails JSON Schema validation
         """
+        if self._strategy_loader is not None:
+            meta = self._strategy_loader.get_meta(request.strategy_id)
+            if meta and meta.config_schema:
+                import jsonschema
+
+                try:
+                    jsonschema.validate(instance=request.config, schema=meta.config_schema)
+                except jsonschema.ValidationError as e:
+                    raise ValueError(str(e.message)) from e
+
         run = Run(
             id=str(uuid4()),
             strategy_id=request.strategy_id,
             mode=request.mode,
             status=RunStatus.PENDING,
-            symbols=request.symbols,
-            timeframe=request.timeframe,
             config=request.config,
             created_at=datetime.now(UTC),
-            start_time=request.start_time,
-            end_time=request.end_time,
         )
         self._runs[run.id] = run
         await self._emit_event(RunEvents.CREATED, run)
@@ -280,20 +284,21 @@ class RunManager:
             await self._emit_event(RunEvents.STARTED, run)
             await self._persist_run(run)
 
-            try:
-                if run.mode == RunMode.BACKTEST:
-                    await self._start_backtest(run)
-                else:
-                    # LIVE/PAPER use RealtimeClock
-                    await self._start_live(run)
-            except Exception:
-                await self._persist_run(run)
-                raise
+        # Execute OUTSIDE the lock so stop() can acquire it during execution
+        try:
+            if run.mode == RunMode.BACKTEST:
+                await self._start_backtest(run)
+            else:
+                # LIVE/PAPER use RealtimeClock
+                await self._start_live(run)
+        except Exception:
+            await self._persist_run(run)
+            raise
 
-            if run.status != RunStatus.RUNNING:
-                await self._persist_run(run)
+        if run.status != RunStatus.RUNNING:
+            await self._persist_run(run)
 
-            return run
+        return run
 
     async def _start_live(self, run: Run) -> None:
         """
@@ -322,7 +327,7 @@ class RunManager:
                 strategy=strategy,
                 event_log=self._event_log,
             )
-            clock = RealtimeClock(timeframe=run.timeframe)
+            clock = RealtimeClock(timeframe=run.config.get("timeframe", "1m"))
 
             # Store context
             ctx = RunContext(greta=None, runner=runner, clock=clock)
@@ -331,7 +336,7 @@ class RunManager:
             # 3. Initialize runner
             await runner.initialize(
                 run_id=run.id,
-                symbols=run.symbols,
+                config=run.config,
                 task_set=ctx.pending_tasks,
             )
 
@@ -366,8 +371,13 @@ class RunManager:
             raise RuntimeError("EventLog and BarRepository required for backtest")
         if self._strategy_loader is None:
             raise RuntimeError("StrategyLoader required for backtest")
-        if run.start_time is None or run.end_time is None:
-            raise RuntimeError("start_time and end_time required for backtest")
+
+        backtest_start = run.config.get("backtest_start")
+        backtest_end = run.config.get("backtest_end")
+        if backtest_start is None or backtest_end is None:
+            raise RuntimeError("config must contain backtest_start and backtest_end for backtest")
+        start_time = datetime.fromisoformat(backtest_start)
+        end_time = datetime.fromisoformat(backtest_end)
 
         # 1. Load strategy
         strategy = self._strategy_loader.load(run.strategy_id)
@@ -383,9 +393,9 @@ class RunManager:
             event_log=self._event_log,
         )
         clock = BacktestClock(
-            start_time=run.start_time,
-            end_time=run.end_time,
-            timeframe=run.timeframe,
+            start_time=start_time,
+            end_time=end_time,
+            timeframe=run.config.get("timeframe", "1m"),
         )
 
         # Store context
@@ -396,15 +406,15 @@ class RunManager:
         try:
             # 3. Initialize components
             await greta.initialize(
-                symbols=run.symbols,
-                timeframe=run.timeframe,
-                start=run.start_time,
-                end=run.end_time,
+                symbols=run.config.get("symbols", []),
+                timeframe=run.config.get("timeframe", "1m"),
+                start=start_time,
+                end=end_time,
                 task_set=ctx.pending_tasks,
             )
             await runner.initialize(
                 run_id=run.id,
-                symbols=run.symbols,
+                config=run.config,
                 task_set=ctx.pending_tasks,
             )
 
@@ -440,17 +450,20 @@ class RunManager:
             else:
                 run.status = RunStatus.COMPLETED
         except Exception:
-            run.status = RunStatus.ERROR
+            # Don't override STOPPED status if stop() was called concurrently
+            if run.status != RunStatus.STOPPED:
+                run.status = RunStatus.ERROR
             raise
         finally:
             # Cleanup RunContext even if init or backtest fails
-            run.stopped_at = datetime.now(UTC)
+            if run.stopped_at is None:
+                run.stopped_at = datetime.now(UTC)
             await self._cleanup_run_context(run.id)
 
-        # Emit terminal event
+        # Emit terminal event (skip if stop() already emitted)
         if run.status == RunStatus.ERROR:
             await self._emit_event(RunEvents.ERROR, run)
-        else:
+        elif run.status == RunStatus.COMPLETED:
             await self._emit_event(RunEvents.COMPLETED, run)
 
     async def stop(self, run_id: str) -> Run:
@@ -513,18 +526,12 @@ class RunManager:
                 if record.id in self._runs:
                     continue
 
-                symbols: list[str] = []
-                if isinstance(record.symbols, list):
-                    symbols = [s for s in record.symbols if isinstance(s, str)]
-
                 run = Run(
                     id=record.id,
                     strategy_id=record.strategy_id,
                     mode=RunMode(record.mode),
                     status=RunStatus(record.status),
-                    symbols=symbols,
-                    timeframe=record.timeframe or "1h",
-                    config=record.config,
+                    config=record.config or {},
                     created_at=record.created_at,
                     started_at=record.started_at,
                     stopped_at=record.stopped_at,
