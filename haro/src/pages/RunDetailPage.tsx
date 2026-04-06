@@ -19,12 +19,12 @@ function formatDate(dateStr: string): string {
 export function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>();
   const { data: run, isLoading, error } = useRun(runId ?? "");
-  const {
-    data: results,
-    isLoading: resultsLoading,
-  } = useRunResults(runId ?? "", {
-    enabled: run?.status === "completed" && run?.mode === "backtest",
-  });
+  const { data: results, isLoading: resultsLoading } = useRunResults(
+    runId ?? "",
+    {
+      enabled: run?.status === "completed" && run?.mode === "backtest",
+    },
+  );
 
   if (isLoading) {
     return (
@@ -41,10 +41,11 @@ export function RunDetailPage() {
     return (
       <div data-testid="run-detail-error" className="p-6">
         <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
-          <p className="text-red-400">
-            {error?.message ?? "Run not found"}
-          </p>
-          <Link to="/runs" className="text-blue-400 hover:underline text-sm mt-2 inline-block">
+          <p className="text-red-400">{error?.message ?? "Run not found"}</p>
+          <Link
+            to="/runs"
+            className="text-blue-400 hover:underline text-sm mt-2 inline-block"
+          >
             &larr; Back to Runs
           </Link>
         </div>
@@ -81,7 +82,9 @@ export function RunDetailPage() {
           </div>
           <div>
             <p className="text-slate-400 text-xs">Mode</p>
-            <p className="text-white text-sm font-medium capitalize">{run.mode}</p>
+            <p className="text-white text-sm font-medium capitalize">
+              {run.mode}
+            </p>
           </div>
           <div>
             <p className="text-slate-400 text-xs">Created</p>

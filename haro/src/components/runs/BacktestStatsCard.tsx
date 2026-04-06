@@ -33,13 +33,19 @@ export function BacktestStatsCard({ result }: BacktestStatsCardProps) {
   const { stats } = result;
 
   const items = [
-    { label: "Final Equity", value: `$${Number(result.final_equity).toLocaleString()}` },
+    {
+      label: "Final Equity",
+      value: `$${Number(result.final_equity).toLocaleString()}`,
+    },
     { label: "Total Return", value: formatPercent(stats.total_return) },
     { label: "Sharpe Ratio", value: formatNumber(stats.sharpe_ratio) },
     { label: "Max Drawdown", value: formatPercent(stats.max_drawdown) },
     { label: "Total Trades", value: String(stats.total_trades ?? "—") },
     { label: "Win Rate", value: formatPercent(stats.win_rate) },
-    { label: "Bars Processed", value: result.total_bars_processed.toLocaleString() },
+    {
+      label: "Bars Processed",
+      value: result.total_bars_processed.toLocaleString(),
+    },
     { label: "Duration", value: formatDuration(result.simulation_duration_ms) },
   ];
 
@@ -53,7 +59,9 @@ export function BacktestStatsCard({ result }: BacktestStatsCardProps) {
             className="bg-slate-800 rounded-lg p-4 border border-slate-700"
           >
             <p className="text-slate-400 text-xs">{item.label}</p>
-            <p className="text-white text-lg font-semibold mt-1">{item.value}</p>
+            <p className="text-white text-lg font-semibold mt-1">
+              {item.value}
+            </p>
           </div>
         ))}
       </div>

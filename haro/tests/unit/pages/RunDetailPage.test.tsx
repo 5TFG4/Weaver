@@ -97,9 +97,7 @@ describe("RunDetailPage", () => {
     renderWithRoute("run-err");
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Broker connection failed"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Broker connection failed")).toBeInTheDocument();
     });
   });
 

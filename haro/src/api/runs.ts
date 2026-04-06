@@ -54,8 +54,6 @@ export async function stopRun(runId: string): Promise<Run> {
 /**
  * Fetch backtest results for a run
  */
-export async function fetchRunResults(
-  runId: string,
-): Promise<BacktestResult> {
+export async function fetchRunResults(runId: string): Promise<BacktestResult> {
   return get<BacktestResult>(`/runs/${runId}/results`);
 }

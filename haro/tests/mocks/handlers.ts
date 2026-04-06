@@ -68,8 +68,24 @@ export const mockBacktestResult: BacktestResult = {
     { timestamp: "2026-02-01T10:05:00Z", equity: 10500 },
   ],
   fills: [
-    { timestamp: "2026-02-01T10:00:30Z", symbol: "BTC/USD", side: "buy", qty: "0.1", fill_price: "100.50", commission: "0.10", slippage: "0.01" },
-    { timestamp: "2026-02-01T10:03:00Z", symbol: "BTC/USD", side: "sell", qty: "0.1", fill_price: "102.00", commission: "0.10", slippage: "0.02" },
+    {
+      timestamp: "2026-02-01T10:00:30Z",
+      symbol: "BTC/USD",
+      side: "buy",
+      qty: "0.1",
+      fill_price: "100.50",
+      commission: "0.10",
+      slippage: "0.01",
+    },
+    {
+      timestamp: "2026-02-01T10:03:00Z",
+      symbol: "BTC/USD",
+      side: "sell",
+      qty: "0.1",
+      fill_price: "102.00",
+      commission: "0.10",
+      slippage: "0.02",
+    },
   ],
 };
 

@@ -13,7 +13,12 @@ import {
   stopRun,
   fetchRunResults,
 } from "../api/runs";
-import type { BacktestResult, Run, RunCreate, RunListResponse } from "../api/types";
+import type {
+  BacktestResult,
+  Run,
+  RunCreate,
+  RunListResponse,
+} from "../api/types";
 import { useNotificationStore } from "../stores/notificationStore";
 
 // Query keys for cache invalidation
@@ -59,10 +64,7 @@ export function useRun(runId: string) {
 /**
  * Hook to fetch backtest results for a completed run
  */
-export function useRunResults(
-  runId: string,
-  options?: { enabled?: boolean },
-) {
+export function useRunResults(runId: string, options?: { enabled?: boolean }) {
   return useQuery<BacktestResult>({
     queryKey: runKeys.results(runId),
     queryFn: () => fetchRunResults(runId),
