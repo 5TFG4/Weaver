@@ -56,6 +56,10 @@ class TestBacktestFlow:
         page.locator("#strategy-id").select_option("sample")
         page.locator("#run-mode").select_option("backtest")
 
+        # Fill backtest date range (datetime-local inputs)
+        page.locator("#backtest-start").fill("2024-01-15T09:30")
+        page.locator("#backtest-end").fill("2024-01-15T09:50")
+
         # Wait for RJSF config form to render after strategy selection
         page.locator("form.rjsf").wait_for(timeout=5000)
 
