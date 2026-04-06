@@ -11,6 +11,7 @@ COMPOSE=(docker compose -f "$COMPOSE_FILE")
 teardown() {
     echo "--- Tearing down E2E stack ---"
     "${COMPOSE[@]}" --profile test down -v 2>/dev/null || true
+    docker image prune -f 2>/dev/null || true
 }
 trap teardown EXIT
 

@@ -26,6 +26,7 @@ teardown() {
         docker network disconnect "$CONNECTED_NETWORK" "$(hostname)" 2>/dev/null || true
     fi
     "${COMPOSE[@]}" down -v 2>/dev/null || true
+    docker image prune -f 2>/dev/null || true
     rm -f "$SMOKE_ENV"
 }
 trap teardown EXIT
