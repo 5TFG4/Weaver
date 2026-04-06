@@ -126,6 +126,12 @@ export function CreateRunForm({
               <input
                 id="backtest-start"
                 type="datetime-local"
+                required
+                value={
+                  typeof configData.backtest_start === "string"
+                    ? configData.backtest_start
+                    : ""
+                }
                 onChange={(e) =>
                   setConfigData((prev) => ({
                     ...prev,
@@ -145,6 +151,12 @@ export function CreateRunForm({
               <input
                 id="backtest-end"
                 type="datetime-local"
+                required
+                value={
+                  typeof configData.backtest_end === "string"
+                    ? configData.backtest_end
+                    : ""
+                }
                 onChange={(e) =>
                   setConfigData((prev) => ({
                     ...prev,

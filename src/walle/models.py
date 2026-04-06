@@ -212,7 +212,9 @@ class BacktestResultRecord(Base):
     simulation_duration_ms: Mapped[int] = mapped_column(nullable=False, default=0)
     total_bars_processed: Mapped[int] = mapped_column(nullable=False, default=0)
     stats: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # BacktestStats as dict
-    equity_curve: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # list[{t, equity}]
+    equity_curve: Mapped[dict[str, Any]] = mapped_column(
+        nullable=False
+    )  # list[{timestamp, equity}]
     fills: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # list[fill_dict]
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

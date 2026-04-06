@@ -54,6 +54,23 @@ describe("CreateRunForm — M13-6 backtest date fields", () => {
     expect(screen.getByLabelText(/end time/i)).toBeInTheDocument();
   });
 
+  it("date inputs have required attribute", async () => {
+    render(<CreateRunForm onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByLabelText(/start time/i)).toBeRequired();
+    expect(screen.getByLabelText(/end time/i)).toBeRequired();
+  });
+
+  it("date inputs are controlled (value bound to state)", async () => {
+    const user = userEvent.setup();
+    render(<CreateRunForm onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    const startInput = screen.getByLabelText(/start time/i) as HTMLInputElement;
+    await user.clear(startInput);
+    await user.type(startInput, "2024-06-15T10:00");
+    expect(startInput.value).toBe("2024-06-15T10:00");
+  });
+
   it("hides date inputs when mode is paper", async () => {
     const user = userEvent.setup();
     render(<CreateRunForm onSubmit={vi.fn()} onCancel={vi.fn()} />);

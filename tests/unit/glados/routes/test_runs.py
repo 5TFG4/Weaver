@@ -491,19 +491,19 @@ class TestResultsEndpoint:
             simulation_duration_ms=1234,
             total_bars_processed=500,
             stats={
-                "total_return": "5000.00",
-                "total_return_pct": "5.00",
-                "sharpe_ratio": "1.25",
-                "max_drawdown": "2000.00",
-                "max_drawdown_pct": "1.90",
+                "total_return": 5000.0,
+                "total_return_pct": 5.0,
+                "sharpe_ratio": 1.25,
+                "max_drawdown": 2000.0,
+                "max_drawdown_pct": 1.9,
                 "total_trades": 10,
                 "winning_trades": 6,
                 "losing_trades": 4,
-                "win_rate": "0.60",
+                "win_rate": 0.6,
             },
             equity_curve=[
-                {"t": "2024-01-01T00:00:00+00:00", "equity": "100000.00"},
-                {"t": "2024-06-30T00:00:00+00:00", "equity": "105000.00"},
+                {"timestamp": "2024-01-01T00:00:00+00:00", "equity": 100000.0},
+                {"timestamp": "2024-06-30T00:00:00+00:00", "equity": 105000.0},
             ],
             fills=[
                 {
@@ -572,7 +572,7 @@ class TestResultsEndpoint:
 
         assert isinstance(eq, list)
         assert len(eq) == 2
-        assert "t" in eq[0]
+        assert "timestamp" in eq[0]
         assert "equity" in eq[0]
 
     def test_result_includes_fills(self, client: TestClient) -> None:
