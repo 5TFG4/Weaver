@@ -42,6 +42,7 @@ export interface Run {
   mode: RunMode;
   status: RunStatus;
   config: Record<string, unknown>;
+  error: string | null;
   created_at: string;
   started_at?: string;
   stopped_at?: string;

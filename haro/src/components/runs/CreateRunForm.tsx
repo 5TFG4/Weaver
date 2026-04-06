@@ -39,10 +39,19 @@ export function CreateRunForm({
   const configSchema = selectedStrategy?.config_schema;
 
   function handleSubmit() {
+    const config = { ...configData };
+    if (mode === "backtest") {
+      if (typeof config.backtest_start === "string" && !config.backtest_start.endsWith("Z")) {
+        config.backtest_start = config.backtest_start + ":00Z";
+      }
+      if (typeof config.backtest_end === "string" && !config.backtest_end.endsWith("Z")) {
+        config.backtest_end = config.backtest_end + ":00Z";
+      }
+    }
     onSubmit({
       strategy_id: strategyId,
       mode,
-      config: configData,
+      config,
     });
   }
 

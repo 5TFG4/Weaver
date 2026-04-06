@@ -25,6 +25,7 @@ export const mockRuns: Run[] = [
     mode: "backtest",
     status: "completed",
     config: { symbols: ["BTC/USD"], timeframe: "1h" },
+    error: null,
     created_at: "2026-02-01T10:00:00Z",
     started_at: "2026-02-01T10:00:01Z",
     stopped_at: "2026-02-01T10:05:00Z",
@@ -35,6 +36,7 @@ export const mockRuns: Run[] = [
     mode: "paper",
     status: "running",
     config: { symbols: ["ETH/USD"], timeframe: "15m" },
+    error: null,
     created_at: "2026-02-04T08:00:00Z",
     started_at: "2026-02-04T08:00:01Z",
   },
@@ -174,6 +176,7 @@ export const handlers = [
       mode: body.mode as Run["mode"],
       status: "pending",
       config: (body.config as Record<string, unknown>) ?? {},
+      error: null,
       created_at: new Date().toISOString(),
     };
     return HttpResponse.json(newRun, { status: 201 });

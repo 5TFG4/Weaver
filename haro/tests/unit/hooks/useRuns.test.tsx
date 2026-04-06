@@ -279,3 +279,39 @@ describe("useStopRun error notification", () => {
     expect(notifications[0].type).toBe("error");
   });
 });
+
+// =============================================================================
+// M13-10: Success notification on run creation
+// =============================================================================
+
+describe("useCreateRun success notification", () => {
+  beforeEach(() => {
+    useNotificationStore.getState().clearAll();
+  });
+
+  it("shows success notification when run is created", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useCreateRun(), { wrapper });
+
+    result.current.mutate({
+      strategy_id: "test-strategy",
+      mode: "backtest",
+      config: { symbols: ["BTC/USD"] },
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const notifications = useNotificationStore.getState().notifications;
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("success");
+    expect(notifications[0].message).toContain("created");
+  });
+});

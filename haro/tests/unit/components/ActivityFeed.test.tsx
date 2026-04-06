@@ -16,6 +16,7 @@ const mockRuns: Run[] = [
     mode: "paper",
     status: "running",
     config: { symbols: ["BTC/USD"], timeframe: "1h" },
+    error: null,
     created_at: new Date().toISOString(),
   },
   {
@@ -24,6 +25,7 @@ const mockRuns: Run[] = [
     mode: "backtest",
     status: "completed",
     config: { symbols: ["ETH/USD"], timeframe: "15m" },
+    error: null,
     created_at: "2026-02-01T10:00:00Z",
   },
 ];

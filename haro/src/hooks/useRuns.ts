@@ -58,8 +58,11 @@ export function useCreateRun() {
   return useMutation({
     mutationFn: (data: RunCreate) => createRun(data),
     onSuccess: () => {
-      // Invalidate runs list to refetch
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+      addNotification({
+        type: "success",
+        message: "Run created successfully",
+      });
     },
     onError: (error: Error) => {
       addNotification({
