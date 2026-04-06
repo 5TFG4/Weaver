@@ -871,26 +871,27 @@ recent fills. Dashboard errors surface correctly.
 
 **Goal**: Connect the three disconnected pages; fix all remaining UI bugs.
 
-| Task  | Layer    | Description                                                                                                              | Audit ref    |
-| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------ | ------------ |
-| 15-1  | Backend  | `GET /runs` add `strategy_id` query parameter                                                                            | B-2          |
-| 15-2  | Backend  | List endpoints add `sort_by` / `order` parameters                                                                        | B-3          |
-| 15-3  | Backend  | Push pagination to DB (stop in-memory slicing)                                                                           | B-6          |
-| 15-4  | Frontend | Run IDs → clickable `<Link>` to `/runs/:runId`                                                                           | M7           |
-| 15-5  | Frontend | Add "View Orders" link per run row                                                                                       | M6           |
-| 15-6  | Frontend | `OrderDetailModal` run_id → link                                                                                         | M4           |
-| 15-7  | Frontend | `OrderTable` add `run_id` column                                                                                         | M5           |
-| 15-8  | Frontend | `OrdersPage` filter: add setter + clear button                                                                           | M1, m2       |
-| 15-9  | Frontend | ActivityFeed items → clickable                                                                                           | —            |
-| 15-10 | Frontend | Detail page breadcrumbs                                                                                                  | —            |
-| 15-11 | Frontend | Fix optimistic status overrides (clear on refetch)                                                                       | C3           |
-| 15-12 | Frontend | Stop button: add `disabled={isPending}`                                                                                  | M2           |
-| 15-13 | Frontend | ActivityFeed: fix duplicate `strategy_id` display                                                                        | M3           |
-| 15-14 | Frontend | Strategies dropdown: loading/error state                                                                                 | M10          |
-| 15-15 | Frontend | Barrel file: add `strategies` export                                                                                     | M11          |
-| 15-16 | Frontend | Minor fixes batch: m1, m3, m4, m5, m6, m7, m8, m9, m10                                                                   | m1–m10       |
-| 15-17 | Frontend | RunsPage table rows: add `tabIndex`, `role="button"`, `onKeyDown` keyboard nav                                           | H5 remainder |
-| 15-18 | Test     | Extract shared fixture factory (`tests/factories/`) + Pydantic schema validation to eliminate cross-file mock data drift | M13 retro    |
+| Task  | Layer    | Description                                                                                                                                                 | Audit ref    |
+| ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 15-1  | Backend  | `GET /runs` add `strategy_id` query parameter                                                                                                               | B-2          |
+| 15-2  | Backend  | List endpoints add `sort_by` / `order` parameters                                                                                                           | B-3          |
+| 15-3  | Backend  | Push pagination to DB (stop in-memory slicing)                                                                                                              | B-6          |
+| 15-4  | Frontend | Run IDs → clickable `<Link>` to `/runs/:runId`                                                                                                              | M7           |
+| 15-5  | Frontend | Add "View Orders" link per run row                                                                                                                          | M6           |
+| 15-6  | Frontend | `OrderDetailModal` run_id → link                                                                                                                            | M4           |
+| 15-7  | Frontend | `OrderTable` add `run_id` column                                                                                                                            | M5           |
+| 15-8  | Frontend | `OrdersPage` filter: add setter + clear button                                                                                                              | M1, m2       |
+| 15-9  | Frontend | ActivityFeed items → clickable                                                                                                                              | —            |
+| 15-10 | Frontend | Detail page breadcrumbs                                                                                                                                     | —            |
+| 15-11 | Frontend | Fix optimistic status overrides (clear on refetch)                                                                                                          | C3           |
+| 15-12 | Frontend | Stop button: add `disabled={isPending}`                                                                                                                     | M2           |
+| 15-13 | Frontend | ActivityFeed: fix duplicate `strategy_id` display                                                                                                           | M3           |
+| 15-14 | Frontend | Strategies dropdown: loading/error state                                                                                                                    | M10          |
+| 15-15 | Frontend | Barrel file: add `strategies` export                                                                                                                        | M11          |
+| 15-16 | Frontend | Minor fixes batch: m1, m3, m4, m5, m6, m7, m8, m9, m10                                                                                                      | m1–m10       |
+| 15-17 | Frontend | RunsPage table rows: add `tabIndex`, `role="button"`, `onKeyDown` keyboard nav                                                                              | H5 remainder |
+| 15-18 | Test     | Extract shared fixture factory (`tests/factories/`) + Pydantic schema validation to eliminate cross-file mock data drift                                    | M13 retro    |
+| 15-19 | Backend  | Fix `BacktestResultRecord` model type annotations: `Mapped[dict]` → `Mapped[list]` with explicit `JSONB` column type for `symbols`, `equity_curve`, `fills` | PR review    |
 
 **Exit gate**: All pages cross-linked. No dead-end navigation. All
 Critical/Major/Minor frontend bugs from audit resolved. Tables

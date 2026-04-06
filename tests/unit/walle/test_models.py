@@ -108,4 +108,13 @@ class TestBaseMetadata:
 
     def test_metadata_has_expected_tables(self):
         """Expected tables exist: outbox, consumer_offsets, bars, veda_orders, runs, fills, backtest_results."""
-        assert len(Base.metadata.tables) == 7
+        expected = {
+            "outbox",
+            "consumer_offsets",
+            "bars",
+            "veda_orders",
+            "runs",
+            "fills",
+            "backtest_results",
+        }
+        assert expected.issubset(Base.metadata.tables.keys())
