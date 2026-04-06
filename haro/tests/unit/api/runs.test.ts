@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { fetchRuns, fetchRun, createRun, stopRun } from "../../../src/api/runs";
-import { mockRuns } from "../../mocks/handlers";
+import {
+  fetchRuns,
+  fetchRun,
+  createRun,
+  stopRun,
+  fetchRunResults,
+} from "../../../src/api/runs";
+import { mockRuns, mockBacktestResult } from "../../mocks/handlers";
 
 describe("Runs API", () => {
   it("fetchRuns returns paginated list", async () => {
@@ -38,5 +44,17 @@ describe("Runs API", () => {
 
     expect(result.status).toBe("stopped");
     expect(result.stopped_at).toBeDefined();
+  });
+
+  it("fetchRunResults returns backtest results", async () => {
+    const result = await fetchRunResults("run-1");
+
+    expect(result.run_id).toBe("run-1");
+    expect(result.final_equity).toBe("10500.00");
+    expect(result.equity_curve).toHaveLength(
+      mockBacktestResult.equity_curve.length,
+    );
+    expect(result.fills).toHaveLength(mockBacktestResult.fills.length);
+    expect(result.stats.sharpe_ratio).toBe(1.23);
   });
 });

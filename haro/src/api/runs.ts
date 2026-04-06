@@ -5,7 +5,7 @@
  */
 
 import { get, post } from "./client";
-import type { Run, RunCreate, RunListResponse } from "./types";
+import type { BacktestResult, Run, RunCreate, RunListResponse } from "./types";
 
 /**
  * Fetch paginated list of runs
@@ -49,4 +49,13 @@ export async function startRun(runId: string): Promise<Run> {
  */
 export async function stopRun(runId: string): Promise<Run> {
   return post<Run>(`/runs/${runId}/stop`);
+}
+
+/**
+ * Fetch backtest results for a run
+ */
+export async function fetchRunResults(
+  runId: string,
+): Promise<BacktestResult> {
+  return get<BacktestResult>(`/runs/${runId}/results`);
 }

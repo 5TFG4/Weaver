@@ -62,6 +62,24 @@ export interface RunListResponse {
 }
 
 // =============================================================================
+// Backtest Result Types
+// =============================================================================
+
+export interface BacktestResult {
+  run_id: string;
+  start_time: string;
+  end_time: string;
+  timeframe: string;
+  symbols: string[];
+  final_equity: string;
+  simulation_duration_ms: number;
+  total_bars_processed: number;
+  stats: Record<string, unknown>;
+  equity_curve: Array<{ timestamp: string; equity: number }>;
+  fills: Array<Record<string, unknown>>;
+}
+
+// =============================================================================
 // Order Types
 // =============================================================================
 
