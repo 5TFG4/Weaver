@@ -171,33 +171,33 @@ class RunManager:
             simulation_duration_ms=result.simulation_duration_ms,
             total_bars_processed=result.total_bars_processed,
             stats={
-                "total_return": str(result.stats.total_return),
-                "total_return_pct": str(result.stats.total_return_pct),
-                "annualized_return": str(result.stats.annualized_return),
-                "sharpe_ratio": str(result.stats.sharpe_ratio)
+                "total_return": float(result.stats.total_return),
+                "total_return_pct": float(result.stats.total_return_pct),
+                "annualized_return": float(result.stats.annualized_return),
+                "sharpe_ratio": float(result.stats.sharpe_ratio)
                 if result.stats.sharpe_ratio is not None
                 else None,
-                "sortino_ratio": str(result.stats.sortino_ratio)
+                "sortino_ratio": float(result.stats.sortino_ratio)
                 if result.stats.sortino_ratio is not None
                 else None,
-                "max_drawdown": str(result.stats.max_drawdown),
-                "max_drawdown_pct": str(result.stats.max_drawdown_pct),
+                "max_drawdown": float(result.stats.max_drawdown),
+                "max_drawdown_pct": float(result.stats.max_drawdown_pct),
                 "total_trades": result.stats.total_trades,
                 "winning_trades": result.stats.winning_trades,
                 "losing_trades": result.stats.losing_trades,
-                "win_rate": str(result.stats.win_rate),
-                "avg_win": str(result.stats.avg_win),
-                "avg_loss": str(result.stats.avg_loss),
-                "profit_factor": str(result.stats.profit_factor)
+                "win_rate": float(result.stats.win_rate),
+                "avg_win": float(result.stats.avg_win),
+                "avg_loss": float(result.stats.avg_loss),
+                "profit_factor": float(result.stats.profit_factor)
                 if result.stats.profit_factor is not None
                 else None,
                 "total_bars": result.stats.total_bars,
                 "bars_in_position": result.stats.bars_in_position,
-                "total_commission": str(result.stats.total_commission),
-                "total_slippage": str(result.stats.total_slippage),
+                "total_commission": float(result.stats.total_commission),
+                "total_slippage": float(result.stats.total_slippage),
             },
             equity_curve=[
-                {"t": point[0].isoformat(), "equity": str(point[1])}
+                {"timestamp": point[0].isoformat(), "equity": float(point[1])}
                 for point in result.equity_curve
             ],
             fills=[

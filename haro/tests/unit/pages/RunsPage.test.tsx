@@ -41,6 +41,19 @@ describe("RunsPage", () => {
     expect(screen.getByText("run-2")).toBeInTheDocument();
   });
 
+  it("renders run IDs as links to detail page", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const link1 = screen.getByRole("link", { name: "run-1" });
+    expect(link1).toHaveAttribute("href", "/runs/run-1");
+    const link2 = screen.getByRole("link", { name: "run-2" });
+    expect(link2).toHaveAttribute("href", "/runs/run-2");
+  });
+
   it("displays run mode badges", async () => {
     render(<RunsPage />);
 

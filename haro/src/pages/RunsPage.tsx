@@ -222,7 +222,12 @@ export function RunsPage() {
                     className="hover:bg-slate-700/30 transition-colors"
                   >
                     <td className="px-6 py-4 text-sm text-slate-200 font-mono">
-                      {run.id}
+                      <Link
+                        to={`/runs/${run.id}`}
+                        className="text-blue-400 hover:text-blue-300 hover:underline"
+                      >
+                        {run.id}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-200">
                       {run.strategy_id}

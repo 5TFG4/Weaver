@@ -38,29 +38,29 @@ def _make_record(
         simulation_duration_ms=1234,
         total_bars_processed=total_bars,
         stats={
-            "total_return": "5000.50",
-            "total_return_pct": "5.0",
-            "annualized_return": "60.0",
-            "sharpe_ratio": "1.85",
-            "sortino_ratio": "2.10",
-            "max_drawdown": "1200.00",
-            "max_drawdown_pct": "1.14",
+            "total_return": 5000.50,
+            "total_return_pct": 5.0,
+            "annualized_return": 60.0,
+            "sharpe_ratio": 1.85,
+            "sortino_ratio": 2.10,
+            "max_drawdown": 1200.00,
+            "max_drawdown_pct": 1.14,
             "total_trades": 8,
             "winning_trades": 5,
             "losing_trades": 3,
-            "win_rate": "0.625",
-            "avg_win": "1500.00",
-            "avg_loss": "833.50",
-            "profit_factor": "3.0",
+            "win_rate": 0.625,
+            "avg_win": 1500.00,
+            "avg_loss": 833.50,
+            "profit_factor": 3.0,
             "total_bars": total_bars,
             "bars_in_position": 42,
-            "total_commission": "16.00",
-            "total_slippage": "8.00",
+            "total_commission": 16.00,
+            "total_slippage": 8.00,
         },
         equity_curve=[
-            {"t": "2024-01-01T09:30:00+00:00", "equity": "100000.00"},
-            {"t": "2024-01-01T10:00:00+00:00", "equity": "102500.00"},
-            {"t": "2024-01-01T11:00:00+00:00", "equity": "105000.50"},
+            {"timestamp": "2024-01-01T09:30:00+00:00", "equity": 100000.00},
+            {"timestamp": "2024-01-01T10:00:00+00:00", "equity": 102500.00},
+            {"timestamp": "2024-01-01T11:00:00+00:00", "equity": 105000.50},
         ],
         fills=[
             {
@@ -160,14 +160,14 @@ class TestResultRepository:
         loaded = await repo.get_by_run_id("run-stats")
 
         assert loaded is not None
-        assert loaded.stats["total_return"] == "5000.50"
-        assert loaded.stats["sharpe_ratio"] == "1.85"
+        assert loaded.stats["total_return"] == 5000.50
+        assert loaded.stats["sharpe_ratio"] == 1.85
         assert loaded.stats["total_trades"] == 8
-        assert loaded.stats["profit_factor"] == "3.0"
-        assert loaded.stats["total_commission"] == "16.00"
+        assert loaded.stats["profit_factor"] == 3.0
+        assert loaded.stats["total_commission"] == 16.00
 
     async def test_equity_curve_jsonb_roundtrip(self, repo: ResultRepository) -> None:
-        """Equity curve list of {t, equity} dicts survives JSONB round-trip."""
+        """Equity curve list of {timestamp, equity} dicts survives JSONB round-trip."""
         record = _make_record("run-equity")
 
         await repo.save(record)
@@ -175,9 +175,9 @@ class TestResultRepository:
 
         assert loaded is not None
         assert len(loaded.equity_curve) == 3
-        assert loaded.equity_curve[0]["t"] == "2024-01-01T09:30:00+00:00"
-        assert loaded.equity_curve[0]["equity"] == "100000.00"
-        assert loaded.equity_curve[-1]["equity"] == "105000.50"
+        assert loaded.equity_curve[0]["timestamp"] == "2024-01-01T09:30:00+00:00"
+        assert loaded.equity_curve[0]["equity"] == 100000.00
+        assert loaded.equity_curve[-1]["equity"] == 105000.50
 
     async def test_fills_jsonb_roundtrip(self, repo: ResultRepository) -> None:
         """Fills list with all fill fields survives JSONB round-trip."""

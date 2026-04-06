@@ -1092,6 +1092,79 @@ class TestResultCapture:
         assert isinstance(record.equity_curve, list)
         assert isinstance(record.fills, list)
 
+    async def test_equity_curve_uses_timestamp_key_and_numeric_value(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """Equity curve entries use 'timestamp' key with float equity."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        assert len(record.equity_curve) > 0
+        point = record.equity_curve[0]
+        assert "timestamp" in point, f"Expected 'timestamp' key, got {list(point.keys())}"
+        assert "t" not in point, "Should use 'timestamp', not 't'"
+        assert isinstance(point["equity"], int | float), (
+            f"equity should be numeric, got {type(point['equity'])}"
+        )
+
+    async def test_stats_numeric_values_are_float_not_string(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """Stats values for return/risk metrics are float, not str."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        stats = record.stats
+        # Decimal-origin fields must be float
+        for key in [
+            "total_return",
+            "total_return_pct",
+            "annualized_return",
+            "max_drawdown",
+            "max_drawdown_pct",
+            "win_rate",
+            "avg_win",
+            "avg_loss",
+            "total_commission",
+            "total_slippage",
+        ]:
+            assert isinstance(stats[key], int | float), (
+                f"stats['{key}'] should be numeric, got {type(stats[key])}: {stats[key]}"
+            )
+        # Integer fields stay int
+        for key in [
+            "total_trades",
+            "winning_trades",
+            "losing_trades",
+            "total_bars",
+            "bars_in_position",
+        ]:
+            assert isinstance(stats[key], int), (
+                f"stats['{key}'] should be int, got {type(stats[key])}"
+            )
+
     async def test_result_persistence_failure_marks_error(
         self, manager_with_deps: RunManager
     ) -> None:
