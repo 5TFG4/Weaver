@@ -123,6 +123,29 @@ class RunListResponse(BaseModel):
 
 
 # =============================================================================
+# Backtest Result Schemas
+# =============================================================================
+
+
+class BacktestResultResponse(BaseModel):
+    """Response body for GET /runs/{run_id}/results."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    run_id: str
+    start_time: datetime
+    end_time: datetime
+    timeframe: str
+    symbols: list[str]
+    final_equity: str
+    simulation_duration_ms: int
+    total_bars_processed: int
+    stats: dict[str, Any]
+    equity_curve: list[dict[str, Any]]
+    fills: list[dict[str, Any]]
+
+
+# =============================================================================
 # Order Schemas
 # =============================================================================
 

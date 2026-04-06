@@ -18,6 +18,7 @@ from src.glados.services.run_manager import RunManager
 from src.glados.sse_broadcaster import SSEBroadcaster
 from src.marvin.strategy_loader import PluginStrategyLoader
 from src.veda import VedaService
+from src.walle.repositories.result_repository import ResultRepository
 
 
 def get_settings(request: Request) -> WeaverConfig:
@@ -48,6 +49,11 @@ def get_broadcaster(request: Request) -> SSEBroadcaster:
 def get_event_log(request: Request) -> EventLog | None:
     """Get EventLog from app state (may be None if no DB configured)."""
     return getattr(request.app.state, "event_log", None)
+
+
+def get_result_repository(request: Request) -> ResultRepository | None:
+    """Get ResultRepository from app state (may be None if no DB configured)."""
+    return getattr(request.app.state, "result_repository", None)
 
 
 def get_veda_service(request: Request) -> VedaService | None:

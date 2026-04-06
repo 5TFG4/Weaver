@@ -7,6 +7,8 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from fastapi.testclient import TestClient
 
 
@@ -470,3 +472,117 @@ class TestBacktestDateValidation:
             },
         )
         assert response.status_code == 201
+
+
+class TestResultsEndpoint:
+    """M13-3: GET /api/v1/runs/{run_id}/results returns backtest result."""
+
+    def _seed_result(self, client: TestClient, run_id: str) -> None:
+        """Configure the mock result_repository to return a sample result."""
+        from src.walle.models import BacktestResultRecord
+
+        record = BacktestResultRecord(
+            run_id=run_id,
+            start_time=datetime(2024, 1, 1, tzinfo=UTC),
+            end_time=datetime(2024, 6, 30, tzinfo=UTC),
+            timeframe="1m",
+            symbols=["BTC/USD"],
+            final_equity="105000.00",
+            simulation_duration_ms=1234,
+            total_bars_processed=500,
+            stats={
+                "total_return": "5000.00",
+                "total_return_pct": "5.00",
+                "sharpe_ratio": "1.25",
+                "max_drawdown": "2000.00",
+                "max_drawdown_pct": "1.90",
+                "total_trades": 10,
+                "winning_trades": 6,
+                "losing_trades": 4,
+                "win_rate": "0.60",
+            },
+            equity_curve=[
+                {"t": "2024-01-01T00:00:00+00:00", "equity": "100000.00"},
+                {"t": "2024-06-30T00:00:00+00:00", "equity": "105000.00"},
+            ],
+            fills=[
+                {
+                    "order_id": "o1",
+                    "symbol": "BTC/USD",
+                    "side": "buy",
+                    "qty": "0.1",
+                    "fill_price": "42000.00",
+                    "timestamp": "2024-01-15T10:00:00+00:00",
+                },
+            ],
+        )
+        client.app.state.result_repository.get_by_run_id.return_value = record  # type: ignore[union-attr]
+
+    def test_result_found_returns_200(self, client: TestClient) -> None:
+        """GET /runs/{id}/results returns 200 when result exists."""
+        run_id = "test-run-123"
+        self._seed_result(client, run_id)
+
+        response = client.get(f"/api/v1/runs/{run_id}/results")
+
+        assert response.status_code == 200
+
+    def test_result_not_found_returns_404(self, client: TestClient) -> None:
+        """GET /runs/{id}/results returns 404 when no result exists."""
+        response = client.get("/api/v1/runs/nonexistent-run/results")
+
+        assert response.status_code == 404
+
+    def test_result_has_expected_top_level_fields(self, client: TestClient) -> None:
+        """Response includes all expected top-level fields."""
+        run_id = "test-run-456"
+        self._seed_result(client, run_id)
+
+        response = client.get(f"/api/v1/runs/{run_id}/results")
+        data = response.json()
+
+        assert data["run_id"] == run_id
+        assert data["timeframe"] == "1m"
+        assert data["final_equity"] == "105000.00"
+        assert data["simulation_duration_ms"] == 1234
+        assert data["total_bars_processed"] == 500
+        assert isinstance(data["symbols"], list)
+
+    def test_result_stats_contains_key_metrics(self, client: TestClient) -> None:
+        """Response stats dict contains key performance metrics."""
+        run_id = "test-run-789"
+        self._seed_result(client, run_id)
+
+        response = client.get(f"/api/v1/runs/{run_id}/results")
+        stats = response.json()["stats"]
+
+        assert "total_return" in stats
+        assert "sharpe_ratio" in stats
+        assert "max_drawdown" in stats
+        assert "total_trades" in stats
+        assert "win_rate" in stats
+
+    def test_result_includes_equity_curve(self, client: TestClient) -> None:
+        """Response includes equity_curve as a list."""
+        run_id = "test-run-eq"
+        self._seed_result(client, run_id)
+
+        response = client.get(f"/api/v1/runs/{run_id}/results")
+        eq = response.json()["equity_curve"]
+
+        assert isinstance(eq, list)
+        assert len(eq) == 2
+        assert "t" in eq[0]
+        assert "equity" in eq[0]
+
+    def test_result_includes_fills(self, client: TestClient) -> None:
+        """Response includes fills as a list."""
+        run_id = "test-run-fills"
+        self._seed_result(client, run_id)
+
+        response = client.get(f"/api/v1/runs/{run_id}/results")
+        fills = response.json()["fills"]
+
+        assert isinstance(fills, list)
+        assert len(fills) == 1
+        assert fills[0]["symbol"] == "BTC/USD"
