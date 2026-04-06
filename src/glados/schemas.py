@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # =============================================================================
 # Enums
@@ -62,6 +62,40 @@ class RunCreate(BaseModel):
     config: dict[str, Any] = Field(
         ..., description="Strategy configuration containing symbols, timeframe, etc."
     )
+
+    @model_validator(mode="after")
+    def validate_backtest_dates(self) -> RunCreate:
+        """Require valid timezone-aware backtest_start/backtest_end when mode is backtest."""
+        if self.mode != RunMode.BACKTEST:
+            return self
+
+        start_raw = self.config.get("backtest_start")
+        end_raw = self.config.get("backtest_end")
+
+        if start_raw is None:
+            raise ValueError("config.backtest_start is required for backtest mode")
+        if end_raw is None:
+            raise ValueError("config.backtest_end is required for backtest mode")
+
+        try:
+            start = datetime.fromisoformat(start_raw)
+        except (ValueError, TypeError):
+            raise ValueError("config.backtest_start must be a valid ISO 8601 datetime")
+
+        try:
+            end = datetime.fromisoformat(end_raw)
+        except (ValueError, TypeError):
+            raise ValueError("config.backtest_end must be a valid ISO 8601 datetime")
+
+        if start.tzinfo is None:
+            raise ValueError("config.backtest_start must include timezone (e.g. 'Z' or '+00:00')")
+        if end.tzinfo is None:
+            raise ValueError("config.backtest_end must include timezone (e.g. 'Z' or '+00:00')")
+
+        if end <= start:
+            raise ValueError("config.backtest_end must be after backtest_start")
+
+        return self
 
 
 class RunResponse(BaseModel):

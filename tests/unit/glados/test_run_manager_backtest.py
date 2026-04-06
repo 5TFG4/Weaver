@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
+from pydantic import ValidationError
 
 from src.glados.exceptions import RunNotStartableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
@@ -535,7 +536,7 @@ class TestBacktestErrorPropagation:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -743,7 +744,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -774,7 +775,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -786,7 +787,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["ETH/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -857,7 +858,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -880,7 +881,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -920,18 +921,13 @@ class TestBacktestConfigSource:
         assert result.status == RunStatus.COMPLETED
 
     async def test_backtest_rejects_missing_backtest_start(self) -> None:
-        """_start_backtest raises when config lacks backtest_start."""
-        from tests.factories.runs import create_run_manager_with_deps
-
-        manager = create_run_manager_with_deps()
-        request = RunCreate(
-            strategy_id="sample",
-            mode=RunMode.BACKTEST,
-            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
-        )
-        run = await manager.create(request)
-        with pytest.raises(RuntimeError, match="backtest_start"):
-            await manager.start(run.id)
+        """RunCreate validator rejects backtest config without backtest_start."""
+        with pytest.raises(ValidationError, match="backtest_start"):
+            RunCreate(
+                strategy_id="sample",
+                mode=RunMode.BACKTEST,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
+            )
 
 
 class TestRunErrorField:

@@ -354,3 +354,119 @@ class TestRunResponseErrorField:
         items = response.json()["items"]
         assert len(items) > 0
         assert "error" in items[0]
+
+
+class TestBacktestDateValidation:
+    """M13-5: Validate backtest date fields on run creation."""
+
+    def test_backtest_missing_start_returns_422(self, client: TestClient) -> None:
+        """POST /runs with backtest mode but no backtest_start returns 422."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_end": "2024-12-31T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 422
+
+    def test_backtest_missing_end_returns_422(self, client: TestClient) -> None:
+        """POST /runs with backtest mode but no backtest_end returns 422."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 422
+
+    def test_backtest_naive_datetime_returns_422(self, client: TestClient) -> None:
+        """POST /runs with naive datetime (no timezone info) returns 422."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-01-01T00:00:00",
+                    "backtest_end": "2024-12-31T00:00:00",
+                },
+            },
+        )
+        assert response.status_code == 422
+
+    def test_backtest_end_before_start_returns_422(self, client: TestClient) -> None:
+        """POST /runs with backtest_end before backtest_start returns 422."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-12-01T00:00:00Z",
+                    "backtest_end": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 422
+
+    def test_backtest_invalid_date_format_returns_422(self, client: TestClient) -> None:
+        """POST /runs with unparseable date string returns 422."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": "not-a-date",
+                    "backtest_end": "2024-12-31T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 422
+
+    def test_backtest_valid_dates_returns_201(self, client: TestClient) -> None:
+        """POST /runs with valid timezone-aware backtest dates returns 201."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "backtest",
+                "config": {
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-01-01T00:00:00Z",
+                    "backtest_end": "2024-12-31T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 201
+
+    def test_paper_mode_skips_date_validation(self, client: TestClient) -> None:
+        """POST /runs with paper mode does not require date fields."""
+        response = client.post(
+            "/api/v1/runs",
+            json={
+                "strategy_id": "test",
+                "mode": "paper",
+                "config": {"symbols": ["BTC/USD"]},
+            },
+        )
+        assert response.status_code == 201
