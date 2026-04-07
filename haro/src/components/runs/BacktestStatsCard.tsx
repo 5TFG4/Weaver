@@ -4,7 +4,7 @@
  * Displays key backtest statistics in a grid of stat cards.
  */
 
-import type { BacktestResult } from "../../api/types";
+import type { BacktestResult, BacktestStats } from "../../api/types";
 
 export interface BacktestStatsCardProps {
   result: BacktestResult;
@@ -21,7 +21,7 @@ function formatDuration(ms: number): string {
 
 function formatPercent(value: unknown): string {
   if (typeof value !== "number") return "—";
-  return `${(value * 100).toFixed(2)}%`;
+  return `${value.toFixed(2)}%`;
 }
 
 function formatNumber(value: unknown): string {
@@ -30,16 +30,16 @@ function formatNumber(value: unknown): string {
 }
 
 export function BacktestStatsCard({ result }: BacktestStatsCardProps) {
-  const { stats } = result;
+  const stats: BacktestStats = result.stats;
 
   const items = [
     {
       label: "Final Equity",
       value: `$${Number(result.final_equity).toLocaleString()}`,
     },
-    { label: "Total Return", value: formatPercent(stats.total_return) },
+    { label: "Total Return", value: formatPercent(stats.total_return_pct) },
     { label: "Sharpe Ratio", value: formatNumber(stats.sharpe_ratio) },
-    { label: "Max Drawdown", value: formatPercent(stats.max_drawdown) },
+    { label: "Max Drawdown", value: formatPercent(stats.max_drawdown_pct) },
     { label: "Total Trades", value: String(stats.total_trades ?? "—") },
     { label: "Win Rate", value: formatPercent(stats.win_rate) },
     {

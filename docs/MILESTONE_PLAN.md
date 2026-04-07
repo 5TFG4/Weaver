@@ -839,8 +839,13 @@ Source: `docs/UI_AUDIT.md` — full-stack audit identifying 52+ issues across
 | 13-9  | Frontend | Add trade log table on detail page                                                               | —         |
 | 13-10 | Frontend | Add success toast on run creation                                                                | M9        |
 
+| 13-11 | Backend | Add typed `BacktestStatsSchema` Pydantic model mirroring Greta's 18-field `BacktestStats` dataclass; replace `dict[str,Any]` in `BacktestResultResponse.stats` | PR review |
+| 13-12 | Frontend | Add typed `BacktestStats` interface; use `_pct` fields and remove `×100` in `formatPercent` (TDD: fix tests first, then component) | PR review |
+
 **Exit gate**: User creates backtest → dates validated → run executes → detail
 page shows return, Sharpe, max drawdown, equity curve, and fill list.
+Stats display matches Greta's actual output semantics (percentage-point values
+displayed directly, `_pct` fields used for percentage metrics).
 
 ---
 

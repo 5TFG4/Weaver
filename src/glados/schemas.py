@@ -127,6 +127,44 @@ class RunListResponse(BaseModel):
 # =============================================================================
 
 
+class BacktestStatsSchema(BaseModel):
+    """Typed schema for backtest statistics.
+
+    Mirrors ``src.greta.models.BacktestStats``.  All percentage fields are
+    stored as *percentage points* (e.g. 5.0 means 5 %).
+    """
+
+    # Returns
+    total_return: float = 0.0
+    total_return_pct: float = 0.0
+    annualized_return: float = 0.0
+
+    # Risk metrics
+    sharpe_ratio: float | None = None
+    sortino_ratio: float | None = None
+    max_drawdown: float = 0.0
+    max_drawdown_pct: float = 0.0
+
+    # Trade stats
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    win_rate: float = 0.0
+
+    # Profit metrics
+    avg_win: float = 0.0
+    avg_loss: float = 0.0
+    profit_factor: float | None = None
+
+    # Time in market
+    total_bars: int = 0
+    bars_in_position: int = 0
+
+    # Costs
+    total_commission: float = 0.0
+    total_slippage: float = 0.0
+
+
 class BacktestResultResponse(BaseModel):
     """Response body for GET /runs/{run_id}/results."""
 
@@ -140,7 +178,7 @@ class BacktestResultResponse(BaseModel):
     final_equity: str
     simulation_duration_ms: int
     total_bars_processed: int
-    stats: dict[str, Any]
+    stats: BacktestStatsSchema
     equity_curve: list[dict[str, Any]]
     fills: list[dict[str, Any]]
 

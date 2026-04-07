@@ -22,15 +22,15 @@ describe("BacktestStatsCard", () => {
   it("displays formatted stat values", () => {
     render(<BacktestStatsCard result={mockBacktestResult} />);
 
-    // Total Return: 0.05 → 5.00%
+    // Total Return: stats.total_return_pct = 5.0 → "5.00%"
     expect(screen.getByText("5.00%")).toBeInTheDocument();
     // Sharpe Ratio: 1.23
     expect(screen.getByText("1.23")).toBeInTheDocument();
-    // Max Drawdown: -0.02 → -2.00%
+    // Max Drawdown: stats.max_drawdown_pct = -2.0 → "-2.00%"
     expect(screen.getByText("-2.00%")).toBeInTheDocument();
     // Total Trades: 5
     expect(screen.getByText("5")).toBeInTheDocument();
-    // Win Rate: 0.6 → 60.00%
+    // Win Rate: stats.win_rate = 60.0 → "60.00%"
     expect(screen.getByText("60.00%")).toBeInTheDocument();
   });
 

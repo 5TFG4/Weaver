@@ -65,6 +65,42 @@ export interface RunListResponse {
 // Backtest Result Types
 // =============================================================================
 
+/**
+ * Typed backtest statistics matching ``BacktestStatsSchema`` on the backend.
+ * All percentage fields are *percentage points* (e.g. 5.0 means 5%).
+ */
+export interface BacktestStats {
+  // Returns
+  total_return: number;
+  total_return_pct: number;
+  annualized_return: number;
+
+  // Risk metrics
+  sharpe_ratio: number | null;
+  sortino_ratio: number | null;
+  max_drawdown: number;
+  max_drawdown_pct: number;
+
+  // Trade stats
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+
+  // Profit metrics
+  avg_win: number;
+  avg_loss: number;
+  profit_factor: number | null;
+
+  // Time in market
+  total_bars: number;
+  bars_in_position: number;
+
+  // Costs
+  total_commission: number;
+  total_slippage: number;
+}
+
 export interface BacktestResult {
   run_id: string;
   start_time: string;
@@ -74,7 +110,7 @@ export interface BacktestResult {
   final_equity: string;
   simulation_duration_ms: number;
   total_bars_processed: number;
-  stats: Record<string, unknown>;
+  stats: BacktestStats;
   equity_curve: Array<{ timestamp: string; equity: number }>;
   fills: Array<Record<string, unknown>>;
 }
