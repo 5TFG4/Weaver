@@ -5,8 +5,20 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchRuns, fetchRun, createRun, startRun, stopRun } from "../api/runs";
-import type { Run, RunCreate, RunListResponse } from "../api/types";
+import {
+  fetchRuns,
+  fetchRun,
+  createRun,
+  startRun,
+  stopRun,
+  fetchRunResults,
+} from "../api/runs";
+import type {
+  BacktestResult,
+  Run,
+  RunCreate,
+  RunListResponse,
+} from "../api/types";
 import { useNotificationStore } from "../stores/notificationStore";
 
 // Query keys for cache invalidation
@@ -17,6 +29,7 @@ export const runKeys = {
     [...runKeys.lists(), params] as const,
   details: () => [...runKeys.all, "detail"] as const,
   detail: (id: string) => [...runKeys.details(), id] as const,
+  results: (id: string) => [...runKeys.all, "results", id] as const,
 };
 
 /**
@@ -49,6 +62,17 @@ export function useRun(runId: string) {
 }
 
 /**
+ * Hook to fetch backtest results for a completed run
+ */
+export function useRunResults(runId: string, options?: { enabled?: boolean }) {
+  return useQuery<BacktestResult>({
+    queryKey: runKeys.results(runId),
+    queryFn: () => fetchRunResults(runId),
+    enabled: (options?.enabled ?? true) && Boolean(runId),
+  });
+}
+
+/**
  * Hook to create a new run
  */
 export function useCreateRun() {
@@ -58,8 +82,11 @@ export function useCreateRun() {
   return useMutation({
     mutationFn: (data: RunCreate) => createRun(data),
     onSuccess: () => {
-      // Invalidate runs list to refetch
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+      addNotification({
+        type: "success",
+        message: "Run created successfully",
+      });
     },
     onError: (error: Error) => {
       addNotification({

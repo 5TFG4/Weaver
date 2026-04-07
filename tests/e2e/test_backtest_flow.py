@@ -56,6 +56,10 @@ class TestBacktestFlow:
         page.locator("#strategy-id").select_option("sample")
         page.locator("#run-mode").select_option("backtest")
 
+        # Fill backtest date range (datetime-local inputs)
+        page.locator("#backtest-start").fill("2024-01-15T09:30")
+        page.locator("#backtest-end").fill("2024-01-15T09:50")
+
         # Wait for RJSF config form to render after strategy selection
         page.locator("form.rjsf").wait_for(timeout=5000)
 
@@ -120,6 +124,8 @@ class TestBacktestFlow:
             strategy_id="sample",
             mode="backtest",
             symbols=["BTC/USD"],
+            start_time="2024-01-15T09:30:00Z",
+            end_time="2024-01-15T09:50:00Z",
         )
         page.goto(f"{e2e_base_url}/runs/{run['id']}")
         expect(page.get_by_text(run["id"][:8])).to_be_visible(timeout=10000)
@@ -137,7 +143,13 @@ class TestBacktestFlow:
         runs_before = api_client.list_runs()
         count_before = runs_before["total"]
 
-        api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"])
+        api_client.create_run(
+            strategy_id="sample",
+            mode="backtest",
+            symbols=["BTC/USD"],
+            start_time="2024-01-15T09:30:00Z",
+            end_time="2024-01-15T09:50:00Z",
+        )
         page.reload()
         # The stat card should show count + 1
         stat_card = page.locator("text=Total Runs").locator("..")
@@ -150,7 +162,13 @@ class TestBacktestFlow:
         # Record count before
         before = api_client.list_runs()["total"]
         for _ in range(3):
-            api_client.create_run(strategy_id="sample", mode="backtest", symbols=["BTC/USD"])
+            api_client.create_run(
+                strategy_id="sample",
+                mode="backtest",
+                symbols=["BTC/USD"],
+                start_time="2024-01-15T09:30:00Z",
+                end_time="2024-01-15T09:50:00Z",
+            )
         page.goto(f"{e2e_base_url}/runs")
         # Should have at least before+3 table rows
         rows = page.locator("table tbody tr")

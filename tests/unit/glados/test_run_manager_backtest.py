@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
+from pydantic import ValidationError
 
 from src.glados.exceptions import RunNotStartableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
@@ -535,7 +536,7 @@ class TestBacktestErrorPropagation:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -743,7 +744,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -774,7 +775,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -786,7 +787,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["ETH/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -857,7 +858,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -880,7 +881,7 @@ class TestConcurrentRunSafety:
                     "symbols": ["BTC/USD"],
                     "timeframe": "1m",
                     "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
-                    "backtest_end": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 10, 30, tzinfo=UTC).isoformat(),
                 },
             )
         )
@@ -920,15 +921,308 @@ class TestBacktestConfigSource:
         assert result.status == RunStatus.COMPLETED
 
     async def test_backtest_rejects_missing_backtest_start(self) -> None:
-        """_start_backtest raises when config lacks backtest_start."""
+        """RunCreate validator rejects backtest config without backtest_start."""
+        with pytest.raises(ValidationError, match="backtest_start"):
+            RunCreate(
+                strategy_id="sample",
+                mode=RunMode.BACKTEST,
+                config={"symbols": ["BTC/USD"], "timeframe": "1m"},
+            )
+
+
+class TestRunErrorField:
+    """M13-4: Run dataclass error field and persistence."""
+
+    def test_run_dataclass_has_error_field_default_none(self) -> None:
+        """Run.error defaults to None."""
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="test-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.PENDING,
+            config={},
+            created_at=datetime.now(UTC),
+        )
+        assert run.error is None
+
+    def test_run_dataclass_accepts_error_string(self) -> None:
+        """Run.error can be set to a string."""
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="test-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.ERROR,
+            config={},
+            created_at=datetime.now(UTC),
+            error="Something went wrong",
+        )
+        assert run.error == "Something went wrong"
+
+    async def test_persist_run_includes_error_field(self) -> None:
+        """_persist_run passes error to RunRecord."""
+        from tests.factories.runs import create_run_manager_with_deps
+
+        mock_run_repo = AsyncMock()
+        mock_run_repo.save = AsyncMock()
+
+        manager = create_run_manager_with_deps()
+        manager._run_repository = mock_run_repo
+
+        from src.glados.services.run_manager import Run
+
+        run = Run(
+            id="err-run",
+            strategy_id="s1",
+            mode=RunMode.BACKTEST,
+            status=RunStatus.ERROR,
+            config={},
+            created_at=datetime.now(UTC),
+            error="Backtest date parse failed",
+        )
+        manager._runs[run.id] = run
+        await manager._persist_run(run)
+
+        mock_run_repo.save.assert_called_once()
+        record = mock_run_repo.save.call_args[0][0]
+        assert record.error == "Backtest date parse failed"
+
+    async def test_backtest_error_sets_error_field_on_run(self) -> None:
+        """When backtest fails, run.error should contain the error message."""
         from tests.factories.runs import create_run_manager_with_deps
 
         manager = create_run_manager_with_deps()
-        request = RunCreate(
-            strategy_id="sample",
-            mode=RunMode.BACKTEST,
-            config={"symbols": ["BTC/USD"], "timeframe": "1m"},
+
+        # Make strategy.on_tick raise to simulate failure
+        mock_strategy = manager._strategy_loader.load.return_value
+        mock_strategy.on_tick.side_effect = RuntimeError("Strategy crash")
+
+        run = await manager.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
         )
-        run = await manager.create(request)
-        with pytest.raises(RuntimeError, match="backtest_start"):
+        # _start_backtest raises; catch it
+        with contextlib.suppress(RuntimeError):
             await manager.start(run.id)
+
+        assert run.status == RunStatus.ERROR
+        assert run.error is not None
+        assert "Strategy crash" in run.error
+
+
+class TestResultCapture:
+    """M13-1: capture and persist backtest result after completion."""
+
+    @pytest_asyncio.fixture
+    async def manager_with_deps(self) -> RunManager:
+        """RunManager with all deps including result_repository."""
+        mock_event_log = AsyncMock()
+        mock_event_log.append = AsyncMock()
+
+        mock_bar_repo = AsyncMock()
+        mock_bar_repo.get_bars = AsyncMock(return_value=[])
+
+        mock_strategy_loader = MagicMock()
+        mock_strategy = MagicMock()
+        mock_strategy.initialize = AsyncMock()
+        mock_strategy.on_tick = AsyncMock(return_value=[])
+        mock_strategy_loader.load = MagicMock(return_value=mock_strategy)
+        mock_strategy_loader.get_meta = MagicMock(return_value=None)
+
+        mock_result_repo = AsyncMock()
+        mock_result_repo.save = AsyncMock()
+        mock_result_repo.get_by_run_id = AsyncMock(return_value=None)
+
+        return RunManager(
+            event_log=mock_event_log,
+            bar_repository=mock_bar_repo,
+            strategy_loader=mock_strategy_loader,
+            result_repository=mock_result_repo,
+        )
+
+    async def test_completed_backtest_persists_result(self, manager_with_deps: RunManager) -> None:
+        """result_repository.save() called on successful backtest."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        assert run.status == RunStatus.COMPLETED
+        assert manager_with_deps._result_repository.save.called
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        assert record.run_id == run.id
+
+    async def test_result_record_has_correct_fields(self, manager_with_deps: RunManager) -> None:
+        """Persisted record contains stats, equity_curve, fills."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        assert record.timeframe == "1m"
+        assert isinstance(record.stats, dict)
+        assert isinstance(record.equity_curve, list)
+        assert isinstance(record.fills, list)
+
+    async def test_equity_curve_uses_timestamp_key_and_numeric_value(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """Equity curve entries use 'timestamp' key with float equity."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        assert len(record.equity_curve) > 0
+        point = record.equity_curve[0]
+        assert "timestamp" in point, f"Expected 'timestamp' key, got {list(point.keys())}"
+        assert "t" not in point, "Should use 'timestamp', not 't'"
+        assert isinstance(point["equity"], int | float), (
+            f"equity should be numeric, got {type(point['equity'])}"
+        )
+
+    async def test_stats_numeric_values_are_float_not_string(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """Stats values for return/risk metrics are float, not str."""
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        record = manager_with_deps._result_repository.save.call_args[0][0]
+        stats = record.stats
+        # Decimal-origin fields must be float
+        for key in [
+            "total_return",
+            "total_return_pct",
+            "annualized_return",
+            "max_drawdown",
+            "max_drawdown_pct",
+            "win_rate",
+            "avg_win",
+            "avg_loss",
+            "total_commission",
+            "total_slippage",
+        ]:
+            assert isinstance(stats[key], int | float), (
+                f"stats['{key}'] should be numeric, got {type(stats[key])}: {stats[key]}"
+            )
+        # Integer fields stay int
+        for key in [
+            "total_trades",
+            "winning_trades",
+            "losing_trades",
+            "total_bars",
+            "bars_in_position",
+        ]:
+            assert isinstance(stats[key], int), (
+                f"stats['{key}'] should be int, got {type(stats[key])}"
+            )
+
+    async def test_result_persistence_failure_marks_error(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """If _persist_result fails, run transitions to ERROR."""
+        manager_with_deps._result_repository.save.side_effect = Exception("DB fail")
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        updated = await manager_with_deps.get(run.id)
+        assert updated.status == RunStatus.ERROR
+        assert "DB fail" in updated.error
+
+    async def test_failed_backtest_does_not_capture(self, manager_with_deps: RunManager) -> None:
+        """ERROR backtest should NOT persist results."""
+        mock_strategy = manager_with_deps._strategy_loader.load.return_value
+        mock_strategy.on_tick.side_effect = RuntimeError("Strategy crash")
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        with contextlib.suppress(RuntimeError):
+            await manager_with_deps.start(run.id)
+        assert not manager_with_deps._result_repository.save.called
+
+    async def test_result_repository_none_skips_persist(
+        self, manager_with_deps: RunManager
+    ) -> None:
+        """If result_repository is None, persist is a no-op."""
+        manager_with_deps._result_repository = None
+        run = await manager_with_deps.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+        await manager_with_deps.start(run.id)
+        assert run.status == RunStatus.COMPLETED

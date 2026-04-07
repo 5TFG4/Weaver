@@ -826,21 +826,26 @@ Source: `docs/UI_AUDIT.md` — full-stack audit identifying 52+ issues across
 
 **Goal**: Make the core quant workflow work: run backtest → see results.
 
-| Task  | Layer    | Description                                                                                | Audit ref |
-| ----- | -------- | ------------------------------------------------------------------------------------------ | --------- |
-| 13-1  | Backend  | `_start_backtest()` calls `greta.get_result()`; persist result + simulated positions to DB | A-1, A-6  |
-| 13-2  | Backend  | New `backtest_results` table (or JSONB column on `runs`)                                   | —         |
-| 13-3  | Backend  | `GET /runs/{id}/results` endpoint                                                          | —         |
-| 13-4  | Backend  | Add `error` field to `RunResponse` schema                                                  | B-1       |
-| 13-5  | Backend  | Validate backtest dates at creation time (not deferred to start)                           | B-4       |
-| 13-6  | Frontend | Fix backtest form: `required` + controlled `value` binding                                 | C1, C2    |
-| 13-7  | Frontend | Create `/runs/:runId` detail page with Results tab                                         | —         |
-| 13-8  | Frontend | Add charting library; render equity curve                                                  | —         |
-| 13-9  | Frontend | Add trade log table on detail page                                                         | —         |
-| 13-10 | Frontend | Add success toast on run creation                                                          | M9        |
+| Task  | Layer    | Description                                                                                      | Audit ref |
+| ----- | -------- | ------------------------------------------------------------------------------------------------ | --------- |
+| 13-1  | Backend  | `_start_backtest()` calls `greta.get_result()`; persist result to DB (positions deferred to M14) | A-1, A-6  |
+| 13-2  | Backend  | New `backtest_results` table (or JSONB column on `runs`)                                         | —         |
+| 13-3  | Backend  | `GET /runs/{id}/results` endpoint                                                                | —         |
+| 13-4  | Backend  | Add `error` field to `RunResponse` schema                                                        | B-1       |
+| 13-5  | Backend  | Validate backtest dates at creation time (not deferred to start)                                 | B-4       |
+| 13-6  | Frontend | Fix backtest form: `required` + controlled `value` binding                                       | C1, C2    |
+| 13-7  | Frontend | Create `/runs/:runId` detail page with Results tab                                               | —         |
+| 13-8  | Frontend | Add charting library; render equity curve                                                        | —         |
+| 13-9  | Frontend | Add trade log table on detail page                                                               | —         |
+| 13-10 | Frontend | Add success toast on run creation                                                                | M9        |
+
+| 13-11 | Backend | Add typed `BacktestStatsSchema` Pydantic model mirroring Greta's 18-field `BacktestStats` dataclass; replace `dict[str,Any]` in `BacktestResultResponse.stats` | PR review |
+| 13-12 | Frontend | Add typed `BacktestStats` interface; use `_pct` fields and remove `×100` in `formatPercent` (TDD: fix tests first, then component) | PR review |
 
 **Exit gate**: User creates backtest → dates validated → run executes → detail
 page shows return, Sharpe, max drawdown, equity curve, and fill list.
+Stats display matches Greta's actual output semantics (percentage-point values
+displayed directly, `_pct` fields used for percentage metrics).
 
 ---
 
@@ -871,29 +876,31 @@ recent fills. Dashboard errors surface correctly.
 
 **Goal**: Connect the three disconnected pages; fix all remaining UI bugs.
 
-| Task  | Layer    | Description                                                                    | Audit ref    |
-| ----- | -------- | ------------------------------------------------------------------------------ | ------------ |
-| 15-1  | Backend  | `GET /runs` add `strategy_id` query parameter                                  | B-2          |
-| 15-2  | Backend  | List endpoints add `sort_by` / `order` parameters                              | B-3          |
-| 15-3  | Backend  | Push pagination to DB (stop in-memory slicing)                                 | B-6          |
-| 15-4  | Frontend | Run IDs → clickable `<Link>` to `/runs/:runId`                                 | M7           |
-| 15-5  | Frontend | Add "View Orders" link per run row                                             | M6           |
-| 15-6  | Frontend | `OrderDetailModal` run_id → link                                               | M4           |
-| 15-7  | Frontend | `OrderTable` add `run_id` column                                               | M5           |
-| 15-8  | Frontend | `OrdersPage` filter: add setter + clear button                                 | M1, m2       |
-| 15-9  | Frontend | ActivityFeed items → clickable                                                 | —            |
-| 15-10 | Frontend | Detail page breadcrumbs                                                        | —            |
-| 15-11 | Frontend | Fix optimistic status overrides (clear on refetch)                             | C3           |
-| 15-12 | Frontend | Stop button: add `disabled={isPending}`                                        | M2           |
-| 15-13 | Frontend | ActivityFeed: fix duplicate `strategy_id` display                              | M3           |
-| 15-14 | Frontend | Strategies dropdown: loading/error state                                       | M10          |
-| 15-15 | Frontend | Barrel file: add `strategies` export                                           | M11          |
-| 15-16 | Frontend | Minor fixes batch: m1, m3, m4, m5, m6, m7, m8, m9, m10                         | m1–m10       |
-| 15-17 | Frontend | RunsPage table rows: add `tabIndex`, `role="button"`, `onKeyDown` keyboard nav | H5 remainder |
+| Task  | Layer    | Description                                                                                                                                                 | Audit ref    |
+| ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 15-1  | Backend  | `GET /runs` add `strategy_id` query parameter                                                                                                               | B-2          |
+| 15-2  | Backend  | List endpoints add `sort_by` / `order` parameters                                                                                                           | B-3          |
+| 15-3  | Backend  | Push pagination to DB (stop in-memory slicing)                                                                                                              | B-6          |
+| 15-4  | Frontend | Run IDs → clickable `<Link>` to `/runs/:runId`                                                                                                              | M7           |
+| 15-5  | Frontend | Add "View Orders" link per run row                                                                                                                          | M6           |
+| 15-6  | Frontend | `OrderDetailModal` run_id → link                                                                                                                            | M4           |
+| 15-7  | Frontend | `OrderTable` add `run_id` column                                                                                                                            | M5           |
+| 15-8  | Frontend | `OrdersPage` filter: add setter + clear button                                                                                                              | M1, m2       |
+| 15-9  | Frontend | ActivityFeed items → clickable                                                                                                                              | —            |
+| 15-10 | Frontend | Detail page breadcrumbs                                                                                                                                     | —            |
+| 15-11 | Frontend | Fix optimistic status overrides (clear on refetch)                                                                                                          | C3           |
+| 15-12 | Frontend | Stop button: add `disabled={isPending}`                                                                                                                     | M2           |
+| 15-13 | Frontend | ActivityFeed: fix duplicate `strategy_id` display                                                                                                           | M3           |
+| 15-14 | Frontend | Strategies dropdown: loading/error state                                                                                                                    | M10          |
+| 15-15 | Frontend | Barrel file: add `strategies` export                                                                                                                        | M11          |
+| 15-16 | Frontend | Minor fixes batch: m1, m3, m4, m5, m6, m7, m8, m9, m10                                                                                                      | m1–m10       |
+| 15-17 | Frontend | RunsPage table rows: add `tabIndex`, `role="button"`, `onKeyDown` keyboard nav                                                                              | H5 remainder |
+| 15-18 | Test     | Extract shared fixture factory (`tests/factories/`) + Pydantic schema validation to eliminate cross-file mock data drift                                    | M13 retro    |
+| 15-19 | Backend  | Fix `BacktestResultRecord` model type annotations: `Mapped[dict]` → `Mapped[list]` with explicit `JSONB` column type for `symbols`, `equity_curve`, `fills` | PR review    |
 
 **Exit gate**: All pages cross-linked. No dead-end navigation. All
 Critical/Major/Minor frontend bugs from audit resolved. Tables
-keyboard-navigable. Pagination functional.
+keyboard-navigable. Pagination functional. Shared test factories cover all API response types.
 
 ---
 

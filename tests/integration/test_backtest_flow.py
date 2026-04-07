@@ -19,6 +19,7 @@ from src.events.types import RunEvents
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.glados.services.run_manager import RunManager
 from src.walle.repositories.bar_repository import Bar, BarRepository
+from src.walle.repositories.result_repository import ResultRepository
 
 # Import test strategies from fixtures instead of defining inline
 from tests.fixtures.strategies import MockStrategyLoader
@@ -219,3 +220,51 @@ class TestBacktestFlow:
         assert RunEvents.CREATED in event_types
         assert RunEvents.STARTED in event_types
         assert RunEvents.COMPLETED in event_types
+
+    async def test_backtest_persists_result(
+        self,
+        event_log: PostgresEventLog,
+        bar_repository: BarRepository,
+        database,
+        seeded_bars: list[Bar],
+    ) -> None:
+        """Completed backtest persists result to backtest_results table.
+
+        M13 integration: create backtest -> start -> verify result in DB.
+        """
+        result_repo = ResultRepository(database.session_factory)
+        rm = RunManager(
+            event_log=event_log,
+            bar_repository=bar_repository,
+            strategy_loader=MockStrategyLoader(),
+            result_repository=result_repo,
+        )
+
+        run = await rm.create(
+            RunCreate(
+                strategy_id="test-strategy",
+                mode=RunMode.BACKTEST,
+                config={
+                    "symbols": ["BTC/USD"],
+                    "timeframe": "1m",
+                    "backtest_start": datetime(2024, 1, 1, 9, 30, tzinfo=UTC).isoformat(),
+                    "backtest_end": datetime(2024, 1, 1, 9, 35, tzinfo=UTC).isoformat(),
+                },
+            )
+        )
+
+        result = await rm.start(run.id)
+        assert result.status == RunStatus.COMPLETED
+
+        # Verify result was persisted to database
+        db_result = await result_repo.get_by_run_id(run.id)
+        assert db_result is not None
+        assert db_result.run_id == run.id
+        assert db_result.timeframe == "1m"
+        assert db_result.symbols == ["BTC/USD"]
+        assert db_result.final_equity  # non-empty string
+        assert db_result.total_bars_processed > 0
+        assert isinstance(db_result.stats, dict)
+        assert "total_return" in db_result.stats
+        assert isinstance(db_result.equity_curve, list)
+        assert len(db_result.equity_curve) > 0

@@ -8,6 +8,7 @@ import { http, HttpResponse } from "msw";
 import type {
   Run,
   Order,
+  BacktestResult,
   RunListResponse,
   OrderListResponse,
   HealthResponse,
@@ -25,6 +26,7 @@ export const mockRuns: Run[] = [
     mode: "backtest",
     status: "completed",
     config: { symbols: ["BTC/USD"], timeframe: "1h" },
+    error: null,
     created_at: "2026-02-01T10:00:00Z",
     started_at: "2026-02-01T10:00:01Z",
     stopped_at: "2026-02-01T10:05:00Z",
@@ -35,10 +37,70 @@ export const mockRuns: Run[] = [
     mode: "paper",
     status: "running",
     config: { symbols: ["ETH/USD"], timeframe: "15m" },
+    error: null,
     created_at: "2026-02-04T08:00:00Z",
     started_at: "2026-02-04T08:00:01Z",
   },
 ];
+
+export const mockBacktestResult: BacktestResult = {
+  run_id: "run-1",
+  start_time: "2026-02-01T10:00:00Z",
+  end_time: "2026-02-01T10:05:00Z",
+  timeframe: "1h",
+  symbols: ["BTC/USD"],
+  final_equity: "10500.00",
+  simulation_duration_ms: 1234,
+  total_bars_processed: 100,
+  stats: {
+    total_return: 5000.0,
+    total_return_pct: 5.0,
+    annualized_return: 8.5,
+    sharpe_ratio: 1.23,
+    sortino_ratio: 1.5,
+    max_drawdown: -2000.0,
+    max_drawdown_pct: -2.0,
+    total_trades: 5,
+    winning_trades: 3,
+    losing_trades: 2,
+    win_rate: 60.0,
+    avg_win: 2500.0,
+    avg_loss: -1000.0,
+    profit_factor: 3.75,
+    total_bars: 100,
+    bars_in_position: 40,
+    total_commission: 5.0,
+    total_slippage: 1.0,
+  },
+  equity_curve: [
+    { timestamp: "2026-02-01T10:00:00Z", equity: 10000 },
+    { timestamp: "2026-02-01T10:01:00Z", equity: 10100 },
+    { timestamp: "2026-02-01T10:02:00Z", equity: 10050 },
+    { timestamp: "2026-02-01T10:03:00Z", equity: 10200 },
+    { timestamp: "2026-02-01T10:04:00Z", equity: 10350 },
+    { timestamp: "2026-02-01T10:05:00Z", equity: 10500 },
+  ],
+  fills: [
+    {
+      timestamp: "2026-02-01T10:00:30Z",
+      symbol: "BTC/USD",
+      side: "buy",
+      qty: "0.1",
+      fill_price: "100.50",
+      commission: "0.10",
+      slippage: "0.01",
+    },
+    {
+      timestamp: "2026-02-01T10:03:00Z",
+      symbol: "BTC/USD",
+      side: "sell",
+      qty: "0.1",
+      fill_price: "102.00",
+      commission: "0.10",
+      slippage: "0.02",
+    },
+  ],
+};
 
 export const mockOrders: Order[] = [
   {
@@ -165,6 +227,14 @@ export const handlers = [
     return HttpResponse.json(run);
   }),
 
+  // GET /api/v1/runs/:id/results - Get backtest results
+  http.get("/api/v1/runs/:id/results", ({ params }) => {
+    if (params.id === mockBacktestResult.run_id) {
+      return HttpResponse.json(mockBacktestResult);
+    }
+    return HttpResponse.json({ detail: "Results not found" }, { status: 404 });
+  }),
+
   // POST /api/v1/runs - Create run
   http.post("/api/v1/runs", async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
@@ -174,6 +244,7 @@ export const handlers = [
       mode: body.mode as Run["mode"],
       status: "pending",
       config: (body.config as Record<string, unknown>) ?? {},
+      error: null,
       created_at: new Date().toISOString(),
     };
     return HttpResponse.json(newRun, { status: 201 });

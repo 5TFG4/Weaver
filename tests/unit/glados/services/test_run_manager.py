@@ -54,7 +54,12 @@ class TestRunManagerCreate:
         request = RunCreate(
             strategy_id="my_strategy",
             mode=RunMode.BACKTEST,
-            config={"symbols": ["BTC/USD", "ETH/USD"], "timeframe": "5m"},
+            config={
+                "symbols": ["BTC/USD", "ETH/USD"],
+                "timeframe": "5m",
+                "backtest_start": "2024-01-01T00:00:00Z",
+                "backtest_end": "2024-12-31T00:00:00Z",
+            },
         )
 
         run = await run_manager.create(request)

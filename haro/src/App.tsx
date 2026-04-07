@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { RunsPage } from "./pages/RunsPage";
+import { RunDetailPage } from "./pages/RunDetailPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { NotFound } from "./pages/NotFound";
 import { Toast } from "./components/common/Toast";
@@ -17,7 +18,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/runs" element={<RunsPage />} />
-          <Route path="/runs/:runId" element={<RunsPage />} />
+          <Route path="/runs/:runId" element={<RunDetailPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

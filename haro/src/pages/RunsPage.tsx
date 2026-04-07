@@ -7,13 +7,12 @@
  */
 
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   useRuns,
   useCreateRun,
   useStartRun,
   useStopRun,
-  useRun,
 } from "../hooks/useRuns";
 import { StatusBadge } from "../components/common/StatusBadge";
 import { Pagination } from "../components/common/Pagination";
@@ -35,18 +34,11 @@ function canStop(status: string): boolean {
 }
 
 export function RunsPage() {
-  const { runId } = useParams<{ runId?: string }>();
-  const isDeepLink = Boolean(runId);
-
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  const runsQuery = useRuns(
-    { page, page_size: PAGE_SIZE },
-    { enabled: !isDeepLink },
-  );
-  const runQuery = useRun(runId ?? "");
+  const runsQuery = useRuns({ page, page_size: PAGE_SIZE });
   const createRunMutation = useCreateRun();
   const startRunMutation = useStartRun();
   const stopRunMutation = useStopRun();
@@ -55,8 +47,8 @@ export function RunsPage() {
   const [startedIds, setStartedIds] = useState<Set<string>>(new Set());
   const [stoppedIds, setStoppedIds] = useState<Set<string>>(new Set());
 
-  const isLoading = isDeepLink ? runQuery.isLoading : runsQuery.isLoading;
-  const isError = isDeepLink ? runQuery.isError : runsQuery.isError;
+  const isLoading = runsQuery.isLoading;
+  const isError = runsQuery.isError;
 
   function handleCreate(data: RunCreate) {
     createRunMutation.mutate(data, {
@@ -98,9 +90,7 @@ export function RunsPage() {
         >
           <p className="font-medium">Failed to load runs</p>
           <p className="text-sm mt-1">
-            {(isDeepLink
-              ? runQuery.error?.message
-              : runsQuery.error?.message) ?? "Unknown error"}
+            {runsQuery.error?.message ?? "Unknown error"}
           </p>
         </div>
       </div>
@@ -134,11 +124,7 @@ export function RunsPage() {
   // ---------------------------------------------------------------------------
   // Data State
   // ---------------------------------------------------------------------------
-  const runs = isDeepLink
-    ? runQuery.data
-      ? [runQuery.data]
-      : []
-    : (runsQuery.data?.items ?? []);
+  const runs = runsQuery.data?.items ?? [];
 
   /** Get effective status considering optimistic start/stop updates */
   function effectiveStatus(run: Run): string {
@@ -236,7 +222,12 @@ export function RunsPage() {
                     className="hover:bg-slate-700/30 transition-colors"
                   >
                     <td className="px-6 py-4 text-sm text-slate-200 font-mono">
-                      {run.id}
+                      <Link
+                        to={`/runs/${run.id}`}
+                        className="text-blue-400 hover:text-blue-300 hover:underline"
+                      >
+                        {run.id}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-200">
                       {run.strategy_id}
@@ -284,7 +275,7 @@ export function RunsPage() {
       )}
 
       {/* Pagination */}
-      {!isDeepLink && (runsQuery.data?.total ?? 0) > PAGE_SIZE && (
+      {(runsQuery.data?.total ?? 0) > PAGE_SIZE && (
         <Pagination
           page={page}
           totalPages={Math.ceil((runsQuery.data?.total ?? 0) / PAGE_SIZE)}

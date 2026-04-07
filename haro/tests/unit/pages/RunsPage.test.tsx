@@ -14,9 +14,6 @@ import { server } from "../../mocks/server";
 import { mockRuns } from "../../mocks/handlers";
 import { RunsPage } from "../../../src/pages/RunsPage";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { render as rtlRender } from "@testing-library/react";
 import type { RunListResponse } from "../../../src/api/types";
 
 describe("RunsPage", () => {
@@ -42,6 +39,19 @@ describe("RunsPage", () => {
     // Should show run IDs
     expect(screen.getByText("run-1")).toBeInTheDocument();
     expect(screen.getByText("run-2")).toBeInTheDocument();
+  });
+
+  it("renders run IDs as links to detail page", async () => {
+    render(<RunsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
+    });
+
+    const link1 = screen.getByRole("link", { name: "run-1" });
+    expect(link1).toHaveAttribute("href", "/runs/run-1");
+    const link2 = screen.getByRole("link", { name: "run-2" });
+    expect(link2).toHaveAttribute("href", "/runs/run-2");
   });
 
   it("displays run mode badges", async () => {
@@ -161,6 +171,7 @@ describe("RunsPage", () => {
               mode: "backtest",
               status: "pending",
               config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              error: null,
               created_at: "2026-02-01T10:00:00Z",
             },
           ],
@@ -197,6 +208,7 @@ describe("RunsPage", () => {
               mode: "backtest",
               status: "pending",
               config: { symbols: ["BTC/USD"], timeframe: "1h" },
+              error: null,
               created_at: "2026-02-01T10:00:00Z",
             },
           ],
@@ -354,29 +366,6 @@ describe("RunsPage", () => {
 
     const ordersLink = screen.getByRole("link", { name: /orders/i });
     expect(ordersLink).toHaveAttribute("href", "/orders");
-  });
-
-  it("shows only the targeted run when opened via /runs/:runId", async () => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    rtlRender(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/runs/run-2"]}>
-          <Routes>
-            <Route path="/runs/:runId" element={<RunsPage />} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-
-    await waitFor(() => {
-      expect(screen.queryByTestId("runs-loading")).not.toBeInTheDocument();
-    });
-
-    expect(screen.getByTestId("run-row-run-2")).toBeInTheDocument();
-    expect(screen.queryByTestId("run-row-run-1")).not.toBeInTheDocument();
   });
 
   // =========================================================================

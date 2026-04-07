@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # =============================================================================
 # Enums
@@ -63,6 +63,40 @@ class RunCreate(BaseModel):
         ..., description="Strategy configuration containing symbols, timeframe, etc."
     )
 
+    @model_validator(mode="after")
+    def validate_backtest_dates(self) -> RunCreate:
+        """Require valid timezone-aware backtest_start/backtest_end when mode is backtest."""
+        if self.mode != RunMode.BACKTEST:
+            return self
+
+        start_raw = self.config.get("backtest_start")
+        end_raw = self.config.get("backtest_end")
+
+        if start_raw is None:
+            raise ValueError("config.backtest_start is required for backtest mode")
+        if end_raw is None:
+            raise ValueError("config.backtest_end is required for backtest mode")
+
+        try:
+            start = datetime.fromisoformat(start_raw)
+        except (ValueError, TypeError):
+            raise ValueError("config.backtest_start must be a valid ISO 8601 datetime")
+
+        try:
+            end = datetime.fromisoformat(end_raw)
+        except (ValueError, TypeError):
+            raise ValueError("config.backtest_end must be a valid ISO 8601 datetime")
+
+        if start.tzinfo is None:
+            raise ValueError("config.backtest_start must include timezone (e.g. 'Z' or '+00:00')")
+        if end.tzinfo is None:
+            raise ValueError("config.backtest_end must include timezone (e.g. 'Z' or '+00:00')")
+
+        if end <= start:
+            raise ValueError("config.backtest_end must be after backtest_start")
+
+        return self
+
 
 class RunResponse(BaseModel):
     """Full run details response."""
@@ -72,6 +106,7 @@ class RunResponse(BaseModel):
     mode: RunMode
     status: RunStatus
     config: dict[str, Any]
+    error: str | None = None
     # Timestamps
     created_at: datetime
     started_at: datetime | None = None
@@ -85,6 +120,67 @@ class RunListResponse(BaseModel):
     total: int
     page: int = 1
     page_size: int = 20
+
+
+# =============================================================================
+# Backtest Result Schemas
+# =============================================================================
+
+
+class BacktestStatsSchema(BaseModel):
+    """Typed schema for backtest statistics.
+
+    Mirrors ``src.greta.models.BacktestStats``.  All percentage fields are
+    stored as *percentage points* (e.g. 5.0 means 5 %).
+    """
+
+    # Returns
+    total_return: float = 0.0
+    total_return_pct: float = 0.0
+    annualized_return: float = 0.0
+
+    # Risk metrics
+    sharpe_ratio: float | None = None
+    sortino_ratio: float | None = None
+    max_drawdown: float = 0.0
+    max_drawdown_pct: float = 0.0
+
+    # Trade stats
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    win_rate: float = 0.0
+
+    # Profit metrics
+    avg_win: float = 0.0
+    avg_loss: float = 0.0
+    profit_factor: float | None = None
+
+    # Time in market
+    total_bars: int = 0
+    bars_in_position: int = 0
+
+    # Costs
+    total_commission: float = 0.0
+    total_slippage: float = 0.0
+
+
+class BacktestResultResponse(BaseModel):
+    """Response body for GET /runs/{run_id}/results."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    run_id: str
+    start_time: datetime
+    end_time: datetime
+    timeframe: str
+    symbols: list[str]
+    final_equity: str
+    simulation_duration_ms: int
+    total_bars_processed: int
+    stats: BacktestStatsSchema
+    equity_curve: list[dict[str, Any]]
+    fills: list[dict[str, Any]]
 
 
 # =============================================================================

@@ -29,9 +29,11 @@ from src.glados.clock.realtime import RealtimeClock
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError
 from src.glados.schemas import RunCreate, RunMode, RunStatus
 from src.greta.greta_service import GretaService
+from src.greta.models import BacktestResult
 from src.marvin.strategy_loader import StrategyLoader
 from src.marvin.strategy_runner import StrategyRunner
 from src.walle.repositories.bar_repository import BarRepository
+from src.walle.repositories.result_repository import ResultRepository
 from src.walle.repositories.run_repository import RunRepository
 
 logger = logging.getLogger(__name__)
@@ -50,6 +52,8 @@ class Run:
     # Lifecycle timestamps
     started_at: datetime | None = None
     stopped_at: datetime | None = None
+    # Error details (M13-4)
+    error: str | None = None
 
 
 @dataclass
@@ -85,6 +89,7 @@ class RunManager:
         bar_repository: BarRepository | None = None,
         strategy_loader: StrategyLoader | None = None,
         run_repository: RunRepository | None = None,
+        result_repository: ResultRepository | None = None,
     ) -> None:
         """
         Initialize RunManager.
@@ -94,12 +99,14 @@ class RunManager:
             bar_repository: Bar repository for GretaService (backtest)
             strategy_loader: Loader for strategy instances
             run_repository: Optional RunRepository for persistence/recovery (D-2)
+            result_repository: Optional ResultRepository for backtest results (M13)
         """
         self._runs: dict[str, Run] = {}
         self._event_log = event_log
         self._bar_repository = bar_repository
         self._strategy_loader = strategy_loader
         self._run_repository = run_repository
+        self._result_repository = result_repository
         self._run_contexts: dict[str, RunContext] = {}
         self._run_locks: dict[str, asyncio.Lock] = {}
 
@@ -143,8 +150,73 @@ class RunManager:
             created_at=run.created_at,
             started_at=run.started_at,
             stopped_at=run.stopped_at,
+            error=run.error,
         )
         await self._run_repository.save(record)
+
+    async def _persist_result(self, result: BacktestResult) -> None:
+        """Persist a backtest result to the result repository."""
+        if self._result_repository is None:
+            return
+
+        from src.walle.models import BacktestResultRecord
+
+        record = BacktestResultRecord(
+            run_id=result.run_id,
+            start_time=result.start_time,
+            end_time=result.end_time,
+            timeframe=result.timeframe,
+            symbols=result.symbols,
+            final_equity=str(result.final_equity),
+            simulation_duration_ms=result.simulation_duration_ms,
+            total_bars_processed=result.total_bars_processed,
+            stats={
+                "total_return": float(result.stats.total_return),
+                "total_return_pct": float(result.stats.total_return_pct),
+                "annualized_return": float(result.stats.annualized_return),
+                "sharpe_ratio": float(result.stats.sharpe_ratio)
+                if result.stats.sharpe_ratio is not None
+                else None,
+                "sortino_ratio": float(result.stats.sortino_ratio)
+                if result.stats.sortino_ratio is not None
+                else None,
+                "max_drawdown": float(result.stats.max_drawdown),
+                "max_drawdown_pct": float(result.stats.max_drawdown_pct),
+                "total_trades": result.stats.total_trades,
+                "winning_trades": result.stats.winning_trades,
+                "losing_trades": result.stats.losing_trades,
+                "win_rate": float(result.stats.win_rate),
+                "avg_win": float(result.stats.avg_win),
+                "avg_loss": float(result.stats.avg_loss),
+                "profit_factor": float(result.stats.profit_factor)
+                if result.stats.profit_factor is not None
+                else None,
+                "total_bars": result.stats.total_bars,
+                "bars_in_position": result.stats.bars_in_position,
+                "total_commission": float(result.stats.total_commission),
+                "total_slippage": float(result.stats.total_slippage),
+            },
+            equity_curve=[
+                {"timestamp": point[0].isoformat(), "equity": float(point[1])}
+                for point in result.equity_curve
+            ],
+            fills=[
+                {
+                    "order_id": f.order_id,
+                    "client_order_id": f.client_order_id,
+                    "symbol": f.symbol,
+                    "side": f.side.value,
+                    "qty": str(f.qty),
+                    "fill_price": str(f.fill_price),
+                    "commission": str(f.commission),
+                    "slippage": str(f.slippage),
+                    "timestamp": f.timestamp.isoformat(),
+                    "bar_index": f.bar_index,
+                }
+                for f in result.fills
+            ],
+        )
+        await self._result_repository.save(record)
 
     async def _cleanup_run_context(self, run_id: str) -> None:
         """Cleanup per-run runtime resources if context exists.
@@ -446,13 +518,27 @@ class RunManager:
             if clock_error is not None or drain_errors:
                 run.status = RunStatus.ERROR
                 error_msg = str(clock_error) if clock_error else str(drain_errors[0])
+                run.error = error_msg
                 logger.error("Backtest %s failed: %s", run.id, error_msg)
             else:
                 run.status = RunStatus.COMPLETED
-        except Exception:
+                # M13-1: Capture and persist result before cleanup
+                try:
+                    bt_result = greta.get_result()
+                    await self._persist_result(bt_result)
+                except Exception as persist_err:
+                    run.status = RunStatus.ERROR
+                    run.error = f"Result persistence failed: {persist_err}"
+                    logger.error(
+                        "Backtest %s result persistence failed: %s",
+                        run.id,
+                        persist_err,
+                    )
+        except Exception as exc:
             # Don't override STOPPED status if stop() was called concurrently
             if run.status != RunStatus.STOPPED:
                 run.status = RunStatus.ERROR
+                run.error = str(exc)
             raise
         finally:
             # Cleanup RunContext even if init or backtest fails

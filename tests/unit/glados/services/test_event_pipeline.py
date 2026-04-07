@@ -225,7 +225,12 @@ class TestDomainRouterWiring:
             RunCreate(
                 strategy_id="sma_cross",
                 mode=RunMode.BACKTEST,
-                config={"symbols": ["AAPL"], "timeframe": "1m"},
+                config={
+                    "symbols": ["AAPL"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-01-01T00:00:00Z",
+                    "backtest_end": "2024-12-31T00:00:00Z",
+                },
             )
         )
 
@@ -398,7 +403,12 @@ class TestEventToSSEIntegration:
             RunCreate(
                 strategy_id="sma_cross",
                 mode=RunMode.BACKTEST,
-                config={"symbols": ["AAPL"], "timeframe": "1m"},
+                config={
+                    "symbols": ["AAPL"],
+                    "timeframe": "1m",
+                    "backtest_start": "2024-01-01T00:00:00Z",
+                    "backtest_end": "2024-12-31T00:00:00Z",
+                },
             )
         )
 

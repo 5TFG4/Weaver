@@ -279,6 +279,7 @@ def create_run_manager_with_deps(
     event_log: Any | None = None,
     bar_repository: Any | None = None,
     strategy_loader: Any | None = None,
+    result_repository: Any | None = None,
 ) -> RunManager:
     """
     Create a RunManager with all mocked dependencies for testing.
@@ -287,6 +288,7 @@ def create_run_manager_with_deps(
         event_log: Optional event log (will create mock if None)
         bar_repository: Optional bar repository (will create mock if None)
         strategy_loader: Optional strategy loader (will create mock if None)
+        result_repository: Optional result repository (will create mock if None)
 
     Returns:
         RunManager with all dependencies configured
@@ -314,8 +316,15 @@ def create_run_manager_with_deps(
         strategy_loader.load = MagicMock(return_value=mock_strategy)
         strategy_loader.get_meta = MagicMock(return_value=None)
 
+    # Create result repository if not provided
+    if result_repository is None:
+        result_repository = AsyncMock()
+        result_repository.save = AsyncMock()
+        result_repository.get_by_run_id = AsyncMock(return_value=None)
+
     return RunManager(
         event_log=event_log,
         bar_repository=bar_repository,
         strategy_loader=strategy_loader,
+        result_repository=result_repository,
     )

@@ -193,6 +193,39 @@ class RunRecord(Base):
         )
 
 
+class BacktestResultRecord(Base):
+    """
+    Persisted backtest result — one-to-one with RunRecord.
+
+    Stores the complete output of a completed backtest: stats,
+    equity curve, fills, and metadata.  Created by M13.
+    """
+
+    __tablename__ = "backtest_results"
+
+    run_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    timeframe: Mapped[str] = mapped_column(String(10), nullable=False)
+    symbols: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # list[str] as JSONB
+    final_equity: Mapped[str] = mapped_column(String(50), nullable=False)  # Decimal as string
+    simulation_duration_ms: Mapped[int] = mapped_column(nullable=False, default=0)
+    total_bars_processed: Mapped[int] = mapped_column(nullable=False, default=0)
+    stats: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # BacktestStats as dict
+    equity_curve: Mapped[dict[str, Any]] = mapped_column(
+        nullable=False
+    )  # list[{timestamp, equity}]
+    fills: Mapped[dict[str, Any]] = mapped_column(nullable=False)  # list[fill_dict]
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    def __repr__(self) -> str:
+        return f"<BacktestResultRecord run_id={self.run_id!r}>"
+
+
 class FillRecord(Base):
     """
     Persisted fill history for audit trail.

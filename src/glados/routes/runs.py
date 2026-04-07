@@ -8,10 +8,17 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from src.glados.dependencies import get_run_manager
+from src.glados.dependencies import get_result_repository, get_run_manager
 from src.glados.exceptions import RunNotFoundError, RunNotStartableError
-from src.glados.schemas import RunCreate, RunListResponse, RunResponse, RunStatus
+from src.glados.schemas import (
+    BacktestResultResponse,
+    RunCreate,
+    RunListResponse,
+    RunResponse,
+    RunStatus,
+)
 from src.glados.services.run_manager import Run, RunManager
+from src.walle.repositories.result_repository import ResultRepository
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
@@ -24,6 +31,7 @@ def _run_to_response(run: Run) -> RunResponse:
         mode=run.mode,
         status=run.status,
         config=run.config,
+        error=run.error,
         created_at=run.created_at,
         started_at=run.started_at,
         stopped_at=run.stopped_at,
@@ -130,3 +138,25 @@ async def start_run(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Run {run_id} cannot be started (not in pending status)",
         )
+
+
+@router.get("/{run_id}/results", response_model=BacktestResultResponse)
+async def get_run_results(
+    run_id: str,
+    result_repository: ResultRepository | None = Depends(get_result_repository),
+) -> BacktestResultResponse:
+    """Get backtest results for a completed run."""
+    if result_repository is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No results found for run: {run_id}",
+        )
+
+    record = await result_repository.get_by_run_id(run_id)
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No results found for run: {run_id}",
+        )
+
+    return BacktestResultResponse.model_validate(record)

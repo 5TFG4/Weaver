@@ -49,10 +49,19 @@ def client(app: FastAPI) -> Generator[TestClient]:
 
         # Replace RunManager with one that has all deps mocked,
         # so routes like POST /runs/{id}/start actually work.
-        app.state.run_manager = create_run_manager_with_deps(
-            event_log=getattr(app.state, "event_log", None),
-        )
+        # Always use mock event_log to prevent unit tests from writing
+        # run.Created events to the real outbox table in db_dev.
+        app.state.run_manager = create_run_manager_with_deps()
         # Ensure VedaService is None by default in unit tests.
         # Tests that need VedaService inject it explicitly via app.state.
         app.state.veda_service = None
+
+        # M13: Seed result_repository for results endpoint tests
+        from unittest.mock import AsyncMock
+
+        mock_result_repo = AsyncMock()
+        mock_result_repo.save = AsyncMock()
+        mock_result_repo.get_by_run_id = AsyncMock(return_value=None)
+        app.state.result_repository = mock_result_repo
+
         yield client
