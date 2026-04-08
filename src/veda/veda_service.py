@@ -23,6 +23,7 @@ from src.events.types import OrderEvents
 from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
     AccountInfo,
+    Bar,
     Fill,
     OrderIntent,
     OrderSide,
@@ -318,6 +319,28 @@ class VedaService:
     async def get_account(self) -> AccountInfo:
         """Get account information from exchange."""
         return await self._adapter.get_account()
+
+    async def get_exchange_positions(self) -> list[Position]:
+        """Get the current open positions directly from the exchange."""
+        return await self._adapter.get_positions()
+
+    async def get_bars(
+        self,
+        *,
+        symbol: str,
+        timeframe: str,
+        start: datetime,
+        end: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[Bar]:
+        """Get historical bars from the exchange adapter."""
+        return await self._adapter.get_bars(
+            symbol=symbol,
+            timeframe=timeframe,
+            start=start,
+            end=end,
+            limit=limit,
+        )
 
     async def reconcile_run_fills_once(self, run_id: str, after: datetime) -> datetime:
         """Persist new broker fills for a run and emit corresponding order events."""

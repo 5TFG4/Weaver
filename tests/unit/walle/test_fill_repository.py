@@ -132,3 +132,11 @@ class TestFillRepositoryInterface:
         assert hasattr(FillRepository, "list_by_order")
         assert callable(FillRepository.list_by_order)
         assert py_inspect.iscoroutinefunction(FillRepository.list_by_order)
+
+    def test_repository_has_list_by_run_id_method(self) -> None:
+        """FillRepository has an async list_by_run_id() method."""
+        from src.walle.repositories.fill_repository import FillRepository
+
+        assert hasattr(FillRepository, "list_by_run_id")
+        assert callable(FillRepository.list_by_run_id)
+        assert py_inspect.iscoroutinefunction(FillRepository.list_by_run_id)
