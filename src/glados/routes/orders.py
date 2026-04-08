@@ -61,6 +61,7 @@ def _order_to_response(order: Order) -> OrderResponse:
         created_at=order.created_at,
         submitted_at=order.submitted_at,
         filled_at=order.filled_at,
+        cancelled_at=order.cancelled_at,
         reject_reason=order.reject_reason,
     )
 
@@ -85,6 +86,7 @@ def _state_to_response(state: OrderState) -> OrderResponse:
         created_at=state.created_at,
         submitted_at=state.submitted_at,
         filled_at=state.filled_at,
+        cancelled_at=state.cancelled_at,
         reject_reason=state.reject_reason,
     )
 

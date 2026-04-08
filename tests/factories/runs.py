@@ -280,6 +280,7 @@ def create_run_manager_with_deps(
     bar_repository: Any | None = None,
     strategy_loader: Any | None = None,
     result_repository: Any | None = None,
+    veda_service: Any | None = None,
 ) -> RunManager:
     """
     Create a RunManager with all mocked dependencies for testing.
@@ -327,4 +328,5 @@ def create_run_manager_with_deps(
         bar_repository=bar_repository,
         strategy_loader=strategy_loader,
         result_repository=result_repository,
+        veda_service=veda_service,
     )

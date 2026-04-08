@@ -148,6 +148,7 @@ class Fill:
     price: Decimal
     commission: Decimal
     timestamp: datetime
+    symbol: str | None = None
 
 
 # =============================================================================

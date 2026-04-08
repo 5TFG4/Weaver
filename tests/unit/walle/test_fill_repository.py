@@ -70,6 +70,28 @@ class TestFillRecordModel:
         """fills table is registered in Base.metadata."""
         assert "fills" in Base.metadata.tables
 
+    def test_has_commission_column(self) -> None:
+        """FillRecord has commission column for M14 fill attribution."""
+        mapper = inspect(FillRecord)
+        column_names = {c.key for c in mapper.columns}
+        assert "commission" in column_names
+
+    def test_has_symbol_column(self) -> None:
+        """FillRecord has symbol column for M14 fill attribution."""
+        mapper = inspect(FillRecord)
+        column_names = {c.key for c in mapper.columns}
+        assert "symbol" in column_names
+
+    def test_commission_is_nullable(self) -> None:
+        """commission should be nullable for backward compatibility."""
+        table = cast(Table, FillRecord.__table__)
+        assert table.c.commission.nullable is True
+
+    def test_symbol_is_nullable(self) -> None:
+        """symbol should be nullable for backward compatibility."""
+        table = cast(Table, FillRecord.__table__)
+        assert table.c.symbol.nullable is True
+
 
 # ============================================================================
 # Test: FillRepository Class

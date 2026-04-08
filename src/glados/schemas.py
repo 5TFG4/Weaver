@@ -256,6 +256,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     submitted_at: datetime | None = None
     filled_at: datetime | None = None
+    cancelled_at: datetime | None = None
     # Error info
     reject_reason: str | None = None
 

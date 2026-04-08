@@ -313,3 +313,22 @@ class TestSyncOrderEndpoint:
         response = client.post("/api/v1/orders/any-order/sync")
 
         assert response.status_code == 503
+
+
+class TestCancelledAtExposure:
+    """M14: order responses should expose cancelled_at."""
+
+    def test_list_response_includes_cancelled_at(self, client: TestClient) -> None:
+        """Veda-backed order list should serialize cancelled_at."""
+        mock_veda = AsyncMock()
+        cancelled_state = _make_order_state("cancelled-order", status=OrderStatus.CANCELLED)
+        cancelled_state.cancelled_at = datetime(2026, 4, 7, 12, 0, 0, tzinfo=UTC)
+        mock_veda.list_orders.return_value = [cancelled_state]
+        client.app.state.veda_service = mock_veda  # type: ignore[union-attr]
+
+        response = client.get("/api/v1/orders")
+
+        assert response.status_code == 200
+        assert response.json()["items"][0]["cancelled_at"] == "2026-04-07T12:00:00Z"
+
+        client.app.state.veda_service = None  # type: ignore[union-attr]

@@ -19,6 +19,7 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from src.veda.adapters.alpaca_adapter import AlpacaAdapter
+from src.veda.interfaces import TradeActivity
 from src.veda.models import (
     OrderIntent,
     OrderSide,
@@ -603,3 +604,127 @@ class TestAlpacaAdapterAsyncWrapping:
             await adapter.get_account()
             mock_to_thread.assert_called_once()
             assert mock_to_thread.call_args[0][0] is mock_client.get_account
+
+
+# ============================================================================
+# Test: Trade Activities (M14)
+# ============================================================================
+
+
+class TestAlpacaAdapterTradeActivities:
+    """Account activity polling should map Alpaca fills into domain objects."""
+
+    async def test_list_trade_activities_maps_partial_fill_payload(self) -> None:
+        """A partial fill payload should map to TradeActivity correctly."""
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        response.json.return_value = [
+            {
+                "id": "20220304135420898::2b9e8979-48b4-4b70-9ba0-008210b76ebf",
+                "account_id": "3dcb795c-3ccc-402a-abb9-07e26a1b1326",
+                "activity_type": "FILL",
+                "transaction_time": "2022-03-04T18:54:20.903569Z",
+                "type": "partial_fill",
+                "price": "2907.15",
+                "qty": "1.792161878",
+                "side": "buy",
+                "symbol": "AMZN",
+                "leaves_qty": "1",
+                "order_id": "cddf433b-1a41-497d-ae31-50b1fee56fff",
+                "cum_qty": "1.792161878",
+                "order_status": "partially_filled",
+            }
+        ]
+
+        http_client = AsyncMock()
+        http_client.get = AsyncMock(return_value=response)
+        async_client_cm = AsyncMock()
+        async_client_cm.__aenter__.return_value = http_client
+
+        adapter = AlpacaAdapter(api_key="test-key", api_secret="test-secret", paper=True)
+        adapter._connected = True
+
+        after = datetime(2022, 3, 4, 18, 54, 20, tzinfo=UTC)
+        with patch(
+            "src.veda.adapters.alpaca_adapter.httpx.AsyncClient", return_value=async_client_cm
+        ):
+            activities = await adapter.list_trade_activities(after=after)
+
+        assert len(activities) == 1
+        activity = activities[0]
+        assert isinstance(activity, TradeActivity)
+        assert activity.activity_id == "20220304135420898::2b9e8979-48b4-4b70-9ba0-008210b76ebf"
+        assert activity.order_id == "cddf433b-1a41-497d-ae31-50b1fee56fff"
+        assert activity.symbol == "AMZN"
+        assert activity.activity_type == "partial_fill"
+        assert activity.order_status == OrderStatus.PARTIALLY_FILLED
+        assert activity.qty == Decimal("1.792161878")
+        assert activity.leaves_qty == Decimal("1")
+        assert activity.cum_qty == Decimal("1.792161878")
+
+    async def test_list_trade_activities_uses_page_token_for_pagination(self) -> None:
+        """The adapter should keep paging until Alpaca returns an empty page."""
+        first_response = MagicMock()
+        first_response.raise_for_status = MagicMock()
+        first_response.json.return_value = [
+            {
+                "id": "20220304123922310::b53b6d71-a644-4be1-9f88-39d1c8d29831",
+                "account_id": "3dcb795c-3ccc-402a-abb9-07e26a1b1326",
+                "activity_type": "FILL",
+                "transaction_time": "2022-03-04T17:39:22.310917Z",
+                "type": "partial_fill",
+                "price": "837.45",
+                "qty": "1.998065556",
+                "side": "sell",
+                "symbol": "TSLA",
+                "leaves_qty": "4",
+                "order_id": "5f4a07dc-6503-4cbf-902a-8c6608401d97",
+                "cum_qty": "1.998065556",
+                "order_status": "partially_filled",
+            }
+        ]
+        second_response = MagicMock()
+        second_response.raise_for_status = MagicMock()
+        second_response.json.return_value = [
+            {
+                "id": "20220304123922305::bc84b8a8-8758-42aa-be3b-618d097c2867",
+                "account_id": "3dcb795c-3ccc-402a-abb9-07e26a1b1326",
+                "activity_type": "FILL",
+                "transaction_time": "2022-03-04T17:39:22.305629Z",
+                "type": "fill",
+                "price": "837.45",
+                "qty": "4",
+                "side": "sell",
+                "symbol": "TSLA",
+                "leaves_qty": "0",
+                "order_id": "5f4a07dc-6503-4cbf-902a-8c6608401d97",
+                "cum_qty": "5.998065556",
+                "order_status": "filled",
+            }
+        ]
+        final_response = MagicMock()
+        final_response.raise_for_status = MagicMock()
+        final_response.json.return_value = []
+
+        http_client = AsyncMock()
+        http_client.get = AsyncMock(side_effect=[first_response, second_response, final_response])
+        async_client_cm = AsyncMock()
+        async_client_cm.__aenter__.return_value = http_client
+
+        adapter = AlpacaAdapter(api_key="test-key", api_secret="test-secret", paper=True)
+        adapter._connected = True
+
+        after = datetime(2022, 3, 4, 17, 39, 22, tzinfo=UTC)
+        with patch(
+            "src.veda.adapters.alpaca_adapter.httpx.AsyncClient", return_value=async_client_cm
+        ):
+            activities = await adapter.list_trade_activities(after=after, page_size=1)
+
+        assert [activity.activity_type for activity in activities] == ["partial_fill", "fill"]
+        assert activities[-1].order_status == OrderStatus.FILLED
+        assert http_client.get.await_count == 3
+        second_call_params = http_client.get.await_args_list[1].kwargs["params"]
+        assert (
+            second_call_params["page_token"]
+            == "20220304123922310::b53b6d71-a644-4be1-9f88-39d1c8d29831"
+        )

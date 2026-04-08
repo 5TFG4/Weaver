@@ -162,6 +162,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         strategy_loader=strategy_loader,
         run_repository=run_repository,
         result_repository=result_repository,
+        veda_service=getattr(app.state, "veda_service", None),
     )
     app.state.run_manager = run_manager
     app.state.strategy_loader = strategy_loader

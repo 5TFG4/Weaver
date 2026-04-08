@@ -35,6 +35,7 @@ class Order:
     created_at: datetime
     submitted_at: datetime | None
     filled_at: datetime | None
+    cancelled_at: datetime | None
     reject_reason: str | None
 
 
@@ -78,6 +79,7 @@ class MockOrderService:
             created_at=now,
             submitted_at=now,
             filled_at=now,
+            cancelled_at=None,
             reject_reason=None,
         )
 
@@ -100,6 +102,7 @@ class MockOrderService:
             created_at=now,
             submitted_at=now,
             filled_at=None,
+            cancelled_at=None,
             reject_reason=None,
         )
 

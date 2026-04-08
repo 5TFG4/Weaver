@@ -11,16 +11,18 @@ Main entry point for Veda module. Orchestrates:
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.config import WeaverConfig
 from src.events.log import EventLog
 from src.events.protocol import Envelope
+from src.events.types import OrderEvents
 from src.veda.interfaces import ExchangeAdapter
 from src.veda.models import (
+    AccountInfo,
     Fill,
     OrderIntent,
     OrderSide,
@@ -313,9 +315,68 @@ class VedaService:
     # Account Operations
     # =========================================================================
 
-    async def get_account(self) -> Any:
+    async def get_account(self) -> AccountInfo:
         """Get account information from exchange."""
         return await self._adapter.get_account()
+
+    async def reconcile_run_fills_once(self, run_id: str, after: datetime) -> datetime:
+        """Persist new broker fills for a run and emit corresponding order events."""
+        if self._fill_repository is None:
+            return after
+
+        orders = await self._repository.list_by_run_id(run_id)
+        orders_by_exchange_id = {
+            state.exchange_order_id: state
+            for state in orders
+            if state.exchange_order_id is not None
+        }
+        if not orders_by_exchange_id:
+            return after
+
+        overlap_after = after - timedelta(seconds=2)
+        activities = await self._adapter.list_trade_activities(after=overlap_after)
+        next_after = after
+        existing_fill_ids_by_order: dict[str, set[str]] = {}
+
+        for activity in activities:
+            next_after = max(next_after, activity.transaction_time)
+            state = orders_by_exchange_id.get(activity.order_id)
+            if state is None:
+                continue
+
+            existing_ids = existing_fill_ids_by_order.get(state.id)
+            if existing_ids is None:
+                persisted_fills = await self._fill_repository.list_by_order(state.id)
+                existing_ids = {record.exchange_fill_id or record.id for record in persisted_fills}
+                existing_fill_ids_by_order[state.id] = existing_ids
+
+            if activity.activity_id in existing_ids:
+                continue
+
+            fill_record = FillRecord(
+                id=activity.activity_id,
+                order_id=state.id,
+                price=activity.price,
+                quantity=activity.qty,
+                side=activity.side.value,
+                filled_at=activity.transaction_time,
+                exchange_fill_id=activity.activity_id,
+                commission=None,
+                symbol=activity.symbol,
+            )
+            await self._fill_repository.save(fill_record)
+            existing_ids.add(activity.activity_id)
+
+            synced_state = await self.sync_order(state.client_order_id)
+            event_state = synced_state or state
+            event_type = (
+                OrderEvents.PARTIALLY_FILLED
+                if activity.activity_type == "partial_fill"
+                else OrderEvents.FILLED
+            )
+            await self._emit_order_event(event_type, event_state)
+
+        return next_after
 
     # =========================================================================
     # Event Handling (for GLaDOS routing)
@@ -383,8 +444,8 @@ class VedaService:
         Canonical lookup key is Veda internal order ID (state.id), not
         client_order_id.
 
-        Note: FillRecord does not currently persist commission, so hydrated
-        Fill.commission defaults to Decimal("0") until schema support is added.
+        Note: Historical fills may have NULL commission/symbol until M14 data
+        is backfilled via reconciliation.
         """
         if self._fill_repository is None:
             return state
@@ -396,8 +457,9 @@ class VedaService:
                 order_id=record.order_id,
                 qty=record.quantity,
                 price=record.price,
-                commission=Decimal("0"),
+                commission=record.commission if record.commission is not None else Decimal("0"),
                 timestamp=record.filled_at,
+                symbol=record.symbol,
             )
             for record in fill_records
         ]

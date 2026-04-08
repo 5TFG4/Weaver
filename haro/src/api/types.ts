@@ -137,6 +137,7 @@ export interface Order {
   created_at: string;
   submitted_at?: string;
   filled_at?: string;
+  cancelled_at?: string;
   reject_reason?: string;
 }
 

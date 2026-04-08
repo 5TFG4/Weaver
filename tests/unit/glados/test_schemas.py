@@ -136,3 +136,13 @@ class TestRunResponse:
             created_at=datetime.now(UTC),
         )
         assert not hasattr(resp, "timeframe")
+
+
+class TestOrderResponse:
+    """Tests for order response schema alignment."""
+
+    def test_has_cancelled_at_field(self) -> None:
+        """OrderResponse should expose cancelled_at for cancelled orders."""
+        from src.glados.schemas import OrderResponse
+
+        assert "cancelled_at" in OrderResponse.model_fields
