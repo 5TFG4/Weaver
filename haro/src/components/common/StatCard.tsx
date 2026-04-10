@@ -46,14 +46,10 @@ export function StatCard({
             <p className="text-red-400 text-sm mt-1">Unable to load</p>
           ) : (
             <>
-              <p
-                className={`text-3xl font-bold mt-1 ${statusColors[status]}`}
-              >
+              <p className={`text-3xl font-bold mt-1 ${statusColors[status]}`}>
                 {value}
               </p>
-              {trend && (
-                <p className="text-sm text-slate-400 mt-1">{trend}</p>
-              )}
+              {trend && <p className="text-sm text-slate-400 mt-1">{trend}</p>}
             </>
           )}
         </div>
