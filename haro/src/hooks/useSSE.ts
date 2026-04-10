@@ -106,6 +106,16 @@ export function useSSE() {
       });
     });
 
+    eventSource.addEventListener("run.Created", (e: MessageEvent) => {
+      const data = safeParse(e.data);
+      if (!data) return;
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
+      addNotification({
+        type: "info",
+        message: `Run ${data.run_id} created`,
+      });
+    });
+
     eventSource.addEventListener("run.Error", (e: MessageEvent) => {
       const data = safeParse(e.data);
       if (!data) return;

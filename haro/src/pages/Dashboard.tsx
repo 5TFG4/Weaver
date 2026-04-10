@@ -24,27 +24,6 @@ export function Dashboard() {
     activeRunsQuery.isLoading ||
     ordersQuery.isLoading ||
     healthQuery.isLoading;
-  const isError = runsQuery.isError;
-
-  if (isError) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">System overview and status</p>
-        </div>
-        <div
-          data-testid="dashboard-error"
-          className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400"
-        >
-          <p className="font-medium">Failed to load dashboard data</p>
-          <p className="text-sm mt-1">
-            {runsQuery.error?.message ?? "Unknown error"}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -84,6 +63,8 @@ export function Dashboard() {
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
+          data-testid="stat-card-active-runs"
+          isError={activeRunsQuery.isError}
           title="Active Runs"
           value={String(activeRunCount)}
           icon={
@@ -103,6 +84,8 @@ export function Dashboard() {
           }
         />
         <StatCard
+          data-testid="stat-card-total-runs"
+          isError={runsQuery.isError}
           title="Total Runs"
           value={String(totalRuns)}
           icon={
@@ -122,6 +105,8 @@ export function Dashboard() {
           }
         />
         <StatCard
+          data-testid="stat-card-orders"
+          isError={ordersQuery.isError}
           title="Total Orders"
           value={String(totalOrders)}
           icon={
@@ -141,6 +126,8 @@ export function Dashboard() {
           }
         />
         <StatCard
+          data-testid="stat-card-system"
+          isError={healthQuery.isError}
           title="API Status"
           value={healthStatus}
           status={healthColor}

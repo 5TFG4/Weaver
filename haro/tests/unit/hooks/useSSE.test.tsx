@@ -450,8 +450,49 @@ describe("useSSE", () => {
   });
 
   // =========================================================================
+  // M14-11: run.Created SSE listener
+  // =========================================================================
+
+  it("handles run.Created event with query invalidation and notification", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    const WrapperWithSpy = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    renderHook(() => useSSE(), { wrapper: WrapperWithSpy });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+    });
+
+    act(() => {
+      MockEventSource.latest().simulateEvent("run.Created", {
+        run_id: "new-run-42",
+        strategy_id: "sma-crossover",
+        mode: "paper",
+        status: "pending",
+      });
+    });
+
+    // Should invalidate runs query
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["runs"] }),
+    );
+
+    // Should add a notification
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("info");
+    expect(notifications[0].message).toContain("new-run-42");
+  });
+
+  // =========================================================================
   // C-01: SSE event names must match backend PascalCase convention
-  // Backend emits: run.Started, run.Stopped, run.Completed, run.Error
+  // Backend emits: run.Created, run.Started, run.Stopped, run.Completed, run.Error
   // =========================================================================
 
   it("registers listeners with PascalCase run event names matching backend", () => {
@@ -464,6 +505,7 @@ describe("useSSE", () => {
     );
 
     // Must match backend RunEvents constants (PascalCase)
+    expect(registeredTypes).toContain("run.Created");
     expect(registeredTypes).toContain("run.Started");
     expect(registeredTypes).toContain("run.Stopped");
     expect(registeredTypes).toContain("run.Completed");

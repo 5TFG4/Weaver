@@ -70,7 +70,7 @@ describe("Dashboard", () => {
     });
   });
 
-  it("shows error alert on fetch failure", async () => {
+  it("shows per-card errors instead of full-page error when runs fail", async () => {
     // Override runs handler to return error
     server.use(
       http.get("/api/v1/runs", () => {
@@ -85,10 +85,83 @@ describe("Dashboard", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByTestId("dashboard-error")).toBeInTheDocument();
+        // No full-page error panel anymore
+        expect(screen.queryByTestId("dashboard-error")).not.toBeInTheDocument();
+        // Individual cards report errors
+        const totalCard = screen.getByTestId("stat-card-total-runs");
+        expect(totalCard).toHaveAttribute("data-error", "true");
       },
       { timeout: 3000 },
     );
+  });
+
+  it("shows error on health stat card when health query fails", async () => {
+    server.use(
+      http.get("/api/v1/healthz", () =>
+        HttpResponse.json({ detail: "Service unavailable" }, { status: 503 }),
+      ),
+    );
+
+    render(<Dashboard />);
+
+    // useHealth has retry: 1, so the query takes two roundtrips to error
+    await waitFor(
+      () => {
+        const card = screen.getByTestId("stat-card-system");
+        expect(card).toHaveAttribute("data-error", "true");
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("still shows runs data when health query fails", async () => {
+    server.use(
+      http.get("/api/v1/healthz", () =>
+        HttpResponse.json({ detail: "down" }, { status: 503 }),
+      ),
+    );
+
+    render(<Dashboard />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Active Runs")).toBeInTheDocument();
+        expect(screen.getByText("Total Runs")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("shows error on runs cards when runs query fails", async () => {
+    server.use(
+      http.get("/api/v1/runs", () =>
+        HttpResponse.json({ detail: "error" }, { status: 500 }),
+      ),
+    );
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      const activeCard = screen.getByTestId("stat-card-active-runs");
+      const totalCard = screen.getByTestId("stat-card-total-runs");
+      expect(activeCard).toHaveAttribute("data-error", "true");
+      expect(totalCard).toHaveAttribute("data-error", "true");
+    });
+  });
+
+  it("shows error on orders card when orders query fails", async () => {
+    server.use(
+      http.get("/api/v1/orders", () =>
+        HttpResponse.json({ detail: "error" }, { status: 500 }),
+      ),
+    );
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      const card = screen.getByTestId("stat-card-orders");
+      expect(card).toHaveAttribute("data-error", "true");
+    });
   });
 
   it("navigates to runs page on View All click", async () => {
