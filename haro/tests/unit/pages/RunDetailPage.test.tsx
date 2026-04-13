@@ -67,16 +67,15 @@ describe("RunDetailPage", () => {
     expect(screen.getByTestId("trade-log")).toBeInTheDocument();
   });
 
-  it("shows pending message for non-completed run", async () => {
+  it("shows monitoring tab for running paper run", async () => {
     renderWithRoute("run-2");
 
     await waitFor(() => {
       expect(screen.getByTestId("run-detail")).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText("Results will appear here once the run completes."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Monitoring")).toBeInTheDocument();
+    expect(screen.getByTestId("monitoring-tab")).toBeInTheDocument();
   });
 
   it("shows error field when run has error", async () => {
@@ -111,5 +110,40 @@ describe("RunDetailPage", () => {
     const backLink = screen.getByText(/back to runs/i);
     expect(backLink).toBeInTheDocument();
     expect(backLink.closest("a")).toHaveAttribute("href", "/runs");
+  });
+
+  it("shows results tab label for completed backtest", async () => {
+    renderWithRoute("run-1");
+
+    await waitFor(() => {
+      expect(screen.getByText("Results")).toBeInTheDocument();
+    });
+  });
+
+  it("shows pending message for non-completed backtest", async () => {
+    server.use(
+      http.get("/api/v1/runs/:id", () =>
+        HttpResponse.json({
+          id: "run-bt-pending",
+          strategy_id: "sma-crossover",
+          mode: "backtest",
+          status: "running",
+          config: {},
+          error: null,
+          created_at: "2026-02-01T10:00:00Z",
+          started_at: "2026-02-01T10:00:01Z",
+        }),
+      ),
+    );
+
+    renderWithRoute("run-bt-pending");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("run-detail")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText("Results will appear here once the run completes."),
+    ).toBeInTheDocument();
   });
 });

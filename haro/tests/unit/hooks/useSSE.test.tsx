@@ -491,6 +491,85 @@ describe("useSSE", () => {
   });
 
   // =========================================================================
+  // M14-9: Fill-derived query invalidation on order fill events
+  // =========================================================================
+
+  it.each(["orders.PartiallyFilled", "orders.Filled"])(
+    "invalidates fill-derived queries on %s",
+    (eventType) => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+
+      renderHook(() => useSSE(), { wrapper });
+
+      act(() => {
+        MockEventSource.latest().simulateOpen();
+      });
+
+      act(() => {
+        MockEventSource.latest().simulateEvent(eventType, {
+          order_id: "ord-1",
+          symbol: "AAPL",
+        });
+      });
+
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["fills"] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["account"] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["orders"] }),
+      );
+    },
+  );
+
+  it("handles orders.PartiallyFilled event with notification", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.PartiallyFilled", {
+        order_id: "order-pf",
+        symbol: "AAPL",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("info");
+    expect(notifications[0].message).toContain("AAPL");
+  });
+
+  it("orders.Filled notification includes symbol when available", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.Filled", {
+        order_id: "order-f",
+        symbol: "MSFT",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("success");
+    expect(notifications[0].message).toContain("MSFT");
+  });
+
+  // =========================================================================
   // C-01: SSE event names must match backend PascalCase convention
   // Backend emits: run.Created, run.Started, run.Stopped, run.Completed, run.Error
   // =========================================================================

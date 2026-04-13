@@ -3,14 +3,17 @@
  *
  * Displays detailed information about a single run.
  * For completed backtests, shows results: stats, equity curve, trade log.
+ * For live/paper runs, shows the monitoring tab with account, positions, fills.
  */
 
 import { useParams, Link } from "react-router-dom";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useRun, useRunResults } from "../hooks/useRuns";
 import { StatusBadge } from "../components/common/StatusBadge";
 import { BacktestStatsCard } from "../components/runs/BacktestStatsCard";
 import { EquityCurveChart } from "../components/runs/EquityCurveChart";
 import { TradeLogTable } from "../components/runs/TradeLogTable";
+import { MonitoringTab } from "../components/runs/MonitoringTab";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString();
@@ -54,6 +57,12 @@ export function RunDetailPage() {
   }
 
   const showResults = run.status === "completed" && run.mode === "backtest";
+  const showMonitoring = run.mode === "paper" || run.mode === "live";
+
+  const tabs = [
+    ...(showResults ? [{ key: "results", label: "Results" }] : []),
+    ...(showMonitoring ? [{ key: "monitoring", label: "Monitoring" }] : []),
+  ];
 
   return (
     <div data-testid="run-detail" className="p-6 space-y-6">
@@ -104,29 +113,56 @@ export function RunDetailPage() {
         )}
       </div>
 
-      {/* Backtest Results */}
-      {showResults && resultsLoading && (
-        <div data-testid="results-loading" className="animate-pulse space-y-4">
-          <div className="h-6 bg-slate-700 rounded w-1/4" />
-          <div className="h-48 bg-slate-700 rounded" />
-        </div>
-      )}
+      {/* Tab Content */}
+      {tabs.length > 0 ? (
+        <TabGroup>
+          <TabList
+            data-testid="run-detail-tabs"
+            className="flex space-x-1 rounded-lg bg-slate-800 p-1"
+          >
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.key}
+                className="rounded-md px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/30 data-[selected]:bg-slate-700 data-[selected]:text-white focus:outline-none"
+              >
+                {tab.label}
+              </Tab>
+            ))}
+          </TabList>
 
-      {showResults && results && (
-        <div className="space-y-6">
-          <BacktestStatsCard result={results} />
-          <EquityCurveChart data={results.equity_curve} />
-          <TradeLogTable fills={results.fills} />
-        </div>
-      )}
-
-      {run.status === "completed" && run.mode !== "backtest" && (
-        <p className="text-slate-400 text-sm">
-          Results are only available for backtest runs.
-        </p>
-      )}
-
-      {run.status !== "completed" && (
+          <TabPanels className="mt-4">
+            {showResults && (
+              <TabPanel>
+                {resultsLoading && (
+                  <div
+                    data-testid="results-loading"
+                    className="animate-pulse space-y-4"
+                  >
+                    <div className="h-6 bg-slate-700 rounded w-1/4" />
+                    <div className="h-48 bg-slate-700 rounded" />
+                  </div>
+                )}
+                {results && (
+                  <div className="space-y-6">
+                    <BacktestStatsCard result={results} />
+                    <EquityCurveChart data={results.equity_curve} />
+                    <TradeLogTable fills={results.fills} />
+                  </div>
+                )}
+              </TabPanel>
+            )}
+            {showMonitoring && (
+              <TabPanel>
+                <MonitoringTab
+                  runId={run.id}
+                  isRunning={run.status === "running"}
+                />
+              </TabPanel>
+            )}
+          </TabPanels>
+        </TabGroup>
+      ) : (
+        /* No tabs applicable (e.g., running/pending/error backtest) */
         <p className="text-slate-400 text-sm">
           Results will appear here once the run completes.
         </p>
