@@ -2849,31 +2849,201 @@ cd /weaver/haro && npx vitest run tests/unit/pages/Dashboard.test.tsx
 
 > The RunDetailPage needs a tabbed interface:
 >
-> - "Results" tab: existing backtest result content (mode=backtest, status=completed)
-> - "Monitoring" tab: positions table + account card while active, plus recent fills
-> - For stopped/completed live/paper runs, keep the Monitoring tab available for
->   historical fills, but disable live polling and show an explanatory note.
+> - "Results" tab: existing backtest result content (`mode=backtest`, `status=completed`)
+> - "Monitoring" tab: live account snapshot + open positions while the run is active, plus historical fills
+> - For stopped/completed/pending live-paper runs, keep the Monitoring tab available for fills, but do **not** render current account/position snapshots as if they were historical run state.
 
-**Files to create/modify**:
+#### 16.1.0 Codebase Reality Check
 
-| File                                                      | What                                          |
-| --------------------------------------------------------- | --------------------------------------------- |
-| `haro/src/api/account.ts`                                 | **New** — API functions for account/positions |
-| `haro/src/api/fills.ts`                                   | **New** — API function for fills              |
-| `haro/src/hooks/useAccount.ts`                            | **New** — hooks for account + positions       |
-| `haro/src/hooks/useFills.ts`                              | **New** — hook for run fills                  |
-| `haro/src/components/runs/PositionsTable.tsx`             | **New** — positions table                     |
-| `haro/src/components/runs/AccountCard.tsx`                | **New** — account info card                   |
-| `haro/src/components/runs/MonitoringTab.tsx`              | **New** — monitoring tab content              |
-| `haro/src/pages/RunDetailPage.tsx`                        | Refactor to use headlessui Tabs               |
-| `haro/tests/unit/components/runs/PositionsTable.test.tsx` | **New**                                       |
-| `haro/tests/unit/components/runs/AccountCard.test.tsx`    | **New**                                       |
-| `haro/tests/unit/pages/RunDetailPage.test.tsx`            | Update for tabs                               |
-| `haro/tests/unit/hooks/useAccount.test.tsx`               | **New**                                       |
+Before touching implementation, lock these facts from the current frontend and backend:
 
-#### 16.1.1 API Layer
+1. `haro/src/api/types.ts` does **not** yet contain `AccountInfo`, `Position`, `Fill`, `PositionListResponse`, or `FillListResponse`.
+2. `haro/tests/mocks/handlers.ts` does **not** yet provide `/api/v1/account`, `/api/v1/account/positions`, or `/api/v1/runs/:id/fills` handlers.
+3. `haro/src/api/index.ts`, `haro/src/hooks/index.ts`, and `haro/src/components/runs/index.ts` need new barrel exports if the team wants consistent imports.
+4. `haro/src/pages/RunDetailPage.tsx` still uses placeholder text for non-completed runs; there is no tab system yet.
+5. Backend account/position endpoints are **account-scoped live snapshots**, not historical run-owned snapshots. That means non-running live/paper tabs must avoid showing current account state as if it belonged to an old run.
+6. `haro/src/hooks/useSSE.ts` already has an `orders.Filled` listener. Phase 4 must refactor that existing handler instead of registering a duplicate one.
 
-**`haro/src/api/account.ts`** (new file):
+#### 16.1.1 Files to Create/Modify
+
+| File                                                      | What                                                     |
+| --------------------------------------------------------- | -------------------------------------------------------- |
+| `haro/src/api/types.ts`                                   | Add Account / Position / Fill response types             |
+| `haro/src/api/account.ts`                                 | **New** — account + positions API functions              |
+| `haro/src/api/fills.ts`                                   | **New** — fills API function                             |
+| `haro/src/api/index.ts`                                   | Export new API modules                                   |
+| `haro/src/hooks/useAccount.ts`                            | **New** — `useAccount` + `usePositions` + key factories  |
+| `haro/src/hooks/useFills.ts`                              | **New** — `useFills` + fill key factory                  |
+| `haro/src/hooks/index.ts`                                 | Export new hooks                                         |
+| `haro/src/components/runs/PositionsTable.tsx`             | **New** — positions table                                |
+| `haro/src/components/runs/AccountCard.tsx`                | **New** — account info card                              |
+| `haro/src/components/runs/RunFillsTable.tsx`              | **New** — fills table for monitoring view                |
+| `haro/src/components/runs/MonitoringTab.tsx`              | **New** — monitoring tab composition                     |
+| `haro/src/components/runs/index.ts`                       | Export new run components                                |
+| `haro/src/pages/RunDetailPage.tsx`                        | Refactor to use headlessui Tabs                          |
+| `haro/tests/mocks/handlers.ts`                            | Add mock account / positions / fills fixtures + handlers |
+| `haro/tests/unit/api/account.test.ts`                     | **New** — API tests for account + positions              |
+| `haro/tests/unit/api/fills.test.ts`                       | **New** — API tests for fills                            |
+| `haro/tests/unit/hooks/useAccount.test.tsx`               | **New** — hook tests for account + positions             |
+| `haro/tests/unit/hooks/useFills.test.tsx`                 | **New** — hook tests for fills                           |
+| `haro/tests/unit/components/runs/PositionsTable.test.tsx` | **New**                                                  |
+| `haro/tests/unit/components/runs/AccountCard.test.tsx`    | **New**                                                  |
+| `haro/tests/unit/components/runs/RunFillsTable.test.tsx`  | **New**                                                  |
+| `haro/tests/unit/components/runs/MonitoringTab.test.tsx`  | **New**                                                  |
+| `haro/tests/unit/pages/RunDetailPage.test.tsx`            | Replace stale placeholder assertions with tab assertions |
+
+#### 16.1.2 Pre-TDD Scaffolding That Must Happen Before The First RED Run
+
+This is test-harness preparation only. Without it, the new test files will not compile.
+
+**Add missing types in `haro/src/api/types.ts`:**
+
+```typescript
+export type PositionSide = "long" | "short";
+
+export interface AccountInfo {
+  account_id: string;
+  buying_power: string;
+  cash: string;
+  portfolio_value: string;
+  currency: string;
+  status: string;
+}
+
+export interface Position {
+  symbol: string;
+  qty: string;
+  side: PositionSide;
+  avg_entry_price: string;
+  market_value: string;
+  unrealized_pnl: string;
+  unrealized_pnl_percent: string;
+}
+
+export interface PositionListResponse {
+  items: Position[];
+  total: number;
+}
+
+export interface Fill {
+  id: string;
+  order_id: string;
+  price: string;
+  quantity: string;
+  side: OrderSide;
+  filled_at: string;
+  exchange_fill_id?: string;
+  commission?: string | null;
+  symbol?: string | null;
+}
+
+export interface FillListResponse {
+  items: Fill[];
+  total: number;
+}
+```
+
+**Add mock fixtures + MSW handlers in `haro/tests/mocks/handlers.ts`:**
+
+```typescript
+export const mockAccount: AccountInfo = {
+  account_id: "PA-001",
+  buying_power: "50000.00",
+  cash: "25000.00",
+  portfolio_value: "75000.00",
+  currency: "USD",
+  status: "ACTIVE",
+};
+
+export const mockPositions: Position[] = [
+  {
+    symbol: "ETH/USD",
+    qty: "1.0",
+    side: "long",
+    avg_entry_price: "2500.00",
+    market_value: "2550.00",
+    unrealized_pnl: "50.00",
+    unrealized_pnl_percent: "2.00",
+  },
+];
+
+export const mockFills: Fill[] = [
+  {
+    id: "fill-1",
+    order_id: "order-2",
+    price: "2500.00",
+    quantity: "1.0",
+    side: "buy",
+    filled_at: "2026-02-04T08:05:05Z",
+    symbol: "ETH/USD",
+    commission: "1.00",
+  },
+];
+
+http.get("/api/v1/account", () => HttpResponse.json(mockAccount));
+http.get("/api/v1/account/positions", () =>
+  HttpResponse.json({ items: mockPositions, total: mockPositions.length }),
+);
+http.get("/api/v1/runs/:id/fills", ({ params }) =>
+  HttpResponse.json({
+    items: mockFills.filter(
+      (fill) => fill.order_id === "order-2" || params.id === "run-2",
+    ),
+    total: mockFills.length,
+  }),
+);
+```
+
+**Export hygiene:**
+
+- `haro/src/api/index.ts` → export `./account`, `./fills`
+- `haro/src/hooks/index.ts` → export `./useAccount`, `./useFills`
+- `haro/src/components/runs/index.ts` → export `AccountCard`, `PositionsTable`, `RunFillsTable`, `MonitoringTab`
+
+TDD note: these scaffolding edits are allowed before the first RED run because they only make the test harness compile. The actual behavior should still fail until the feature code is written.
+
+#### 16.1.3 API Layer (RED → GREEN)
+
+**RED tests:**
+
+1. `haro/tests/unit/api/account.test.ts`
+2. `haro/tests/unit/api/fills.test.ts`
+
+Minimum assertions:
+
+- `fetchAccount()` returns `mockAccount`
+- `fetchPositions()` returns `{ items, total }`
+- `fetchFills("run-2")` returns run fill data from the fills endpoint
+
+Suggested tests:
+
+```typescript
+describe("Account API", () => {
+  it("fetchAccount returns account snapshot", async () => {
+    const result = await fetchAccount();
+    expect(result.account_id).toBe("PA-001");
+    expect(result.portfolio_value).toBe("75000.00");
+  });
+
+  it("fetchPositions returns open positions", async () => {
+    const result = await fetchPositions();
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].symbol).toBe("ETH/USD");
+  });
+});
+
+describe("Fills API", () => {
+  it("fetchFills returns run-scoped fill history", async () => {
+    const result = await fetchFills("run-2");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].symbol).toBe("ETH/USD");
+  });
+});
+```
+
+**GREEN implementation:**
+
+`haro/src/api/account.ts`
 
 ```typescript
 import { get } from "./client";
@@ -2888,7 +3058,7 @@ export async function fetchPositions(): Promise<PositionListResponse> {
 }
 ```
 
-**`haro/src/api/fills.ts`** (new file):
+`haro/src/api/fills.ts`
 
 ```typescript
 import { get } from "./client";
@@ -2899,18 +3069,38 @@ export async function fetchFills(runId: string): Promise<FillListResponse> {
 }
 ```
 
-#### 16.1.2 Hooks
+#### 16.1.4 Hooks (RED → GREEN)
 
-**`haro/src/hooks/useAccount.ts`** (new file):
+**RED tests:**
+
+1. `haro/tests/unit/hooks/useAccount.test.tsx`
+2. `haro/tests/unit/hooks/useFills.test.tsx`
+
+Required assertions:
+
+- `useAccount()` succeeds and returns account data
+- `usePositions()` succeeds and returns positions data
+- `usePositions({ enabled: false })` remains idle
+- `useFills("run-2")` succeeds and returns fills
+- `useFills("", { enabled: true })` remains idle because run id is missing
+
+**GREEN implementation:**
 
 ```typescript
 import { useQuery } from "@tanstack/react-query";
 import { fetchAccount, fetchPositions } from "../api/account";
+import { fetchFills } from "../api/fills";
 
 export const accountKeys = {
   all: ["account"] as const,
   info: () => [...accountKeys.all, "info"] as const,
   positions: () => [...accountKeys.all, "positions"] as const,
+};
+
+export const fillKeys = {
+  all: ["fills"] as const,
+  runs: () => [...fillKeys.all, "run"] as const,
+  run: (runId: string) => [...fillKeys.runs(), runId] as const,
 };
 
 export function useAccount(options?: { enabled?: boolean }) {
@@ -2932,488 +3122,165 @@ export function usePositions(options?: {
     refetchInterval: options?.refetchInterval ?? false,
   });
 }
-```
-
-**`haro/src/hooks/useFills.ts`** (new file):
-
-```typescript
-import { useQuery } from "@tanstack/react-query";
-import { fetchFills } from "../api/fills";
-
-export const fillKeys = {
-  all: ["fills"] as const,
-  byRun: (runId: string) => [...fillKeys.all, "run", runId] as const,
-};
 
 export function useFills(runId: string, options?: { enabled?: boolean }) {
   return useQuery({
-    queryKey: fillKeys.byRun(runId),
+    queryKey: fillKeys.run(runId),
     queryFn: () => fetchFills(runId),
     enabled: (options?.enabled ?? true) && Boolean(runId),
   });
 }
 ```
 
-#### 16.1.3 Component Tests (RED)
+Polling note from TanStack Query research: `refetchInterval` is independent of `staleTime`, and returning or setting `false` cleanly disables polling. Keep the default background behavior; do **not** add `refetchIntervalInBackground: true` in M14 because these account snapshots are informative, not execution-critical.
 
-**`haro/tests/unit/components/runs/PositionsTable.test.tsx`** (new file):
+#### 16.1.5 UI Components (RED → GREEN)
 
-```typescript
-import { describe, it, expect } from "vitest";
-import { render, screen } from "../../../utils";
-import { PositionsTable } from "../../../../src/components/runs/PositionsTable";
+Create three focused components instead of embedding a raw fills table inside `MonitoringTab`:
 
-const mockPositions = [
-  {
-    symbol: "AAPL",
-    qty: "100",
-    side: "long" as const,
-    avg_entry_price: "150.00",
-    market_value: "15500.00",
-    unrealized_pnl: "500.00",
-    unrealized_pnl_percent: "3.33",
-  },
-  {
-    symbol: "MSFT",
-    qty: "50",
-    side: "long" as const,
-    avg_entry_price: "380.00",
-    market_value: "19250.00",
-    unrealized_pnl: "250.00",
-    unrealized_pnl_percent: "1.32",
-  },
-];
+1. `PositionsTable`
+2. `AccountCard`
+3. `RunFillsTable`
 
-describe("PositionsTable", () => {
-  it("renders table with position data", () => {
-    render(<PositionsTable positions={mockPositions} />);
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("MSFT")).toBeInTheDocument();
-  });
+This keeps TDD clean and prevents `MonitoringTab` from becoming an untestable blob.
 
-  it("shows column headers", () => {
-    render(<PositionsTable positions={mockPositions} />);
-    expect(screen.getByText("Symbol")).toBeInTheDocument();
-    expect(screen.getByText("Qty")).toBeInTheDocument();
-    expect(screen.getByText("Side")).toBeInTheDocument();
-    expect(screen.getByText("Avg Entry")).toBeInTheDocument();
-    expect(screen.getByText("Market Value")).toBeInTheDocument();
-    expect(screen.getByText("P&L")).toBeInTheDocument();
-  });
+**RED component tests to add:**
 
-  it("shows empty state when no positions", () => {
-    render(<PositionsTable positions={[]} />);
-    expect(screen.getByTestId("positions-empty")).toBeInTheDocument();
-  });
+- `PositionsTable.test.tsx` — rows, headers, empty state, P&L color test ids
+- `AccountCard.test.tsx` — account fields, loading state, status badge
+- `RunFillsTable.test.tsx` — rows, empty state, symbol fallback, commission column
+- `MonitoringTab.test.tsx` — active vs inactive behavior, snapshot errors, fills section
 
-  it("has correct test id", () => {
-    render(<PositionsTable positions={mockPositions} />);
-    expect(screen.getByTestId("positions-table")).toBeInTheDocument();
-  });
+**Important behavioral rule discovered during research:**
 
-  it("renders P&L with color coding", () => {
-    render(<PositionsTable positions={mockPositions} />);
-    const pnlCells = screen.getAllByTestId(/position-pnl/);
-    expect(pnlCells.length).toBe(2);
-  });
-});
-```
-
-**`haro/tests/unit/components/runs/AccountCard.test.tsx`** (new file):
-
-```typescript
-import { describe, it, expect } from "vitest";
-import { render, screen } from "../../../utils";
-import { AccountCard } from "../../../../src/components/runs/AccountCard";
-
-const mockAccount = {
-  account_id: "PA-001",
-  buying_power: "50000.00",
-  cash: "25000.00",
-  portfolio_value: "75000.00",
-  currency: "USD",
-  status: "ACTIVE",
-};
-
-describe("AccountCard", () => {
-  it("renders account information", () => {
-    render(<AccountCard account={mockAccount} />);
-    expect(screen.getByTestId("account-card")).toBeInTheDocument();
-  });
-
-  it("shows portfolio value", () => {
-    render(<AccountCard account={mockAccount} />);
-    expect(screen.getByText(/75,000/)).toBeInTheDocument();
-  });
-
-  it("shows buying power", () => {
-    render(<AccountCard account={mockAccount} />);
-    expect(screen.getByText(/50,000/)).toBeInTheDocument();
-  });
-
-  it("shows cash", () => {
-    render(<AccountCard account={mockAccount} />);
-    expect(screen.getByText(/25,000/)).toBeInTheDocument();
-  });
-
-  it("shows account status", () => {
-    render(<AccountCard account={mockAccount} />);
-    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
-  });
-
-  it("shows loading state", () => {
-    render(<AccountCard account={null} isLoading />);
-    expect(screen.getByTestId("account-card-loading")).toBeInTheDocument();
-  });
-});
-```
-
-#### 16.1.4 Components (GREEN)
-
-**`haro/src/components/runs/PositionsTable.tsx`** (new file):
+- When `run.status !== "running"`, **do not** fetch `/account` or `/account/positions`.
+- Reason: those endpoints return the **current account snapshot**, not historical state for the selected run.
+- For non-running live/paper runs, render only fills plus an explanatory note such as:
 
 ```tsx
-import type { Position } from "../../api/types";
-
-interface PositionsTableProps {
-  positions: Position[];
-}
-
-export function PositionsTable({ positions }: PositionsTableProps) {
-  if (positions.length === 0) {
-    return (
-      <div
-        data-testid="positions-empty"
-        className="bg-slate-800 rounded-lg border border-slate-700 p-8 text-center"
-      >
-        <p className="text-slate-400">No open positions</p>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      data-testid="positions-table"
-      className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto"
-    >
-      <table className="w-full">
-        <thead className="bg-slate-700/50">
-          <tr>
-            <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
-              Symbol
-            </th>
-            <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-              Qty
-            </th>
-            <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
-              Side
-            </th>
-            <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-              Avg Entry
-            </th>
-            <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-              Market Value
-            </th>
-            <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-              P&L
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-700">
-          {positions.map((pos) => {
-            const pnl = parseFloat(pos.unrealized_pnl);
-            const pnlColor =
-              pnl > 0
-                ? "text-green-400"
-                : pnl < 0
-                  ? "text-red-400"
-                  : "text-slate-300";
-            return (
-              <tr key={pos.symbol} className="hover:bg-slate-700/30">
-                <td className="px-6 py-4 text-sm font-mono text-slate-200">
-                  {pos.symbol}
-                </td>
-                <td className="px-6 py-4 text-sm text-right text-slate-200">
-                  {pos.qty}
-                </td>
-                <td className="px-6 py-4 text-sm text-slate-200">{pos.side}</td>
-                <td className="px-6 py-4 text-sm text-right text-slate-200">
-                  ${pos.avg_entry_price}
-                </td>
-                <td className="px-6 py-4 text-sm text-right text-slate-200">
-                  ${pos.market_value}
-                </td>
-                <td
-                  data-testid={`position-pnl-${pos.symbol}`}
-                  className={`px-6 py-4 text-sm text-right ${pnlColor}`}
-                >
-                  {pnl >= 0 ? "+" : ""}
-                  {pos.unrealized_pnl} ({pos.unrealized_pnl_percent}%)
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+"Account and position snapshots are only shown while the run is active. Historical fills remain available below.";
 ```
 
-**`haro/src/components/runs/AccountCard.tsx`** (new file):
+**Suggested GREEN implementation shape:**
 
 ```tsx
-import type { AccountInfo } from "../../api/types";
-
-interface AccountCardProps {
-  account: AccountInfo | null;
-  isLoading?: boolean;
-}
-
-function formatCurrency(value: string): string {
-  return parseFloat(value).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-export function AccountCard({ account, isLoading }: AccountCardProps) {
-  if (isLoading) {
-    return (
-      <div
-        data-testid="account-card-loading"
-        className="bg-slate-800 rounded-lg border border-slate-700 p-6 animate-pulse"
-      >
-        <div className="h-4 bg-slate-700 rounded w-1/3 mb-4" />
-        <div className="grid grid-cols-3 gap-4">
-          <div className="h-8 bg-slate-700 rounded" />
-          <div className="h-8 bg-slate-700 rounded" />
-          <div className="h-8 bg-slate-700 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!account) return null;
-
-  return (
-    <div
-      data-testid="account-card"
-      className="bg-slate-800 rounded-lg border border-slate-700 p-6"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-200">Account</h3>
-        <span className="text-xs px-2 py-1 rounded bg-green-900/50 text-green-400">
-          {account.status}
-        </span>
-      </div>
-      <div className="grid grid-cols-3 gap-6">
-        <div>
-          <p className="text-sm text-slate-400">Portfolio Value</p>
-          <p className="text-xl font-semibold text-slate-100">
-            ${formatCurrency(account.portfolio_value)}
-          </p>
-        </div>
-        <div>
-          <p className="text-sm text-slate-400">Buying Power</p>
-          <p className="text-xl font-semibold text-slate-100">
-            ${formatCurrency(account.buying_power)}
-          </p>
-        </div>
-        <div>
-          <p className="text-sm text-slate-400">Cash</p>
-          <p className="text-xl font-semibold text-slate-100">
-            ${formatCurrency(account.cash)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-**`haro/src/components/runs/MonitoringTab.tsx`** (new file):
-
-```tsx
-import { useAccount, usePositions } from "../../hooks/useAccount";
-import { useFills } from "../../hooks/useFills";
-import { AccountCard } from "./AccountCard";
-import { PositionsTable } from "./PositionsTable";
-
 interface MonitoringTabProps {
   runId: string;
   isRunning: boolean;
 }
 
 export function MonitoringTab({ runId, isRunning }: MonitoringTabProps) {
-  const accountQuery = useAccount({
-    enabled: isRunning,
-  });
+  const showLiveSnapshot = isRunning;
+
+  const accountQuery = useAccount({ enabled: showLiveSnapshot });
   const positionsQuery = usePositions({
-    enabled: isRunning,
-    refetchInterval: isRunning ? 5000 : false,
+    enabled: showLiveSnapshot,
+    refetchInterval: showLiveSnapshot ? 5_000 : false,
   });
   const fillsQuery = useFills(runId, { enabled: true });
 
   return (
     <div data-testid="monitoring-tab" className="space-y-6">
-      <AccountCard
-        account={accountQuery.data ?? null}
-        isLoading={accountQuery.isLoading && isRunning}
-      />
-      <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-3">Positions</h3>
-        <PositionsTable positions={positionsQuery.data?.items ?? []} />
-      </div>
-      {fillsQuery.data && fillsQuery.data.items.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-slate-200 mb-3">
-            Recent Fills ({fillsQuery.data.total})
-          </h3>
-          <div
-            data-testid="fills-table"
-            className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto"
-          >
-            <table className="w-full">
-              <thead className="bg-slate-700/50">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
-                    Symbol
-                  </th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-slate-300">
-                    Side
-                  </th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-                    Qty
-                  </th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-                    Price
-                  </th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-slate-300">
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700">
-                {fillsQuery.data.items.map((fill) => (
-                  <tr key={fill.id} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-4 text-sm font-mono text-slate-200">
-                      {fill.symbol ?? "—"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-200">
-                      {fill.side}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-right text-slate-200">
-                      {fill.quantity}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-right text-slate-200">
-                      ${fill.price}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-right text-slate-400">
-                      {new Date(fill.filled_at).toLocaleTimeString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {showLiveSnapshot && accountQuery.isError && (
+        <div data-testid="monitoring-snapshot-error">
+          Unable to load account snapshot.
         </div>
       )}
-      {!isRunning && (
-        <p className="text-sm text-slate-400">
-          Live monitoring is only available while the run is active. Historical
-          fills are shown above.
-        </p>
+
+      {showLiveSnapshot && !accountQuery.isError && (
+        <AccountCard
+          account={accountQuery.data ?? null}
+          isLoading={accountQuery.isLoading}
+        />
       )}
+
+      {showLiveSnapshot && positionsQuery.isError ? (
+        <div data-testid="positions-error">Unable to load positions.</div>
+      ) : showLiveSnapshot ? (
+        <PositionsTable positions={positionsQuery.data?.items ?? []} />
+      ) : (
+        <div data-testid="monitoring-history-note">
+          Account and position snapshots are only shown while the run is active.
+          Historical fills remain available below.
+        </div>
+      )}
+
+      <RunFillsTable
+        fills={fillsQuery.data?.items ?? []}
+        isLoading={fillsQuery.isLoading}
+        isError={fillsQuery.isError}
+      />
     </div>
   );
 }
 ```
 
-#### 16.1.5 RunDetailPage Refactor
+Key improvement over the earlier plan: API errors must not silently collapse into empty state. A failed `/account/positions` call is not the same thing as “No open positions”.
 
-**`haro/src/pages/RunDetailPage.tsx`** — replace conditional rendering
-with headlessui Tab system.
+#### 16.1.6 RunDetailPage Refactor (RED → GREEN)
 
-The key structural change:
+**Replace the current conditional placeholders with headlessui Tabs.**
+
+Use `@headlessui/react` because it is already installed and gives accessible keyboard navigation for free. Since this codebase does not currently use `clsx`, prefer a plain `className` string with Headless UI state styling rather than introducing a new utility.
+
+**Target logic:**
 
 ```tsx
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
-import { MonitoringTab } from "../components/runs/MonitoringTab";
+const showResultsTab = run.mode === "backtest" && run.status === "completed";
+const showMonitoringTab = run.mode === "paper" || run.mode === "live";
+const tabs = [
+  ...(showResultsTab ? [{ key: "results", label: "Results" }] : []),
+  ...(showMonitoringTab ? [{ key: "monitoring", label: "Monitoring" }] : []),
+];
+```
 
-// Inside the component, after the header/metadata section:
-const isLivePaper = run.mode === "live" || run.mode === "paper";
-const isBacktest = run.mode === "backtest";
-const isRunning = run.status === "running";
-const isCompleted = run.status === "completed";
+**Recommended tab rendering:**
 
-// Build tab list dynamically:
-const tabs = [];
-if (isBacktest && isCompleted) {
-  tabs.push({ label: "Results", key: "results" });
-}
-if (isLivePaper) {
-  tabs.push({ label: "Monitoring", key: "monitoring" });
-}
-
-// If no tabs applicable, show placeholder
-
-// Render with TabGroup:
+```tsx
 <TabGroup>
-  <TabList className="flex space-x-1 rounded-lg bg-slate-800 p-1">
+  <TabList
+    data-testid="run-detail-tabs"
+    className="flex space-x-1 rounded-lg bg-slate-800 p-1"
+  >
     {tabs.map((tab) => (
       <Tab
         key={tab.key}
-        className={({ selected }) =>
-          `w-full rounded-lg py-2.5 text-sm font-medium leading-5
-          ${
-            selected
-              ? "bg-slate-700 text-white shadow"
-              : "text-slate-400 hover:text-white hover:bg-slate-700/30"
-          }`
-        }
+        className="rounded-md px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/30 data-selected:bg-slate-700 data-selected:text-white"
       >
         {tab.label}
       </Tab>
     ))}
   </TabList>
+
   <TabPanels className="mt-4">
-    {tabs.map((tab) => (
-      <TabPanel key={tab.key}>
-        {tab.key === "results" && results && (
-          <>
-            <BacktestStatsCard result={results} />
-            <EquityCurveChart data={results.equity_curve} />
-            <TradeLogTable fills={results.fills} />
-          </>
-        )}
-        {tab.key === "monitoring" && (
-          <MonitoringTab runId={run.id} isRunning={isRunning} />
-        )}
+    {showResultsTab && (
+      <TabPanel>
+        <BacktestStatsCard result={results} />
+        <EquityCurveChart data={results.equity_curve} />
+        <TradeLogTable fills={results.fills} />
       </TabPanel>
-    ))}
+    )}
+    {showMonitoringTab && (
+      <TabPanel>
+        <MonitoringTab runId={run.id} isRunning={run.status === "running"} />
+      </TabPanel>
+    )}
   </TabPanels>
-</TabGroup>;
+</TabGroup>
 ```
 
-**`haro/tests/unit/pages/RunDetailPage.test.tsx`** — update for tabs:
+**RED test updates in `haro/tests/unit/pages/RunDetailPage.test.tsx`:**
+
+1. Replace the stale assertion for the running paper placeholder message.
+2. Add a test that a running paper run shows the `Monitoring` tab.
+3. Keep the completed backtest assertions, but make them tab-aware by asserting `Results` exists.
+4. Add one assertion that the tab list itself renders (`data-testid="run-detail-tabs"`).
+
+Suggested new assertions:
 
 ```typescript
 it("shows monitoring tab for running paper run", async () => {
-  server.use(
-    http.get("/api/v1/runs/:id", () =>
-      HttpResponse.json({
-        id: "run-paper",
-        strategy_id: "sma-crossover",
-        mode: "paper",
-        status: "running",
-        config: {},
-        created_at: "2026-04-07T10:00:00Z",
-        started_at: "2026-04-07T10:01:00Z",
-      }),
-    ),
-  );
-  renderWithRoute("run-paper");
+  renderWithRoute("run-2");
   await waitFor(() => {
     expect(screen.getByText("Monitoring")).toBeInTheDocument();
   });
@@ -3427,14 +3294,20 @@ it("shows results tab for completed backtest run", async () => {
 });
 ```
 
-Replace the old test that asserted a running paper run shows
-"Results will appear here once the run completes." That placeholder is no
-longer valid once Monitoring exists.
+#### 16.1.7 Verification Order
 
 ```bash
-cd /weaver/haro && npx vitest run tests/unit/pages/RunDetailPage.test.tsx
+# API layer
+cd /weaver/haro && npx vitest run tests/unit/api/account.test.ts tests/unit/api/fills.test.ts
+
+# Hooks
+cd /weaver/haro && npx vitest run tests/unit/hooks/useAccount.test.tsx tests/unit/hooks/useFills.test.tsx
+
+# Components
 cd /weaver/haro && npx vitest run tests/unit/components/runs/
-# expect PASS
+
+# Page
+cd /weaver/haro && npx vitest run tests/unit/pages/RunDetailPage.test.tsx
 ```
 
 ---
@@ -3445,11 +3318,29 @@ cd /weaver/haro && npx vitest run tests/unit/components/runs/
 `orders.Filled` → invalidate fill-derived queries.
 
 > When an `orders.PartiallyFilled` or `orders.Filled` SSE event arrives,
-> invalidate the fills query for the run so TanStack Query re-fetches from
-> `GET /runs/{id}/fills`.
+> invalidate the fill-derived queries so TanStack Query re-fetches from
+> `GET /runs/{id}/fills` and refreshes account/position snapshots.
 >
 > **Prerequisite**: The live path must emit both events from the Phase 1
 > reconciliation backbone. Do not leave partial fills invisible in the UI.
+
+#### 16.2.0 Contract Correction From Research
+
+Current backend SSE forwarding in `src/glados/app.py` publishes `envelope.payload`, not a merged `{ ...payload, run_id: envelope.run_id }` object. For order events emitted by `VedaService`, the payload includes `order_id`, `symbol`, `filled_qty`, etc. but **does not currently include `run_id` inside the SSE data body**.
+
+That means the original idea of invalidating `fillKeys.run(data.run_id)` is not reliable in M14.
+
+**Correct M14 behavior:**
+
+- invalidate `fillKeys.all` by prefix
+- invalidate `accountKeys.all` by prefix
+- invalidate `orders` by prefix
+- do **not** attempt optimistic cache writes
+- do **not** depend on `run_id` existing in the event payload
+
+This is still fully aligned with TanStack Query guidance: prefix invalidation is first-class and intentionally preferred over manual normalized cache mutation.
+
+If a later milestone enriches SSE event payloads with `run_id`, the invalidation can be narrowed to `fillKeys.run(runId)`.
 
 **Files to modify**:
 
@@ -3484,16 +3375,15 @@ it.each(["orders.PartiallyFilled", "orders.Filled"])(
     act(() => {
       MockEventSource.latest().simulateEvent(eventType, {
         order_id: "ord-1",
-        run_id: "run-1",
         symbol: "AAPL",
       });
     });
 
     expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ["fills"] }),
+      expect.objectContaining({ queryKey: fillKeys.all }),
     );
     expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ["account"] }),
+      expect.objectContaining({ queryKey: accountKeys.all }),
     );
   },
 );
@@ -3507,13 +3397,17 @@ cd /weaver/haro && npx vitest run tests/unit/hooks/useSSE.test.tsx
 #### 16.2.2 Implement (GREEN)
 
 **`haro/src/hooks/useSSE.ts`** — handle both partial and full fills through a
-shared invalidation helper:
+shared invalidation helper. Refactor the existing `orders.Filled` listener;
+do not register a second Filled listener.
 
 ```typescript
+import { accountKeys } from "./useAccount";
+import { fillKeys } from "./useFills";
+
 const invalidateFillDerivedQueries = () => {
   queryClient.invalidateQueries({ queryKey: ["orders"] });
-  queryClient.invalidateQueries({ queryKey: ["fills"] });
-  queryClient.invalidateQueries({ queryKey: ["account"] });
+  queryClient.invalidateQueries({ queryKey: fillKeys.all });
+  queryClient.invalidateQueries({ queryKey: accountKeys.all });
 };
 
 eventSource.addEventListener(
@@ -3540,9 +3434,9 @@ eventSource.addEventListener("orders.Filled", (event: MessageEvent) => {
 });
 ```
 
-Because `accountKeys.info()` and `accountKeys.positions()` share the
-`["account"]` prefix, one invalidation refreshes both the account card and the
-positions table.
+Implementation note: invalidate first, then build the notification message. Even if `safeParse` returns `null`, the event type itself is enough evidence that queries are stale.
+
+Because `accountKeys.info()` and `accountKeys.positions()` share the `accountKeys.all` prefix, one invalidation refreshes both the account card and the positions table.
 
 ```bash
 cd /weaver/haro && npx vitest run tests/unit/hooks/useSSE.test.tsx
@@ -3584,11 +3478,15 @@ cd /weaver/haro && npx eslint src/
 | 14-5 Candles M14           | Backend  | 5 (start, end, veda, inferred window, fallback)            |
 | 14-11 run.Created SSE      | Frontend | 1                                                          |
 | 14-10 Dashboard errors     | Frontend | 3 (plus replace old aggregate error assertion)             |
+| 14-8 Account/Fills API     | Frontend | 3–5                                                        |
+| 14-8 Account/Fills hooks   | Frontend | 5–7                                                        |
 | 14-8 PositionsTable        | Frontend | 5                                                          |
 | 14-8 AccountCard           | Frontend | 6                                                          |
-| 14-8 RunDetailPage tabs    | Frontend | 4                                                          |
-| 14-9 Fill SSE invalidation | Frontend | 2                                                          |
-| **Total**                  |          | **~57–59 new/updated tests**                               |
+| 14-8 RunFillsTable         | Frontend | 4–5                                                        |
+| 14-8 MonitoringTab         | Frontend | 3–5                                                        |
+| 14-8 RunDetailPage tabs    | Frontend | 3–4                                                        |
+| 14-9 Fill SSE invalidation | Frontend | 2–4                                                        |
+| **Total**                  |          | **~66–78 new/updated tests**                               |
 
 ### 17.3 Exit Gate Checklist
 
@@ -3606,9 +3504,11 @@ cd /weaver/haro && npx eslint src/
 - [ ] RunDetailPage shows "Results" tab for completed backtest
 - [ ] RunDetailPage shows "Monitoring" tab for live/paper runs
 - [ ] Monitoring tab shows PositionsTable + AccountCard with 5s polling
+- [ ] Monitoring tab does not show current account/position snapshots for non-running live/paper runs
+- [ ] Monitoring tab distinguishes API error from empty state for snapshots/fills
 - [ ] Monitoring tab shows recent fills
 - [ ] SSE `run.Created` event triggers query invalidation + toast
-- [ ] SSE `orders.PartiallyFilled` and `orders.Filled` invalidate fills, orders, and account queries
+- [ ] SSE `orders.PartiallyFilled` and `orders.Filled` invalidate fills, orders, and account queries via prefix keys
 - [ ] Dashboard shows per-card error states
 - [ ] All existing tests still pass
 - [ ] TypeScript compiles without errors
@@ -3633,10 +3533,16 @@ cd /weaver/haro && npx eslint src/
 | `haro/src/hooks/useFills.ts`                              | Fills hook                             |
 | `haro/src/components/runs/PositionsTable.tsx`             | Positions table component              |
 | `haro/src/components/runs/AccountCard.tsx`                | Account info card component            |
+| `haro/src/components/runs/RunFillsTable.tsx`              | Monitoring fills table                 |
 | `haro/src/components/runs/MonitoringTab.tsx`              | Monitoring tab content                 |
+| `haro/tests/unit/api/account.test.ts`                     | Account + positions API tests          |
+| `haro/tests/unit/api/fills.test.ts`                       | Fills API tests                        |
 | `haro/tests/unit/components/runs/PositionsTable.test.tsx` | PositionsTable tests                   |
 | `haro/tests/unit/components/runs/AccountCard.test.tsx`    | AccountCard tests                      |
+| `haro/tests/unit/components/runs/RunFillsTable.test.tsx`  | RunFillsTable tests                    |
+| `haro/tests/unit/components/runs/MonitoringTab.test.tsx`  | MonitoringTab behavior tests           |
 | `haro/tests/unit/hooks/useAccount.test.tsx`               | Account hooks tests                    |
+| `haro/tests/unit/hooks/useFills.test.tsx`                 | Fills hook tests                       |
 | Alembic migration                                         | `commission` + `symbol` on fills table |
 
 ### Modified Files
@@ -3655,6 +3561,9 @@ cd /weaver/haro && npx eslint src/
 | `src/glados/app.py`                              | + account_router, fills_router includes; + fill_repository on app.state; + VedaService passed into RunManager                         |
 | `src/glados/dependencies.py`                     | + `get_fill_repository`                                                                                                               |
 | `haro/src/api/types.ts`                          | + `Position`, `PositionListResponse`, `AccountInfo`, `Fill`, `FillListResponse`; `Order` + `cancelled_at`                             |
+| `haro/src/api/index.ts`                          | + account/fills barrel exports                                                                                                        |
+| `haro/src/hooks/index.ts`                        | + useAccount/useFills barrel exports                                                                                                  |
+| `haro/src/components/runs/index.ts`              | + Monitoring phase component exports                                                                                                  |
 | `haro/src/hooks/useSSE.ts`                       | + `run.Created` handler; `orders.PartiallyFilled` / `orders.Filled` + fills/account invalidation                                      |
 | `haro/src/pages/RunDetailPage.tsx`               | Refactored to headlessui Tabs + MonitoringTab                                                                                         |
 | `haro/src/pages/Dashboard.tsx`                   | Per-card error states                                                                                                                 |
