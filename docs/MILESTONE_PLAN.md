@@ -33,7 +33,7 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M12**   | Spec Alignment     | Run config refactor + Strategy API + RJSF dynamic forms    | 42    | ✅ DONE (1179 total)                  |
 | **M12-B** | Frontend Hardening | SSE safety + Symbols UX + a11y + Pagination + Dead code    | ~20   | ✅ COMPLETE                           |
 | **M13**   | Backtest Results   | Persist results + Results API + Detail page + Equity chart | 42+   | ✅ DONE                               |
-| **M14**   | Live Monitoring    | Positions/fills/account API + Monitoring UI + Real candles | 35    | ✅ DONE (1316 total)                   |
+| **M14**   | Live Monitoring    | Positions/fills/account API + Monitoring UI + Real candles | 35    | ✅ DONE (1316 total)                  |
 | **M15**   | Navigation & Fixes | Linked navigation + Sort/filter + All frontend bug fixes   | —     | 📋 PLANNED                            |
 | **M16**   | Strategy Iteration | Versioning + Clone + Comparison + One-click backtest       | —     | 📋 PLANNED                            |
 | **M17**   | Risk & Production  | Risk enforcement + Data ingest + Export + Observability    | —     | 📋 PLANNED                            |
