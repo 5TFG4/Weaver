@@ -26,7 +26,7 @@ from .exceptions import (
     SymbolNotFoundError,
     VedaError,
 )
-from .interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult
+from .interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult, TradeActivity
 from .models import (
     AccountInfo,
     Bar,
@@ -82,6 +82,7 @@ __all__ = [
     # Interfaces
     "ExchangeOrder",
     "OrderSubmitResult",
+    "TradeActivity",
     # Exceptions
     "VedaError",
     "ExchangeConnectionError",

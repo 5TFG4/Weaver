@@ -70,6 +70,8 @@ class TestAdapter(ExchangeAdapter):
         return None
     async def get_latest_trade(self, symbol):
         return None
+    async def list_trade_activities(self, *, after, until=None, page_size=100):
+        return []
     async def stream_quotes(self, symbols):
         yield None
     async def stream_bars(self, symbols):

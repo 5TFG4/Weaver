@@ -137,6 +137,7 @@ export interface Order {
   created_at: string;
   submitted_at?: string;
   filled_at?: string;
+  cancelled_at?: string;
   reject_reason?: string;
 }
 
@@ -158,6 +159,57 @@ export interface OrderListResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+// =============================================================================
+// Account & Position Types
+// =============================================================================
+
+export type PositionSide = "long" | "short";
+
+export interface AccountInfo {
+  account_id: string;
+  buying_power: string;
+  cash: string;
+  portfolio_value: string;
+  currency: string;
+  status: string;
+}
+
+export interface Position {
+  symbol: string;
+  qty: string;
+  side: PositionSide;
+  avg_entry_price: string;
+  market_value: string;
+  unrealized_pnl: string;
+  unrealized_pnl_percent: string;
+}
+
+export interface PositionListResponse {
+  items: Position[];
+  total: number;
+}
+
+// =============================================================================
+// Fill Types
+// =============================================================================
+
+export interface Fill {
+  id: string;
+  order_id: string;
+  price: string;
+  quantity: string;
+  side: OrderSide;
+  filled_at: string;
+  exchange_fill_id?: string;
+  commission?: string | null;
+  symbol?: string | null;
+}
+
+export interface FillListResponse {
+  items: Fill[];
+  total: number;
 }
 
 // =============================================================================

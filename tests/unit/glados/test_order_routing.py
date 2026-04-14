@@ -177,6 +177,7 @@ class TestCreateOrder:
         mock_state.created_at = datetime.now(UTC)
         mock_state.submitted_at = datetime.now(UTC)
         mock_state.filled_at = None
+        mock_state.cancelled_at = None
         mock_state.reject_reason = None
         mock_veda_service.place_order.return_value = mock_state
 
@@ -228,6 +229,7 @@ class TestCreateOrder:
         mock_state.created_at = datetime.now(UTC)
         mock_state.submitted_at = None
         mock_state.filled_at = None
+        mock_state.cancelled_at = None
         mock_state.reject_reason = None
         mock_veda_service.place_order.return_value = mock_state
 
@@ -285,6 +287,7 @@ class TestCreateOrder:
         mock_state.created_at = datetime.now(UTC)
         mock_state.submitted_at = datetime.now(UTC)
         mock_state.filled_at = None
+        mock_state.cancelled_at = None
         mock_state.reject_reason = None
         mock_veda_service.place_order.return_value = mock_state
 

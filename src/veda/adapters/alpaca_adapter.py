@@ -24,6 +24,8 @@ from datetime import datetime  # noqa: E402
 from decimal import Decimal  # noqa: E402
 from typing import Any  # noqa: E402
 
+import httpx  # noqa: E402
+
 # Alpaca SDK imports (lazy imported in connect())
 try:
     from alpaca.data.historical import (
@@ -45,7 +47,12 @@ except ImportError:
     CryptoHistoricalDataClient = None  # type: ignore
     StockHistoricalDataClient = None  # type: ignore
 
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult  # noqa: E402
+from src.veda.interfaces import (  # noqa: E402
+    ExchangeAdapter,
+    ExchangeOrder,
+    OrderSubmitResult,
+    TradeActivity,
+)
 from src.veda.models import (  # noqa: E402
     AccountInfo,
     Bar,
@@ -355,6 +362,58 @@ class AlpacaAdapter(ExchangeAdapter):
         except Exception:
             return []
 
+    async def list_trade_activities(
+        self,
+        *,
+        after: datetime,
+        until: datetime | None = None,
+        page_size: int = 100,
+    ) -> list[TradeActivity]:
+        """List trade activities from Alpaca account activities."""
+        self._require_connection()
+
+        base_url = self.PAPER_TRADING_URL if self._paper else self.LIVE_TRADING_URL
+        url = f"{base_url}/v2/account/activities"
+        headers = {
+            "APCA-API-KEY-ID": self._api_key,
+            "APCA-API-SECRET-KEY": self._api_secret,
+            "accept": "application/json",
+        }
+
+        activities: list[TradeActivity] = []
+        page_token: str | None = None
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            while True:
+                params: dict[str, Any] = {
+                    "activity_types": "FILL",
+                    "after": after.isoformat(),
+                    "direction": "asc",
+                    "page_size": page_size,
+                }
+                if until is not None:
+                    params["until"] = until.isoformat()
+                if page_token is not None:
+                    params["page_token"] = page_token
+
+                response = await client.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                payload = response.json()
+                if not payload:
+                    break
+
+                activities.extend(self._map_trade_activity(item) for item in payload)
+
+                if len(payload) < page_size:
+                    break
+
+                next_page_token = str(payload[-1]["id"])
+                if next_page_token == page_token:
+                    break
+                page_token = next_page_token
+
+        return activities
+
     # =========================================================================
     # Account & Positions
     # =========================================================================
@@ -615,6 +674,28 @@ class AlpacaAdapter(ExchangeAdapter):
             trade_count=bar.trade_count,
             vwap=Decimal(str(bar.vwap)) if bar.vwap else None,
         )
+
+    @classmethod
+    def _map_trade_activity(cls, payload: dict[str, Any]) -> TradeActivity:
+        """Map Alpaca account activity payload to TradeActivity."""
+        return TradeActivity(
+            activity_id=str(payload["id"]),
+            order_id=str(payload["order_id"]),
+            symbol=str(payload["symbol"]),
+            side=OrderSide(str(payload["side"])),
+            qty=Decimal(str(payload["qty"])),
+            price=Decimal(str(payload["price"])),
+            transaction_time=cls._parse_timestamp(str(payload["transaction_time"])),
+            leaves_qty=Decimal(str(payload["leaves_qty"])),
+            cum_qty=Decimal(str(payload["cum_qty"])),
+            order_status=cls._map_alpaca_status(str(payload["order_status"])),
+            activity_type=str(payload["type"]),
+        )
+
+    @staticmethod
+    def _parse_timestamp(value: str) -> datetime:
+        """Parse Alpaca timestamps with trailing Z into timezone-aware datetimes."""
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
     @staticmethod
     def _map_timeframe(timeframe: str) -> str:

@@ -64,4 +64,8 @@ def client(app: FastAPI) -> Generator[TestClient]:
         mock_result_repo.get_by_run_id = AsyncMock(return_value=None)
         app.state.result_repository = mock_result_repo
 
+        mock_fill_repo = AsyncMock()
+        mock_fill_repo.list_by_run_id = AsyncMock(return_value=[])
+        app.state.fill_repository = mock_fill_repo
+
         yield client

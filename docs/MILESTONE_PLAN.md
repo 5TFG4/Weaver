@@ -5,12 +5,12 @@
 > **Authoritative for**: milestone progress, task breakdown, timeline, and risks.
 > **Not authoritative for**: historical full audit trail (use `AUDIT_FINDINGS.md`).
 
-> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · M11 ✅ Complete · **M12 ✅ Complete** · **M12-B ✅ Complete**
-> **Tests (latest verified)**: 987 backend unit + 50 integration + 109 frontend + 33 E2E = 1179 passed (2026-04-03)
-> **Active Milestone**: **M13** (Backtest Results) — next up
+> **Current State**: M7 ✅ Formally Closed · M8 ✅ Complete · M9 ✅ Complete · M10 ✅ Complete · M11 ✅ Complete · **M12 ✅ Complete** · **M12-B ✅ Complete** · **M13 ✅ Complete** · **M14 ✅ Complete**
+> **Tests (latest verified)**: 1114 backend + 202 frontend = 1316 passed (2026-04-13)
+> **Active Milestone**: **M15** (Navigation & Fixes) — not started
 > **Remaining Backlog**: E-3, R-1, R-2
-> **Planned**: M13 (Backtest Results) → M14 (Live Monitoring) → M15 (Navigation & Fixes) → M16 (Strategy Iteration) → M17 (Risk & Production)
-> **Completed**: All planned milestones (M5–M12), CI audit Waves 1–4, PR #15 merged, PR #16 (M11)
+> **Planned**: ~~M13 (Backtest Results)~~ → ~~M14 (Live Monitoring)~~ → **M15 (Navigation & Fixes)** → M16 (Strategy Iteration) → M17 (Risk & Production)
+> **Completed**: All planned milestones (M5–M14), CI audit Waves 1–4, PR #15 merged, PR #16 (M11), PR #18 (M13)
 
 ---
 
@@ -32,8 +32,8 @@ M7 is formally closed as of 2026-02-19. M8 is complete as of 2026-02-26. M9 (CI)
 | **M11**   | Runtime Robustness | Async race fix + Concurrency safety + UX polish + Dev env  | 48    | ✅ DONE (1137 total)                  |
 | **M12**   | Spec Alignment     | Run config refactor + Strategy API + RJSF dynamic forms    | 42    | ✅ DONE (1179 total)                  |
 | **M12-B** | Frontend Hardening | SSE safety + Symbols UX + a11y + Pagination + Dead code    | ~20   | ✅ COMPLETE                           |
-| **M13**   | Backtest Results   | Persist results + Results API + Detail page + Equity chart | —     | 📋 PLANNED                            |
-| **M14**   | Live Monitoring    | Positions/fills/account API + Monitoring UI + Real candles | —     | 📋 PLANNED                            |
+| **M13**   | Backtest Results   | Persist results + Results API + Detail page + Equity chart | 42+   | ✅ DONE                               |
+| **M14**   | Live Monitoring    | Positions/fills/account API + Monitoring UI + Real candles | 35    | ✅ DONE (1316 total)                  |
 | **M15**   | Navigation & Fixes | Linked navigation + Sort/filter + All frontend bug fixes   | —     | 📋 PLANNED                            |
 | **M16**   | Strategy Iteration | Versioning + Clone + Comparison + One-click backtest       | —     | 📋 PLANNED                            |
 | **M17**   | Risk & Production  | Risk enforcement + Data ingest + Export + Observability    | —     | 📋 PLANNED                            |
@@ -852,6 +852,15 @@ displayed directly, `_pct` fields used for percentage metrics).
 ### M14 — Live/Paper Monitoring
 
 **Goal**: Give paper/live runs a dedicated monitoring view with real data.
+
+**Status**: ✅ Complete — all 4 phases done.
+
+- Phase 1 (Fill Backbone): FillRecord migration, reconciliation poller, `orders.PartiallyFilled`/`orders.Filled` events, `cancelled_at` field. ✅
+- Phase 2 (Backend Endpoints): Account, positions, fills, candles endpoints. 14-4 (events endpoint) deferred to M15. ✅
+- Phase 3 (Frontend Quick Wins): `run.Created` SSE listener (14-11), dashboard per-card error states (14-10). ✅
+- Phase 4 (Frontend Feature): Monitoring tab with positions/account/fills on RunDetailPage (14-8), real-time fill stream via SSE invalidation (14-9). +35 frontend tests (167→202). ✅
+
+Design doc: [m14-live-monitoring.md](archive/milestone-details/m14-live-monitoring.md)
 
 | Task  | Layer    | Description                                                | Audit ref |
 | ----- | -------- | ---------------------------------------------------------- | --------- |

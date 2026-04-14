@@ -10,7 +10,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.walle.models import FillRecord
+from src.walle.models import FillRecord, VedaOrder
 
 
 class FillRepository:
@@ -55,6 +55,26 @@ class FillRepository:
             stmt = (
                 select(FillRecord)
                 .where(FillRecord.order_id == order_id)
+                .order_by(FillRecord.filled_at.asc())
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def list_by_run_id(self, run_id: str) -> list[FillRecord]:
+        """
+        List fills for all orders belonging to a run.
+
+        Args:
+            run_id: The run identifier
+
+        Returns:
+            List of FillRecord ordered by filled_at ascending
+        """
+        async with self._session_factory() as session:
+            stmt = (
+                select(FillRecord)
+                .join(VedaOrder, VedaOrder.id == FillRecord.order_id)
+                .where(VedaOrder.run_id == run_id)
                 .order_by(FillRecord.filled_at.asc())
             )
             result = await session.execute(stmt)

@@ -316,6 +316,33 @@ class TestFill:
         with pytest.raises(FrozenInstanceError):
             sample_fill.qty = Decimal("1.0")  # type: ignore
 
+    def test_has_optional_symbol_field(self) -> None:
+        """Fill exposes persisted symbol when available."""
+        fill = Fill(
+            id="fill-001",
+            order_id="order-001",
+            qty=Decimal("0.5"),
+            price=Decimal("42000.00"),
+            commission=Decimal("0.42"),
+            timestamp=datetime.now(UTC),
+            symbol="BTC/USD",
+        )
+
+        assert fill.symbol == "BTC/USD"
+
+    def test_symbol_defaults_to_none(self) -> None:
+        """Fill symbol remains optional for historical records."""
+        fill = Fill(
+            id="fill-001",
+            order_id="order-001",
+            qty=Decimal("0.5"),
+            price=Decimal("42000.00"),
+            commission=Decimal("0.42"),
+            timestamp=datetime.now(UTC),
+        )
+
+        assert fill.symbol is None
+
 
 # =============================================================================
 # AccountInfo Tests

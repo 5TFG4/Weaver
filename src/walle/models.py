@@ -245,6 +245,8 @@ class FillRecord(Base):
     side: Mapped[str] = mapped_column(String(10), nullable=False)  # buy | sell
     filled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     exchange_fill_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    commission: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    symbol: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     __table_args__ = (Index("idx_fills_order_filled", "order_id", "filled_at"),)
 

@@ -13,6 +13,11 @@ import type {
   OrderListResponse,
   HealthResponse,
   StrategyMeta,
+  AccountInfo,
+  Position,
+  Fill,
+  PositionListResponse,
+  FillListResponse,
 } from "../../src/api/types";
 
 // =============================================================================
@@ -183,6 +188,40 @@ export const mockStrategies: StrategyMeta[] = [
   },
 ];
 
+export const mockAccount: AccountInfo = {
+  account_id: "PA-001",
+  buying_power: "50000.00",
+  cash: "25000.00",
+  portfolio_value: "75000.00",
+  currency: "USD",
+  status: "ACTIVE",
+};
+
+export const mockPositions: Position[] = [
+  {
+    symbol: "ETH/USD",
+    qty: "1.0",
+    side: "long",
+    avg_entry_price: "2500.00",
+    market_value: "2550.00",
+    unrealized_pnl: "50.00",
+    unrealized_pnl_percent: "2.00",
+  },
+];
+
+export const mockFills: Fill[] = [
+  {
+    id: "fill-1",
+    order_id: "order-2",
+    price: "2500.00",
+    quantity: "1.0",
+    side: "buy",
+    filled_at: "2026-02-04T08:05:05Z",
+    symbol: "ETH/USD",
+    commission: "1.00",
+  },
+];
+
 // =============================================================================
 // Handlers
 // =============================================================================
@@ -315,5 +354,28 @@ export const handlers = [
       return HttpResponse.json({ detail: "Order not found" }, { status: 404 });
     }
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  // GET /api/v1/account - Account snapshot
+  http.get("/api/v1/account", () => {
+    return HttpResponse.json(mockAccount);
+  }),
+
+  // GET /api/v1/account/positions - Open positions
+  http.get("/api/v1/account/positions", () => {
+    const response: PositionListResponse = {
+      items: mockPositions,
+      total: mockPositions.length,
+    };
+    return HttpResponse.json(response);
+  }),
+
+  // GET /api/v1/runs/:id/fills - Run fills
+  http.get("/api/v1/runs/:id/fills", () => {
+    const response: FillListResponse = {
+      items: mockFills,
+      total: mockFills.length,
+    };
+    return HttpResponse.json(response);
   }),
 ];

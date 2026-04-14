@@ -57,6 +57,23 @@ class ExchangeOrder:
     updated_at: datetime
 
 
+@dataclass(frozen=True)
+class TradeActivity:
+    """Normalized broker trade activity used for fill reconciliation."""
+
+    activity_id: str
+    order_id: str
+    symbol: str
+    side: OrderSide
+    qty: Decimal
+    price: Decimal
+    transaction_time: datetime
+    leaves_qty: Decimal
+    cum_qty: Decimal
+    order_status: OrderStatus
+    activity_type: str
+
+
 # =============================================================================
 # Exchange Adapter Interface
 # =============================================================================
@@ -140,6 +157,16 @@ class ExchangeAdapter(ABC):
         limit: int = 100,
     ) -> list[ExchangeOrder]:
         """List orders from exchange."""
+
+    @abstractmethod
+    async def list_trade_activities(
+        self,
+        *,
+        after: datetime,
+        until: datetime | None = None,
+        page_size: int = 100,
+    ) -> list[TradeActivity]:
+        """List broker trade activities used for fill reconciliation."""
 
     # =========================================================================
     # Account & Positions

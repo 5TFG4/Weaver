@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from src.veda.interfaces import ExchangeOrder, TradeActivity
 from src.veda.models import (
     OrderIntent,
     OrderSide,
@@ -76,6 +78,39 @@ def _make_filled_state(intent: OrderIntent) -> OrderState:
         created_at=datetime.now(UTC),
         submitted_at=datetime.now(UTC),
         filled_at=datetime.now(UTC),
+        cancelled_at=None,
+        reject_reason=None,
+        error_code=None,
+    )
+
+
+def _make_order_state(
+    intent: OrderIntent,
+    *,
+    status: OrderStatus = OrderStatus.ACCEPTED,
+    filled_qty: Decimal = Decimal("0"),
+    filled_avg_price: Decimal | None = None,
+    exchange_order_id: str = "exch-001",
+) -> OrderState:
+    """Create a non-terminal order state for reconciliation tests."""
+    return OrderState(
+        id="order-001",
+        client_order_id=intent.client_order_id,
+        run_id=intent.run_id,
+        symbol=intent.symbol,
+        side=intent.side,
+        order_type=intent.order_type,
+        qty=intent.qty,
+        limit_price=intent.limit_price,
+        stop_price=intent.stop_price,
+        time_in_force=intent.time_in_force,
+        status=status,
+        filled_qty=filled_qty,
+        filled_avg_price=filled_avg_price,
+        exchange_order_id=exchange_order_id,
+        created_at=datetime.now(UTC),
+        submitted_at=datetime.now(UTC),
+        filled_at=None,
         cancelled_at=None,
         reject_reason=None,
         error_code=None,
@@ -148,6 +183,8 @@ class TestVedaServiceFillPersistence:
         """Create a mock OrderRepository."""
         repo = AsyncMock()
         repo.save = AsyncMock()
+        repo.get_by_client_order_id = AsyncMock(return_value=None)
+        repo.list_by_run_id = AsyncMock(return_value=[])
         return repo
 
     @pytest.fixture
@@ -249,6 +286,112 @@ class TestVedaServiceFillPersistence:
 
         result = await service.get_fills("order-001")
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_reconcile_run_fills_once_persists_new_fill(
+        self,
+        service: VedaService,
+        mock_fill_repo: AsyncMock,
+        mock_order_repo: AsyncMock,
+    ) -> None:
+        """reconcile_run_fills_once() saves a new fill activity."""
+        adapter = cast(AsyncMock, service._adapter)
+        intent = _make_intent(client_order_id="client-activity-1")
+        persisted_order = _make_order_state(intent)
+        mock_order_repo.list_by_run_id.return_value = [persisted_order]
+        adapter.list_trade_activities.return_value = [
+            TradeActivity(
+                activity_id="activity-001",
+                order_id="exch-001",
+                symbol="AAPL",
+                side=OrderSide.BUY,
+                qty=Decimal("2"),
+                price=Decimal("150.25"),
+                transaction_time=datetime(2026, 4, 7, 10, 30, tzinfo=UTC),
+                leaves_qty=Decimal("8"),
+                cum_qty=Decimal("2"),
+                order_status=OrderStatus.PARTIALLY_FILLED,
+                activity_type="partial_fill",
+            )
+        ]
+        adapter.get_order.return_value = ExchangeOrder(
+            exchange_order_id="exch-001",
+            client_order_id="client-activity-1",
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("10"),
+            filled_qty=Decimal("2"),
+            filled_avg_price=Decimal("150.25"),
+            status=OrderStatus.PARTIALLY_FILLED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime(2026, 4, 7, 10, 30, tzinfo=UTC),
+        )
+
+        updated_after = await service.reconcile_run_fills_once(
+            run_id="run-001",
+            after=datetime(2026, 4, 7, 10, 0, tzinfo=UTC),
+        )
+
+        mock_fill_repo.save.assert_awaited_once()
+        saved_fill = mock_fill_repo.save.await_args.args[0]
+        assert saved_fill.id == "activity-001"
+        assert saved_fill.exchange_fill_id == "activity-001"
+        assert saved_fill.symbol == "AAPL"
+        assert saved_fill.commission is None
+        assert updated_after == datetime(2026, 4, 7, 10, 30, tzinfo=UTC)
+
+    @pytest.mark.asyncio
+    async def test_reconcile_run_fills_once_skips_duplicate_activity(
+        self,
+        service: VedaService,
+        mock_fill_repo: AsyncMock,
+        mock_order_repo: AsyncMock,
+    ) -> None:
+        """reconcile_run_fills_once() dedupes overlapping poll windows."""
+        from src.walle.models import FillRecord
+
+        adapter = cast(AsyncMock, service._adapter)
+        event_log = cast(AsyncMock, service._event_log)
+        intent = _make_intent(client_order_id="client-activity-2")
+        persisted_order = _make_order_state(intent)
+        mock_order_repo.get_by_client_order_id.return_value = persisted_order
+        mock_order_repo.list_by_run_id.return_value = [persisted_order]
+        mock_fill_repo.list_by_order.return_value = [
+            FillRecord(
+                id="activity-001",
+                order_id="order-001",
+                price=Decimal("150.25"),
+                quantity=Decimal("2"),
+                side="buy",
+                filled_at=datetime(2026, 4, 7, 10, 30, tzinfo=UTC),
+                exchange_fill_id="activity-001",
+            )
+        ]
+        adapter.list_trade_activities.return_value = [
+            TradeActivity(
+                activity_id="activity-001",
+                order_id="exch-001",
+                symbol="AAPL",
+                side=OrderSide.BUY,
+                qty=Decimal("2"),
+                price=Decimal("150.25"),
+                transaction_time=datetime(2026, 4, 7, 10, 30, tzinfo=UTC),
+                leaves_qty=Decimal("8"),
+                cum_qty=Decimal("2"),
+                order_status=OrderStatus.PARTIALLY_FILLED,
+                activity_type="partial_fill",
+            )
+        ]
+
+        await service.reconcile_run_fills_once(
+            run_id="run-001",
+            after=datetime(2026, 4, 7, 10, 0, tzinfo=UTC),
+        )
+
+        mock_fill_repo.save.assert_not_awaited()
+        event_log.append.assert_not_awaited()
+        adapter.get_order.assert_not_awaited()
 
 
 # ============================================================================

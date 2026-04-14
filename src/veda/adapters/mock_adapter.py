@@ -21,7 +21,12 @@ from datetime import UTC, datetime, timedelta  # noqa: E402
 from decimal import Decimal  # noqa: E402
 from uuid import uuid4  # noqa: E402
 
-from src.veda.interfaces import ExchangeAdapter, ExchangeOrder, OrderSubmitResult  # noqa: E402
+from src.veda.interfaces import (  # noqa: E402
+    ExchangeAdapter,
+    ExchangeOrder,
+    OrderSubmitResult,
+    TradeActivity,
+)
 from src.veda.models import (  # noqa: E402
     AccountInfo,
     Bar,
@@ -233,6 +238,17 @@ class MockExchangeAdapter(ExchangeAdapter):
             orders = [o for o in orders if o.symbol in symbols]
 
         return orders[:limit]
+
+    async def list_trade_activities(
+        self,
+        *,
+        after: datetime,
+        until: datetime | None = None,
+        page_size: int = 100,
+    ) -> list[TradeActivity]:
+        """Return no trade activities in the default mock adapter."""
+        _ = (after, until, page_size)
+        return []
 
     # =========================================================================
     # Account & Positions

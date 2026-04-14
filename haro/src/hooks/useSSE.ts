@@ -13,6 +13,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNotificationStore } from "../stores/notificationStore";
+import { accountKeys } from "./useAccount";
+import { fillKeys } from "./useFills";
 
 // =============================================================================
 // Constants
@@ -106,6 +108,16 @@ export function useSSE() {
       });
     });
 
+    eventSource.addEventListener("run.Created", (e: MessageEvent) => {
+      const data = safeParse(e.data);
+      if (!data) return;
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
+      addNotification({
+        type: "info",
+        message: `Run ${data.run_id} created`,
+      });
+    });
+
     eventSource.addEventListener("run.Error", (e: MessageEvent) => {
       const data = safeParse(e.data);
       if (!data) return;
@@ -130,11 +142,30 @@ export function useSSE() {
       });
     });
 
-    eventSource.addEventListener("orders.Filled", () => {
+    eventSource.addEventListener(
+      "orders.PartiallyFilled",
+      (e: MessageEvent) => {
+        const data = safeParse(e.data);
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: fillKeys.all });
+        queryClient.invalidateQueries({ queryKey: accountKeys.all });
+        addNotification({
+          type: "info",
+          message: data?.symbol
+            ? `Partial fill: ${data.symbol}`
+            : "Order partially filled",
+        });
+      },
+    );
+
+    eventSource.addEventListener("orders.Filled", (e: MessageEvent) => {
+      const data = safeParse(e.data);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: fillKeys.all });
+      queryClient.invalidateQueries({ queryKey: accountKeys.all });
       addNotification({
         type: "success",
-        message: `Order filled`,
+        message: data?.symbol ? `Order filled: ${data.symbol}` : "Order filled",
       });
     });
 

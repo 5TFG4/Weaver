@@ -256,6 +256,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     submitted_at: datetime | None = None
     filled_at: datetime | None = None
+    cancelled_at: datetime | None = None
     # Error info
     reject_reason: str | None = None
 
@@ -267,6 +268,69 @@ class OrderListResponse(BaseModel):
     total: int
     page: int = 1
     page_size: int = 50
+
+
+# =============================================================================
+# Account & Fill Schemas
+# =============================================================================
+
+
+class PositionSide(StrEnum):
+    """Position side."""
+
+    LONG = "long"
+    SHORT = "short"
+
+
+class AccountResponse(BaseModel):
+    """Account snapshot response."""
+
+    account_id: str
+    buying_power: str
+    cash: str
+    portfolio_value: str
+    currency: str
+    status: str
+
+
+class PositionResponse(BaseModel):
+    """Single open position snapshot."""
+
+    symbol: str
+    qty: str
+    side: PositionSide
+    avg_entry_price: str
+    market_value: str
+    unrealized_pnl: str
+    unrealized_pnl_percent: str
+
+
+class PositionListResponse(BaseModel):
+    """List of open positions."""
+
+    items: list[PositionResponse]
+    total: int
+
+
+class FillResponse(BaseModel):
+    """Single persisted fill."""
+
+    id: str
+    order_id: str
+    price: str
+    quantity: str
+    side: OrderSide
+    filled_at: datetime
+    exchange_fill_id: str | None = None
+    commission: str | None = None
+    symbol: str | None = None
+
+
+class FillListResponse(BaseModel):
+    """List of fills for a run."""
+
+    items: list[FillResponse]
+    total: int
 
 
 # =============================================================================

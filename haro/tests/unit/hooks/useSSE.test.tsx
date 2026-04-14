@@ -450,8 +450,128 @@ describe("useSSE", () => {
   });
 
   // =========================================================================
+  // M14-11: run.Created SSE listener
+  // =========================================================================
+
+  it("handles run.Created event with query invalidation and notification", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    const WrapperWithSpy = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    renderHook(() => useSSE(), { wrapper: WrapperWithSpy });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+    });
+
+    act(() => {
+      MockEventSource.latest().simulateEvent("run.Created", {
+        run_id: "new-run-42",
+        strategy_id: "sma-crossover",
+        mode: "paper",
+        status: "pending",
+      });
+    });
+
+    // Should invalidate runs query
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["runs"] }),
+    );
+
+    // Should add a notification
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("info");
+    expect(notifications[0].message).toContain("new-run-42");
+  });
+
+  // =========================================================================
+  // M14-9: Fill-derived query invalidation on order fill events
+  // =========================================================================
+
+  it.each(["orders.PartiallyFilled", "orders.Filled"])(
+    "invalidates fill-derived queries on %s",
+    (eventType) => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+
+      renderHook(() => useSSE(), { wrapper });
+
+      act(() => {
+        MockEventSource.latest().simulateOpen();
+      });
+
+      act(() => {
+        MockEventSource.latest().simulateEvent(eventType, {
+          order_id: "ord-1",
+          symbol: "AAPL",
+        });
+      });
+
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["fills"] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["account"] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["orders"] }),
+      );
+    },
+  );
+
+  it("handles orders.PartiallyFilled event with notification", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.PartiallyFilled", {
+        order_id: "order-pf",
+        symbol: "AAPL",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("info");
+    expect(notifications[0].message).toContain("AAPL");
+  });
+
+  it("orders.Filled notification includes symbol when available", () => {
+    const wrapper = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    act(() => {
+      MockEventSource.latest().simulateOpen();
+      MockEventSource.latest().simulateEvent("orders.Filled", {
+        order_id: "order-f",
+        symbol: "MSFT",
+      });
+    });
+
+    const { notifications } = useNotificationStore.getState();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].type).toBe("success");
+    expect(notifications[0].message).toContain("MSFT");
+  });
+
+  // =========================================================================
   // C-01: SSE event names must match backend PascalCase convention
-  // Backend emits: run.Started, run.Stopped, run.Completed, run.Error
+  // Backend emits: run.Created, run.Started, run.Stopped, run.Completed, run.Error
   // =========================================================================
 
   it("registers listeners with PascalCase run event names matching backend", () => {
@@ -464,6 +584,7 @@ describe("useSSE", () => {
     );
 
     // Must match backend RunEvents constants (PascalCase)
+    expect(registeredTypes).toContain("run.Created");
     expect(registeredTypes).toContain("run.Started");
     expect(registeredTypes).toContain("run.Stopped");
     expect(registeredTypes).toContain("run.Completed");

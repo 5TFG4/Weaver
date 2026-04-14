@@ -7,6 +7,9 @@ TDD: Write tests first, then implement.
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime
+
 import pytest
 
 from src.glados.schemas import RunCreate, RunMode, RunStatus
@@ -468,3 +471,63 @@ class TestStartLiveErrorHandling:
 
         # Context should be cleaned up even after failure
         assert run.id not in run_manager._run_contexts
+
+
+class TestLiveFillReconcilerLifecycle:
+    """M14: live/paper runs should own a cancellable fill reconciler task."""
+
+    async def test_start_live_registers_fill_reconciler_background_task(self) -> None:
+        """Starting a live-capable run should register one background task."""
+        from unittest.mock import AsyncMock
+
+        from tests.factories.runs import create_run_manager_with_deps
+
+        async def reconcile_side_effect(*, run_id: str, after: datetime) -> datetime:
+            return after
+
+        veda_service = AsyncMock()
+        veda_service.reconcile_run_fills_once = AsyncMock(side_effect=reconcile_side_effect)
+        run_manager = create_run_manager_with_deps(veda_service=veda_service)
+        run = await run_manager.create(
+            RunCreate(
+                strategy_id="test_strategy",
+                mode=RunMode.PAPER,
+                config={"symbols": ["BTC/USD"]},
+            )
+        )
+
+        await run_manager.start(run.id)
+
+        ctx = run_manager._run_contexts[run.id]
+        assert len(ctx.background_tasks) == 1
+
+        await run_manager.stop(run.id)
+
+    async def test_stop_cancels_fill_reconciler_background_task(self) -> None:
+        """Stopping a live-capable run should cancel registered background tasks."""
+        from unittest.mock import AsyncMock
+
+        from tests.factories.runs import create_run_manager_with_deps
+
+        async def reconcile_side_effect(*, run_id: str, after: datetime) -> datetime:
+            return after
+
+        veda_service = AsyncMock()
+        veda_service.reconcile_run_fills_once = AsyncMock(side_effect=reconcile_side_effect)
+        run_manager = create_run_manager_with_deps(veda_service=veda_service)
+        run = await run_manager.create(
+            RunCreate(
+                strategy_id="test_strategy",
+                mode=RunMode.PAPER,
+                config={"symbols": ["BTC/USD"]},
+            )
+        )
+
+        await run_manager.start(run.id)
+
+        ctx = run_manager._run_contexts[run.id]
+        background_tasks = list(ctx.background_tasks)
+        await asyncio.sleep(0)
+        await run_manager.stop(run.id)
+
+        assert all(task.cancelled() or task.done() for task in background_tasks)

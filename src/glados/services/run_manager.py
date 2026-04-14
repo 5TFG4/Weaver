@@ -17,7 +17,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from src.events.log import EventLog
@@ -37,6 +37,9 @@ from src.walle.repositories.result_repository import ResultRepository
 from src.walle.repositories.run_repository import RunRepository
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from src.veda import VedaService
 
 
 @dataclass
@@ -70,6 +73,7 @@ class RunContext:
     runner: StrategyRunner
     clock: BaseClock  # BacktestClock or RealtimeClock
     pending_tasks: set[asyncio.Task[Any]] = field(default_factory=set)
+    background_tasks: set[asyncio.Task[Any]] = field(default_factory=set)
 
 
 class RunManager:
@@ -90,6 +94,7 @@ class RunManager:
         strategy_loader: StrategyLoader | None = None,
         run_repository: RunRepository | None = None,
         result_repository: ResultRepository | None = None,
+        veda_service: VedaService | None = None,
     ) -> None:
         """
         Initialize RunManager.
@@ -109,6 +114,7 @@ class RunManager:
         self._result_repository = result_repository
         self._run_contexts: dict[str, RunContext] = {}
         self._run_locks: dict[str, asyncio.Lock] = {}
+        self._veda_service = veda_service
 
     def _get_run_lock(self, run_id: str) -> asyncio.Lock:
         """Get or create a per-run asyncio.Lock."""
@@ -236,7 +242,15 @@ class RunManager:
         # 1. Stop clock — no more ticks
         await ctx.clock.stop()
 
-        # 2. Drain pending tasks — tasks may spawn children (e.g.
+        # 2. Cancel long-lived background tasks before draining spawned work.
+        if ctx.background_tasks:
+            snapshot = list(ctx.background_tasks)
+            for task in snapshot:
+                task.cancel()
+            await asyncio.gather(*snapshot, return_exceptions=True)
+            ctx.background_tasks -= set(snapshot)
+
+        # 3. Drain pending tasks — tasks may spawn children (e.g.
         #    fetch_window → on_data_ready → handle_place_order).
         #    Snapshot + explicit removal avoids set-mutation races.
         while ctx.pending_tasks:
@@ -244,7 +258,7 @@ class RunManager:
             await asyncio.gather(*snapshot, return_exceptions=True)
             ctx.pending_tasks -= set(snapshot)
 
-        # 3-4. Unsubscribe (safe now — all tasks complete)
+        # 4-5. Unsubscribe (safe now — all tasks complete)
         await ctx.runner.cleanup()
         if ctx.greta is not None:
             await ctx.greta.cleanup()
@@ -421,6 +435,10 @@ class RunManager:
 
             # 5. Start clock (runs in background, doesn't block)
             await clock.start(run.id)
+
+            if self._veda_service is not None:
+                task = asyncio.create_task(self._run_fill_reconciler(run))
+                ctx.background_tasks.add(task)
         except Exception:
             run.status = RunStatus.ERROR
             raise
@@ -429,6 +447,32 @@ class RunManager:
             if run.status == RunStatus.ERROR:
                 run.stopped_at = datetime.now(UTC)
                 await self._cleanup_run_context(run.id)
+
+    async def _run_fill_reconciler(self, run: Run) -> None:
+        """Poll broker trade activities and reconcile fills for a live/paper run."""
+        if self._veda_service is None:
+            return
+
+        interval_raw = run.config.get("fill_reconcile_interval_seconds", 2.0)
+        try:
+            interval_seconds = max(float(interval_raw), 0.5)
+        except (TypeError, ValueError):
+            interval_seconds = 2.0
+
+        cursor = run.started_at or datetime.now(UTC)
+
+        while True:
+            try:
+                cursor = await self._veda_service.reconcile_run_fills_once(
+                    run_id=run.id,
+                    after=cursor,
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Fill reconciliation failed for run %s", run.id)
+
+            await asyncio.sleep(interval_seconds)
 
     async def _start_backtest(self, run: Run) -> None:
         """

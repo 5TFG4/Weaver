@@ -18,7 +18,9 @@ from fastapi.responses import JSONResponse
 
 from src.config import WeaverConfig, get_config
 from src.events.protocol import Envelope
+from src.glados.routes.account import router as account_router
 from src.glados.routes.candles import router as candles_router
+from src.glados.routes.fills import router as fills_router
 from src.glados.routes.health import router as health_router
 from src.glados.routes.orders import router as orders_router
 from src.glados.routes.runs import router as runs_router
@@ -86,6 +88,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         event_log = PostgresEventLog(session_factory=database.session_factory)
         app.state.event_log = event_log
         logger.info("EventLog initialized")
+
+        from src.walle.repositories.fill_repository import FillRepository
+
+        app.state.fill_repository = FillRepository(database.session_factory)
+        logger.info("FillRepository initialized")
 
         # 3. Subscribe SSEBroadcaster to EventLog for real-time events
         broadcaster = app.state.broadcaster
@@ -162,6 +169,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         strategy_loader=strategy_loader,
         run_repository=run_repository,
         result_repository=result_repository,
+        veda_service=getattr(app.state, "veda_service", None),
     )
     app.state.run_manager = run_manager
     app.state.strategy_loader = strategy_loader
@@ -386,6 +394,8 @@ def create_app(settings: WeaverConfig | None = None) -> FastAPI:
     app.include_router(runs_router)
     app.include_router(sse_router)
     app.include_router(orders_router)
+    app.include_router(account_router)
+    app.include_router(fills_router)
     app.include_router(candles_router)
     app.include_router(strategies_router)
 

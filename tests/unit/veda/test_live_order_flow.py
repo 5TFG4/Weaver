@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.veda.interfaces import OrderSubmitResult
+from src.veda.interfaces import ExchangeOrder, OrderSubmitResult, TradeActivity
 from src.veda.models import (
     Fill,
     OrderIntent,
@@ -35,6 +35,7 @@ def mock_adapter() -> MagicMock:
     adapter.submit_order = AsyncMock()
     adapter.cancel_order = AsyncMock()
     adapter.get_order = AsyncMock()
+    adapter.list_trade_activities = AsyncMock(return_value=[])
     adapter.is_connected = True
     adapter.connect = AsyncMock()
     adapter.disconnect = AsyncMock()
@@ -787,3 +788,169 @@ class TestSyncOrder:
         assert result.status == OrderStatus.REJECTED
         # get_order should NOT have been called on adapter
         mock_adapter.get_order.assert_not_called()
+
+
+class TestFillReconciliationEvents:
+    """M14: reconciliation should emit partial/full fill events."""
+
+    async def test_reconcile_emits_partially_filled_event(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
+    ) -> None:
+        """A partial fill activity should emit orders.PartiallyFilled."""
+        from src.veda.veda_service import VedaService
+
+        mock_repository.list_by_run_id.return_value = [
+            OrderState(
+                id="order-001",
+                client_order_id="client-001",
+                exchange_order_id="alpaca-order-001",
+                run_id="run-123",
+                symbol="BTC/USD",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                qty=Decimal("3"),
+                limit_price=None,
+                stop_price=None,
+                time_in_force=TimeInForce.DAY,
+                status=OrderStatus.ACCEPTED,
+                filled_qty=Decimal("0"),
+                filled_avg_price=None,
+                created_at=datetime.now(UTC),
+                submitted_at=datetime.now(UTC),
+                filled_at=None,
+                cancelled_at=None,
+                reject_reason=None,
+                error_code=None,
+            )
+        ]
+        mock_adapter.list_trade_activities = AsyncMock(
+            return_value=[
+                TradeActivity(
+                    activity_id="activity-partial-1",
+                    order_id="alpaca-order-001",
+                    symbol="BTC/USD",
+                    side=OrderSide.BUY,
+                    qty=Decimal("1.5"),
+                    price=Decimal("68000.00"),
+                    transaction_time=datetime(2026, 4, 7, 12, 0, tzinfo=UTC),
+                    leaves_qty=Decimal("1.5"),
+                    cum_qty=Decimal("1.5"),
+                    order_status=OrderStatus.PARTIALLY_FILLED,
+                    activity_type="partial_fill",
+                )
+            ]
+        )
+        mock_adapter.get_order.return_value = ExchangeOrder(
+            exchange_order_id="alpaca-order-001",
+            client_order_id="client-001",
+            symbol="BTC/USD",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("3"),
+            filled_qty=Decimal("1.5"),
+            filled_avg_price=Decimal("68000.00"),
+            status=OrderStatus.PARTIALLY_FILLED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime(2026, 4, 7, 12, 0, tzinfo=UTC),
+        )
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+            fill_repository=mock_fill_repository,
+        )
+
+        await service.reconcile_run_fills_once(
+            run_id="run-123",
+            after=datetime(2026, 4, 7, 11, 59, tzinfo=UTC),
+        )
+
+        envelope = mock_event_log.append.await_args.args[0]
+        assert envelope.type == "orders.PartiallyFilled"
+
+    async def test_reconcile_emits_filled_event(
+        self,
+        mock_adapter: MagicMock,
+        mock_event_log: MagicMock,
+        mock_repository: MagicMock,
+        mock_fill_repository: MagicMock,
+    ) -> None:
+        """A full fill activity should emit orders.Filled."""
+        from src.veda.veda_service import VedaService
+
+        mock_repository.list_by_run_id.return_value = [
+            OrderState(
+                id="order-001",
+                client_order_id="client-001",
+                exchange_order_id="alpaca-order-001",
+                run_id="run-123",
+                symbol="BTC/USD",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                qty=Decimal("3"),
+                limit_price=None,
+                stop_price=None,
+                time_in_force=TimeInForce.DAY,
+                status=OrderStatus.PARTIALLY_FILLED,
+                filled_qty=Decimal("1.5"),
+                filled_avg_price=Decimal("68000.00"),
+                created_at=datetime.now(UTC),
+                submitted_at=datetime.now(UTC),
+                filled_at=None,
+                cancelled_at=None,
+                reject_reason=None,
+                error_code=None,
+            )
+        ]
+        mock_adapter.list_trade_activities = AsyncMock(
+            return_value=[
+                TradeActivity(
+                    activity_id="activity-fill-1",
+                    order_id="alpaca-order-001",
+                    symbol="BTC/USD",
+                    side=OrderSide.BUY,
+                    qty=Decimal("1.5"),
+                    price=Decimal("68100.00"),
+                    transaction_time=datetime(2026, 4, 7, 12, 1, tzinfo=UTC),
+                    leaves_qty=Decimal("0"),
+                    cum_qty=Decimal("3"),
+                    order_status=OrderStatus.FILLED,
+                    activity_type="fill",
+                )
+            ]
+        )
+        mock_adapter.get_order.return_value = ExchangeOrder(
+            exchange_order_id="alpaca-order-001",
+            client_order_id="client-001",
+            symbol="BTC/USD",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            qty=Decimal("3"),
+            filled_qty=Decimal("3"),
+            filled_avg_price=Decimal("68050.00"),
+            status=OrderStatus.FILLED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime(2026, 4, 7, 12, 1, tzinfo=UTC),
+        )
+
+        service = VedaService(
+            adapter=mock_adapter,
+            event_log=mock_event_log,
+            repository=mock_repository,
+            config=MagicMock(),
+            fill_repository=mock_fill_repository,
+        )
+
+        await service.reconcile_run_fills_once(
+            run_id="run-123",
+            after=datetime(2026, 4, 7, 12, 0, tzinfo=UTC),
+        )
+
+        emitted_types = [call.args[0].type for call in mock_event_log.append.await_args_list]
+        assert "orders.Filled" in emitted_types
